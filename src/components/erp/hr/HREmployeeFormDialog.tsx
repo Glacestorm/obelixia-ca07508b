@@ -306,7 +306,35 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     }
   };
 
-  // Load reference data
+  // Load active contract for prórroga data
+  const loadActiveContract = async (employeeId: string) => {
+    try {
+      const { data } = await supabase
+        .from('erp_hr_contracts')
+        .select('id, contract_type, start_date, end_date, extension_date, extension_count, status')
+        .eq('employee_id', employeeId)
+        .eq('is_active', true)
+        .order('start_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setProrrogaData({
+          contractId: data.id,
+          contractType: data.contract_type || '',
+          startDate: data.start_date || '',
+          endDate: data.end_date || '',
+          extensionDate: data.extension_date || '',
+          extensionCount: data.extension_count || 0,
+          status: data.status || '',
+        });
+      } else {
+        setProrrogaData({ contractId: '', contractType: '', startDate: '', endDate: '', extensionDate: '', extensionCount: 0, status: '' });
+      }
+    } catch (err) {
+      console.error('[ActiveContract] load error:', err);
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     const load = async () => {
