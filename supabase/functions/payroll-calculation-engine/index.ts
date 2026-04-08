@@ -148,8 +148,8 @@ serve(async (req) => {
         });
       }
 
-      // adminClient: hr_payroll_records has permissive USING(true) — NOT safe for userClient yet
-      await adminClient.from('hr_payroll_records').upsert({
+      // userClient: hr_payroll_records now has tenant_isolation_all policy (S3-fix)
+      await userClient.from('hr_payroll_records').upsert({
         company_id,
         employee_id,
         period_year: period_year ?? new Date().getFullYear(),
