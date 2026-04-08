@@ -123,7 +123,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   const [formData, setFormData] = useState({
     first_name: '', last_name: '', email: '', phone: '',
     employee_number: '', position: '', department_id: '',
-    hire_date: '', status: 'active', country_code: 'ES',
+    hire_date: '', termination_date: '', status: 'active', country_code: 'ES',
     base_salary: 0,
     // Organizational
     legal_entity_id: '', work_center_id: '', reports_to: '',
