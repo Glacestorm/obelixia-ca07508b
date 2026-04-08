@@ -206,6 +206,27 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     });
   }, [formData, esFields, irpfCalculation, companyId, employee?.id, computeLegalProfile]);
 
+  // Prórroga eligibility (ET Art. 15, RDL 32/2021)
+  const extensionEligibility = useMemo(() => {
+    if (!prorrogaData.contractType || !prorrogaData.startDate) return null;
+    return canExtendContract(
+      prorrogaData.contractType,
+      prorrogaData.extensionCount,
+      prorrogaData.startDate,
+      prorrogaData.endDate || null,
+    );
+  }, [prorrogaData.contractType, prorrogaData.extensionCount, prorrogaData.startDate, prorrogaData.endDate]);
+
+  // Calculate months between dates for duration display
+  const contractDurationMonths = useMemo(() => {
+    if (!prorrogaData.startDate) return null;
+    const end = prorrogaData.endDate || formData.termination_date;
+    if (!end) return null;
+    const s = new Date(prorrogaData.startDate);
+    const e = new Date(end);
+    return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  }, [prorrogaData.startDate, prorrogaData.endDate, formData.termination_date]);
+
   // Sync calculated IRPF to field when not in manual override
   useEffect(() => {
     if (!irpfManualOverride && irpfCalculation) {
