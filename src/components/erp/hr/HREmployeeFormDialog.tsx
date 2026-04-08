@@ -431,6 +431,28 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       setActiveTab('empleo');
       return;
     }
+    // Validación legal: prórroga inconsistente
+    if (prorrogaData.contractId && prorrogaData.extensionDate) {
+      if (prorrogaData.extensionDate < prorrogaData.startDate) {
+        toast.error('La fecha de prórroga no puede ser anterior al inicio del contrato');
+        setActiveTab('empleo');
+        return;
+      }
+      if (prorrogaData.endDate && prorrogaData.endDate < prorrogaData.extensionDate) {
+        toast.error('La fecha fin no puede ser anterior al inicio de la prórroga');
+        setActiveTab('empleo');
+        return;
+      }
+      if (extensionEligibility && !extensionEligibility.allowed) {
+        toast.error(`Prórroga no permitida: ${extensionEligibility.reason}`);
+        setActiveTab('empleo');
+        return;
+      }
+      // Auto-increment extension count if new extension
+      if (prorrogaData.extensionDate && prorrogaData.extensionCount < 2) {
+        setProrrogaData(prev => ({ ...prev, extensionCount: prev.extensionCount + 1 }));
+      }
+    }
     setSaving(true);
     try {
       const dbData = {
