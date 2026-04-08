@@ -146,6 +146,7 @@ TIPOS DE CONTRATOS:
 };
 
 serve(async (req) => {
+  const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
