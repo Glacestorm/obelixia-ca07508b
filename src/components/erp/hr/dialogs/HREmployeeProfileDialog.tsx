@@ -287,6 +287,9 @@ export function HREmployeeProfileDialog({
                     </div>
                   </div>
                   <InfoRow icon={Calendar} label="Fecha de alta" value={formatDate(employee.hire_date)} />
+                  {(employee as any).termination_date && (
+                    <InfoRow icon={Clock} label="Fecha de baja" value={formatDate((employee as any).termination_date)} />
+                  )}
                   {employee.contract_end_date && (
                     <InfoRow icon={Clock} label="Fin de contrato" value={formatDate(employee.contract_end_date)} />
                   )}

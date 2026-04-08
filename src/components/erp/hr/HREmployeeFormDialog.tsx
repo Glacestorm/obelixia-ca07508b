@@ -43,6 +43,7 @@ interface Employee {
   position: string | null;
   department_id: string | null;
   hire_date: string | null;
+  termination_date?: string | null;
   contract_end_date?: string | null;
   contract_type?: string | null;
   status: string;
@@ -123,7 +124,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   const [formData, setFormData] = useState({
     first_name: '', last_name: '', email: '', phone: '',
     employee_number: '', position: '', department_id: '',
-    hire_date: '', status: 'active', country_code: 'ES',
+    hire_date: '', termination_date: '', status: 'active', country_code: 'ES',
     base_salary: 0,
     // Organizational
     legal_entity_id: '', work_center_id: '', reports_to: '',
@@ -221,6 +222,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         position: employee.position || '',
         department_id: employee.department_id || '',
         hire_date: employee.hire_date || '',
+        termination_date: (employee as any).termination_date || '',
         status: employee.status || 'active',
         country_code: employee.country_code || employee.jurisdiction || 'ES',
         base_salary: employee.base_salary || employee.gross_salary || 0,
@@ -235,6 +237,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         first_name: '', last_name: '', email: '', phone: '',
         employee_number: '', position: '', department_id: '',
         hire_date: new Date().toISOString().split('T')[0],
+        termination_date: '',
         status: 'active', country_code: 'ES', base_salary: 0,
         legal_entity_id: '', work_center_id: '', reports_to: '',
       });
@@ -354,6 +357,18 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       toast.error('Complete los campos obligatorios');
       return;
     }
+    // Validación legal: fecha de baja obligatoria en estados de baja (ET Art. 49.1)
+    if (['terminated', 'offboarding'].includes(formData.status) && !formData.termination_date) {
+      toast.error('La fecha de baja es obligatoria para estados de baja (ET Art. 49.1)');
+      setActiveTab('empleo');
+      return;
+    }
+    // Validación legal: fecha de baja no puede ser anterior a fecha de alta
+    if (formData.termination_date && formData.hire_date && formData.termination_date < formData.hire_date) {
+      toast.error('La fecha de baja no puede ser anterior a la fecha de alta');
+      setActiveTab('empleo');
+      return;
+    }
     setSaving(true);
     try {
       const dbData = {
@@ -366,6 +381,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         job_title: formData.position || null,
         department_id: formData.department_id || null,
         hire_date: formData.hire_date,
+        termination_date: formData.termination_date || null,
         status: formData.status,
         country_code: formData.country_code,
         base_salary: Number(formData.base_salary) || null,
@@ -623,6 +639,54 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   </Select>
                 </div>
               </div>
+
+              {/* Fecha de Baja — siempre visible, obligatoria en estados de baja */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    Fecha de Baja
+                    {['terminated', 'offboarding'].includes(formData.status) && (
+                      <span className="text-destructive text-xs">*</span>
+                    )}
+                  </Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={formData.termination_date}
+                      onChange={(e) => handleChange('termination_date', e.target.value)}
+                      className="pl-10"
+                      min={formData.hire_date || undefined}
+                    />
+                  </div>
+                  {/* Validación legal: fecha de baja anterior a fecha de alta */}
+                  {formData.termination_date && formData.hire_date && formData.termination_date < formData.hire_date && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      La fecha de baja no puede ser anterior a la fecha de alta (ET Art. 49)
+                    </p>
+                  )}
+                  {/* Advertencia: estado baja sin fecha */}
+                  {['terminated', 'offboarding'].includes(formData.status) && !formData.termination_date && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      Obligatoria para estados de baja (ET Art. 49.1, RD 625/1985 Art. 1)
+                    </p>
+                  )}
+                  {/* Info: estado activo con fecha de baja informada */}
+                  {formData.termination_date && !['terminated', 'offboarding'].includes(formData.status) && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      Fecha de baja informada con estado activo — verifique coherencia
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Fecha efectiva de cese. Genera obligaciones TA.2 (baja) y liquidación (ET Art. 49).
+                  </p>
+                </div>
+                <div /> {/* Spacer for grid alignment */}
+              </div>
+
               <div className="space-y-2">
                 <Label>Salario bruto anual</Label>
                 <Input type="number" value={formData.base_salary} onChange={(e) => handleChange('base_salary', e.target.value)} placeholder="30000" />
