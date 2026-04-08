@@ -514,6 +514,25 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         if (formData.country_code === 'ES' && computedProfile) {
           persistLegalProfile(employeeId!, computedProfile);
         }
+
+        // Save contract prórroga data + sync termination_date to active contract
+        if (prorrogaData.contractId) {
+          const contractUpdates: Record<string, any> = {};
+          if (prorrogaData.extensionDate) contractUpdates.extension_date = prorrogaData.extensionDate;
+          if (prorrogaData.endDate) contractUpdates.end_date = prorrogaData.endDate;
+          contractUpdates.extension_count = prorrogaData.extensionCount;
+          // Sync termination_date to the active contract (ET Art. 49)
+          if (formData.termination_date) {
+            contractUpdates.termination_date = formData.termination_date;
+            contractUpdates.status = 'terminated';
+          }
+          // If extension was applied, update contract status
+          if (prorrogaData.extensionDate && !formData.termination_date) {
+            contractUpdates.status = 'extended';
+            contractUpdates.ta2_movement_code = 'V01'; // Variación de datos (prórroga)
+          }
+          await supabase.from('erp_hr_contracts').update(contractUpdates).eq('id', prorrogaData.contractId);
+        }
       }
       onSave();
     } catch (error) {
