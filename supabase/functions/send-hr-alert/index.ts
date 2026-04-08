@@ -7,6 +7,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 
 interface HRAlertRequest {
@@ -36,37 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER');
-    const WHATSAPP_API_KEY = Deno.env.get('WHATSAPP_API_KEY');
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
     const body = await req.json() as HRAlertRequest;
-
     const { 
       alert_id, company_id, alert_type, severity, title, description,
       employee_id, employee_name, channels, recipients, data, sync_to_ai 
@@ -78,16 +49,20 @@ serve(async (req) => {
       });
     }
 
-    // Tenant isolation
-    const { data: membership } = await adminClient
-      .from('erp_user_companies').select('id')
-      .eq('user_id', userId).eq('company_id', company_id)
-      .eq('is_active', true).maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Auth + tenant isolation via shared utility
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userClient, adminClient } = authResult;
+
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+    const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER');
+    const WHATSAPP_API_KEY = Deno.env.get('WHATSAPP_API_KEY');
 
     console.log(`[send-hr-alert] Processing ${alert_type} alert via channels:`, channels);
 
@@ -250,7 +225,7 @@ serve(async (req) => {
       }
     }
 
-    // === PUSH NOTIFICATION ===
+    // === PUSH NOTIFICATION (adminClient — cross-user INSERT, no RLS for non-admin senders) ===
     if (channels.includes('push')) {
       try {
         const pushRecipients = recipients.filter(r => r.user_id);
@@ -272,9 +247,9 @@ serve(async (req) => {
       }
     }
 
-    // === LOG ALERT TO DATABASE ===
+    // === LOG ALERT TO DATABASE (userClient — RLS via user_has_erp_company_access) ===
     try {
-      await adminClient.from('erp_hr_alerts').insert({
+      await userClient.from('erp_hr_alerts').insert({
         company_id,
         employee_id,
         alert_type,
@@ -290,7 +265,7 @@ serve(async (req) => {
       console.error('[send-hr-alert] Failed to log alert:', logError);
     }
 
-    // === SYNC TO AI AGENT ===
+    // === SYNC TO AI AGENT (adminClient — service-to-service invocation) ===
     if (sync_to_ai) {
       try {
         await adminClient.functions.invoke('erp-hr-ai-agent', {

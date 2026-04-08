@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
@@ -9,45 +9,24 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
     const { action, params } = await req.json();
     console.log(`[talent-intelligence] Action: ${action}`);
 
-    // Tenant isolation
+    // Tenant isolation via shared utility
     const tenantCompanyId = params?.company_id;
-    if (tenantCompanyId) {
-      const { data: membership } = await adminClient
-        .from('erp_user_companies').select('id')
-        .eq('user_id', userId).eq('company_id', tenantCompanyId)
-        .eq('is_active', true).maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    if (!tenantCompanyId) {
+      return new Response(JSON.stringify({ error: 'company_id required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    const authResult = await validateTenantAccess(req, tenantCompanyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { userClient } = authResult;
 
     let result: any = null;
 
@@ -55,7 +34,7 @@ serve(async (req) => {
       // ========== SKILL GRAPH ==========
       case 'list_skills': {
         const { company_id } = params;
-        const { data, error } = await adminClient.from('erp_hr_skill_graph')
+        const { data, error } = await userClient.from('erp_hr_skill_graph')
           .select('*').eq('company_id', company_id).eq('is_active', true)
           .order('category').order('name');
         if (error) throw error;
@@ -64,7 +43,7 @@ serve(async (req) => {
       }
 
       case 'upsert_skill': {
-        const { data, error } = await adminClient.from('erp_hr_skill_graph')
+        const { data, error } = await userClient.from('erp_hr_skill_graph')
           .upsert(params.skill).select().single();
         if (error) throw error;
         result = data;
@@ -74,7 +53,7 @@ serve(async (req) => {
       // ========== ROLE-SKILL MAPPING ==========
       case 'list_role_mappings': {
         const { company_id, role_name } = params;
-        let query = adminClient.from('erp_hr_role_skill_mapping').select('*').eq('company_id', company_id);
+        let query = userClient.from('erp_hr_role_skill_mapping').select('*').eq('company_id', company_id);
         if (role_name) query = query.eq('role_name', role_name);
         const { data, error } = await query.order('role_name');
         if (error) throw error;
@@ -85,7 +64,7 @@ serve(async (req) => {
       // ========== CAREER PATHS ==========
       case 'list_career_paths': {
         const { company_id } = params;
-        const { data, error } = await adminClient.from('erp_hr_career_paths')
+        const { data, error } = await userClient.from('erp_hr_career_paths')
           .select('*').eq('company_id', company_id).eq('is_active', true).order('from_role');
         if (error) throw error;
         result = data;
@@ -93,7 +72,7 @@ serve(async (req) => {
       }
 
       case 'upsert_career_path': {
-        const { data, error } = await adminClient.from('erp_hr_career_paths')
+        const { data, error } = await userClient.from('erp_hr_career_paths')
           .upsert(params.path).select().single();
         if (error) throw error;
         result = data;
@@ -103,7 +82,7 @@ serve(async (req) => {
       // ========== TALENT POOLS ==========
       case 'list_talent_pools': {
         const { company_id } = params;
-        const { data, error } = await adminClient.from('erp_hr_talent_pools')
+        const { data, error } = await userClient.from('erp_hr_talent_pools')
           .select('*').eq('company_id', company_id).eq('is_active', true).order('name');
         if (error) throw error;
         result = data;
@@ -111,7 +90,7 @@ serve(async (req) => {
       }
 
       case 'upsert_talent_pool': {
-        const { data, error } = await adminClient.from('erp_hr_talent_pools')
+        const { data, error } = await userClient.from('erp_hr_talent_pools')
           .upsert(params.pool).select().single();
         if (error) throw error;
         result = data;
@@ -121,7 +100,7 @@ serve(async (req) => {
       // ========== MENTORING ==========
       case 'list_mentoring': {
         const { company_id } = params;
-        const { data, error } = await adminClient.from('erp_hr_mentoring_matches')
+        const { data, error } = await userClient.from('erp_hr_mentoring_matches')
           .select('*').eq('company_id', company_id).order('created_at', { ascending: false });
         if (error) throw error;
         result = data;
@@ -131,7 +110,7 @@ serve(async (req) => {
       // ========== GIG ASSIGNMENTS ==========
       case 'list_gigs': {
         const { company_id, status } = params;
-        let query = adminClient.from('erp_hr_gig_assignments').select('*').eq('company_id', company_id);
+        let query = userClient.from('erp_hr_gig_assignments').select('*').eq('company_id', company_id);
         if (status) query = query.eq('status', status);
         const { data, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
@@ -146,9 +125,9 @@ serve(async (req) => {
         if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
         const [empRes, skillRes, succRes] = await Promise.all([
-          adminClient.from('erp_hr_employees').select('id, first_name, last_name, department, position_title, base_salary, hire_date, status').eq('company_id', company_id).eq('status', 'active'),
-          adminClient.from('erp_hr_skill_graph').select('*').eq('company_id', company_id).eq('is_active', true),
-          adminClient.from('erp_hr_succession_positions').select('*').eq('company_id', company_id),
+          userClient.from('erp_hr_employees').select('id, first_name, last_name, department, position_title, base_salary, hire_date, status').eq('company_id', company_id).eq('status', 'active'),
+          userClient.from('erp_hr_skill_graph').select('*').eq('company_id', company_id).eq('is_active', true),
+          userClient.from('erp_hr_succession_positions').select('*').eq('company_id', company_id),
         ]);
 
         const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -202,7 +181,7 @@ RESPONDE SOLO EN JSON:
         const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
         if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-        const { data: employees } = await adminClient.from('erp_hr_employees')
+        const { data: employees } = await userClient.from('erp_hr_employees')
           .select('id, first_name, last_name, department, position_title, hire_date')
           .eq('company_id', company_id).eq('status', 'active');
 
@@ -241,11 +220,11 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
       case 'get_talent_stats': {
         const { company_id } = params;
         const [skillsRes, poolsRes, pathsRes, mentoringRes, gigsRes] = await Promise.all([
-          adminClient.from('erp_hr_skill_graph').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          adminClient.from('erp_hr_talent_pools').select('*').eq('company_id', company_id).eq('is_active', true),
-          adminClient.from('erp_hr_career_paths').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          adminClient.from('erp_hr_mentoring_matches').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
-          adminClient.from('erp_hr_gig_assignments').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'open'),
+          userClient.from('erp_hr_skill_graph').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          userClient.from('erp_hr_talent_pools').select('*').eq('company_id', company_id).eq('is_active', true),
+          userClient.from('erp_hr_career_paths').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          userClient.from('erp_hr_mentoring_matches').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
+          userClient.from('erp_hr_gig_assignments').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'open'),
         ]);
 
         result = {
@@ -277,7 +256,7 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
           { company_id, name: 'Contabilidad IFRS', category: 'finance', skill_type: 'hard', is_core: false, market_demand: 'medium', icon: 'Calculator' },
           { company_id, name: 'Gestión del Cambio', category: 'management', skill_type: 'soft', is_core: true, market_demand: 'high', icon: 'RefreshCw' },
         ];
-        await adminClient.from('erp_hr_skill_graph').insert(skills);
+        await userClient.from('erp_hr_skill_graph').insert(skills);
 
         // Seed career paths
         const paths = [
@@ -287,7 +266,7 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
           { company_id, name: 'Técnico → Lead', from_role: 'Técnico', to_role: 'Tech Lead', path_type: 'vertical', avg_time_months: 30, typical_salary_increase_percent: 20, required_experience_years: 3, department: 'IT' },
           { company_id, name: 'Finanzas → Operaciones', from_role: 'Analista Financiero', to_role: 'Controller Operaciones', path_type: 'lateral', avg_time_months: 18, typical_salary_increase_percent: 10 },
         ];
-        await adminClient.from('erp_hr_career_paths').insert(paths);
+        await userClient.from('erp_hr_career_paths').insert(paths);
 
         // Seed talent pools
         const pools = [
@@ -296,7 +275,7 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
           { company_id, name: 'Future Leaders', pool_type: 'future_leaders', description: 'Pipeline de liderazgo a 2-3 años', member_count: 0, review_frequency: 'semi_annual' },
           { company_id, name: 'Critical Skills', pool_type: 'critical_skills', description: 'Poseedores de competencias críticas escasas', member_count: 0, review_frequency: 'quarterly' },
         ];
-        await adminClient.from('erp_hr_talent_pools').insert(pools);
+        await userClient.from('erp_hr_talent_pools').insert(pools);
 
         result = { seeded: true };
         break;

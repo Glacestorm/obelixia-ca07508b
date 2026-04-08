@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
-
-// corsHeaders now computed per-request via getSecureCorsHeaders(req)
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr);
@@ -31,46 +29,18 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
 
   try {
-    // --- AUTH GATE ---
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
-      });
-    }
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-    if (authError || !authUser) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
-        status: 401, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
-      });
-    }
-
-    const supabaseUrl = SUPABASE_URL;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const { action, company_id, employee_id, process_id, data } = await req.json();
 
     if (!company_id) throw new Error('company_id required');
 
-    // --- COMPANY ACCESS VALIDATION ---
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', authUser.id)
-      .eq('company_id', company_id)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-        status: 403, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
+    // Auth + tenant isolation via shared utility
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify({ success: false, error: authResult.body.error }), {
+        status: authResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
       });
     }
+    const { userClient } = authResult;
 
     // ─── CREATE PROCESS ─────────────────────────────────────
     if (action === 'create_process') {
@@ -80,7 +50,7 @@ serve(async (req) => {
       const m365 = addDays(data.start_date, 365);
       const m545 = addDays(data.start_date, 545);
 
-      const { data: proc, error: procErr } = await supabase
+      const { data: proc, error: procErr } = await userClient
         .from('erp_hr_it_processes')
         .insert({
           company_id,
@@ -101,7 +71,7 @@ serve(async (req) => {
 
       if (procErr) throw procErr;
 
-      await supabase.from('erp_audit_events').insert({
+      await userClient.from('erp_audit_events').insert({
         company_id,
         entity_type: 'erp_hr_it_processes',
         entity_id: proc.id,
@@ -123,13 +93,13 @@ serve(async (req) => {
     if (action === 'add_part') {
       if (!process_id || !data) throw new Error('process_id and data required');
 
-      const { data: proc } = await supabase
+      const { data: proc } = await userClient
         .from('erp_hr_it_processes')
         .select('process_class')
         .eq('id', process_id)
         .single();
 
-      const { count: partCount } = await supabase
+      const { count: partCount } = await userClient
         .from('erp_hr_it_parts')
         .select('*', { count: 'exact', head: true })
         .eq('process_id', process_id);
@@ -137,7 +107,7 @@ serve(async (req) => {
       const nextConf = calcNextConfirmation(proc?.process_class ?? 'C', data.emission_date, partCount ?? 0);
       const compReport = (partCount ?? 0) >= 1 && ((partCount ?? 0) + 1) % 2 === 0;
 
-      const { data: part, error: partErr } = await supabase
+      const { data: part, error: partErr } = await userClient
         .from('erp_hr_it_parts')
         .insert({
           company_id,
@@ -156,7 +126,7 @@ serve(async (req) => {
 
       if (partErr) throw partErr;
 
-      await supabase.from('erp_audit_events').insert({
+      await userClient.from('erp_audit_events').insert({
         company_id,
         entity_type: 'erp_hr_it_parts',
         entity_id: part.id,
@@ -178,7 +148,7 @@ serve(async (req) => {
     if (action === 'calculate_base') {
       if (!process_id) throw new Error('process_id required');
 
-      const { data: proc } = await supabase
+      const { data: proc } = await userClient
         .from('erp_hr_it_processes')
         .select('process_type, employee_id')
         .eq('id', process_id)
@@ -186,7 +156,6 @@ serve(async (req) => {
 
       if (!proc) throw new Error('Process not found');
 
-      // Read last payroll data (approximate from employee data)
       const bcPrevMonth = data?.bc_prev_month ?? 2000;
       const extraHoursAnnual = data?.extra_hours_annual ?? 0;
       const daysInMonth = data?.days_in_month ?? 30;
@@ -212,7 +181,7 @@ serve(async (req) => {
 
       baseDaily = Math.round(baseDaily * 100) / 100;
 
-      await supabase.from('erp_hr_it_bases').upsert({
+      await userClient.from('erp_hr_it_bases').upsert({
         company_id,
         process_id,
         calculation_date: new Date().toISOString().split('T')[0],
@@ -225,7 +194,7 @@ serve(async (req) => {
         days_in_period: daysInMonth,
       }, { onConflict: 'process_id' });
 
-      await supabase.from('erp_audit_events').insert({
+      await userClient.from('erp_audit_events').insert({
         company_id,
         entity_type: 'erp_hr_it_bases',
         entity_id: process_id,
@@ -248,7 +217,7 @@ serve(async (req) => {
       const today = new Date().toISOString().split('T')[0];
       const thirtyDaysFromNow = addDays(today, 30);
 
-      const { data: processes } = await supabase
+      const { data: processes } = await userClient
         .from('erp_hr_it_processes')
         .select('id, employee_id, process_type, start_date, milestone_365_date, milestone_545_date, milestone_365_notified, milestone_545_notified')
         .eq('company_id', company_id)

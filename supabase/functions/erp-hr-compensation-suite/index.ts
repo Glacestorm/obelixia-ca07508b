@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
@@ -11,47 +11,23 @@ serve(async (req) => {
   try {
     const { action, params } = await req.json();
 
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub as string;
-
-    // Tenant isolation
+    // Tenant isolation via shared utility
     const tenantCompanyId = params?.company_id;
-    if (tenantCompanyId) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', tenantCompanyId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    if (!tenantCompanyId) {
+      return new Response(JSON.stringify({ error: 'company_id required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log(`[compensation-suite] Action: ${action}, User: ${userId}`);
+    const authResult = await validateTenantAccess(req, tenantCompanyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { userClient } = authResult;
+
+    console.log(`[compensation-suite] Action: ${action}, User: ${authResult.userId}`);
 
     let result: any = null;
 
@@ -59,7 +35,7 @@ serve(async (req) => {
       // ========== MERIT CYCLES ==========
       case 'list_merit_cycles': {
         const { company_id, fiscal_year } = params;
-        let query = supabase.from('erp_hr_merit_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false });
+        let query = userClient.from('erp_hr_merit_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false });
         if (fiscal_year) query = query.eq('fiscal_year', fiscal_year);
         const { data, error } = await query;
         if (error) throw error;
@@ -68,7 +44,7 @@ serve(async (req) => {
       }
 
       case 'upsert_merit_cycle': {
-        const { data, error } = await supabase.from('erp_hr_merit_cycles').upsert(params.cycle).select().single();
+        const { data, error } = await userClient.from('erp_hr_merit_cycles').upsert(params.cycle).select().single();
         if (error) throw error;
         result = data;
         break;
@@ -76,7 +52,7 @@ serve(async (req) => {
 
       case 'list_merit_proposals': {
         const { cycle_id, company_id, status } = params;
-        let query = supabase.from('erp_hr_merit_proposals').select('*');
+        let query = userClient.from('erp_hr_merit_proposals').select('*');
         if (cycle_id) query = query.eq('cycle_id', cycle_id);
         if (company_id) query = query.eq('company_id', company_id);
         if (status) query = query.eq('status', status);
@@ -88,7 +64,7 @@ serve(async (req) => {
       }
 
       case 'upsert_merit_proposal': {
-        const { data, error } = await supabase.from('erp_hr_merit_proposals').upsert(params.proposal).select().single();
+        const { data, error } = await userClient.from('erp_hr_merit_proposals').upsert(params.proposal).select().single();
         if (error) throw error;
         result = data;
         break;
@@ -96,8 +72,7 @@ serve(async (req) => {
 
       case 'bulk_create_proposals': {
         const { cycle_id, company_id } = params;
-        // Fetch employees with current salary
-        const { data: employees, error: empError } = await supabase
+        const { data: employees, error: empError } = await userClient
           .from('erp_hr_employees')
           .select('id, first_name, last_name, department, position_title, base_salary, salary_band')
           .eq('company_id', company_id)
@@ -118,7 +93,7 @@ serve(async (req) => {
         }));
 
         if (proposals.length > 0) {
-          const { data, error } = await supabase.from('erp_hr_merit_proposals').insert(proposals).select();
+          const { data, error } = await userClient.from('erp_hr_merit_proposals').insert(proposals).select();
           if (error) throw error;
           result = { created: data?.length || 0 };
         } else {
@@ -130,7 +105,7 @@ serve(async (req) => {
       // ========== BONUS CYCLES ==========
       case 'list_bonus_cycles': {
         const { company_id, fiscal_year } = params;
-        let query = supabase.from('erp_hr_bonus_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false });
+        let query = userClient.from('erp_hr_bonus_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false });
         if (fiscal_year) query = query.eq('fiscal_year', fiscal_year);
         const { data, error } = await query;
         if (error) throw error;
@@ -139,7 +114,7 @@ serve(async (req) => {
       }
 
       case 'upsert_bonus_cycle': {
-        const { data, error } = await supabase.from('erp_hr_bonus_cycles').upsert(params.cycle).select().single();
+        const { data, error } = await userClient.from('erp_hr_bonus_cycles').upsert(params.cycle).select().single();
         if (error) throw error;
         result = data;
         break;
@@ -147,7 +122,7 @@ serve(async (req) => {
 
       case 'list_bonus_allocations': {
         const { cycle_id } = params;
-        const { data, error } = await supabase.from('erp_hr_bonus_allocations').select('*').eq('cycle_id', cycle_id).order('employee_name');
+        const { data, error } = await userClient.from('erp_hr_bonus_allocations').select('*').eq('cycle_id', cycle_id).order('employee_name');
         if (error) throw error;
         result = data;
         break;
@@ -156,7 +131,7 @@ serve(async (req) => {
       // ========== SALARY LETTERS ==========
       case 'list_salary_letters': {
         const { company_id, status } = params;
-        let query = supabase.from('erp_hr_salary_letters').select('*').eq('company_id', company_id).order('created_at', { ascending: false });
+        let query = userClient.from('erp_hr_salary_letters').select('*').eq('company_id', company_id).order('created_at', { ascending: false });
         if (status) query = query.eq('status', status);
         const { data, error } = await query;
         if (error) throw error;
@@ -165,7 +140,7 @@ serve(async (req) => {
       }
 
       case 'generate_salary_letter': {
-        const { data, error } = await supabase.from('erp_hr_salary_letters').insert(params.letter).select().single();
+        const { data, error } = await userClient.from('erp_hr_salary_letters').insert(params.letter).select().single();
         if (error) throw error;
         result = data;
         break;
@@ -177,8 +152,7 @@ serve(async (req) => {
         const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
         if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-        // Get employee data
-        const { data: employees } = await supabase
+        const { data: employees } = await userClient
           .from('erp_hr_employees')
           .select('id, first_name, last_name, gender, department, position_title, base_salary, salary_band, hire_date')
           .eq('company_id', company_id)
@@ -259,7 +233,7 @@ RESPONDE SOLO EN JSON con esta estructura:
           ai_narrative: analysis.ai_narrative
         };
 
-        const { data, error } = await supabase.from('erp_hr_pay_equity_snapshots').insert(snapshot).select().single();
+        const { data, error } = await userClient.from('erp_hr_pay_equity_snapshots').insert(snapshot).select().single();
         if (error) throw error;
         result = data;
         break;
@@ -267,7 +241,7 @@ RESPONDE SOLO EN JSON con esta estructura:
 
       case 'list_pay_equity_snapshots': {
         const { company_id } = params;
-        const { data, error } = await supabase.from('erp_hr_pay_equity_snapshots').select('*').eq('company_id', company_id).order('analysis_date', { ascending: false }).limit(10);
+        const { data, error } = await userClient.from('erp_hr_pay_equity_snapshots').select('*').eq('company_id', company_id).order('analysis_date', { ascending: false }).limit(10);
         if (error) throw error;
         result = data;
         break;
@@ -277,10 +251,10 @@ RESPONDE SOLO EN JSON con esta estructura:
       case 'get_compensation_stats': {
         const { company_id } = params;
         const [meritRes, bonusRes, lettersRes, equityRes] = await Promise.all([
-          supabase.from('erp_hr_merit_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false }).limit(5),
-          supabase.from('erp_hr_bonus_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false }).limit(5),
-          supabase.from('erp_hr_salary_letters').select('id, status', { count: 'exact' }).eq('company_id', company_id),
-          supabase.from('erp_hr_pay_equity_snapshots').select('*').eq('company_id', company_id).order('analysis_date', { ascending: false }).limit(1),
+          userClient.from('erp_hr_merit_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false }).limit(5),
+          userClient.from('erp_hr_bonus_cycles').select('*').eq('company_id', company_id).order('fiscal_year', { ascending: false }).limit(5),
+          userClient.from('erp_hr_salary_letters').select('id, status', { count: 'exact' }).eq('company_id', company_id),
+          userClient.from('erp_hr_pay_equity_snapshots').select('*').eq('company_id', company_id).order('analysis_date', { ascending: false }).limit(1),
         ]);
 
         result = {
@@ -296,8 +270,7 @@ RESPONDE SOLO EN JSON con esta estructura:
       case 'seed_compensation_data': {
         const { company_id } = params;
         
-        // Seed merit cycle
-        const { data: meritCycle } = await supabase.from('erp_hr_merit_cycles').insert({
+        const { data: meritCycle } = await userClient.from('erp_hr_merit_cycles').insert({
           company_id,
           name: 'Revisión Salarial 2026',
           fiscal_year: 2026,
@@ -316,8 +289,7 @@ RESPONDE SOLO EN JSON con esta estructura:
           }
         }).select().single();
 
-        // Seed bonus cycle
-        await supabase.from('erp_hr_bonus_cycles').insert({
+        await userClient.from('erp_hr_bonus_cycles').insert({
           company_id,
           name: 'Bonus Anual 2025',
           fiscal_year: 2025,
@@ -332,7 +304,6 @@ RESPONDE SOLO EN JSON con esta estructura:
           payment_date: '2026-03-15'
         });
 
-        // Seed total rewards config
         const rewardsConfig = [
           { company_id, component_name: 'Salario Base', component_category: 'base_salary', display_order: 1, icon: 'Wallet', color: '#3b82f6' },
           { company_id, component_name: 'Bonus Anual', component_category: 'variable', display_order: 2, icon: 'Gift', color: '#22c55e' },
@@ -344,7 +315,7 @@ RESPONDE SOLO EN JSON con esta estructura:
           { company_id, component_name: 'Formación', component_category: 'development', display_order: 8, icon: 'GraduationCap', color: '#06b6d4' },
           { company_id, component_name: 'Seguridad Social Empresa', component_category: 'social_security', display_order: 9, icon: 'Shield', color: '#64748b' },
         ];
-        await supabase.from('erp_hr_total_rewards_config').insert(rewardsConfig);
+        await userClient.from('erp_hr_total_rewards_config').insert(rewardsConfig);
 
         result = { seeded: true, meritCycleId: meritCycle?.id };
         break;
