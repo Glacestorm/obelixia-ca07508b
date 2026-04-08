@@ -783,6 +783,42 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
             {/* Tab 3: Employment Data (global) */}
             <TabsContent value="empleo" className="m-0 space-y-4">
+              {/* Generation mode selector */}
+              <div className="flex items-center justify-between p-2 rounded-lg border bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-medium">Generación de ficheros</span>
+                </div>
+                <Select value={generationMode} onValueChange={(v: GenerationMode) => { setGenerationModeState(v); setGenerationModeConfig(companyId, { mode: v }); }}>
+                  <SelectTrigger className="w-[140px] h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="automatic">{GENERATION_MODE_LABELS.automatic.icon} Automático</SelectItem>
+                    <SelectItem value="manual">{GENERATION_MODE_LABELS.manual.icon} Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Expiry alert badge */}
+              {expiryAlert && (
+                <div className={cn("p-2.5 rounded-lg border flex items-start gap-2", expiryAlert.bgColor)}>
+                  <Clock className={cn("h-4 w-4 mt-0.5 shrink-0", expiryAlert.color)} />
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className={cn("text-xs font-semibold", expiryAlert.color)}>{expiryAlert.label}</p>
+                      <Badge variant={expiryAlert.conversionRequired ? 'destructive' : 'outline'} className="text-[10px]">
+                        {expiryAlert.daysRemaining}d
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{expiryAlert.legalConsequence}</p>
+                    {expiryAlert.obligations.length > 0 && (
+                      <ul className="text-[10px] text-muted-foreground list-disc pl-3 space-y-0.5">
+                        {expiryAlert.obligations.slice(0, 2).map((o, i) => <li key={i}>{o}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Fecha de Alta</Label>
