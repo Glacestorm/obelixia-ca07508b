@@ -800,8 +800,8 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   <span className="text-xs font-medium">Generación de ficheros</span>
                 </div>
                 <Select value={generationMode} onValueChange={(v: GenerationMode) => { setGenerationModeState(v); setGenerationModeConfig(companyId, { mode: v }); }}>
-                  <SelectTrigger className="w-[140px] h-7 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="w-[180px] h-7 text-xs"><SelectValue placeholder="Seleccionar modo" /></SelectTrigger>
+                  <SelectContent portalContainer={selectPortalContainer} position="popper">
                     <SelectItem value="automatic">{GENERATION_MODE_LABELS.automatic.icon} Automático</SelectItem>
                     <SelectItem value="manual">{GENERATION_MODE_LABELS.manual.icon} Manual</SelectItem>
                   </SelectContent>
