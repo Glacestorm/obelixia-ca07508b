@@ -2,11 +2,13 @@
  * erp-hr-ai-agent - Agente IA RRHH ultraespecializado
  * Coordina con agente supervisor, gestiona nóminas, contratos, vacaciones,
  * seguridad laboral y cumplimiento normativo
+ * 
+ * S6.3C: Migrated to validateTenantAccess + userClient for all data ops
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface AgentRequest {
   action: 'chat' | 'calculate_payroll' | 'calculate_severance' | 'check_compliance' | 
@@ -53,35 +55,10 @@ serve(async (req) => {
   }
 
   try {
-    // --- AUTH VALIDATION ---
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-    if (authError || !authUser) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    // --- END AUTH VALIDATION ---
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
-
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const body = await req.json() as AgentRequest;
     const { 
@@ -92,30 +69,27 @@ serve(async (req) => {
     // Support both company_id and companyId
     const effectiveCompanyId = company_id || companyId;
 
-    // --- COMPANY ACCESS VALIDATION ---
-    if (effectiveCompanyId) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .eq('company_id', effectiveCompanyId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!membership) {
-        console.warn(`[erp-hr-ai-agent] Forbidden: user ${authUser.id} not member of company ${effectiveCompanyId}`);
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+    if (!effectiveCompanyId) {
+      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-    // --- END COMPANY ACCESS VALIDATION ---
+
+    // --- AUTH + TENANT VALIDATION (S6.3C) ---
+    const authResult = await validateTenantAccess(req, effectiveCompanyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const { userClient } = authResult;
+    // --- END AUTH + TENANT VALIDATION ---
 
     console.log(`[erp-hr-ai-agent] Processing action: ${action}`);
 
     // Fetch relevant HR knowledge base content
     const fetchKnowledge = async (cnae?: string, category?: string, limit = 15) => {
-      let query = supabase
+      let query = userClient
         .from('erp_hr_knowledge_base')
         .select('title, content, knowledge_type, tags, cnae_codes')
         .eq('is_active', true)
@@ -140,7 +114,7 @@ serve(async (req) => {
     const fetchCollectiveAgreement = async (cnae?: string) => {
       if (!cnae) return null;
       
-      const { data } = await supabase
+      const { data } = await userClient
         .from('erp_hr_collective_agreements')
         .select('*')
         .contains('cnae_codes', [cnae])
@@ -152,7 +126,7 @@ serve(async (req) => {
 
     // Fetch PRL requirements by CNAE
     const fetchPRLRequirements = async (cnae?: string) => {
-      const { data } = await supabase
+      const { data } = await userClient
         .from('erp_hr_prl_requirements')
         .select('*')
         .eq('is_active', true);
@@ -166,12 +140,12 @@ serve(async (req) => {
     };
 
     // Fetch current absences (approved leave requests)
-    const fetchCurrentAbsences = async (companyId?: string, startDate?: string, endDate?: string) => {
+    const fetchCurrentAbsences = async (cId?: string, startDate?: string, endDate?: string) => {
       const today = new Date().toISOString().split('T')[0];
       const start = startDate || today;
       const end = endDate || today;
       
-      let query = supabase
+      let query = userClient
         .from('erp_hr_leave_requests')
         .select(`
           id, employee_id, start_date, end_date, days_requested, 
@@ -181,8 +155,8 @@ serve(async (req) => {
         .lte('start_date', end)
         .gte('end_date', start);
       
-      if (companyId) {
-        query = query.eq('company_id', companyId);
+      if (cId) {
+        query = query.eq('company_id', cId);
       }
       
       const { data } = await query;
@@ -190,16 +164,16 @@ serve(async (req) => {
     };
 
     // Fetch active HR alerts
-    const fetchActiveAlerts = async (companyId?: string) => {
-      let query = supabase
+    const fetchActiveAlerts = async (cId?: string) => {
+      let query = userClient
         .from('erp_hr_alerts')
         .select('*')
         .eq('is_read', false)
         .order('created_at', { ascending: false })
         .limit(50);
       
-      if (companyId) {
-        query = query.eq('company_id', companyId);
+      if (cId) {
+        query = query.eq('company_id', cId);
       }
       
       const { data } = await query;
@@ -208,17 +182,17 @@ serve(async (req) => {
 
     // Create HR alert
     const createAlert = async (
-      companyId: string,
+      cId: string,
       alertType: string,
       severity: string,
       title: string,
       description: string,
       recommendedAction?: string,
-      employeeId?: string
+      empId?: string
     ) => {
-      await supabase.from('erp_hr_compliance_alerts').insert([{
-        company_id: companyId,
-        employee_id: employeeId,
+      await userClient.from('erp_hr_compliance_alerts').insert([{
+        company_id: cId,
+        employee_id: empId,
         alert_type: alertType,
         severity,
         title,
@@ -231,16 +205,16 @@ serve(async (req) => {
     // Log agent action
     const logAction = async (
       sessionId: string,
-      companyId: string,
+      cId: string,
       actionType: string,
       actionDescription: string,
       inputData: unknown,
       outputData: unknown,
       confidenceScore?: number
     ) => {
-      await supabase.from('erp_hr_agent_actions').insert([{
+      await userClient.from('erp_hr_agent_actions').insert([{
         session_id: sessionId,
-        company_id: companyId,
+        company_id: cId,
         action_type: actionType,
         action_description: actionDescription,
         input_data: inputData,
@@ -257,7 +231,7 @@ serve(async (req) => {
       // NEW: Get current absences - who is away today
       case 'get_absences': {
         const absences = await fetchCurrentAbsences(
-          company_id, 
+          effectiveCompanyId, 
           body.date_range?.start, 
           body.date_range?.end
         );
@@ -280,7 +254,7 @@ serve(async (req) => {
 
       // NEW: Get active alerts for HR manager
       case 'get_active_alerts': {
-        const alerts = await fetchActiveAlerts(company_id);
+        const alerts = await fetchActiveAlerts(effectiveCompanyId);
         
         result = {
           alerts,
@@ -331,31 +305,31 @@ serve(async (req) => {
         console.log('[erp-hr-ai-agent] Fetching dashboard stats for company:', effectiveCompanyId);
         
         // Count employees
-        const { count: employeesCount } = await supabase
+        const { count: employeesCount } = await userClient
           .from('erp_hr_employees')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'active');
         
         // Count active contracts
-        const { count: contractsCount } = await supabase
+        const { count: contractsCount } = await userClient
           .from('erp_hr_contracts')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'active');
         
         // Count pending vacations
-        const { count: vacationsCount } = await supabase
+        const { count: vacationsCount } = await userClient
           .from('erp_hr_leave_requests')
           .select('*', { count: 'exact', head: true })
           .in('status', ['pending', 'pending_dept', 'pending_hr']);
         
         // Count pending payrolls (unpaid)
-        const { count: payrollCount } = await supabase
+        const { count: payrollCount } = await userClient
           .from('erp_hr_payrolls')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'draft');
         
         // Count safety alerts
-        const { count: safetyCount } = await supabase
+        const { count: safetyCount } = await userClient
           .from('erp_hr_safety_incidents')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'open');
@@ -383,7 +357,7 @@ serve(async (req) => {
         console.log('[erp-hr-ai-agent] Fetching full dashboard for company:', effectiveCompanyId);
         
         // Get employees by department
-        const { data: deptData } = await supabase
+        const { data: deptData } = await userClient
           .from('erp_hr_employees')
           .select('department')
           .eq('status', 'active');
@@ -400,7 +374,7 @@ serve(async (req) => {
         }));
         
         // Get contracts by type
-        const { data: contractData } = await supabase
+        const { data: contractData } = await userClient
           .from('erp_hr_contracts')
           .select('contract_type')
           .eq('status', 'active');
@@ -420,7 +394,7 @@ serve(async (req) => {
         const today = new Date().toISOString().split('T')[0];
         const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         
-        const { data: leaveEvents } = await supabase
+        const { data: leaveEvents } = await userClient
           .from('erp_hr_leave_requests')
           .select('id, employee_id, start_date, end_date, leave_type_code')
           .eq('status', 'approved')
@@ -437,7 +411,7 @@ serve(async (req) => {
         
         // KPIs calculation
         const totalEmployees = deptData?.length || 0;
-        const { count: terminatedThisYear } = await supabase
+        const { count: terminatedThisYear } = await userClient
           .from('erp_hr_employees')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'inactive')
@@ -476,7 +450,7 @@ serve(async (req) => {
       case 'get_ninebox_distribution': {
         console.log('[erp-hr-ai-agent] Fetching 9-box distribution');
         
-        const { data: evalData } = await supabase
+        const { data: evalData } = await userClient
           .from('erp_hr_performance_reviews')
           .select('employee_id, performance_rating, potential_rating')
           .eq('status', 'completed');
@@ -527,13 +501,13 @@ serve(async (req) => {
         const period = (context as any)?.period || new Date().toISOString().slice(0, 7);
         
         // Get active employees for the period
-        const { data: employees } = await supabase
+        const { data: employees } = await userClient
           .from('erp_hr_employees')
           .select('id, first_name, last_name, social_security_number')
           .eq('status', 'active');
         
         // Get payrolls for the period
-        const { data: payrolls } = await supabase
+        const { data: payrolls } = await userClient
           .from('erp_hr_payrolls')
           .select('*')
           .ilike('period', `${period}%`);
@@ -646,13 +620,13 @@ serve(async (req) => {
         console.log('[erp-hr-ai-agent] Requesting certificate');
         
         const certificateType = (context as any)?.certificateType || 'empresa';
-        const employeeId = (context as any)?.employeeId;
+        const certEmployeeId = (context as any)?.employeeId;
         
         // Simulate certificate request
         result = {
           request_id: `CERT-${Date.now()}`,
           certificate_type: certificateType,
-          employee_id: employeeId,
+          employee_id: certEmployeeId,
           status: 'pending',
           request_date: new Date().toISOString(),
           estimated_delivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -993,7 +967,7 @@ FORMATO DE RESPUESTA (JSON estricto):
   "score": 0-100
 }`;
 
-        userPrompt = `Realiza verificación de cumplimiento laboral para empresa ${company_id}. CNAE: ${cnae_code || 'General'}. Fecha actual: ${new Date().toISOString().split('T')[0]}`;
+        userPrompt = `Realiza verificación de cumplimiento laboral para empresa ${effectiveCompanyId}. CNAE: ${cnae_code || 'General'}. Fecha actual: ${new Date().toISOString().split('T')[0]}`;
         break;
       }
 
@@ -1190,7 +1164,7 @@ FORMATO DE RESPUESTA (JSON estricto):
   }
 }`;
 
-        userPrompt = `Realiza auditoría PRL para empresa ${company_id}. CNAE: ${cnae_code || 'General'}`;
+        userPrompt = `Realiza auditoría PRL para empresa ${effectiveCompanyId}. CNAE: ${cnae_code || 'General'}`;
         break;
       }
 
@@ -1261,7 +1235,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     }
 
     // Process compliance check results - create alerts
-    if (action === 'check_compliance' && company_id && result.issues) {
+    if (action === 'check_compliance' && effectiveCompanyId && result.issues) {
       const issues = result.issues as Array<{
         area: string;
         type: string;
@@ -1273,7 +1247,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       
       for (const issue of issues) {
         await createAlert(
-          company_id,
+          effectiveCompanyId,
           issue.area,
           issue.severity,
           issue.title,
@@ -1286,10 +1260,10 @@ FORMATO DE RESPUESTA (JSON estricto):
     }
 
     // Log action if session exists
-    if (session_id && company_id) {
+    if (session_id && effectiveCompanyId) {
       await logAction(
         session_id,
-        company_id,
+        effectiveCompanyId,
         action,
         `Executed ${action}`,
         { message, context, salary_data, severance_data },
