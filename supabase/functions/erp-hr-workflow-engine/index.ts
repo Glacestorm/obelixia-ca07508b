@@ -1,40 +1,32 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error('Unauthorized');
-
     const { action, params } = await req.json();
 
-    // S2.1: Tenant isolation
+    // S6.3F: company_id is now REQUIRED — closes conditional membership gap
     const targetCompanyId = params?.company_id;
-    if (targetCompanyId) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('company_id', targetCompanyId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    if (!targetCompanyId) {
+      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    // S6.3F: validateTenantAccess replaces manual auth + service_role
+    const authResult = await validateTenantAccess(req, targetCompanyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { userId, userClient } = authResult;
+    // Use userId for audit — replaces user.id from getUser()
+    const user = { id: userId, email: '' };
 
     let result: any;
 
@@ -42,7 +34,7 @@ serve(async (req) => {
       // ===== LIST DEFINITIONS =====
       case 'list_definitions': {
         const { company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_workflow_definitions')
           .select('*, erp_hr_workflow_steps(*)')
           .eq('company_id', company_id)
@@ -57,20 +49,20 @@ serve(async (req) => {
         const { id, steps, ...defData } = params;
         let defId = id;
         if (id) {
-          const { data, error } = await supabase.from('erp_hr_workflow_definitions').update({ ...defData, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+          const { data, error } = await userClient.from('erp_hr_workflow_definitions').update({ ...defData, updated_at: new Date().toISOString() }).eq('id', id).select().single();
           if (error) throw error;
           result = data;
         } else {
-          const { data, error } = await supabase.from('erp_hr_workflow_definitions').insert({ ...defData, created_by: user.id }).select().single();
+          const { data, error } = await userClient.from('erp_hr_workflow_definitions').insert({ ...defData, created_by: user.id }).select().single();
           if (error) throw error;
           defId = data.id;
           result = data;
         }
         if (steps && Array.isArray(steps) && defId) {
-          await supabase.from('erp_hr_workflow_steps').delete().eq('definition_id', defId);
+          await userClient.from('erp_hr_workflow_steps').delete().eq('definition_id', defId);
           if (steps.length > 0) {
             const stepsWithDef = steps.map((s: any, i: number) => ({ ...s, definition_id: defId, step_order: i + 1 }));
-            await supabase.from('erp_hr_workflow_steps').insert(stepsWithDef);
+            await userClient.from('erp_hr_workflow_steps').insert(stepsWithDef);
           }
         }
         break;
@@ -80,8 +72,8 @@ serve(async (req) => {
       case 'start_workflow': {
         const { company_id, process_type, entity_type, entity_id, entity_summary, priority } = params;
 
-        // V2-ES.2 Paso 2: Idempotency — check for existing active instance
-        const { data: existingInstances } = await supabase
+        // V2-ES.2 Paso 2: Idempotency
+        const { data: existingInstances } = await userClient
           .from('erp_hr_workflow_instances')
           .select('id, status')
           .eq('entity_type', entity_type)
@@ -95,8 +87,7 @@ serve(async (req) => {
           break;
         }
 
-        // Find matching active definition
-        const { data: defs } = await supabase
+        const { data: defs } = await userClient
           .from('erp_hr_workflow_definitions')
           .select('*, erp_hr_workflow_steps(*)')
           .eq('company_id', company_id)
@@ -112,8 +103,7 @@ serve(async (req) => {
 
         const firstStep = steps[0];
 
-        // Create instance
-        const { data: instance, error: instErr } = await supabase
+        const { data: instance, error: instErr } = await userClient
           .from('erp_hr_workflow_instances')
           .insert({
             company_id, definition_id: def.id, entity_type, entity_id,
@@ -125,10 +115,9 @@ serve(async (req) => {
           .select().single();
         if (instErr) throw instErr;
 
-        // Create SLA tracking
         const dueAt = new Date(Date.now() + (firstStep.sla_hours || 48) * 3600000);
         const escAt = firstStep.escalation_hours ? new Date(Date.now() + firstStep.escalation_hours * 3600000) : null;
-        await supabase.from('erp_hr_workflow_sla_tracking').insert({
+        await userClient.from('erp_hr_workflow_sla_tracking').insert({
           instance_id: instance.id, step_id: firstStep.id,
           assigned_role: firstStep.approver_role,
           assigned_to: firstStep.approver_user_id,
@@ -136,8 +125,7 @@ serve(async (req) => {
           escalation_at: escAt?.toISOString()
         });
 
-        // Log audit
-        await supabase.rpc('hr_log_audit', {
+        await userClient.rpc('hr_log_audit', {
           _company_id: company_id, _user_id: user.id, _action: 'START_WORKFLOW',
           _table_name: 'erp_hr_workflow_instances', _record_id: instance.id,
           _new_data: instance, _category: 'enterprise', _severity: 'info'
@@ -149,8 +137,8 @@ serve(async (req) => {
 
       // ===== APPROVE/REJECT STEP =====
       case 'decide_step': {
-        const { instance_id, decision, comment } = params; // decision: approved, rejected, returned
-        const { data: instance } = await supabase.from('erp_hr_workflow_instances').select('*, erp_hr_workflow_definitions(*, erp_hr_workflow_steps(*))').eq('id', instance_id).single();
+        const { instance_id, decision, comment } = params;
+        const { data: instance } = await userClient.from('erp_hr_workflow_instances').select('*, erp_hr_workflow_definitions(*, erp_hr_workflow_steps(*))').eq('id', instance_id).single();
         if (!instance) throw new Error('Instance not found');
         if (instance.status !== 'in_progress') throw new Error('Workflow is not in progress');
 
@@ -158,20 +146,18 @@ serve(async (req) => {
         const currentStep = steps.find((s: any) => s.id === instance.current_step_id);
         if (!currentStep) throw new Error('Current step not found');
 
-        // Record decision
-        const { data: dec } = await supabase.from('erp_hr_workflow_decisions').insert({
+        const { data: dec } = await userClient.from('erp_hr_workflow_decisions').insert({
           instance_id, step_id: currentStep.id, decision, decided_by: user.id,
           comment: comment || null,
           decision_time_seconds: Math.floor((Date.now() - new Date(instance.updated_at).getTime()) / 1000)
         }).select().single();
 
-        // Complete SLA tracking
-        await supabase.from('erp_hr_workflow_sla_tracking')
+        await userClient.from('erp_hr_workflow_sla_tracking')
           .update({ completed_at: new Date().toISOString() })
           .eq('instance_id', instance_id).eq('step_id', currentStep.id);
 
         if (decision === 'rejected' || decision === 'returned') {
-          await supabase.from('erp_hr_workflow_instances')
+          await userClient.from('erp_hr_workflow_instances')
             .update({ status: decision === 'rejected' ? 'rejected' : 'pending', completed_at: decision === 'rejected' ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
             .eq('id', instance_id);
         } else if (decision === 'approved') {
@@ -179,15 +165,13 @@ serve(async (req) => {
           const nextStep = steps.find((s: any) => s.step_order === nextStepOrder);
 
           if (nextStep) {
-            // Move to next step
-            await supabase.from('erp_hr_workflow_instances')
+            await userClient.from('erp_hr_workflow_instances')
               .update({ current_step_id: nextStep.id, current_step_order: nextStepOrder, updated_at: new Date().toISOString() })
               .eq('id', instance_id);
 
-            // Create SLA for next step
             const dueAt = new Date(Date.now() + (nextStep.sla_hours || 48) * 3600000);
             const escAt = nextStep.escalation_hours ? new Date(Date.now() + nextStep.escalation_hours * 3600000) : null;
-            await supabase.from('erp_hr_workflow_sla_tracking').insert({
+            await userClient.from('erp_hr_workflow_sla_tracking').insert({
               instance_id, step_id: nextStep.id,
               assigned_role: nextStep.approver_role,
               assigned_to: nextStep.approver_user_id,
@@ -195,21 +179,20 @@ serve(async (req) => {
               escalation_at: escAt?.toISOString()
             });
           } else {
-            // All steps completed
-            await supabase.from('erp_hr_workflow_instances')
+            await userClient.from('erp_hr_workflow_instances')
               .update({ status: 'approved', completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
               .eq('id', instance_id);
           }
         }
 
-        await supabase.rpc('hr_log_audit', {
+        await userClient.rpc('hr_log_audit', {
           _company_id: instance.company_id, _user_id: user.id,
           _action: decision.toUpperCase(), _table_name: 'erp_hr_workflow_instances',
           _record_id: instance_id, _category: 'enterprise',
           _severity: decision === 'rejected' ? 'warning' : 'info'
         });
 
-        // V2-ES.2 Paso 1: Reverse sync to hr_payroll_records when entity_type = 'payroll_record'
+        // V2-ES.2 Paso 1: Reverse sync to hr_payroll_records
         if (instance.entity_type === 'payroll_record' && instance.entity_id) {
           const isLastStep = decision === 'approved' && !steps.find((s: any) => s.step_order === currentStep.step_order + 1);
           const reviewStatusMap: Record<string, string> = {
@@ -220,7 +203,7 @@ serve(async (req) => {
           const reviewStatus = reviewStatusMap[decision] || 'reviewed';
 
           try {
-            await supabase.from('hr_payroll_records').update({
+            await userClient.from('hr_payroll_records').update({
               review_status: reviewStatus,
               reviewed_by: user.id,
               reviewed_at: new Date().toISOString(),
@@ -232,18 +215,7 @@ serve(async (req) => {
           }
         }
 
-        /**
-         * V2-ES.2 Paso 2: Reverse sync to hr_admin_requests when entity_type = 'admin_request'
-         * 
-         * DECISION → STATUS MAPPING:
-         * ┌─────────────┬──────────────────────────────────────────────┐
-         * │ Decision     │ hr_admin_requests.status                    │
-         * ├─────────────┼──────────────────────────────────────────────┤
-         * │ approved     │ 'approved' (if last step) / 'reviewing'    │
-         * │ rejected     │ 'rejected'                                 │
-         * │ returned     │ 'returned'                                 │
-         * └─────────────┴──────────────────────────────────────────────┘
-         */
+        // V2-ES.2 Paso 2: Reverse sync to hr_admin_requests
         if (instance.entity_type === 'admin_request' && instance.entity_id) {
           const isLastStep = decision === 'approved' && !steps.find((s: any) => s.step_order === currentStep.step_order + 1);
           const adminStatusMap: Record<string, string> = {
@@ -264,12 +236,11 @@ serve(async (req) => {
               adminUpdates.resolution = comment || `Decisión workflow: ${decision}`;
             }
 
-            await supabase.from('hr_admin_requests')
+            await userClient.from('hr_admin_requests')
               .update(adminUpdates)
               .eq('id', instance.entity_id);
 
-            // Log activity in the admin request timeline
-            await supabase.from('hr_admin_request_activity').insert([{
+            await userClient.from('hr_admin_request_activity').insert([{
               request_id: instance.entity_id,
               action: `workflow_${decision}`,
               actor_id: user.id,
@@ -292,7 +263,7 @@ serve(async (req) => {
       // ===== DELEGATE =====
       case 'delegate': {
         const delegationData = params;
-        const { data, error } = await supabase.from('erp_hr_workflow_delegations')
+        const { data, error } = await userClient.from('erp_hr_workflow_delegations')
           .insert({ ...delegationData, delegator_user_id: user.id }).select().single();
         if (error) throw error;
         result = data;
@@ -302,7 +273,7 @@ serve(async (req) => {
       // ===== GET INBOX =====
       case 'get_inbox': {
         const { company_id, status_filter } = params;
-        let query = supabase
+        let query = userClient
           .from('erp_hr_workflow_instances')
           .select(`
             *,
@@ -328,7 +299,7 @@ serve(async (req) => {
       // ===== GET SLA STATUS =====
       case 'get_sla_status': {
         const { company_id } = params;
-        const { data: slaData, error } = await supabase
+        const { data: slaData, error } = await userClient
           .from('erp_hr_workflow_sla_tracking')
           .select(`
             *,
@@ -340,7 +311,6 @@ serve(async (req) => {
           .order('due_at');
         if (error) throw error;
 
-        // Compute breaches
         const now = new Date();
         const withStatus = (slaData || []).map((s: any) => ({
           ...s,
@@ -357,11 +327,11 @@ serve(async (req) => {
       case 'get_workflow_stats': {
         const { company_id } = params;
         const [total, pending, approved, rejected, breached] = await Promise.all([
-          supabase.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
-          supabase.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'in_progress'),
-          supabase.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'approved'),
-          supabase.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'rejected'),
-          supabase.from('erp_hr_workflow_sla_tracking').select('id', { count: 'exact', head: true }).eq('breached', true),
+          userClient.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
+          userClient.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'in_progress'),
+          userClient.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'approved'),
+          userClient.from('erp_hr_workflow_instances').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'rejected'),
+          userClient.from('erp_hr_workflow_sla_tracking').select('id', { count: 'exact', head: true }).eq('breached', true),
         ]);
         result = {
           total: total.count || 0,
@@ -455,7 +425,6 @@ serve(async (req) => {
               { name: 'Aprobación Responsable RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, escalation_hours: 72, escalation_to_role: 'HR_DIRECTOR', comments_required: true, delegation_enabled: true },
             ]
           },
-          // V2-ES.2 Paso 2: Admin Request workflow definitions
           {
             company_id, name: 'Alta de Empleado (Admin)', process_type: 'admin_employee_registration',
             description: 'Aprobación de solicitud de alta de nuevo empleado desde portal administrativo',
@@ -571,12 +540,12 @@ serve(async (req) => {
         let totalSteps = 0;
         for (const wf of workflows) {
           const { steps, ...defData } = wf;
-          const { data: def, error } = await supabase.from('erp_hr_workflow_definitions').insert(defData).select().single();
+          const { data: def, error } = await userClient.from('erp_hr_workflow_definitions').insert(defData).select().single();
           if (error) { console.error('Seed def error:', error); continue; }
           totalDefs++;
           if (steps.length > 0 && def) {
             const stepsWithDef = steps.map((s: any, i: number) => ({ ...s, definition_id: def.id, step_order: i + 1 }));
-            const { error: stepErr } = await supabase.from('erp_hr_workflow_steps').insert(stepsWithDef);
+            const { error: stepErr } = await userClient.from('erp_hr_workflow_steps').insert(stepsWithDef);
             if (!stepErr) totalSteps += steps.length;
           }
         }
