@@ -28,7 +28,8 @@ serve(async (req) => {
         headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
-    const { userClient, adminClient } = authResult;
+    // S6.2A: adminClient removed — all data ops now use userClient (RLS-protected)
+    const { userClient } = authResult;
 
     // ─── START CYCLE ────────────────────────────────────────
     if (action === 'start_cycle') {
