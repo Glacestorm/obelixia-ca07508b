@@ -5,12 +5,14 @@
  * Verifica salarios mínimos, aplica conceptos obligatorios, calcula cotizaciones SS/IRPF,
  * y detecta incumplimientos para validación por IA y Agente Jurídico.
  * 
+ * S6.3B: Migrated to validateTenantAccess + userClient. adminClient: 0.
+ * 
  * @module erp-hr-payroll-recalculation
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 // ============ TIPOS ============
 
@@ -82,25 +84,18 @@ interface RecalculationResult {
 // ============ CONSTANTES SS 2026 ============
 
 const SS_RATES_2026 = {
-  // Contingencias Comunes
   cc_employer: 0.2360,
   cc_employee: 0.0470,
-  // Desempleo (contrato indefinido)
   unemployment_employer_indefinite: 0.0550,
   unemployment_employee_indefinite: 0.0155,
-  // Desempleo (contrato temporal)
   unemployment_employer_temporary: 0.0690,
   unemployment_employee_temporary: 0.0160,
-  // FOGASA
   fogasa: 0.0020,
-  // Formación Profesional
   fp_employer: 0.0060,
   fp_employee: 0.0010,
-  // MEI (Mecanismo de Equidad Intergeneracional)
   mei_employer: 0.0058,
   mei_employee: 0.0012,
-  // Bases mínima y máxima
-  base_min_monthly: 1260.00, // SMI 2026 estimado
+  base_min_monthly: 1260.00,
   base_max_monthly: 4720.50,
 };
 
@@ -160,7 +155,6 @@ function calculateSSContributions(
   contractType: string,
   extraPaymentsProrated: boolean
 ): { employer: number; employee: number } {
-  // Ajustar base si las pagas están prorrateadas
   const base = Math.max(
     SS_RATES_2026.base_min_monthly,
     Math.min(grossSalary, SS_RATES_2026.base_max_monthly)
@@ -169,7 +163,6 @@ function calculateSSContributions(
   const isTemporary = contractType?.toLowerCase().includes('temporal') || 
                       contractType?.toLowerCase().includes('temporary');
   
-  // Calcular cotizaciones empresa
   const employer = base * (
     SS_RATES_2026.cc_employer +
     (isTemporary ? SS_RATES_2026.unemployment_employer_temporary : SS_RATES_2026.unemployment_employer_indefinite) +
@@ -178,7 +171,6 @@ function calculateSSContributions(
     SS_RATES_2026.mei_employer
   );
   
-  // Calcular cotizaciones empleado
   const employee = base * (
     SS_RATES_2026.cc_employee +
     (isTemporary ? SS_RATES_2026.unemployment_employee_temporary : SS_RATES_2026.unemployment_employee_indefinite) +
@@ -196,7 +188,6 @@ function estimateIRPF(
   annualGross: number,
   personalSituation: Record<string, unknown> | null
 ): number {
-  // Tabla IRPF simplificada 2026
   const brackets = [
     { limit: 12450, rate: 0.19 },
     { limit: 20200, rate: 0.24 },
@@ -206,7 +197,6 @@ function estimateIRPF(
     { limit: Infinity, rate: 0.47 },
   ];
   
-  // Mínimo personal (simplificado)
   let minPersonal = 5550;
   const situation = personalSituation as {
     children?: number;
@@ -236,8 +226,7 @@ function estimateIRPF(
     prevLimit = bracket.limit;
   }
   
-  // Devolver tipo mensual
-  return Math.round((tax / annualGross) * 10000) / 100; // Porcentaje con 2 decimales
+  return Math.round((tax / annualGross) * 10000) / 100;
 }
 
 function detectComplianceIssues(
@@ -248,7 +237,6 @@ function detectComplianceIssues(
 ): ComplianceIssue[] {
   const issues: ComplianceIssue[] = [];
   
-  // 1. Verificar salario mínimo por categoría
   const salaryTables = agreement.salary_tables as Record<string, { base_salary: number }> | null;
   const category = employee.professional_category as string;
   const minSalaryCategory = salaryTables?.[category]?.base_salary || SS_RATES_2026.base_min_monthly;
@@ -264,7 +252,6 @@ function detectComplianceIssues(
     });
   }
   
-  // 2. Verificar plus de antigüedad
   if (recalculated.seniority_bonus > 0 && original.seniority_bonus === 0) {
     issues.push({
       code: 'SENIORITY_NOT_APPLIED',
@@ -276,7 +263,6 @@ function detectComplianceIssues(
     });
   }
   
-  // 3. Verificar plus de convenio
   if (recalculated.agreement_bonus > 0 && original.agreement_bonus === 0) {
     issues.push({
       code: 'AGREEMENT_BONUS_MISSING',
@@ -288,9 +274,8 @@ function detectComplianceIssues(
     });
   }
   
-  // 4. Verificar cotizaciones SS
   const ssDiff = Math.abs(original.ss_employee - recalculated.ss_employee);
-  if (ssDiff > 1) { // Tolerancia de 1€
+  if (ssDiff > 1) {
     issues.push({
       code: 'SS_CONTRIBUTION_INCORRECT',
       severity: 'high',
@@ -301,9 +286,8 @@ function detectComplianceIssues(
     });
   }
   
-  // 5. Verificar IRPF desactualizado
   const irpfDiff = Math.abs(original.irpf - recalculated.irpf);
-  if (irpfDiff > 5) { // Tolerancia de 5€
+  if (irpfDiff > 5) {
     issues.push({
       code: 'IRPF_OUTDATED',
       severity: 'low',
@@ -333,49 +317,18 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userId = claimsData.claims.sub;
     const request: RecalculationRequest = await req.json();
     const { action, company_id, period } = request;
 
-    // S2.1: Tenant isolation
-    if (company_id) {
-      const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-      const { data: membership } = await adminClient
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // S6.3B: Standard auth gate
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+    const { userId, userClient } = authResult;
 
     console.log(`[erp-hr-payroll-recalculation] Action: ${action}, Company: ${company_id}, Period: ${period}`);
 
@@ -388,8 +341,7 @@ serve(async (req) => {
           throw new Error('employee_id is required');
         }
 
-        // 1. Obtener datos del empleado
-        const { data: employee, error: empError } = await supabase
+        const { data: employee, error: empError } = await userClient
           .from('erp_hr_employees')
           .select(`
             id, full_name, hire_date, professional_category,
@@ -404,8 +356,7 @@ serve(async (req) => {
           throw new Error(`Employee not found: ${empError?.message}`);
         }
 
-        // 2. Obtener contrato activo con convenio
-        const { data: contract, error: contractError } = await supabase
+        const { data: contract, error: contractError } = await userClient
           .from('erp_hr_contracts')
           .select(`
             id, contract_type, start_date, collective_agreement_id,
@@ -422,22 +373,19 @@ serve(async (req) => {
           throw new Error(`Active contract not found: ${contractError?.message}`);
         }
 
-        // Handle the agreement - it could be an array or single object from the join
         const agreementData = contract.erp_hr_collective_agreements;
         const agreement = (Array.isArray(agreementData) ? agreementData[0] : agreementData) as Record<string, unknown> | null;
         if (!agreement) {
           throw new Error('No collective agreement assigned to contract');
         }
 
-        // 3. Obtener nómina actual del período
-        const { data: currentPayroll } = await supabase
+        const { data: currentPayroll } = await userClient
           .from('erp_hr_payroll_entries')
           .select('*')
           .eq('employee_id', employee_id)
           .eq('period', period)
           .single();
 
-        // 4. Calcular valores originales (de la nómina actual o del empleado)
         const originalValues: SalaryBreakdown = {
           base_salary: currentPayroll?.base_salary || employee.base_salary || 0,
           seniority_bonus: currentPayroll?.seniority_bonus || 0,
@@ -455,7 +403,6 @@ serve(async (req) => {
           total_cost: currentPayroll?.total_cost || 0,
         };
 
-        // 5. Recalcular según convenio
         const salaryTables = agreement.salary_tables as Record<string, { base_salary: number }> | null;
         const category = employee.professional_category as string;
         const minBaseSalary = salaryTables?.[category]?.base_salary || employee.base_salary;
@@ -466,7 +413,6 @@ serve(async (req) => {
           agreement.seniority_rules as Record<string, unknown>
         );
         
-        // Plus de convenio y otros conceptos obligatorios
         const otherConcepts = agreement.other_concepts as Record<string, { amount?: number; mandatory?: boolean }> | null;
         let agreementBonus = 0;
         let transportBonus = 0;
@@ -487,14 +433,12 @@ serve(async (req) => {
         const grossSalary = minBaseSalary + seniorityBonus + agreementBonus + 
                           transportBonus + hazardBonus + originalValues.night_shift_bonus;
         
-        // Cotizaciones SS
         const ssContributions = calculateSSContributions(
           grossSalary,
           contract.contract_type,
-          true // Pagas prorrateadas
+          true
         );
         
-        // IRPF
         const extraPayments = (agreement.extra_payments as number) || 14;
         const annualGross = grossSalary * extraPayments;
         const irpfRate = estimateIRPF(annualGross, employee.personal_irpf_data as Record<string, unknown>);
@@ -520,7 +464,6 @@ serve(async (req) => {
           total_cost: totalCost,
         };
 
-        // 6. Calcular diferencias
         const differences = [];
         const concepts = Object.keys(originalValues) as (keyof SalaryBreakdown)[];
         for (const concept of concepts) {
@@ -536,7 +479,6 @@ serve(async (req) => {
           }
         }
 
-        // 7. Detectar incumplimientos
         const complianceIssues = detectComplianceIssues(
           originalValues,
           recalculatedValues,
@@ -547,8 +489,7 @@ serve(async (req) => {
         const riskLevel = calculateRiskLevel(complianceIssues);
         const requiresLegalReview = riskLevel === 'high' || riskLevel === 'medium';
 
-        // 8. Guardar recálculo
-        const { data: savedRecalc, error: saveError } = await supabase
+        const { data: savedRecalc, error: saveError } = await userClient
           .from('erp_hr_payroll_recalculations')
           .insert({
             payroll_id: currentPayroll?.id,
@@ -600,32 +541,29 @@ serve(async (req) => {
       case 'recalculate_batch': {
         const { employee_ids } = request;
         
-        // Obtener empleados activos si no se especifican IDs
         let targetEmployees: string[] = employee_ids || [];
         
         if (!targetEmployees.length) {
-          const { data: employees } = await supabase
+          const { data: employees } = await userClient
             .from('erp_hr_employees')
             .select('id')
             .eq('company_id', company_id)
             .eq('is_active', true)
-            .limit(50); // Límite de batch
+            .limit(50);
           
           targetEmployees = employees?.map(e => e.id) || [];
         }
 
-        // Procesar en paralelo (máximo 10 simultáneos)
         const results: RecalculationResult[] = [];
         const batchSize = 10;
         
         for (let i = 0; i < targetEmployees.length; i += batchSize) {
           const batch = targetEmployees.slice(i, i + batchSize);
           
-          // Hacer llamadas recursivas a esta misma función
           const batchResults = await Promise.all(
             batch.map(async (empId) => {
               try {
-                const { data } = await supabase.functions.invoke('erp-hr-payroll-recalculation', {
+                const { data } = await userClient.functions.invoke('erp-hr-payroll-recalculation', {
                   body: {
                     action: 'recalculate_single',
                     employee_id: empId,
@@ -644,7 +582,6 @@ serve(async (req) => {
           results.push(...batchResults.filter(Boolean));
         }
 
-        // Resumen
         const summary = {
           total_processed: results.length,
           with_issues: results.filter(r => r.compliance_issues.length > 0).length,
@@ -664,7 +601,7 @@ serve(async (req) => {
       }
 
       case 'get_agreement_concepts': {
-        const { data: concepts } = await supabase
+        const { data: concepts } = await userClient
           .from('erp_hr_agreement_salary_concepts')
           .select('*')
           .eq('is_active', true)
@@ -679,8 +616,7 @@ serve(async (req) => {
       case 'request_ai_validation': {
         const { recalculation_id } = request;
         
-        // Obtener recálculo
-        const { data: recalc } = await supabase
+        const { data: recalc } = await userClient
           .from('erp_hr_payroll_recalculations')
           .select('*')
           .eq('id', recalculation_id)
@@ -690,8 +626,7 @@ serve(async (req) => {
           throw new Error('Recalculation not found');
         }
 
-        // Llamar al agente HR para validación
-        const { data: aiValidation, error: aiError } = await supabase.functions.invoke('erp-hr-ai-agent', {
+        const { data: aiValidation, error: aiError } = await userClient.functions.invoke('erp-hr-ai-agent', {
           body: {
             action: 'validate_payroll_recalculation',
             recalculation: recalc,
@@ -699,8 +634,7 @@ serve(async (req) => {
           }
         });
 
-        // Actualizar con resultado de IA
-        await supabase
+        await userClient
           .from('erp_hr_payroll_recalculations')
           .update({
             ai_validation: aiValidation?.data || { error: aiError?.message },
@@ -717,8 +651,7 @@ serve(async (req) => {
       case 'request_legal_validation': {
         const { recalculation_id } = request;
         
-        // Obtener recálculo con datos del empleado y convenio
-        const { data: recalc } = await supabase
+        const { data: recalc } = await userClient
           .from('erp_hr_payroll_recalculations')
           .select(`
             *,
@@ -733,8 +666,7 @@ serve(async (req) => {
           throw new Error('Recalculation not found');
         }
 
-        // Llamar al agente jurídico para validación
-        const { data: legalValidation, error: legalError } = await supabase.functions.invoke('legal-ai-advisor', {
+        const { data: legalValidation, error: legalError } = await userClient.functions.invoke('legal-ai-advisor', {
           body: {
             action: 'validate_action',
             validation_type: 'payroll_recalculation',
@@ -746,8 +678,7 @@ serve(async (req) => {
           }
         });
 
-        // Actualizar con resultado legal
-        await supabase
+        await userClient
           .from('erp_hr_payroll_recalculations')
           .update({
             legal_validation: legalValidation?.data || { error: legalError?.message },
@@ -765,7 +696,7 @@ serve(async (req) => {
       case 'approve_recalculation': {
         const { recalculation_id, notes } = request;
 
-        await supabase
+        await userClient
           .from('erp_hr_payroll_recalculations')
           .update({
             hr_approval: {
@@ -790,7 +721,7 @@ serve(async (req) => {
       case 'reject_recalculation': {
         const { recalculation_id, notes } = request;
 
-        await supabase
+        await userClient
           .from('erp_hr_payroll_recalculations')
           .update({
             hr_approval: {

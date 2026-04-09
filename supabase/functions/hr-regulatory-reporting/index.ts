@@ -1,98 +1,26 @@
+/**
+ * Edge Function: hr-regulatory-reporting
+ * Regulatory report generation with AI content and evidence collection.
+ *
+ * S6.3B: Migrated to validateTenantAccess + userClient. adminClient: 0.
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+
 const REGULATORY_TEMPLATES = [
-  {
-    template_key: 'reg_equality_plan',
-    template_name: 'Plan de Igualdad',
-    regulatory_framework: 'equality_plan',
-    legal_basis: ['RD 901/2020', 'Ley Orgánica 3/2007', 'RD 902/2020'],
-    sections: ['executive_summary', 'legal_framework', 'workforce_diagnosis', 'gender_pay_gap', 'job_classification', 'recruitment_analysis', 'training_access', 'promotion_equality', 'work_life_balance', 'prevention_harassment', 'action_plan', 'monitoring_indicators'],
-    kpi_definitions: ['gender_ratio', 'pay_gap_percentage', 'promotion_gap', 'training_hours_gap', 'part_time_gender_ratio', 'management_gender_ratio'],
-    target_module: 'fairness',
-  },
-  {
-    template_key: 'reg_salary_audit',
-    template_name: 'Auditoría Retributiva',
-    regulatory_framework: 'salary_audit',
-    legal_basis: ['RD 902/2020', 'Art. 28.2 ET'],
-    sections: ['executive_summary', 'legal_framework', 'salary_system_evaluation', 'job_valuation', 'pay_gap_analysis_by_category', 'pay_gap_analysis_by_level', 'base_salary_comparison', 'complements_analysis', 'variable_pay_analysis', 'risk_findings', 'action_plan', 'monitoring'],
-    kpi_definitions: ['overall_pay_gap', 'base_salary_gap', 'total_compensation_gap', 'gap_by_category', 'gap_by_level', 'affected_employees'],
-    target_module: 'fairness',
-  },
-  {
-    template_key: 'reg_pay_gap_report',
-    template_name: 'Informe de Brecha Salarial',
-    regulatory_framework: 'pay_gap',
-    legal_basis: ['RD 902/2020', 'Directiva (UE) 2023/970'],
-    sections: ['executive_summary', 'methodology', 'overall_gap', 'gap_by_department', 'gap_by_role', 'gap_by_seniority', 'intersectional_analysis', 'trend_comparison', 'benchmarks', 'recommendations'],
-    kpi_definitions: ['mean_pay_gap', 'median_pay_gap', 'gap_by_quartile', 'bonus_gap'],
-    target_module: 'fairness',
-  },
-  {
-    template_key: 'reg_gdpr_lopdgdd',
-    template_name: 'GDPR / LOPDGDD Compliance Report',
-    regulatory_framework: 'gdpr_lopdgdd',
-    legal_basis: ['RGPD (UE) 2016/679', 'LOPDGDD 3/2018'],
-    sections: ['executive_summary', 'legal_framework', 'data_inventory', 'lawful_basis', 'data_protection_measures', 'access_controls', 'data_masking_coverage', 'consent_management', 'data_breach_procedures', 'dpo_designation', 'international_transfers', 'data_subject_rights', 'findings', 'action_plan'],
-    kpi_definitions: ['data_masking_coverage', 'access_log_events', 'sensitive_fields_protected', 'consent_coverage'],
-    target_module: 'security',
-  },
-  {
-    template_key: 'reg_dpia',
-    template_name: 'DPIA — Evaluación de Impacto',
-    regulatory_framework: 'dpia',
-    legal_basis: ['Art. 35 RGPD', 'LOPDGDD'],
-    sections: ['executive_summary', 'processing_description', 'necessity_assessment', 'risk_identification', 'risk_evaluation', 'ai_systems_impact', 'mitigation_measures', 'residual_risk', 'dpo_opinion', 'monitoring_plan'],
-    kpi_definitions: ['risk_score', 'high_risk_processes', 'mitigated_risks', 'residual_risk_level'],
-    target_module: 'security',
-  },
-  {
-    template_key: 'reg_eu_ai_act',
-    template_name: 'EU AI Act — Conformity Summary',
-    regulatory_framework: 'eu_ai_act',
-    legal_basis: ['Reglamento (UE) 2024/1689'],
-    sections: ['executive_summary', 'legal_framework', 'ai_systems_inventory', 'risk_classification', 'high_risk_assessment', 'transparency_obligations', 'human_oversight', 'data_governance', 'bias_audits', 'technical_documentation', 'conformity_declaration', 'monitoring_plan'],
-    kpi_definitions: ['ai_models_count', 'high_risk_models', 'bias_alerts', 'compliance_score', 'human_oversight_coverage'],
-    target_module: 'ai_governance',
-  },
-  {
-    template_key: 'reg_security_sod',
-    template_name: 'Informe de Security & SoD',
-    regulatory_framework: 'security_sod',
-    legal_basis: ['ISO 27001', 'SOX', 'RGPD Art. 32'],
-    sections: ['executive_summary', 'security_posture', 'access_control_review', 'sod_matrix', 'sod_violations', 'data_masking_status', 'privileged_access', 'audit_trail_review', 'incident_summary', 'recommendations'],
-    kpi_definitions: ['sod_rules_count', 'sod_violations', 'masking_coverage', 'access_events', 'privileged_users'],
-    target_module: 'security',
-  },
-  {
-    template_key: 'reg_labor_compliance',
-    template_name: 'Informe de Compliance Laboral',
-    regulatory_framework: 'labor_compliance',
-    legal_basis: ['ET', 'LPRL 31/1995', 'LISOS'],
-    sections: ['executive_summary', 'legal_framework', 'frameworks_status', 'checklist_completion', 'audit_findings', 'critical_gaps', 'remediation_status', 'training_compliance', 'health_safety', 'working_time', 'recommendations'],
-    kpi_definitions: ['compliance_score', 'frameworks_count', 'critical_findings', 'overdue_items', 'remediation_rate'],
-    target_module: 'compliance',
-  },
-  {
-    template_key: 'reg_cnae_sector',
-    template_name: 'Informe Sectorial CNAE',
-    regulatory_framework: 'cnae_sector',
-    legal_basis: ['Normativa sectorial aplicable'],
-    sections: ['executive_summary', 'sector_profile', 'regulatory_obligations', 'sector_benchmarks', 'risk_map', 'compliance_gaps', 'market_trends', 'recommendations'],
-    kpi_definitions: ['sector_risk_score', 'obligations_count', 'compliance_gaps', 'benchmark_position'],
-    target_module: 'cnae',
-  },
-  {
-    template_key: 'reg_internal_audit',
-    template_name: 'Auditoría Interna HR Premium',
-    regulatory_framework: 'internal_audit',
-    legal_basis: ['Política interna', 'ISO 19011'],
-    sections: ['executive_summary', 'audit_scope', 'methodology', 'modules_reviewed', 'data_quality_assessment', 'security_review', 'compliance_review', 'fairness_review', 'ai_governance_review', 'findings_summary', 'risk_matrix', 'action_plan', 'follow_up'],
-    kpi_definitions: ['modules_audited', 'findings_count', 'critical_findings', 'data_coverage', 'overall_score'],
-    target_module: 'analytics',
-  },
+  { template_key: 'reg_equality_plan', template_name: 'Plan de Igualdad', regulatory_framework: 'equality_plan', legal_basis: ['RD 901/2020', 'Ley Orgánica 3/2007', 'RD 902/2020'], sections: ['executive_summary', 'legal_framework', 'workforce_diagnosis', 'gender_pay_gap', 'job_classification', 'recruitment_analysis', 'training_access', 'promotion_equality', 'work_life_balance', 'prevention_harassment', 'action_plan', 'monitoring_indicators'], kpi_definitions: ['gender_ratio', 'pay_gap_percentage', 'promotion_gap', 'training_hours_gap', 'part_time_gender_ratio', 'management_gender_ratio'], target_module: 'fairness' },
+  { template_key: 'reg_salary_audit', template_name: 'Auditoría Retributiva', regulatory_framework: 'salary_audit', legal_basis: ['RD 902/2020', 'Art. 28.2 ET'], sections: ['executive_summary', 'legal_framework', 'salary_system_evaluation', 'job_valuation', 'pay_gap_analysis_by_category', 'pay_gap_analysis_by_level', 'base_salary_comparison', 'complements_analysis', 'variable_pay_analysis', 'risk_findings', 'action_plan', 'monitoring'], kpi_definitions: ['overall_pay_gap', 'base_salary_gap', 'total_compensation_gap', 'gap_by_category', 'gap_by_level', 'affected_employees'], target_module: 'fairness' },
+  { template_key: 'reg_pay_gap_report', template_name: 'Informe de Brecha Salarial', regulatory_framework: 'pay_gap', legal_basis: ['RD 902/2020', 'Directiva (UE) 2023/970'], sections: ['executive_summary', 'methodology', 'overall_gap', 'gap_by_department', 'gap_by_role', 'gap_by_seniority', 'intersectional_analysis', 'trend_comparison', 'benchmarks', 'recommendations'], kpi_definitions: ['mean_pay_gap', 'median_pay_gap', 'gap_by_quartile', 'bonus_gap'], target_module: 'fairness' },
+  { template_key: 'reg_gdpr_lopdgdd', template_name: 'GDPR / LOPDGDD Compliance Report', regulatory_framework: 'gdpr_lopdgdd', legal_basis: ['RGPD (UE) 2016/679', 'LOPDGDD 3/2018'], sections: ['executive_summary', 'legal_framework', 'data_inventory', 'lawful_basis', 'data_protection_measures', 'access_controls', 'data_masking_coverage', 'consent_management', 'data_breach_procedures', 'dpo_designation', 'international_transfers', 'data_subject_rights', 'findings', 'action_plan'], kpi_definitions: ['data_masking_coverage', 'access_log_events', 'sensitive_fields_protected', 'consent_coverage'], target_module: 'security' },
+  { template_key: 'reg_dpia', template_name: 'DPIA — Evaluación de Impacto', regulatory_framework: 'dpia', legal_basis: ['Art. 35 RGPD', 'LOPDGDD'], sections: ['executive_summary', 'processing_description', 'necessity_assessment', 'risk_identification', 'risk_evaluation', 'ai_systems_impact', 'mitigation_measures', 'residual_risk', 'dpo_opinion', 'monitoring_plan'], kpi_definitions: ['risk_score', 'high_risk_processes', 'mitigated_risks', 'residual_risk_level'], target_module: 'security' },
+  { template_key: 'reg_eu_ai_act', template_name: 'EU AI Act — Conformity Summary', regulatory_framework: 'eu_ai_act', legal_basis: ['Reglamento (UE) 2024/1689'], sections: ['executive_summary', 'legal_framework', 'ai_systems_inventory', 'risk_classification', 'high_risk_assessment', 'transparency_obligations', 'human_oversight', 'data_governance', 'bias_audits', 'technical_documentation', 'conformity_declaration', 'monitoring_plan'], kpi_definitions: ['ai_models_count', 'high_risk_models', 'bias_alerts', 'compliance_score', 'human_oversight_coverage'], target_module: 'ai_governance' },
+  { template_key: 'reg_security_sod', template_name: 'Informe de Security & SoD', regulatory_framework: 'security_sod', legal_basis: ['ISO 27001', 'SOX', 'RGPD Art. 32'], sections: ['executive_summary', 'security_posture', 'access_control_review', 'sod_matrix', 'sod_violations', 'data_masking_status', 'privileged_access', 'audit_trail_review', 'incident_summary', 'recommendations'], kpi_definitions: ['sod_rules_count', 'sod_violations', 'masking_coverage', 'access_events', 'privileged_users'], target_module: 'security' },
+  { template_key: 'reg_labor_compliance', template_name: 'Informe de Compliance Laboral', regulatory_framework: 'labor_compliance', legal_basis: ['ET', 'LPRL 31/1995', 'LISOS'], sections: ['executive_summary', 'legal_framework', 'frameworks_status', 'checklist_completion', 'audit_findings', 'critical_gaps', 'remediation_status', 'training_compliance', 'health_safety', 'working_time', 'recommendations'], kpi_definitions: ['compliance_score', 'frameworks_count', 'critical_findings', 'overdue_items', 'remediation_rate'], target_module: 'compliance' },
+  { template_key: 'reg_cnae_sector', template_name: 'Informe Sectorial CNAE', regulatory_framework: 'cnae_sector', legal_basis: ['Normativa sectorial aplicable'], sections: ['executive_summary', 'sector_profile', 'regulatory_obligations', 'sector_benchmarks', 'risk_map', 'compliance_gaps', 'market_trends', 'recommendations'], kpi_definitions: ['sector_risk_score', 'obligations_count', 'compliance_gaps', 'benchmark_position'], target_module: 'cnae' },
+  { template_key: 'reg_internal_audit', template_name: 'Auditoría Interna HR Premium', regulatory_framework: 'internal_audit', legal_basis: ['Política interna', 'ISO 19011'], sections: ['executive_summary', 'audit_scope', 'methodology', 'modules_reviewed', 'data_quality_assessment', 'security_review', 'compliance_review', 'fairness_review', 'ai_governance_review', 'findings_summary', 'risk_matrix', 'action_plan', 'follow_up'], kpi_definitions: ['modules_audited', 'findings_count', 'critical_findings', 'data_coverage', 'overall_score'], target_module: 'analytics' },
 ];
 
 serve(async (req) => {
@@ -103,37 +31,22 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!).auth.getUser(token);
-    if (authError || !user) throw new Error('Unauthorized');
 
     const { action, company_id, params } = await req.json();
 
-    // S2.1: Tenant isolation
-    if (company_id) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // S6.3B: Standard auth gate
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+    const { userId, userClient: supabase } = authResult;
 
     // Rate limit expensive generation actions
     if (action === 'generate_regulatory_report') {
-      const burstResult = checkBurstLimit(company_id || user.id, { burstPerMinute: 5, perDay: 30, functionName: 'hr-regulatory-reporting' });
+      const burstResult = checkBurstLimit(company_id || userId, { burstPerMinute: 5, perDay: 30, functionName: 'hr-regulatory-reporting' });
       if (!burstResult.allowed) {
         return rateLimitResponse(burstResult, corsHeaders);
       }
@@ -182,7 +95,6 @@ serve(async (req) => {
         const startTime = Date.now();
         const { template_id, report_name, format, filters, period } = params || {};
 
-        // Get template
         const { data: template } = await supabase
           .from('erp_hr_report_templates')
           .select('*')
@@ -191,7 +103,6 @@ serve(async (req) => {
 
         if (!template) throw new Error('Template not found');
 
-        // Create report record
         const { data: report, error: insertErr } = await supabase
           .from('erp_hr_generated_reports')
           .insert({
@@ -204,7 +115,7 @@ serve(async (req) => {
             review_status: 'draft',
             regulatory_framework: template.regulatory_framework,
             report_category: 'regulatory',
-            generated_by: user.id,
+            generated_by: userId,
             filters_applied: { ...filters, period },
             modules_included: [template.target_module],
             data_sources: {},
@@ -214,7 +125,6 @@ serve(async (req) => {
 
         if (insertErr) throw insertErr;
 
-        // === Collect data from all relevant modules ===
         const dataSources: Record<string, { source: string; count: number; timestamp: string }> = {};
         const reportData: Record<string, unknown> = {};
         const evidenceItems: Array<{ evidence_type: string; source_module: string; title: string; data_snapshot: unknown; data_source_type: string }> = [];
@@ -229,11 +139,9 @@ serve(async (req) => {
         reportData.employees = { data: empData || [], count: empCount };
         dataSources.employees = { source: (empCount || 0) > 0 ? 'real' : 'demo', count: empCount || 0, timestamp: now };
 
-        // Module-specific data collection
         const targetModule = template.target_module;
 
         if (targetModule === 'fairness' || targetModule === 'analytics') {
-          // Fairness data
           const { data: eqData, count: eqCount } = await supabase
             .from('erp_hr_pay_equity_analyses')
             .select('*', { count: 'exact' })
@@ -249,7 +157,6 @@ serve(async (req) => {
             .eq('company_id', company_id);
           reportData.fairness_metrics = { data: metricsData || [], count: mCount };
 
-          // Payroll for salary analysis
           const { data: payrollData, count: pCount } = await supabase
             .from('erp_hr_payrolls')
             .select('employee_id, base_salary, gross_salary, net_salary, period_start, period_end', { count: 'exact' })
@@ -476,7 +383,7 @@ FORMATO DE RESPUESTA (JSON estricto):
         await supabase.from('erp_hr_regulatory_report_reviews').insert({
           report_id: report!.id,
           company_id,
-          reviewer_id: user.id,
+          reviewer_id: userId,
           action: 'generate',
           new_status: 'draft',
           comments: `Informe generado automáticamente. ${evidenceItems.length} evidencias. ${generationTime}ms.`,
@@ -510,15 +417,15 @@ FORMATO DE RESPUESTA (JSON estricto):
           .single();
 
         const updateFields: Record<string, unknown> = { review_status: new_status };
-        if (new_status === 'reviewed') { updateFields.reviewed_by = user.id; updateFields.reviewed_at = new Date().toISOString(); }
-        if (new_status === 'approved') { updateFields.approved_by = user.id; updateFields.approved_at = new Date().toISOString(); }
+        if (new_status === 'reviewed') { updateFields.reviewed_by = userId; updateFields.reviewed_at = new Date().toISOString(); }
+        if (new_status === 'approved') { updateFields.approved_by = userId; updateFields.approved_at = new Date().toISOString(); }
 
         await supabase.from('erp_hr_generated_reports').update(updateFields).eq('id', report_id).eq('company_id', company_id);
 
         await supabase.from('erp_hr_regulatory_report_reviews').insert({
           report_id,
           company_id,
-          reviewer_id: user.id,
+          reviewer_id: userId,
           action: new_status === 'approved' ? 'approve' : new_status === 'rejected' ? 'reject' : new_status === 'archived' ? 'archive' : 'review',
           previous_status: currentReport?.review_status || 'draft',
           new_status,

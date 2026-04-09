@@ -2,11 +2,13 @@
  * Edge Function: erp-hr-accounting-bridge
  * Genera asientos contables automáticos desde RRHH
  * Cumple PGC 2007 y normativa fiscal española
+ *
+ * S6.3B: Migrated to validateTenantAccess + userClient. adminClient: 0.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface PayrollData {
   id: string;
@@ -45,103 +47,66 @@ interface JournalEntryLine {
   description: string;
 }
 
-// Mapeo de cuentas PGC para nóminas
 const PGC_ACCOUNTS = {
-  // Gastos de personal (Grupo 64)
   SUELDOS: { code: '640', name: 'Sueldos y salarios' },
   INDEMNIZACIONES: { code: '641', name: 'Indemnizaciones' },
   SS_EMPRESA: { code: '642', name: 'Seguridad Social a cargo de la empresa' },
   OTROS_GASTOS_SOCIALES: { code: '649', name: 'Otros gastos sociales' },
-  
-  // Pasivos con empleados (Grupo 46)
   REMUNERACIONES_PENDIENTES: { code: '465', name: 'Remuneraciones pendientes de pago' },
-  
-  // Pasivos con Hacienda y SS (Grupo 47)
   HP_IRPF: { code: '4751', name: 'H.P. acreedora por retenciones practicadas' },
   ORGANISMOS_SS: { code: '476', name: 'Organismos de la Seguridad Social, acreedores' },
-  
-  // Tesorería (Grupo 57)
   BANCOS: { code: '572', name: 'Bancos c/c' },
-  
-  // Provisiones (Grupo 14)
   PROVISION_REESTRUCTURACION: { code: '1410', name: 'Provisión para reestructuraciones' },
-  
-  // Gastos excepcionales (Grupo 67)
   GASTOS_EXCEPCIONALES: { code: '678', name: 'Gastos excepcionales' },
 };
 
+// Need corsHeaders at module level for handler functions
+let _corsHeaders: Record<string, string> = {};
+
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
+  _corsHeaders = corsHeaders;
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { action, payload } = await req.json();
-
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub as string;
-
-    // Tenant isolation
     const companyId = payload?.company_id;
-    if (companyId) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+
+    // S6.3B: Standard auth gate
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+    const { userId, userClient } = authResult;
 
     console.log(`[erp-hr-accounting-bridge] Action: ${action}, User: ${userId}`);
 
     switch (action) {
       case 'generate_payroll_entry':
-        return await generatePayrollEntry(supabase, payload);
+        return await generatePayrollEntry(userClient, payload);
       
       case 'generate_settlement_entry':
-        return await generateSettlementEntry(supabase, payload);
+        return await generateSettlementEntry(userClient, payload);
       
       case 'generate_ss_contribution_entry':
-        return await generateSSContributionEntry(supabase, payload);
+        return await generateSSContributionEntry(userClient, payload);
       
       case 'generate_batch_payroll_entries':
-        return await generateBatchPayrollEntries(supabase, payload);
+        return await generateBatchPayrollEntries(userClient, payload);
       
       case 'reverse_entry':
-        return await reverseEntry(supabase, payload);
+        return await reverseEntry(userClient, payload);
       
       case 'validate_entry':
-        return await validateEntry(supabase, payload);
+        return await validateEntry(userClient, payload);
       
       case 'get_accounting_status':
-        return await getAccountingStatus(supabase, payload);
+        return await getAccountingStatus(userClient, payload);
       
       default:
         return new Response(
@@ -153,17 +118,11 @@ serve(async (req) => {
     console.error('[erp-hr-accounting-bridge] Error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
-/**
- * Genera asiento contable para una nómina individual
- * Asiento tipo:
- * DEBE: 640 Sueldos (bruto) + 642 SS Empresa
- * HABER: 4751 IRPF + 476 SS Total + 465 Neto a pagar
- */
 async function generatePayrollEntry(supabase: any, payload: {
   company_id: string;
   payroll: PayrollData;
@@ -172,13 +131,9 @@ async function generatePayrollEntry(supabase: any, payload: {
   auto_post?: boolean;
 }) {
   const { company_id, payroll, entry_date, journal_id, auto_post = false } = payload;
-  
-  // Calcular SS total (empresa + trabajador)
   const ss_total = payroll.ss_employee + payroll.ss_company;
   
-  // Construir líneas del asiento
   const lines: JournalEntryLine[] = [
-    // DEBE - Gastos de personal
     {
       account_code: PGC_ACCOUNTS.SUELDOS.code,
       account_name: PGC_ACCOUNTS.SUELDOS.name,
@@ -193,7 +148,6 @@ async function generatePayrollEntry(supabase: any, payload: {
       credit: 0,
       description: `SS empresa ${payroll.employee_name} - ${payroll.period}`
     },
-    // HABER - Retenciones y deudas
     {
       account_code: PGC_ACCOUNTS.HP_IRPF.code,
       account_name: PGC_ACCOUNTS.HP_IRPF.name,
@@ -217,7 +171,6 @@ async function generatePayrollEntry(supabase: any, payload: {
     }
   ];
 
-  // Validar partida doble
   const totalDebit = lines.reduce((sum, l) => sum + l.debit, 0);
   const totalCredit = lines.reduce((sum, l) => sum + l.credit, 0);
   
@@ -228,11 +181,10 @@ async function generatePayrollEntry(supabase: any, payload: {
         error: 'Asiento descuadrado',
         details: { totalDebit, totalCredit, difference: totalDebit - totalCredit }
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // Crear asiento en erp_journal_entries
   const entryData = {
     company_id,
     journal_id,
@@ -262,11 +214,10 @@ async function generatePayrollEntry(supabase: any, payload: {
     console.error('Error creating journal entry:', entryError);
     return new Response(
       JSON.stringify({ success: false, error: 'Internal server error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // Crear líneas del asiento
   const entryLines = lines.map((line, index) => ({
     entry_id: journalEntry.id,
     line_number: index + 1,
@@ -285,7 +236,6 @@ async function generatePayrollEntry(supabase: any, payload: {
     console.error('Error creating entry lines:', linesError);
   }
 
-  // Registrar en tabla de integración HR
   await supabase
     .from('erp_hr_journal_entries')
     .insert([{
@@ -298,7 +248,6 @@ async function generatePayrollEntry(supabase: any, payload: {
       validation_status: auto_post ? 'validated' : 'pending'
     }]);
 
-  // Log de integración
   await supabase
     .from('erp_hr_integration_log')
     .insert([{
@@ -323,14 +272,10 @@ async function generatePayrollEntry(supabase: any, payload: {
       lines_count: lines.length,
       status: journalEntry.status
     }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
 
-/**
- * Genera asiento contable para un finiquito
- * Varía según tipo de baja (voluntaria, objetivo, improcedente, ERE)
- */
 async function generateSettlementEntry(supabase: any, payload: {
   company_id: string;
   settlement: SettlementData;
@@ -339,10 +284,8 @@ async function generateSettlementEntry(supabase: any, payload: {
   auto_post?: boolean;
 }) {
   const { company_id, settlement, entry_date, journal_id, auto_post = false } = payload;
-  
   const lines: JournalEntryLine[] = [];
   
-  // Salario pendiente y vacaciones
   if (settlement.pending_salary > 0 || settlement.pending_vacation > 0) {
     const salaryAmount = settlement.pending_salary + settlement.pending_vacation;
     lines.push({
@@ -354,12 +297,10 @@ async function generateSettlementEntry(supabase: any, payload: {
     });
   }
   
-  // Indemnización según tipo de despido
   if (settlement.severance_amount > 0) {
     const accountCode = settlement.termination_type === 'unfair' 
       ? PGC_ACCOUNTS.GASTOS_EXCEPCIONALES.code 
       : PGC_ACCOUNTS.INDEMNIZACIONES.code;
-    
     const accountName = settlement.termination_type === 'unfair'
       ? PGC_ACCOUNTS.GASTOS_EXCEPCIONALES.name
       : PGC_ACCOUNTS.INDEMNIZACIONES.name;
@@ -373,7 +314,6 @@ async function generateSettlementEntry(supabase: any, payload: {
     });
   }
   
-  // Para ERE: Reversión de provisión si existe
   if (settlement.termination_type === 'ere') {
     lines.push({
       account_code: PGC_ACCOUNTS.PROVISION_REESTRUCTURACION.code,
@@ -382,8 +322,6 @@ async function generateSettlementEntry(supabase: any, payload: {
       credit: 0,
       description: `Aplicación provisión reestructuración - ${settlement.employee_name}`
     });
-    
-    // Contrapartida en indemnizaciones
     lines.push({
       account_code: PGC_ACCOUNTS.INDEMNIZACIONES.code,
       account_name: PGC_ACCOUNTS.INDEMNIZACIONES.name,
@@ -393,7 +331,6 @@ async function generateSettlementEntry(supabase: any, payload: {
     });
   }
   
-  // HABER - Retenciones
   if (settlement.irpf_amount > 0) {
     lines.push({
       account_code: PGC_ACCOUNTS.HP_IRPF.code,
@@ -414,7 +351,6 @@ async function generateSettlementEntry(supabase: any, payload: {
     });
   }
   
-  // Neto a pagar
   lines.push({
     account_code: PGC_ACCOUNTS.REMUNERACIONES_PENDIENTES.code,
     account_name: PGC_ACCOUNTS.REMUNERACIONES_PENDIENTES.name,
@@ -423,7 +359,6 @@ async function generateSettlementEntry(supabase: any, payload: {
     description: `Finiquito neto a pagar - ${settlement.employee_name}`
   });
 
-  // Validar partida doble
   const totalDebit = lines.reduce((sum, l) => sum + l.debit, 0);
   const totalCredit = lines.reduce((sum, l) => sum + l.credit, 0);
   
@@ -434,11 +369,10 @@ async function generateSettlementEntry(supabase: any, payload: {
         error: 'Asiento descuadrado',
         details: { totalDebit, totalCredit, difference: totalDebit - totalCredit }
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // Crear asiento
   const entryData = {
     company_id,
     journal_id,
@@ -467,11 +401,10 @@ async function generateSettlementEntry(supabase: any, payload: {
   if (entryError) {
     return new Response(
       JSON.stringify({ success: false, error: 'Internal server error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // Crear líneas
   const entryLines = lines.map((line, index) => ({
     entry_id: journalEntry.id,
     line_number: index + 1,
@@ -484,7 +417,6 @@ async function generateSettlementEntry(supabase: any, payload: {
 
   await supabase.from('erp_journal_entry_lines').insert(entryLines);
 
-  // Registrar integración
   await supabase.from('erp_hr_journal_entries').insert([{
     company_id,
     source_type: 'settlement',
@@ -502,13 +434,10 @@ async function generateSettlementEntry(supabase: any, payload: {
       total_debit: totalDebit,
       lines_count: lines.length
     }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
 
-/**
- * Genera asiento para cotizaciones SS del período
- */
 async function generateSSContributionEntry(supabase: any, payload: {
   company_id: string;
   period: string;
@@ -518,7 +447,6 @@ async function generateSSContributionEntry(supabase: any, payload: {
   journal_id?: string;
 }) {
   const { company_id, period, ss_company_total, ss_employee_total, entry_date, journal_id } = payload;
-  
   const ss_total = ss_company_total + ss_employee_total;
   
   const lines: JournalEntryLine[] = [
@@ -537,12 +465,6 @@ async function generateSSContributionEntry(supabase: any, payload: {
       description: `Deuda TGSS ${period}`
     }
   ];
-
-  // Si hay diferencia por cuota trabajador ya registrada en nóminas, ajustar
-  if (ss_employee_total > 0) {
-    // La cuota del trabajador ya se registró en las nóminas individuales
-    // Este asiento solo registra la parte empresa adicional si no se hizo antes
-  }
 
   const totalDebit = lines.reduce((sum, l) => sum + l.debit, 0);
   const totalCredit = lines.reduce((sum, l) => sum + l.credit, 0);
@@ -575,7 +497,7 @@ async function generateSSContributionEntry(supabase: any, payload: {
   if (error) {
     return new Response(
       JSON.stringify({ success: false, error: 'Internal server error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -597,13 +519,10 @@ async function generateSSContributionEntry(supabase: any, payload: {
       journal_entry_id: journalEntry.id,
       total_amount: ss_total
     }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
 
-/**
- * Genera asientos para múltiples nóminas del período
- */
 async function generateBatchPayrollEntries(supabase: any, payload: {
   company_id: string;
   period: string;
@@ -615,7 +534,6 @@ async function generateBatchPayrollEntries(supabase: any, payload: {
   const { company_id, period, payrolls, entry_date, journal_id, consolidate = true } = payload;
   
   if (consolidate) {
-    // Crear un único asiento consolidado
     const totals = payrolls.reduce((acc, p) => ({
       gross: acc.gross + p.gross_salary,
       net: acc.net + p.net_salary,
@@ -695,7 +613,7 @@ async function generateBatchPayrollEntries(supabase: any, payload: {
     if (error) {
       return new Response(
         JSON.stringify({ success: false, error: 'Internal server error' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -711,7 +629,6 @@ async function generateBatchPayrollEntries(supabase: any, payload: {
 
     await supabase.from('erp_journal_entry_lines').insert(entryLines);
 
-    // Registrar todos los payrolls vinculados
     const hrEntries = payrolls.map(p => ({
       company_id,
       source_type: 'payroll',
@@ -731,10 +648,9 @@ async function generateBatchPayrollEntries(supabase: any, payload: {
         payrolls_processed: payrolls.length,
         total_debit: totalDebit
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   } else {
-    // Crear asientos individuales
     const results = [];
     for (const payroll of payrolls) {
       const result = await generatePayrollEntry(supabase, {
@@ -752,14 +668,11 @@ async function generateBatchPayrollEntries(supabase: any, payload: {
         entries_created: results.filter(r => r.success).length,
         results
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 }
 
-/**
- * Revierte/anula un asiento contable
- */
 async function reverseEntry(supabase: any, payload: {
   company_id: string;
   journal_entry_id: string;
@@ -768,7 +681,6 @@ async function reverseEntry(supabase: any, payload: {
 }) {
   const { company_id, journal_entry_id, reversal_date, reason } = payload;
   
-  // Obtener asiento original
   const { data: originalEntry, error: fetchError } = await supabase
     .from('erp_journal_entries')
     .select('*, erp_journal_entry_lines(*)')
@@ -778,11 +690,10 @@ async function reverseEntry(supabase: any, payload: {
   if (fetchError || !originalEntry) {
     return new Response(
       JSON.stringify({ success: false, error: 'Asiento no encontrado' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // Crear asiento de reversión (intercambiar debe/haber)
   const reversalData = {
     company_id,
     journal_id: originalEntry.journal_id,
@@ -810,11 +721,10 @@ async function reverseEntry(supabase: any, payload: {
   if (createError) {
     return new Response(
       JSON.stringify({ success: false, error: 'Internal server error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // Crear líneas invertidas
   const reversalLines = originalEntry.erp_journal_entry_lines.map((line: any, index: number) => ({
     entry_id: reversalEntry.id,
     line_number: index + 1,
@@ -827,7 +737,6 @@ async function reverseEntry(supabase: any, payload: {
 
   await supabase.from('erp_journal_entry_lines').insert(reversalLines);
 
-  // Marcar original como anulado
   await supabase
     .from('erp_journal_entries')
     .update({ status: 'cancelled', metadata: { ...originalEntry.metadata, reversed_by: reversalEntry.id } })
@@ -839,13 +748,10 @@ async function reverseEntry(supabase: any, payload: {
       reversal_entry_id: reversalEntry.id,
       original_entry_id: journal_entry_id
     }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
 
-/**
- * Valida un asiento antes de contabilizar
- */
 async function validateEntry(supabase: any, payload: {
   journal_entry_id: string;
 }) {
@@ -860,13 +766,12 @@ async function validateEntry(supabase: any, payload: {
   if (error || !entry) {
     return new Response(
       JSON.stringify({ valid: false, error: 'Asiento no encontrado' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
   const issues: string[] = [];
   
-  // Validar partida doble
   const totalDebit = entry.erp_journal_entry_lines.reduce((sum: number, l: any) => sum + (l.debit_amount || 0), 0);
   const totalCredit = entry.erp_journal_entry_lines.reduce((sum: number, l: any) => sum + (l.credit_amount || 0), 0);
   
@@ -874,12 +779,10 @@ async function validateEntry(supabase: any, payload: {
     issues.push(`Asiento descuadrado: Debe ${totalDebit.toFixed(2)} ≠ Haber ${totalCredit.toFixed(2)}`);
   }
   
-  // Validar que hay líneas
   if (entry.erp_journal_entry_lines.length === 0) {
     issues.push('El asiento no tiene líneas');
   }
   
-  // Validar cuentas válidas
   for (const line of entry.erp_journal_entry_lines) {
     if (!line.account_code || line.account_code.length < 3) {
       issues.push(`Línea ${line.line_number}: Código de cuenta inválido`);
@@ -895,13 +798,10 @@ async function validateEntry(supabase: any, payload: {
       issues,
       totals: { debit: totalDebit, credit: totalCredit }
     }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
 
-/**
- * Obtiene estado de contabilización para elementos HR
- */
 async function getAccountingStatus(supabase: any, payload: {
   company_id: string;
   source_type: 'payroll' | 'settlement' | 'ss_contribution';
@@ -919,7 +819,7 @@ async function getAccountingStatus(supabase: any, payload: {
   if (error) {
     return new Response(
       JSON.stringify({ success: false, error: 'Internal server error' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -933,7 +833,6 @@ async function getAccountingStatus(supabase: any, payload: {
     };
   }
 
-  // Marcar los no contabilizados
   for (const id of source_ids) {
     if (!statusMap[id]) {
       statusMap[id] = { is_accounted: false };
@@ -942,6 +841,6 @@ async function getAccountingStatus(supabase: any, payload: {
 
   return new Response(
     JSON.stringify({ success: true, status: statusMap }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
