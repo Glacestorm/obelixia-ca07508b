@@ -1,11 +1,13 @@
 /**
  * Edge Function: erp-hr-industry-templates
  * Fase 9: Industry Cloud Templates - Verticalización por sector CNAE
+ * 
+ * S6.2B: Migrated to validateTenantAccess + userClient. adminClient eliminated.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface TemplateRequest {
   action: 'generate_template' | 'get_recommendations' | 'apply_template' | 'validate_compliance';
@@ -82,34 +84,10 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const { action, company_id, template_id, entity_type, entity_id, variable_values, params, context } = await req.json() as TemplateRequest;
 
@@ -119,16 +97,14 @@ serve(async (req) => {
       });
     }
 
-    // Tenant isolation
-    const { data: membership } = await adminClient
-      .from('erp_user_companies').select('id')
-      .eq('user_id', userId).eq('company_id', company_id)
-      .eq('is_active', true).maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // S6.2B: validateTenantAccess replaces manual auth + manual adminClient + manual membership check
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userClient } = authResult;
 
     console.log(`[erp-hr-industry-templates] Action: ${action}`);
 
@@ -351,7 +327,8 @@ FORMATO DE RESPUESTA (JSON estricto):
           throw new Error('template_id, entity_type and entity_id required');
         }
 
-        const { data: template, error: templateError } = await adminClient
+        // S6.2B: migrated from adminClient to userClient
+        const { data: template, error: templateError } = await userClient
           .from('erp_hr_industry_templates')
           .select('*')
           .eq('id', template_id)
@@ -377,7 +354,8 @@ FORMATO DE RESPUESTA (JSON estricto):
           processedContent = JSON.parse(processed);
         }
 
-        const { data: application, error: appError } = await adminClient
+        // S6.2B: migrated from adminClient to userClient
+        const { data: application, error: appError } = await userClient
           .from('erp_hr_template_applications')
           .insert([{
             template_id,
@@ -396,7 +374,8 @@ FORMATO DE RESPUESTA (JSON estricto):
           throw new Error('Error applying template');
         }
 
-        await adminClient
+        // S6.2B: migrated from adminClient to userClient
+        await userClient
           .from('erp_hr_industry_templates')
           .update({ 
             usage_count: (template.usage_count || 0) + 1,
@@ -416,7 +395,8 @@ FORMATO DE RESPUESTA (JSON estricto):
       case 'validate_compliance': {
         if (!template_id) throw new Error('template_id required');
 
-        const { data: template, error: templateError } = await adminClient
+        // S6.2B: migrated from adminClient to userClient
+        const { data: template, error: templateError } = await userClient
           .from('erp_hr_industry_templates')
           .select('*')
           .eq('id', template_id)
