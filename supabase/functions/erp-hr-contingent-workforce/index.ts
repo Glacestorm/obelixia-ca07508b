@@ -2,6 +2,10 @@
  * Edge Function: erp-hr-contingent-workforce
  * Fase 8: Análisis IA para gestión de fuerza laboral contingente
  * 
+ * Auth: validateTenantAccess() — S6.5A hardening
+ * Data ops: AI-only (zero DB reads/writes)
+ * company_id: Required in request body
+ * 
  * Funcionalidades:
  * - Análisis de riesgo de falso autónomo
  * - Evaluación de indicadores de laboralidad
@@ -9,11 +13,12 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface ComplianceRequest {
   action: 'analyze_compliance' | 'evaluate_contract' | 'generate_recommendations';
+  company_id: string;
   worker?: any;
   contracts?: any[];
   assignments?: any[];
@@ -30,35 +35,43 @@ serve(async (req) => {
   }
 
   try {
-    // === AUTH GATE ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    console.log(`[erp-hr-contingent-workforce] Authenticated user: ${claimsData.claims.sub}`);
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY no está configurada');
-    }
-
+    // === PARSE BODY FIRST (need company_id for auth) ===
+    const body = await req.json() as ComplianceRequest;
     const { 
       action, 
+      company_id,
       worker, 
       contracts, 
       assignments, 
       time_entries,
       check_type,
       contract_data
-    } = await req.json() as ComplianceRequest;
+    } = body;
+
+    // === VALIDATE company_id ===
+    if (!company_id || typeof company_id !== 'string') {
+      return new Response(JSON.stringify({ error: 'company_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // === AUTH GATE: validateTenantAccess ===
+    // Verifies JWT + active membership in erp_user_companies
+    // Returns adminClient/userClient but neither is used (AI-only function)
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    console.log(`[erp-hr-contingent-workforce] Authenticated user: ${authResult.userId}, company: ${authResult.companyId}`);
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY no está configurada');
+    }
 
     let systemPrompt = '';
     let userPrompt = '';
