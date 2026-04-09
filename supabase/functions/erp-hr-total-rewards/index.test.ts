@@ -3,7 +3,7 @@ import { assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert
 
 const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!;
-const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/hr-board-pack`;
+const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/erp-hr-total-rewards`;
 const VALID_COMPANY_ID = "e5ca7fee-8b19-4538-8ee5-1907199bf922";
 const FAKE_COMPANY_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -12,14 +12,17 @@ const FAKE_COMPANY_ID = "00000000-0000-0000-0000-000000000000";
 // =============================================
 
 // --- A1: No Authorization header → 401 ---
-Deno.test("hr-board-pack: rejects request without Authorization header → 401", async () => {
+Deno.test("erp-hr-total-rewards: rejects request without Authorization header → 401", async () => {
   const response = await fetch(FUNCTION_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "apikey": SUPABASE_ANON_KEY,
     },
-    body: JSON.stringify({ action: "list_templates", companyId: VALID_COMPANY_ID }),
+    body: JSON.stringify({
+      action: "compare_market",
+      company_id: VALID_COMPANY_ID,
+    }),
   });
 
   const body = await response.json();
@@ -27,7 +30,7 @@ Deno.test("hr-board-pack: rejects request without Authorization header → 401",
 });
 
 // --- A2: Invalid/malformed JWT → 401 ---
-Deno.test("hr-board-pack: rejects invalid JWT → 401", async () => {
+Deno.test("erp-hr-total-rewards: rejects invalid JWT → 401", async () => {
   const response = await fetch(FUNCTION_URL, {
     method: "POST",
     headers: {
@@ -35,16 +38,18 @@ Deno.test("hr-board-pack: rejects invalid JWT → 401", async () => {
       "Authorization": "Bearer invalid.jwt.token",
       "apikey": SUPABASE_ANON_KEY,
     },
-    body: JSON.stringify({ action: "list_templates", companyId: VALID_COMPANY_ID }),
+    body: JSON.stringify({
+      action: "compare_market",
+      company_id: VALID_COMPANY_ID,
+    }),
   });
 
   const body = await response.json();
   assertEquals(response.status, 401, `Expected 401, got ${response.status}: ${JSON.stringify(body)}`);
 });
 
-// --- A3: Expired-looking JWT → 401 ---
-Deno.test("hr-board-pack: rejects expired/fake JWT → 401", async () => {
-  // A structurally valid but expired JWT
+// --- A3: Expired/fake JWT → 401 ---
+Deno.test("erp-hr-total-rewards: rejects expired/fake JWT → 401", async () => {
   const expiredJwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNjAwMDAwMDAwfQ.signature";
   const response = await fetch(FUNCTION_URL, {
     method: "POST",
@@ -53,118 +58,18 @@ Deno.test("hr-board-pack: rejects expired/fake JWT → 401", async () => {
       "Authorization": `Bearer ${expiredJwt}`,
       "apikey": SUPABASE_ANON_KEY,
     },
-    body: JSON.stringify({ action: "list_templates", companyId: VALID_COMPANY_ID }),
+    body: JSON.stringify({
+      action: "compare_market",
+      company_id: VALID_COMPANY_ID,
+    }),
   });
 
   const body = await response.json();
   assertEquals(response.status, 401, `Expected 401, got ${response.status}: ${JSON.stringify(body)}`);
 });
 
-// --- A4: Valid structure JWT + non-existent company → 403 ---
-Deno.test("hr-board-pack: rejects non-existent company_id → 403 or auth error", async () => {
-  const response = await fetch(FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      "apikey": SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: "list_templates", companyId: FAKE_COMPANY_ID }),
-  });
-
-  const body = await response.json();
-  // Should be 401 (anon key not a real user) or 403 (no membership)
-  const isRejected = response.status === 401 || response.status === 403;
-  assertEquals(isRejected, true, `Expected 401 or 403, got ${response.status}: ${JSON.stringify(body)}`);
-});
-
-// --- A5: CORS preflight → 200 with correct headers ---
-Deno.test("hr-board-pack: CORS preflight returns 200 with required headers", async () => {
-  const response = await fetch(FUNCTION_URL, {
-    method: "OPTIONS",
-  });
-
-  assertEquals(response.status, 200);
-  const headers = response.headers;
-  const allowOrigin = headers.get("access-control-allow-origin");
-  const allowHeaders = headers.get("access-control-allow-headers");
-  assertExists(allowOrigin, "Missing Access-Control-Allow-Origin");
-  assertExists(allowHeaders, "Missing Access-Control-Allow-Headers");
-  await response.text();
-});
-
-// --- A6: Error responses include CORS headers ---
-Deno.test("hr-board-pack: error responses include CORS headers", async () => {
-  const response = await fetch(FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer invalid.jwt.token",
-      "apikey": SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: "list_templates", companyId: VALID_COMPANY_ID }),
-  });
-
-  const allowOrigin = response.headers.get("access-control-allow-origin");
-  assertExists(allowOrigin, "Error responses must include CORS headers");
-  await response.json();
-});
-
-// --- A7: Response content-type is JSON ---
-Deno.test("hr-board-pack: responses have application/json content-type", async () => {
-  const response = await fetch(FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer bad",
-      "apikey": SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: "list_templates", companyId: VALID_COMPANY_ID }),
-  });
-
-  const ct = response.headers.get("content-type");
-  assertEquals(ct?.includes("application/json"), true, `Expected JSON content-type, got: ${ct}`);
-  await response.json();
-});
-
-// =============================================
-// EXISTING FUNCTIONAL TESTS (preserved)
-// =============================================
-
-Deno.test("hr-board-pack: rejects missing company_id with 400", async () => {
-  const response = await fetch(FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      "apikey": SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: "list_templates" }),
-  });
-
-  const body = await response.json();
-  assertEquals(response.status, 400);
-  assertEquals(body.success, false);
-  assertEquals(body.error, "company_id is required");
-});
-
-Deno.test("hr-board-pack: rejects demo-company-id with 400", async () => {
-  const response = await fetch(FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-      "apikey": SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: "list_templates", companyId: "demo-company-id" }),
-  });
-
-  const body = await response.json();
-  assertEquals(response.status, 400);
-  assertEquals(body.success, false);
-});
-
-Deno.test("hr-board-pack: unknown action returns error", async () => {
+// --- A4: Anon key as JWT + non-existent company → 401/403 ---
+Deno.test("erp-hr-total-rewards: rejects non-existent company_id → 401 or 403", async () => {
   const response = await fetch(FUNCTION_URL, {
     method: "POST",
     headers: {
@@ -173,13 +78,125 @@ Deno.test("hr-board-pack: unknown action returns error", async () => {
       "apikey": SUPABASE_ANON_KEY,
     },
     body: JSON.stringify({
-      action: "nonexistent_action",
-      companyId: VALID_COMPANY_ID,
+      action: "compare_market",
+      company_id: FAKE_COMPANY_ID,
     }),
   });
 
   const body = await response.json();
-  // Will be 401/403 (anon key can't pass tenant check) or 500
-  const validStatus = [401, 403, 500].includes(response.status);
-  assertEquals(validStatus, true, `Expected auth/server error, got ${response.status}`);
+  const isRejected = response.status === 401 || response.status === 403;
+  assertEquals(isRejected, true, `Expected 401 or 403, got ${response.status}: ${JSON.stringify(body)}`);
+});
+
+// --- A5: Missing both employee_id and company_id → 400 ---
+Deno.test("erp-hr-total-rewards: rejects missing identifiers → 400", async () => {
+  const response = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "apikey": SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      action: "compare_market",
+      // no company_id, no employee_id
+    }),
+  });
+
+  const body = await response.json();
+  assertEquals(response.status, 400, `Expected 400, got ${response.status}: ${JSON.stringify(body)}`);
+  assertExists(body.error);
+});
+
+// --- A6: CORS preflight → 200 with required headers ---
+Deno.test("erp-hr-total-rewards: CORS preflight returns 200 with required headers", async () => {
+  const response = await fetch(FUNCTION_URL, {
+    method: "OPTIONS",
+  });
+
+  assertEquals(response.status, 200);
+  const allowOrigin = response.headers.get("access-control-allow-origin");
+  const allowHeaders = response.headers.get("access-control-allow-headers");
+  assertExists(allowOrigin, "Missing Access-Control-Allow-Origin");
+  assertExists(allowHeaders, "Missing Access-Control-Allow-Headers");
+  await response.text();
+});
+
+// --- A7: Error responses include CORS headers ---
+Deno.test("erp-hr-total-rewards: error responses include CORS headers", async () => {
+  const response = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer invalid.jwt.token",
+      "apikey": SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      action: "compare_market",
+      company_id: VALID_COMPANY_ID,
+    }),
+  });
+
+  const allowOrigin = response.headers.get("access-control-allow-origin");
+  assertExists(allowOrigin, "Error responses must include CORS headers");
+  await response.json();
+});
+
+// --- A8: Response content-type is JSON ---
+Deno.test("erp-hr-total-rewards: responses have application/json content-type", async () => {
+  const response = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer bad",
+      "apikey": SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      action: "compare_market",
+      company_id: VALID_COMPANY_ID,
+    }),
+  });
+
+  const ct = response.headers.get("content-type");
+  assertEquals(ct?.includes("application/json"), true, `Expected JSON content-type, got: ${ct}`);
+  await response.json();
+});
+
+// --- A9: Anon key + valid company (no real user) → rejected ---
+Deno.test("erp-hr-total-rewards: anon key with valid company is rejected", async () => {
+  const response = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      "apikey": SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      action: "compare_market",
+      company_id: VALID_COMPANY_ID,
+    }),
+  });
+
+  const body = await response.json();
+  const isRejected = response.status === 401 || response.status === 403;
+  assertEquals(isRejected, true, `Anon key should be rejected, got ${response.status}: ${JSON.stringify(body)}`);
+});
+
+// --- A10: employee_id path without auth → 401 ---
+Deno.test("erp-hr-total-rewards: employee_id path without auth → 401", async () => {
+  const response = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({
+      action: "analyze_compensation",
+      employee_id: "00000000-0000-0000-0000-000000000001",
+      fiscal_year: 2025,
+    }),
+  });
+
+  const body = await response.json();
+  assertEquals(response.status, 401, `Expected 401, got ${response.status}: ${JSON.stringify(body)}`);
 });
