@@ -1,7 +1,14 @@
+/**
+ * Edge Function: hr-reporting-engine
+ * Premium HR reporting with template management, scheduling, and AI summaries.
+ *
+ * S6.3B: Migrated to validateTenantAccess + userClient. adminClient: 0.
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 10,
@@ -17,38 +24,22 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!).auth.getUser(token);
-    if (authError || !user) throw new Error('Unauthorized');
 
     const { action, company_id, params } = await req.json();
 
-    // S2.1: Tenant isolation
-    if (company_id) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // S6.3B: Standard auth gate
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+    const { userId, userClient: supabase } = authResult;
 
     // Rate limit expensive operations
     if (action === 'generate_report') {
-      const burstResult = checkBurstLimit(company_id || user.id, RATE_LIMIT_CONFIG);
+      const burstResult = checkBurstLimit(company_id || userId, RATE_LIMIT_CONFIG);
       if (!burstResult.allowed) {
         console.warn(`[hr-reporting-engine] Rate limited: company=${company_id}`);
         return rateLimitResponse(burstResult, corsHeaders);
@@ -72,7 +63,6 @@ serve(async (req) => {
         const startTime = Date.now();
         const { template_id, report_name, format, filters, modules } = params || {};
 
-        // Create pending report
         const { data: report, error: insertErr } = await supabase
           .from('erp_hr_generated_reports')
           .insert({
@@ -81,7 +71,7 @@ serve(async (req) => {
             report_name: report_name || 'Reporte Premium HR',
             format: format || 'pdf',
             status: 'generating',
-            generated_by: user.id,
+            generated_by: userId,
             filters_applied: filters || {},
             modules_included: modules || [],
             data_sources: {},
@@ -91,7 +81,6 @@ serve(async (req) => {
 
         if (insertErr) throw insertErr;
 
-        // Collect real data from modules
         const dataSources: Record<string, { source: string; count: number; timestamp: string }> = {};
         const reportData: Record<string, unknown> = {};
 
@@ -123,7 +112,6 @@ serve(async (req) => {
           reportData.workforce = { plans: plansData || [], count };
           dataSources.workforce = { source: (plansData?.length || 0) > 0 ? 'real' : 'demo', count: count || 0, timestamp: new Date().toISOString() };
 
-          // Real headcount
           const { data: empData, count: empCount } = await supabase
             .from('erp_hr_employees')
             .select('id, department, job_title, base_salary, gender, employment_status', { count: 'exact' })
@@ -200,7 +188,6 @@ RESPONDE SOLO CON EL TEXTO DEL RESUMEN, sin JSON.`;
 
         const generationTime = Date.now() - startTime;
 
-        // Update report with collected data
         const { error: updateErr } = await supabase
           .from('erp_hr_generated_reports')
           .update({
@@ -280,7 +267,7 @@ RESPONDE SOLO CON EL TEXTO DEL RESUMEN, sin JSON.`;
             recipients: recipients || [],
             delivery_method: delivery_method || 'download',
             is_active: true,
-            created_by: user.id,
+            created_by: userId,
             next_run_at: new Date(Date.now() + 86400000).toISOString(),
           })
           .select()
@@ -304,7 +291,6 @@ RESPONDE SOLO CON EL TEXTO DEL RESUMEN, sin JSON.`;
       // === SEED TEMPLATES ===
       case 'seed_templates': {
         const templates = [
-          // Role templates
           { template_key: 'ceo_executive', template_name: 'CEO — Informe Ejecutivo Global', category: 'role', target_role: 'ceo', sections: ['executive_summary','risk_overview','headcount_kpis','fairness_summary','compliance_score','contracts_critical','strategic_alerts'], kpi_definitions: ['headcount','gender_gap','compliance_score','critical_hires','total_salary_cost'] },
           { template_key: 'hr_director', template_name: 'Director RRHH — Informe Estratégico', category: 'role', target_role: 'hr_director', sections: ['executive_summary','headcount_detail','salary_analysis','fairness_deep','skill_gaps','training_coverage','turnover','active_plans'], kpi_definitions: ['headcount','avg_salary','gender_gap','open_cases','skill_gaps','active_contracts'] },
           { template_key: 'hr_ops', template_name: 'HR Operations — Informe Operativo', category: 'role', target_role: 'admin', sections: ['headcount_summary','new_hires','terminations','contracts_expiring','payroll_summary','incidents'], kpi_definitions: ['headcount','active_contracts','avg_salary','open_cases'] },
@@ -312,7 +298,6 @@ RESPONDE SOLO CON EL TEXTO DEL RESUMEN, sin JSON.`;
           { template_key: 'legal_compliance', template_name: 'Legal & Compliance — Informe Regulatorio', category: 'role', target_role: 'auditor', sections: ['compliance_score','frameworks_status','audit_findings','contracts_compliance','legal_risks','regulatory_changes'], kpi_definitions: ['compliance_score','open_cases','active_contracts','gender_gap'] },
           { template_key: 'manager', template_name: 'Manager — Informe de Equipo', category: 'role', target_role: 'manager', sections: ['team_headcount','vacations_pending','performance_summary','training_pending','skill_gaps_team'], kpi_definitions: ['headcount','skill_gaps'] },
           { template_key: 'auditor', template_name: 'Auditor — Informe de Control', category: 'role', target_role: 'auditor', sections: ['compliance_overview','sod_violations','masking_coverage','access_logs','fairness_compliance','audit_trail'], kpi_definitions: ['compliance_score','open_cases','gender_gap'] },
-          // Module templates
           { template_key: 'mod_fairness', template_name: 'Fairness & Justice Engine', category: 'module', target_module: 'fairness', sections: ['pay_equity_analysis','disparate_impact','justice_cases','action_plans','real_salary_data'], kpi_definitions: ['gender_gap','equity_score','open_cases','non_compliant_metrics'] },
           { template_key: 'mod_workforce', template_name: 'Workforce Planning', category: 'module', target_module: 'workforce', sections: ['real_headcount','projected_headcount','gaps','scenarios','skill_forecasts','cost_projections'], kpi_definitions: ['headcount','headcount_gap','critical_hires','skill_gaps','total_budget'] },
           { template_key: 'mod_legal', template_name: 'Legal Engine Premium', category: 'module', target_module: 'legal', sections: ['contracts_overview','compliance_checks','clause_library','templates_usage','real_contracts'], kpi_definitions: ['active_contracts','draft_contracts','avg_compliance_score','total_clauses'] },
@@ -330,8 +315,8 @@ RESPONDE SOLO CON EL TEXTO DEL RESUMEN, sin JSON.`;
             template_key: tpl.template_key,
             template_name: tpl.template_name,
             category: tpl.category,
-            target_role: tpl.target_role || null,
-            target_module: tpl.target_module || null,
+            target_role: (tpl as any).target_role || null,
+            target_module: (tpl as any).target_module || null,
             sections: tpl.sections,
             kpi_definitions: tpl.kpi_definitions,
             supported_formats: ['pdf', 'excel'],

@@ -1,7 +1,14 @@
+/**
+ * Edge Function: hr-compliance-automation
+ * AI-powered compliance checklist generation, auditing, and reporting.
+ *
+ * S6.3B: Migrated to validateTenantAccess + userClient. adminClient: 0.
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 5,
@@ -27,47 +34,20 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
-
     const body: ComplianceRequest = await req.json();
     const { action } = body;
 
-    // Tenant isolation
-    if (body.company_id) {
-      const adminClient = createClient(supabaseUrl, serviceKey);
-      const { data: membership } = await adminClient
-        .from('erp_user_companies').select('id')
-        .eq('user_id', userId).eq('company_id', body.company_id)
-        .eq('is_active', true).maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // S6.3B: Standard auth gate
+    const authResult = await validateTenantAccess(req, body.company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
     // Rate limit check
     const identifier = body.company_id || 'anonymous';
