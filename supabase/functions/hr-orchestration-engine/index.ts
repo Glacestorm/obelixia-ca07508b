@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 10,
@@ -27,28 +27,8 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Auth — S2.1: mandatory
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = user.id;
-
     const input: OrchestrationEvent = await req.json();
-    const { action, company_id, trigger_module, trigger_event, trigger_table, trigger_data, rule_id, chain_id } = input;
+    const { action, company_id, trigger_module, trigger_event, trigger_table, trigger_data } = input;
 
     if (!company_id) {
       return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
@@ -56,19 +36,14 @@ serve(async (req) => {
       });
     }
 
-    // S2.1: Tenant isolation
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('company_id', company_id)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // S6.3F: validateTenantAccess replaces manual auth + service_role
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userId, userClient } = authResult;
 
     // Rate limit check
     const burstResult = checkBurstLimit(company_id, RATE_LIMIT_CONFIG);
@@ -88,8 +63,8 @@ serve(async (req) => {
           });
         }
 
-        // Fetch active rules matching this trigger
-        const { data: rules, error: rulesErr } = await supabase
+        // Fetch active rules matching this trigger — S6.3F: userClient
+        const { data: rules, error: rulesErr } = await userClient
           .from('erp_hr_orchestration_rules')
           .select('*')
           .eq('company_id', company_id)
@@ -134,8 +109,8 @@ serve(async (req) => {
               }
             }
 
-            // Execute the action
-            actionResult = await executeAction(supabase, {
+            // Execute the action — S6.3F: userClient instead of service_role
+            actionResult = await executeAction(userClient, {
               actionModule: rule.action_module,
               actionType: rule.action_type,
               actionConfig: rule.action_config || {},
@@ -152,8 +127,8 @@ serve(async (req) => {
 
           const executionTimeMs = Date.now() - startTime;
 
-          // Log execution
-          await supabase.from('erp_hr_orchestration_log').insert({
+          // Log execution — S6.3F: userClient
+          await userClient.from('erp_hr_orchestration_log').insert({
             rule_id: rule.id,
             company_id,
             trigger_module,
@@ -167,8 +142,8 @@ serve(async (req) => {
             execution_time_ms: executionTimeMs,
           });
 
-          // Update rule stats
-          await supabase
+          // Update rule stats — S6.3F: userClient
+          await userClient
             .from('erp_hr_orchestration_rules')
             .update({
               last_executed_at: new Date().toISOString(),
@@ -202,7 +177,7 @@ serve(async (req) => {
 
       // ── Get execution chain status ──
       case 'get_chain_status': {
-        const { data: logs, error: logsErr } = await supabase
+        const { data: logs, error: logsErr } = await userClient
           .from('erp_hr_orchestration_log')
           .select('*')
           .eq('company_id', company_id)
@@ -264,9 +239,9 @@ function evaluateConditions(
   return true;
 }
 
-// ── Action Executor ──
+// ── Action Executor — S6.3F: receives userClient instead of service_role ──
 async function executeAction(
-  supabase: any,
+  userClient: any,
   params: {
     actionModule: string;
     actionType: string;
@@ -284,7 +259,6 @@ async function executeAction(
       const message = interpolate(actionConfig.message as string || 'Evento detectado', triggerData);
       const severity = actionConfig.severity || 'medium';
 
-      // Insert into a generic alerts mechanism (log-based)
       return {
         type: 'alert',
         title,
@@ -304,7 +278,6 @@ async function executeAction(
         company_id: companyId,
       };
 
-      // Interpolate values from trigger data
       for (const [k, v] of Object.entries(record)) {
         if (typeof v === 'string' && v.startsWith('{{') && v.endsWith('}}')) {
           const field = v.slice(2, -2).trim();
@@ -312,7 +285,7 @@ async function executeAction(
         }
       }
 
-      const { data, error } = await supabase.from(targetTable).insert(record).select().single();
+      const { data, error } = await userClient.from(targetTable).insert(record).select().single();
       if (error) throw error;
       return { type: 'record_created', table: targetTable, record_id: data?.id };
     }
@@ -324,7 +297,7 @@ async function executeAction(
 
       if (!targetTable || !newStatus) throw new Error('target_table and new_status required');
 
-      const { error } = await supabase
+      const { error } = await userClient
         .from(targetTable)
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', targetId)
@@ -348,7 +321,6 @@ async function executeAction(
     }
 
     case 'invoke_ai': {
-      // Delegate to AI via Lovable gateway
       const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
       if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 

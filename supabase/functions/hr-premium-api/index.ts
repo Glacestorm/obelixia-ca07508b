@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface APIRequest {
   action: string;
@@ -13,47 +13,25 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
-    }
-
-    const userId = claimsData.claims.sub;
     const { action, params } = await req.json() as APIRequest;
+
+    // S6.3F: company_id is now REQUIRED — closes conditional membership gap
     const companyId = params?.company_id as string;
-
-    // === MEMBERSHIP CHECK ===
-    if (companyId) {
-      const { data: membership, error: membershipError } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (membershipError || !membership) {
-        console.warn(`[hr-premium-api] Membership denied: user=${userId}, company=${companyId}`);
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+    if (!companyId) {
+      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
+
+    // S6.3F: validateTenantAccess replaces manual getClaims + conditional membership
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const { userId, userClient } = authResult;
 
     console.log(`[hr-premium-api] Action: ${action}, User: ${userId}`);
 
@@ -62,7 +40,7 @@ serve(async (req) => {
     switch (action) {
       // === API CLIENT MANAGEMENT ===
       case 'list_api_clients': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_api_clients')
           .select('id, name, description, api_key_prefix, scopes, is_active, rate_limit_per_minute, last_used_at, expires_at, created_at')
           .eq('company_id', companyId)
@@ -80,7 +58,7 @@ serve(async (req) => {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_api_clients')
           .insert({
             company_id: companyId,
@@ -100,7 +78,7 @@ serve(async (req) => {
       }
 
       case 'revoke_api_client': {
-        const { error } = await supabase
+        const { error } = await userClient
           .from('erp_hr_api_clients')
           .update({ is_active: false, updated_at: new Date().toISOString() })
           .eq('id', params?.client_id)
@@ -112,7 +90,7 @@ serve(async (req) => {
 
       // === WEBHOOK MANAGEMENT ===
       case 'list_webhooks': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_webhook_subscriptions')
           .select('*')
           .eq('company_id', companyId)
@@ -124,7 +102,7 @@ serve(async (req) => {
 
       case 'create_webhook': {
         const secret = `whsec_${crypto.randomUUID().replace(/-/g, '')}`;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_webhook_subscriptions')
           .insert({
             company_id: companyId,
@@ -154,7 +132,7 @@ serve(async (req) => {
         if (params?.filters) updates.filters = params.filters;
         if (params?.retry_policy) updates.retry_policy = params.retry_policy;
 
-        const { error } = await supabase
+        const { error } = await userClient
           .from('erp_hr_webhook_subscriptions')
           .update(updates)
           .eq('id', params?.webhook_id)
@@ -165,7 +143,7 @@ serve(async (req) => {
       }
 
       case 'delete_webhook': {
-        const { error } = await supabase
+        const { error } = await userClient
           .from('erp_hr_webhook_subscriptions')
           .delete()
           .eq('id', params?.webhook_id)
@@ -176,7 +154,7 @@ serve(async (req) => {
       }
 
       case 'test_webhook': {
-        const { data: wh } = await supabase
+        const { data: wh } = await userClient
           .from('erp_hr_webhook_subscriptions')
           .select('url, secret, headers')
           .eq('id', params?.webhook_id)
@@ -228,7 +206,7 @@ serve(async (req) => {
 
       // === DELIVERY LOGS ===
       case 'list_deliveries': {
-        const query = supabase
+        const query = userClient
           .from('erp_hr_webhook_delivery_log')
           .select('*, erp_hr_webhook_subscriptions!inner(company_id, name)')
           .order('created_at', { ascending: false })
@@ -245,7 +223,7 @@ serve(async (req) => {
       }
 
       case 'retry_delivery': {
-        const { data: delivery } = await supabase
+        const { data: delivery } = await userClient
           .from('erp_hr_webhook_delivery_log')
           .select('*, erp_hr_webhook_subscriptions!inner(url, secret, headers, company_id)')
           .eq('id', params?.delivery_id)
@@ -253,7 +231,6 @@ serve(async (req) => {
 
         if (!delivery) throw new Error('Delivery not found');
 
-        // Re-deliver
         const wh = (delivery as any).erp_hr_webhook_subscriptions;
         const encoder = new TextEncoder();
         const key = await crypto.subtle.importKey('raw', encoder.encode(wh.secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -272,7 +249,7 @@ serve(async (req) => {
             body: JSON.stringify(delivery.payload),
           });
 
-          await supabase.from('erp_hr_webhook_delivery_log').insert({
+          await userClient.from('erp_hr_webhook_delivery_log').insert({
             subscription_id: delivery.subscription_id,
             event_type: delivery.event_type,
             payload: delivery.payload,
@@ -292,7 +269,7 @@ serve(async (req) => {
 
       // === API ACCESS LOG ===
       case 'list_access_logs': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_api_access_log')
           .select('*')
           .eq('company_id', companyId)
@@ -305,7 +282,7 @@ serve(async (req) => {
 
       // === EVENT CATALOG ===
       case 'list_events': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_api_event_catalog')
           .select('*')
           .eq('is_active', true)
@@ -315,9 +292,9 @@ serve(async (req) => {
         break;
       }
 
-      // === DATA ENDPOINTS (read-only summaries) ===
+      // === DATA ENDPOINTS ===
       case 'get_report_templates': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_report_templates')
           .select('*')
           .eq('company_id', companyId)
@@ -328,7 +305,7 @@ serve(async (req) => {
       }
 
       case 'get_generated_reports': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_generated_reports')
           .select('id, template_id, title, format, status, review_status, data_sources, filters_applied, created_at')
           .eq('company_id', companyId)
@@ -340,7 +317,7 @@ serve(async (req) => {
       }
 
       case 'get_report_schedules': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_report_schedules')
           .select('*')
           .eq('company_id', companyId)
@@ -355,7 +332,7 @@ serve(async (req) => {
     }
 
     // Log access
-    await supabase.from('erp_hr_api_access_log').insert({
+    await userClient.from('erp_hr_api_access_log').insert({
       company_id: companyId,
       endpoint: action,
       method: req.method,

@@ -1,13 +1,10 @@
 /**
  * payroll-cross-module-bridge — Edge Function Fase H
- * Orchestrates sync between HR/Payroll → Accounting/Treasury/Legal.
- * Persists bridge logs and optionally creates approval requests.
+ * S6.3F: Migrated to validateTenantAccess — removes manual adminClient for membership
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
-
-// corsHeaders now computed per-request via getSecureCorsHeaders(req)
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,30 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
     const body = await req.json();
     const { action, company_id, bridge_type, source_record_id, payload } = body;
 
@@ -49,25 +22,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // S2.1: Tenant isolation
-    const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { data: membership } = await adminClient
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('company_id', company_id)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+    // S6.3F: validateTenantAccess replaces manual getClaims + manual adminClient membership
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
-
-
+    const { userId, userClient } = authResult;
 
     if (action === "sync") {
-      // Determine target module
       const targetMap: Record<string, string> = {
         accounting: "accounting",
         treasury: "treasury",
@@ -77,8 +42,8 @@ Deno.serve(async (req) => {
 
       const targetModule = targetMap[bridge_type] || "unknown";
 
-      // Create bridge log
-      const { data: logRecord, error: insertErr } = await supabase
+      // S6.3F: userClient for data ops (RLS enforced)
+      const { data: logRecord, error: insertErr } = await userClient
         .from("erp_hr_bridge_logs")
         .insert({
           company_id,
@@ -97,10 +62,8 @@ Deno.serve(async (req) => {
         throw insertErr;
       }
 
-      // For accounting/treasury — auto-process (no approval needed for now)
-      // For legal — create approval request
       if (bridge_type === "legal") {
-        await supabase
+        await userClient
           .from("erp_hr_bridge_approvals")
           .insert({
             company_id,
@@ -110,14 +73,12 @@ Deno.serve(async (req) => {
             status: "pending",
           } as any);
 
-        // Update log status
-        await supabase
+        await userClient
           .from("erp_hr_bridge_logs")
           .update({ status: "processing" } as any)
           .eq("id", logRecord.id);
       } else {
-        // Simulate processing
-        await supabase
+        await userClient
           .from("erp_hr_bridge_logs")
           .update({
             status: "synced",
@@ -140,7 +101,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "status") {
-      const { data, error } = await supabase
+      const { data, error } = await userClient
         .from("erp_hr_bridge_logs")
         .select("*")
         .eq("company_id", company_id)
@@ -149,7 +110,6 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
-      // Summary
       const summary = {
         total: data?.length || 0,
         synced: data?.filter((r: any) => r.status === "synced").length || 0,

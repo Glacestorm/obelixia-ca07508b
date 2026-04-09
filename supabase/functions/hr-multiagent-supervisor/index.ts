@@ -1,17 +1,11 @@
 /**
  * HR Multiagent Supervisor - Phase 1B
- * 
- * Routes HR queries to specialized agents:
- * - HR-Ops: payroll, contracts, leave, admin
- * - HR-Compliance: labor compliance, audits, risks
- * - HR-Talent: recruitment, onboarding, offboarding, performance, training, succession
- * - HR-Analytics: people analytics, anomalies, predictions, workforce metrics
- * - Legal escalation: dismissals, protected leave, legal risk
+ * S6.3F: Migrated to validateTenantAccess + user JWT forwarding for chaining
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 const CLASSIFIER_SYSTEM_PROMPT = `Eres un clasificador experto de consultas de Recursos Humanos. Tu trabajo es determinar a qué agente especializado debe dirigirse cada consulta.
 
@@ -58,26 +52,8 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Auth — S2.1: mandatory
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    const userId = user.id;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 
     const input: SupervisorRequest = await req.json();
     const { action, company_id, query, context, session_id } = input;
@@ -88,23 +64,21 @@ serve(async (req) => {
       });
     }
 
-    // S2.1: Tenant isolation
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('company_id', company_id)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    // S6.3F: validateTenantAccess replaces manual auth + service_role
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+    const { userId, userClient } = authResult;
 
-    // === GET REGISTRY ===
+    // S6.3F: Capture user's original Authorization for downstream chaining
+    const userAuthHeader = req.headers.get('Authorization')!;
+
+    // === GET REGISTRY === S6.3F: userClient
     if (action === 'get_registry') {
-      const { data: agents } = await supabase
+      const { data: agents } = await userClient
         .from('erp_ai_agents_registry')
         .select('*')
         .order('module_domain', { ascending: true });
@@ -114,16 +88,16 @@ serve(async (req) => {
       });
     }
 
-    // === GET STATUS ===
+    // === GET STATUS === S6.3F: userClient
     if (action === 'get_status') {
-      const { data: recentInvocations } = await supabase
+      const { data: recentInvocations } = await userClient
         .from('erp_ai_agent_invocations')
         .select('*')
         .eq('company_id', company_id)
         .order('created_at', { ascending: false })
         .limit(20);
 
-      const { data: agents } = await supabase
+      const { data: agents } = await userClient
         .from('erp_ai_agents_registry')
         .select('*')
         .in('module_domain', ['hr', 'legal', 'cross']);
@@ -226,10 +200,11 @@ serve(async (req) => {
         outcomeStatus = 'escalated';
 
         try {
+          // S6.3F: Forward user JWT instead of service_role key
           const resp = await fetch(`${agentFunctionUrl}/legal-multiagent-supervisor`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
+              'Authorization': userAuthHeader,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -269,10 +244,11 @@ serve(async (req) => {
             body.query = query;
           }
 
+          // S6.3F: Forward user JWT instead of service_role key
           const resp = await fetch(`${agentFunctionUrl}/${route.fn}`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
+              'Authorization': userAuthHeader,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(body),
@@ -287,9 +263,9 @@ serve(async (req) => {
 
       const executionTime = Date.now() - startTime;
 
-      // Step 3: Log invocation
+      // Step 3: Log invocation — S6.3F: userClient
       try {
-        await supabase.from('erp_ai_agent_invocations').insert({
+        await userClient.from('erp_ai_agent_invocations').insert({
           agent_code: agentCode,
           supervisor_code: 'hr-supervisor',
           company_id,

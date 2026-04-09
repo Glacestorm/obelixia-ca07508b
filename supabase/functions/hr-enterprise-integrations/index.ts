@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 8,
@@ -22,43 +22,21 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     const { action, companyId, params } = await req.json() as FunctionRequest;
-    if (!companyId) throw new Error('companyId is required');
+    if (!companyId) {
+      return new Response(JSON.stringify({ error: 'companyId is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Tenant isolation
-    const adminClient = createClient(supabaseUrl, serviceKey);
-    const { data: membership } = await adminClient
-      .from('erp_user_companies').select('id')
-      .eq('user_id', userId).eq('company_id', companyId)
-      .eq('is_active', true).maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // S6.3F: validateTenantAccess replaces manual getClaims + manual adminClient membership
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -142,7 +120,7 @@ FORMATO DE RESPUESTA (JSON estricto):
   ]
 }
 
-Genera 6-8 datasets enterprise realistas para HR Premium: KPIs ejecutivos, informes regulatorios, resumen fairness, analytics de workforce, contratos legales, dashboard de compliance, resumen de nóminas, log de incidentes.`;
+Genera 6-8 datasets enterprise realistas para HR Premium.`;
         userPrompt = `Lista datasets BI para company ${companyId}`;
         break;
 
@@ -189,7 +167,7 @@ FORMATO DE RESPUESTA (JSON estricto):
   ]
 }
 
-Genera 5-8 registros de archivado realistas: reportes ejecutivos, regulatorios, paquetes de evidencia, contratos legales archivados en SharePoint/Google Drive.`;
+Genera 5-8 registros de archivado realistas.`;
         userPrompt = `Lista archivos DMS para company ${companyId}`;
         break;
 
@@ -237,7 +215,7 @@ FORMATO DE RESPUESTA (JSON estricto):
   ]
 }
 
-Genera 5-7 envelopes realistas: contratos premium en firma, reportes regulatorios aprobados, documentos legales, certificados de compliance.`;
+Genera 5-7 envelopes realistas.`;
         userPrompt = `Lista envelopes e-sign para company ${companyId}`;
         break;
 
@@ -288,7 +266,7 @@ FORMATO DE RESPUESTA (JSON estricto):
   }
 }
 
-Genera 10-15 entradas de log realistas: exportaciones BI, archivados DMS, flujos de firma, health checks, errores de conexión.`;
+Genera 10-15 entradas de log realistas.`;
         userPrompt = `Lista logs de integración para company ${companyId}, filtros: ${JSON.stringify(params || {})}`;
         break;
 
