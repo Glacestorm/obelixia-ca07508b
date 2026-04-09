@@ -1,6 +1,12 @@
+/**
+ * erp-hr-analytics-intelligence - Advanced HR Analytics Intelligence
+ * 
+ * S6.3C: Migrated to validateTenantAccess + userClient (SECURITY FIX: added missing tenant isolation)
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface AnalyticsRequest {
   action: 
@@ -23,27 +29,30 @@ serve(async (req) => {
   }
 
   try {
-    // === AUTH GATE ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    console.log(`[erp-hr-analytics-intelligence] Authenticated user: ${claimsData.claims.sub}`);
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     const { action, context, params } = await req.json() as AnalyticsRequest;
+
+    // Extract companyId from context or params
+    const companyId = (context?.companyId || context?.company_id || params?.companyId) as string | undefined;
+    if (!companyId) {
+      return new Response(JSON.stringify({ error: 'companyId is required in context' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- AUTH + TENANT VALIDATION (S6.3C — SECURITY FIX: previously had NO membership check) ---
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    console.log(`[erp-hr-analytics-intelligence] Authenticated user: ${authResult.userId}`);
+    // --- END AUTH + TENANT VALIDATION ---
 
     let systemPrompt = '';
     let userPrompt = '';
