@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface ComplianceEnterpriseRequest {
   action: 'get_dashboard' | 'list_policies' | 'upsert_policy' | 'list_audits' | 'upsert_audit' |
@@ -25,56 +26,29 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     const { action, companyId, data, id } = await req.json() as ComplianceEnterpriseRequest;
 
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
+    // Auth + tenant isolation via shared utility
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return jsonResponse(authResult.body, authResult.status);
     }
-    const token = authHeader.replace('Bearer ', '');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
-    }
-    const userId = claimsData.claims.sub as string;
-
-    // Tenant isolation
-    if (companyId) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return jsonResponse({ error: 'Forbidden' }, 403);
-      }
-    }
+    const { userId, userClient, adminClient } = authResult;
 
     console.log(`[erp-hr-compliance-enterprise] Action: ${action}, Company: ${companyId}, User: ${userId}`);
 
     switch (action) {
       case 'get_dashboard': {
         const [policies, audits, incidents, training, risks, kpis] = await Promise.all([
-          supabase.from('erp_hr_compliance_policies').select('*').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_audits').select('*').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_incidents').select('*').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_training').select('*').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_risk_assessments').select('*').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_kpis').select('*').eq('company_id', companyId).order('measured_at', { ascending: false }).limit(20),
+          userClient.from('erp_hr_compliance_policies').select('*').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_audits').select('*').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_incidents').select('*').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_training').select('*').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_risk_assessments').select('*').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_kpis').select('*').eq('company_id', companyId).order('measured_at', { ascending: false }).limit(20),
         ]);
         return jsonResponse({ success: true, data: {
           policies: policies.data || [],
@@ -87,7 +61,7 @@ serve(async (req) => {
       }
 
       case 'list_policies': {
-        const { data: rows, error } = await supabase.from('erp_hr_compliance_policies').select('*').eq('company_id', companyId).order('updated_at', { ascending: false });
+        const { data: rows, error } = await userClient.from('erp_hr_compliance_policies').select('*').eq('company_id', companyId).order('updated_at', { ascending: false });
         if (error) throw error;
         return jsonResponse({ success: true, data: rows });
       }
@@ -95,17 +69,17 @@ serve(async (req) => {
       case 'upsert_policy': {
         const payload = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
         if (id) {
-          const { error } = await supabase.from('erp_hr_compliance_policies').update(payload).eq('id', id);
+          const { error } = await userClient.from('erp_hr_compliance_policies').update(payload).eq('id', id);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from('erp_hr_compliance_policies').insert([payload]);
+          const { error } = await userClient.from('erp_hr_compliance_policies').insert([payload]);
           if (error) throw error;
         }
         return jsonResponse({ success: true });
       }
 
       case 'list_audits': {
-        const { data: rows, error } = await supabase.from('erp_hr_compliance_audits').select('*').eq('company_id', companyId).order('planned_start', { ascending: false });
+        const { data: rows, error } = await userClient.from('erp_hr_compliance_audits').select('*').eq('company_id', companyId).order('planned_start', { ascending: false });
         if (error) throw error;
         return jsonResponse({ success: true, data: rows });
       }
@@ -113,17 +87,17 @@ serve(async (req) => {
       case 'upsert_audit': {
         const payload = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
         if (id) {
-          const { error } = await supabase.from('erp_hr_compliance_audits').update(payload).eq('id', id);
+          const { error } = await userClient.from('erp_hr_compliance_audits').update(payload).eq('id', id);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from('erp_hr_compliance_audits').insert([payload]);
+          const { error } = await userClient.from('erp_hr_compliance_audits').insert([payload]);
           if (error) throw error;
         }
         return jsonResponse({ success: true });
       }
 
       case 'list_incidents': {
-        const { data: rows, error } = await supabase.from('erp_hr_compliance_incidents').select('*').eq('company_id', companyId).order('reported_at', { ascending: false });
+        const { data: rows, error } = await userClient.from('erp_hr_compliance_incidents').select('*').eq('company_id', companyId).order('reported_at', { ascending: false });
         if (error) throw error;
         return jsonResponse({ success: true, data: rows });
       }
@@ -131,18 +105,18 @@ serve(async (req) => {
       case 'upsert_incident': {
         const payload = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
         if (id) {
-          const { error } = await supabase.from('erp_hr_compliance_incidents').update(payload).eq('id', id);
+          const { error } = await userClient.from('erp_hr_compliance_incidents').update(payload).eq('id', id);
           if (error) throw error;
         } else {
           payload.incident_code = `INC-${Date.now().toString(36).toUpperCase()}`;
-          const { error } = await supabase.from('erp_hr_compliance_incidents').insert([payload]);
+          const { error } = await userClient.from('erp_hr_compliance_incidents').insert([payload]);
           if (error) throw error;
         }
         return jsonResponse({ success: true });
       }
 
       case 'list_training': {
-        const { data: rows, error } = await supabase.from('erp_hr_compliance_training').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
+        const { data: rows, error } = await userClient.from('erp_hr_compliance_training').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
         if (error) throw error;
         return jsonResponse({ success: true, data: rows });
       }
@@ -150,17 +124,17 @@ serve(async (req) => {
       case 'upsert_training': {
         const payload = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
         if (id) {
-          const { error } = await supabase.from('erp_hr_compliance_training').update(payload).eq('id', id);
+          const { error } = await userClient.from('erp_hr_compliance_training').update(payload).eq('id', id);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from('erp_hr_compliance_training').insert([payload]);
+          const { error } = await userClient.from('erp_hr_compliance_training').insert([payload]);
           if (error) throw error;
         }
         return jsonResponse({ success: true });
       }
 
       case 'list_risk_assessments': {
-        const { data: rows, error } = await supabase.from('erp_hr_compliance_risk_assessments').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
+        const { data: rows, error } = await userClient.from('erp_hr_compliance_risk_assessments').select('*').eq('company_id', companyId).order('created_at', { ascending: false });
         if (error) throw error;
         return jsonResponse({ success: true, data: rows });
       }
@@ -168,26 +142,26 @@ serve(async (req) => {
       case 'upsert_risk_assessment': {
         const payload = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
         if (id) {
-          const { error } = await supabase.from('erp_hr_compliance_risk_assessments').update(payload).eq('id', id);
+          const { error } = await userClient.from('erp_hr_compliance_risk_assessments').update(payload).eq('id', id);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from('erp_hr_compliance_risk_assessments').insert([payload]);
+          const { error } = await userClient.from('erp_hr_compliance_risk_assessments').insert([payload]);
           if (error) throw error;
         }
         return jsonResponse({ success: true });
       }
 
       case 'get_kpis': {
-        const { data: rows, error } = await supabase.from('erp_hr_compliance_kpis').select('*').eq('company_id', companyId).order('measured_at', { ascending: false }).limit(30);
+        const { data: rows, error } = await userClient.from('erp_hr_compliance_kpis').select('*').eq('company_id', companyId).order('measured_at', { ascending: false }).limit(30);
         if (error) throw error;
         return jsonResponse({ success: true, data: rows });
       }
 
       case 'ai_risk_analysis': {
         const [policies, incidents, audits] = await Promise.all([
-          supabase.from('erp_hr_compliance_policies').select('title,status,risk_level,category').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_incidents').select('title,severity,status,category').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_audits').select('title,status,overall_score,critical_findings').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_policies').select('title,status,risk_level,category').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_incidents').select('title,severity,status,category').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_audits').select('title,status,overall_score,critical_findings').eq('company_id', companyId),
         ]);
 
         const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -227,9 +201,9 @@ FORMATO DE RESPUESTA (JSON estricto):
 
       case 'ai_gap_analysis': {
         const [policies, training, risks] = await Promise.all([
-          supabase.from('erp_hr_compliance_policies').select('title,status,category,regulation_reference,review_date').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_training').select('title,regulation_area,completion_rate,status').eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_risk_assessments').select('assessment_name,risk_level,overall_risk_score,status').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_policies').select('title,status,category,regulation_reference,review_date').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_training').select('title,regulation_area,completion_rate,status').eq('company_id', companyId),
+          userClient.from('erp_hr_compliance_risk_assessments').select('assessment_name,risk_level,overall_risk_score,status').eq('company_id', companyId),
         ]);
 
         const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -265,20 +239,21 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'seed_demo': {
+        // seed_demo stays on adminClient — DELETE ops lack RLS policies
         // Clean existing demo data
         await Promise.all([
-          supabase.from('erp_hr_compliance_policies').delete().eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_audits').delete().eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_incidents').delete().eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_training').delete().eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_risk_assessments').delete().eq('company_id', companyId),
-          supabase.from('erp_hr_compliance_kpis').delete().eq('company_id', companyId),
+          adminClient.from('erp_hr_compliance_policies').delete().eq('company_id', companyId),
+          adminClient.from('erp_hr_compliance_audits').delete().eq('company_id', companyId),
+          adminClient.from('erp_hr_compliance_incidents').delete().eq('company_id', companyId),
+          adminClient.from('erp_hr_compliance_training').delete().eq('company_id', companyId),
+          adminClient.from('erp_hr_compliance_risk_assessments').delete().eq('company_id', companyId),
+          adminClient.from('erp_hr_compliance_kpis').delete().eq('company_id', companyId),
         ]);
 
         const now = new Date().toISOString();
 
         // Seed policies
-        await supabase.from('erp_hr_compliance_policies').insert([
+        await adminClient.from('erp_hr_compliance_policies').insert([
           { company_id: companyId, code: 'POL-001', title: 'Protección de Datos Personales (LOPDGDD)', category: 'privacy', regulation_reference: 'LOPDGDD - Ley Orgánica 3/2018', status: 'active', version: '3.0', risk_level: 'high', effective_date: '2024-01-15', review_date: '2026-06-15', jurisdictions: ['ES', 'EU'], tags: ['RGPD', 'privacidad'] },
           { company_id: companyId, code: 'POL-002', title: 'Prevención de Riesgos Laborales', category: 'safety', regulation_reference: 'Ley 31/1995', status: 'active', version: '2.1', risk_level: 'high', effective_date: '2024-03-01', review_date: '2026-03-01', jurisdictions: ['ES'] },
           { company_id: companyId, code: 'POL-003', title: 'Igualdad Retributiva', category: 'equality', regulation_reference: 'RD 902/2020', status: 'active', version: '1.2', risk_level: 'medium', effective_date: '2024-06-01', review_date: '2026-12-01', jurisdictions: ['ES'] },
@@ -290,21 +265,21 @@ FORMATO DE RESPUESTA (JSON estricto):
         ]);
 
         // Seed audits
-        await supabase.from('erp_hr_compliance_audits').insert([
+        await adminClient.from('erp_hr_compliance_audits').insert([
           { company_id: companyId, audit_type: 'internal', title: 'Auditoría LOPDGDD Q1 2026', scope: 'Tratamiento datos empleados', status: 'completed', planned_start: '2026-01-15', planned_end: '2026-02-15', actual_start: '2026-01-15', actual_end: '2026-02-10', findings_count: 3, critical_findings: 0, overall_score: 87.5, lead_auditor: 'DPO Interno' },
           { company_id: companyId, audit_type: 'external', title: 'Auditoría PRL Anual', scope: 'Evaluación riesgos centros trabajo', status: 'in_progress', planned_start: '2026-03-01', planned_end: '2026-03-31', actual_start: '2026-03-01', lead_auditor: 'Bureau Veritas' },
           { company_id: companyId, audit_type: 'internal', title: 'Revisión Canal Denuncias', scope: 'Procedimientos y seguimiento', status: 'planned', planned_start: '2026-04-15', planned_end: '2026-05-15', lead_auditor: 'Compliance Officer' },
         ]);
 
         // Seed incidents
-        await supabase.from('erp_hr_compliance_incidents').insert([
+        await adminClient.from('erp_hr_compliance_incidents').insert([
           { company_id: companyId, incident_code: 'INC-2026-001', title: 'Brecha datos nóminas compartidas', category: 'data_breach', severity: 'high', status: 'resolved', description: 'Archivo de nóminas enviado a destinatario incorrecto', resolution: 'Notificación AEPD y formación reforzada', reported_at: '2026-01-20', resolved_at: '2026-01-25', affected_regulations: ['LOPDGDD', 'RGPD'] },
           { company_id: companyId, incident_code: 'INC-2026-002', title: 'Registro horario incompleto Dpto. Comercial', category: 'violation', severity: 'medium', status: 'in_progress', description: '15% empleados comerciales sin fichaje completo en febrero', affected_regulations: ['Art. 34.9 ET'], reported_at: '2026-03-01' },
           { company_id: companyId, incident_code: 'INC-2026-003', title: 'Denuncia acoso laboral', category: 'harassment', severity: 'critical', status: 'investigating', description: 'Denuncia anónima a través del canal ético', affected_regulations: ['Ley 15/2022', 'Protocolo Acoso'], reported_at: '2026-02-15' },
         ]);
 
         // Seed training
-        await supabase.from('erp_hr_compliance_training').insert([
+        await adminClient.from('erp_hr_compliance_training').insert([
           { company_id: companyId, title: 'LOPDGDD y RGPD para empleados', regulation_area: 'privacy', training_type: 'mandatory', format: 'online', duration_hours: 4, status: 'active', completion_rate: 78, total_enrolled: 50, total_completed: 39, certification_required: true, recurrence_months: 12, target_roles: ['all'] },
           { company_id: companyId, title: 'PRL: Riesgos específicos por puesto', regulation_area: 'safety', training_type: 'mandatory', format: 'hybrid', duration_hours: 8, status: 'active', completion_rate: 92, total_enrolled: 50, total_completed: 46, certification_required: true, recurrence_months: 24, target_roles: ['all'] },
           { company_id: companyId, title: 'Canal de Denuncias: Uso y garantías', regulation_area: 'whistleblower', training_type: 'mandatory', format: 'online', duration_hours: 2, status: 'active', completion_rate: 65, total_enrolled: 50, total_completed: 33, target_roles: ['all'] },
@@ -313,7 +288,7 @@ FORMATO DE RESPUESTA (JSON estricto):
         ]);
 
         // Seed risk assessments
-        await supabase.from('erp_hr_compliance_risk_assessments').insert([
+        await adminClient.from('erp_hr_compliance_risk_assessments').insert([
           { company_id: companyId, assessment_name: 'Evaluación Riesgos Compliance Q1 2026', assessment_type: 'periodic', status: 'completed', overall_risk_score: 35, risk_level: 'medium', assessor: 'Compliance Officer', completed_at: '2026-02-28', next_review_date: '2026-05-31',
             risk_areas: [
               { area: 'Protección de Datos', score: 25, level: 'low', controls: 12, effective: 11 },
@@ -330,7 +305,7 @@ FORMATO DE RESPUESTA (JSON estricto):
         ]);
 
         // Seed KPIs
-        await supabase.from('erp_hr_compliance_kpis').insert([
+        await adminClient.from('erp_hr_compliance_kpis').insert([
           { company_id: companyId, kpi_name: 'Tasa Cumplimiento Formación', category: 'training', current_value: 78, target_value: 95, unit: '%', trend: 'up', period: '2026-Q1' },
           { company_id: companyId, kpi_name: 'Incidentes Abiertos', category: 'incidents', current_value: 2, target_value: 0, unit: 'count', trend: 'stable', period: '2026-Q1' },
           { company_id: companyId, kpi_name: 'Score Auditoría LOPDGDD', category: 'audits', current_value: 87.5, target_value: 90, unit: '%', trend: 'up', period: '2026-Q1' },
