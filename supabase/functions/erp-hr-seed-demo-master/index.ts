@@ -1,3 +1,9 @@
+/**
+ * ──── S6.2B SEED-ONLY FUNCTION ────
+ * This function uses SERVICE_ROLE_KEY (adminClient) for ALL operations.
+ * Justified: It is a seed/demo-only function that populates master demo data.
+ * NOT part of normal multi-tenant runtime. No validateTenantAccess needed.
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';

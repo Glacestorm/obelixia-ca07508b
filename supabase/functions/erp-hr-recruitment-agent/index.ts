@@ -1,6 +1,13 @@
+/**
+ * Edge Function: erp-hr-recruitment-agent
+ * AI-powered recruitment analysis agent
+ * 
+ * S6.2B: Migrated to validateTenantAccess + userClient. adminClient eliminated.
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface RecruitmentRequest {
   action: 'parse_cv' | 'score_candidate' | 'cultural_fit' | 'generate_rejection_email' | 
@@ -28,34 +35,10 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const request: RecruitmentRequest = await req.json();
     const { action, companyId } = request;
@@ -66,16 +49,14 @@ serve(async (req) => {
       });
     }
 
-    // Tenant isolation
-    const { data: membership } = await adminClient
-      .from('erp_user_companies').select('id')
-      .eq('user_id', userId).eq('company_id', companyId)
-      .eq('is_active', true).maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // S6.2B: validateTenantAccess replaces manual auth + manual adminClient + manual membership check
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userClient } = authResult;
 
     console.log(`[erp-hr-recruitment-agent] Action: ${action}, Company: ${companyId}`);
 
@@ -365,9 +346,9 @@ RESPONDE EN FORMATO JSON:
       result = { rawContent: content, parseError: true };
     }
 
-    // Si es score_candidate o analyze_candidate, actualizar el candidato en BD
+    // S6.2B: migrated from adminClient to userClient — candidate update is a normal data op
     if ((action === 'score_candidate' || action === 'analyze_candidate') && request.candidateId) {
-      await adminClient
+      await userClient
         .from('erp_hr_candidates')
         .update({
           ai_analysis: result,
