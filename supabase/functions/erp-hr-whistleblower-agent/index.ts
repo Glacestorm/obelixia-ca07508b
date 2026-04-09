@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface WhistleblowerRequest {
@@ -17,101 +18,107 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const body = await req.json() as WhistleblowerRequest;
+    const { action, company_id, report_id, data } = body;
 
-    const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
+    // =========================================================================
+    // PATH 1: ANONYMOUS SUBMIT_REPORT — EU Directive 2019/1937
+    // This is the ONLY documented exception in this batch.
+    // Anonymous reporters have no JWT, so we must use adminClient (service_role)
+    // for the INSERT. No tenant membership check is possible or required.
+    // =========================================================================
+    if (action === 'submit_report') {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const adminClient = createClient(supabaseUrl, serviceKey);
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
-    }
-
-    const { action, company_id, report_id, data } = await req.json() as WhistleblowerRequest;
-
-    // S2.1: Tenant isolation — skip for anonymous submit_report
-    if (action !== 'submit_report' && userId && company_id) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      // Optionally resolve userId if auth header is present (non-anonymous report)
+      let userId: string | null = null;
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.replace('Bearer ', '');
+        const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+        const tempClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
         });
+        const { data: claimsData } = await tempClient.auth.getClaims(token);
+        userId = (claimsData?.claims?.sub as string) || null;
       }
+
+      const reportData = data as {
+        category: string;
+        title: string;
+        description: string;
+        is_anonymous: boolean;
+        contact_method?: string;
+        contact_details?: string;
+        evidence_urls?: string[];
+      };
+
+      const reportCode = `WB-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+      // adminClient INSERT — anonymous reporters cannot use userClient (no JWT/RLS)
+      const { data: report, error } = await adminClient
+        .from('erp_hr_whistleblower_reports')
+        .insert({
+          company_id,
+          report_code: reportCode,
+          category: reportData.category,
+          title: reportData.title,
+          description_encrypted: reportData.description,
+          is_anonymous: reportData.is_anonymous,
+          reporter_id: reportData.is_anonymous ? null : userId,
+          contact_method: reportData.contact_method,
+          contact_details_encrypted: reportData.contact_details,
+          evidence_urls: reportData.evidence_urls,
+          status: 'received',
+          submission_channel: 'web_portal',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const acknowledgmentDeadline = new Date();
+      acknowledgmentDeadline.setDate(acknowledgmentDeadline.getDate() + 7);
+
+      await adminClient
+        .from('erp_hr_whistleblower_reports')
+        .update({ acknowledgment_deadline: acknowledgmentDeadline.toISOString() })
+        .eq('id', report.id);
+
+      return new Response(JSON.stringify({
+        success: true,
+        report_code: reportCode,
+        message: 'Denuncia recibida correctamente. Guarde el código para seguimiento.',
+        acknowledgment_deadline: acknowledgmentDeadline.toISOString(),
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    // =========================================================================
+    // PATH 2: ALL OTHER ACTIONS — Full validateTenantAccess required
+    // =========================================================================
+    if (!company_id) {
+      return new Response(JSON.stringify({ success: false, error: 'Missing company_id' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { userId, userClient } = authResult;
 
     console.log(`[erp-hr-whistleblower-agent] Action: ${action}, Company: ${company_id}`);
 
     switch (action) {
-      case 'submit_report': {
-        // Anonymous report submission - no auth required
-        const reportData = data as {
-          category: string;
-          title: string;
-          description: string;
-          is_anonymous: boolean;
-          contact_method?: string;
-          contact_details?: string;
-          evidence_urls?: string[];
-        };
-
-        // Generate unique report code
-        const reportCode = `WB-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
-        const { data: report, error } = await supabase
-          .from('erp_hr_whistleblower_reports')
-          .insert({
-            company_id,
-            report_code: reportCode,
-            category: reportData.category,
-            title: reportData.title,
-            description_encrypted: reportData.description, // In production, encrypt this
-            is_anonymous: reportData.is_anonymous,
-            reporter_id: reportData.is_anonymous ? null : userId,
-            contact_method: reportData.contact_method,
-            contact_details_encrypted: reportData.contact_details,
-            evidence_urls: reportData.evidence_urls,
-            status: 'received',
-            submission_channel: 'web_portal',
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Calculate acknowledgment deadline (7 days per EU Directive)
-        const acknowledgmentDeadline = new Date();
-        acknowledgmentDeadline.setDate(acknowledgmentDeadline.getDate() + 7);
-
-        await supabase
-          .from('erp_hr_whistleblower_reports')
-          .update({ acknowledgment_deadline: acknowledgmentDeadline.toISOString() })
-          .eq('id', report.id);
-
-        return new Response(JSON.stringify({
-          success: true,
-          report_code: reportCode,
-          message: 'Denuncia recibida correctamente. Guarde el código para seguimiento.',
-          acknowledgment_deadline: acknowledgmentDeadline.toISOString(),
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
       case 'get_reports': {
-        if (!userId || !company_id) {
-          throw new Error('Authentication required');
-        }
-
-        const { data: reports, error } = await supabase
+        const { data: reports, error } = await userClient
           .from('erp_hr_whistleblower_reports')
           .select(`
             id, report_code, category, title, status, priority_level,
@@ -123,17 +130,19 @@ serve(async (req) => {
 
         if (error) throw error;
 
-        // Get investigation summary
         const reportIds = reports?.map(r => r.id) || [];
-        const { data: investigations } = await supabase
-          .from('erp_hr_whistleblower_investigations')
-          .select('report_id, status, investigator_id')
-          .in('report_id', reportIds);
+        let reportsWithInvestigations = reports;
+        if (reportIds.length > 0) {
+          const { data: investigations } = await userClient
+            .from('erp_hr_whistleblower_investigations')
+            .select('report_id, status, investigator_id')
+            .in('report_id', reportIds);
 
-        const reportsWithInvestigations = reports?.map(report => ({
-          ...report,
-          investigation: investigations?.find(i => i.report_id === report.id),
-        }));
+          reportsWithInvestigations = reports?.map(report => ({
+            ...report,
+            investigation: investigations?.find(i => i.report_id === report.id),
+          }));
+        }
 
         return new Response(JSON.stringify({
           success: true,
@@ -149,11 +158,9 @@ serve(async (req) => {
       }
 
       case 'get_report_detail': {
-        if (!userId || !report_id) {
-          throw new Error('Authentication required');
-        }
+        if (!report_id) throw new Error('report_id is required');
 
-        const { data: report, error } = await supabase
+        const { data: report, error } = await userClient
           .from('erp_hr_whistleblower_reports')
           .select('*')
           .eq('id', report_id)
@@ -161,7 +168,7 @@ serve(async (req) => {
 
         if (error) throw error;
 
-        const { data: investigations } = await supabase
+        const { data: investigations } = await userClient
           .from('erp_hr_whistleblower_investigations')
           .select('*')
           .eq('report_id', report_id)
@@ -177,11 +184,9 @@ serve(async (req) => {
       }
 
       case 'acknowledge_report': {
-        if (!userId || !report_id) {
-          throw new Error('Authentication required');
-        }
+        if (!report_id) throw new Error('report_id is required');
 
-        const { error } = await supabase
+        const { error } = await userClient
           .from('erp_hr_whistleblower_reports')
           .update({
             status: 'under_review',
@@ -192,11 +197,10 @@ serve(async (req) => {
 
         if (error) throw error;
 
-        // Calculate resolution deadline (3 months per EU Directive)
         const resolutionDeadline = new Date();
         resolutionDeadline.setMonth(resolutionDeadline.getMonth() + 3);
 
-        await supabase
+        await userClient
           .from('erp_hr_whistleblower_reports')
           .update({ resolution_deadline: resolutionDeadline.toISOString() })
           .eq('id', report_id);
@@ -211,9 +215,7 @@ serve(async (req) => {
       }
 
       case 'update_investigation': {
-        if (!userId || !report_id) {
-          throw new Error('Authentication required');
-        }
+        if (!report_id) throw new Error('report_id is required');
 
         const investigationData = data as {
           findings?: string;
@@ -221,7 +223,7 @@ serve(async (req) => {
           recommended_actions?: string[];
         };
 
-        const { error } = await supabase
+        const { error } = await userClient
           .from('erp_hr_whistleblower_investigations')
           .insert({
             report_id,
@@ -233,9 +235,8 @@ serve(async (req) => {
 
         if (error) throw error;
 
-        // Update report status
         if (investigationData.status === 'completed') {
-          await supabase
+          await userClient
             .from('erp_hr_whistleblower_reports')
             .update({ status: 'resolved' })
             .eq('id', report_id);
@@ -250,13 +251,12 @@ serve(async (req) => {
       }
 
       case 'analyze_report': {
-        // AI analysis of report for priority and categorization
         const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-        if (!LOVABLE_API_KEY) {
-          throw new Error('LOVABLE_API_KEY not configured');
-        }
+        if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-        const { data: report } = await supabase
+        if (!report_id) throw new Error('report_id is required');
+
+        const { data: report } = await userClient
           .from('erp_hr_whistleblower_reports')
           .select('*')
           .eq('id', report_id)
@@ -307,9 +307,7 @@ Canal: ${report.submission_channel}`
           }),
         });
 
-        if (!response.ok) {
-          throw new Error(`AI API error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`AI API error: ${response.status}`);
 
         const aiData = await response.json();
         const content = aiData.choices?.[0]?.message?.content;
@@ -322,8 +320,8 @@ Canal: ${report.submission_channel}`
           analysis = { rawContent: content };
         }
 
-        // Update report with AI analysis
-        await supabase
+        // Update report with AI analysis via userClient
+        await userClient
           .from('erp_hr_whistleblower_reports')
           .update({
             priority_level: analysis.priority_level || 'medium',

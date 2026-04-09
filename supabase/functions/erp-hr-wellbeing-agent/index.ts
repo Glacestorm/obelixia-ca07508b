@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface WellbeingRequest {
   action: 'analyze_wellbeing' | 'generate_survey' | 'analyze_survey_results' | 'recommend_programs' | 'predict_burnout' | 'create_wellness_plan';
+  company_id?: string;
   employee_id?: string;
   department_id?: string;
   survey_data?: Record<string, unknown>;
@@ -18,27 +19,31 @@ serve(async (req) => {
   }
 
   try {
-    // === AUTH GATE ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Parse body first to extract company_id
+    const body = await req.json() as WellbeingRequest;
+    const { action, employee_id, department_id, survey_data, metrics, company_context } = body;
+
+    // Extract company_id from body or company_context
+    const company_id = body.company_id || (company_context?.company_id as string);
+    if (!company_id) {
+      return new Response(JSON.stringify({ error: 'Missing company_id' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+    // === AUTH GATE — validateTenantAccess ===
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-    console.log(`[erp-hr-wellbeing-agent] Authenticated user: ${claimsData.claims.sub}`);
+    console.log(`[erp-hr-wellbeing-agent] Authenticated user: ${authResult.userId}, company: ${company_id}`);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
-
-    const { action, employee_id, department_id, survey_data, metrics, company_context } = await req.json() as WellbeingRequest;
 
     console.log(`[erp-hr-wellbeing-agent] Action: ${action}`);
 
