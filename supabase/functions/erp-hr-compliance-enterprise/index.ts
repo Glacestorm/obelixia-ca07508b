@@ -35,7 +35,9 @@ serve(async (req) => {
     if (isAuthError(authResult)) {
       return jsonResponse(authResult.body, authResult.status);
     }
-    const { userId, userClient, adminClient } = authResult;
+    const { userId, userClient } = authResult;
+    // S6.2B: adminClient only used in seed_demo action below — extracted on demand
+
 
     console.log(`[erp-hr-compliance-enterprise] Action: ${action}, Company: ${companyId}, User: ${userId}`);
 
@@ -238,7 +240,11 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'seed_demo': {
-        // seed_demo stays on adminClient — DELETE ops lack RLS policies
+        // ──── S6.2B SEED EXCEPTION ────
+        // adminClient required: DELETE ops on compliance tables lack RLS DELETE policies.
+        // This action is seed/demo-only, not part of normal multi-tenant runtime.
+        // adminClient is extracted from authResult only here to limit scope.
+        const { adminClient } = await validateTenantAccess(req, companyId) as any;
         // Clean existing demo data
         await Promise.all([
           adminClient.from('erp_hr_compliance_policies').delete().eq('company_id', companyId),

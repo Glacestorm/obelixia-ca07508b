@@ -26,7 +26,9 @@ serve(async (req) => {
       });
     }
 
-    const { userId, userClient, adminClient } = authResult;
+    const { userId, userClient } = authResult;
+    // S6.2B: adminClient only used in seed_enterprise_data action below — extracted on demand
+
 
     let result: any;
 
@@ -324,8 +326,12 @@ serve(async (req) => {
       }
 
       // ===== SEED ENTERPRISE DATA =====
-      // S4.4A-2: adminClient — erp_hr_enterprise_permissions has no write RLS policy (global catalog)
+      // ──── S6.2B SEED EXCEPTION ────
+      // adminClient required: erp_hr_enterprise_permissions has no write RLS policy (global catalog).
+      // This action seeds demo/enterprise data. Not part of normal multi-tenant runtime.
+      // adminClient is extracted from authResult only here to limit scope.
       case 'seed_enterprise_data': {
+        const { adminClient } = await validateTenantAccess(req, companyId) as any;
         const { company_id } = params;
 
         // Seed legal entities
