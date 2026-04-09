@@ -2,15 +2,17 @@
  * erp-hr-regulatory-watch - Edge function para vigilancia normativa
  * Busca actualizaciones de convenios, CNO, y normativas laborales
  * Usa IA para detectar y clasificar cambios regulatorios
+ * 
+ * HARDENED S6.5B: validateTenantAccess(), company_id mandatory, AI-only (no DB ops)
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface WatchRequest {
   action: 'check_updates' | 'analyze_document' | 'get_cno_changes' | 'search_boe';
-  company_id?: string;
+  company_id: string;
   jurisdictions?: string[];
   categories?: string[];
   document_url?: string;
@@ -29,51 +31,33 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
+  const json = (data: unknown, status = 200) =>
+    new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
 
+  try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    // --- Parse body FIRST to extract company_id ---
     const { action, company_id, jurisdictions, categories, document_url, query } = await req.json() as WatchRequest;
+
+    if (!company_id || typeof company_id !== 'string') {
+      return json({ success: false, error: 'company_id is required' }, 400);
+    }
 
     console.log(`[erp-hr-regulatory-watch] Action: ${action}, Company: ${company_id}`);
 
-    // Tenant isolation
-    if (company_id) {
-      const adminClient = createClient(supabaseUrl, serviceKey);
-      const { data: membership } = await adminClient
-        .from('erp_user_companies').select('id')
-        .eq('user_id', userId).eq('company_id', company_id)
-        .eq('is_active', true).maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // --- AUTH + TENANT GATE ---
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return json(authResult.body, authResult.status);
     }
+    // AI-only function: userClient/adminClient returned but unused (no DB ops)
 
     let systemPrompt = '';
     let userPrompt = '';
@@ -264,13 +248,7 @@ FORMATO DE RESPUESTA (JSON):
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Rate limit exceeded'
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return json({ success: false, error: 'Rate limit exceeded' }, 429);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -294,24 +272,16 @@ FORMATO DE RESPUESTA (JSON):
 
     console.log(`[erp-hr-regulatory-watch] Success: ${action}`);
 
-    return new Response(JSON.stringify({
+    return json({
       success: true,
       action,
       ...result,
       timestamp: new Date().toISOString(),
       jurisdictions_checked: jurisdictions
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('[erp-hr-regulatory-watch] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return json({ success: false, error: 'Internal server error' }, 500);
   }
 });

@@ -1,50 +1,37 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  try {
-    // --- AUTH GATE ---
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return json({ success: false, error: 'Unauthorized' }, 401);
-    }
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
+  function json(data: unknown, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-    if (authError || !authUser) {
-      return json({ success: false, error: 'Invalid token' }, 401);
-    }
+  }
 
+  try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const supabaseUrl = SUPABASE_URL;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
+    // --- Parse body FIRST to extract company_id ---
     const { action, company_id, params } = await req.json();
+
+    if (!company_id || typeof company_id !== 'string') {
+      return json({ success: false, error: 'company_id is required' }, 400);
+    }
+
     console.log(`[erp-hr-premium-intelligence] Action: ${action}`);
 
-    // --- COMPANY ACCESS VALIDATION ---
-    if (company_id) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return json({ success: false, error: 'Forbidden' }, 403);
-      }
+    // --- AUTH + TENANT GATE ---
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return json(authResult.body, authResult.status);
     }
+    const supabase = authResult.userClient;
 
     // === LEGAL ENGINE SEED ===
     if (action === 'legal_seed_demo') {
@@ -253,7 +240,7 @@ serve(async (req) => {
           employee_id: c.employee_id,
           effective_date: c.start_date,
           expiration_date: c.end_date,
-          compliance_score: 0, // Will be calculated by AI compliance check
+          compliance_score: 0,
           compliance_issues: [],
           variables_used: { salary: c.base_salary, annual_salary: c.annual_salary, category: c.category, data_source: 'real_erp_contract', source_contract_id: c.id },
           generated_content: {},
@@ -466,12 +453,5 @@ FORMATO JSON estricto:
   } catch (error) {
     console.error('[erp-hr-premium-intelligence] Error:', error);
     return json({ success: false, error: 'Internal server error' }, 500);
-  }
-
-  function json(data: unknown, status = 200) {
-    return new Response(JSON.stringify(data), {
-      status,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   }
 });
