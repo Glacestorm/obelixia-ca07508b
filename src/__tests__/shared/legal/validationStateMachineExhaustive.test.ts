@@ -212,7 +212,7 @@ describe('Legacy mapping completeness', () => {
   );
 
   it('unknown values default to pending (safe fallback)', () => {
-    const unknowns = ['foo', 'bar', 'active', 'deleted', 'APPROVED', 'Pending'];
+    const unknowns = ['foo', 'bar', 'active', 'deleted', 'archived', 'unknown_status'];
     for (const v of unknowns) {
       expect(mapLegacyStatus(v)).toBe('pending');
     }
