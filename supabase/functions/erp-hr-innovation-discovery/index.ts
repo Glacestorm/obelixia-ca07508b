@@ -229,7 +229,9 @@ FORMATO DE RESPUESTA (JSON estricto):
           status_message: `Implementación de ${feature_code} iniciada`
         }]);
 
-        // setTimeout ops stay on adminClient — JWT may expire after response
+        // S6.2A EXCEPTION: adminClient justified in setTimeout — user's JWT may expire
+        // after HTTP response is sent, causing userClient calls to fail with 401.
+        // These are post-response background updates that cannot use RLS-bound client.
         setTimeout(async () => {
           await adminClient
             .from('erp_hr_innovation_features')

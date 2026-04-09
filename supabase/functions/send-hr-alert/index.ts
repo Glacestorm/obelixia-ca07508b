@@ -225,7 +225,9 @@ serve(async (req) => {
       }
     }
 
-    // === PUSH NOTIFICATION (adminClient — cross-user INSERT, no RLS for non-admin senders) ===
+    // === PUSH NOTIFICATION ===
+    // S6.2A EXCEPTION: adminClient justified — inserts notifications for OTHER users
+    // who may belong to different RLS scopes. userClient would be blocked by RLS.
     if (channels.includes('push')) {
       try {
         const pushRecipients = recipients.filter(r => r.user_id);
@@ -265,7 +267,9 @@ serve(async (req) => {
       console.error('[send-hr-alert] Failed to log alert:', logError);
     }
 
-    // === SYNC TO AI AGENT (adminClient — service-to-service invocation) ===
+    // === SYNC TO AI AGENT ===
+    // S6.2A EXCEPTION: adminClient justified — service-to-service invocation
+    // requires service_role for internal auth via x-internal-secret pattern.
     if (sync_to_ai) {
       try {
         await adminClient.functions.invoke('erp-hr-ai-agent', {

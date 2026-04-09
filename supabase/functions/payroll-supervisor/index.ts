@@ -28,7 +28,8 @@ serve(async (req) => {
         headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
-    const { userClient, adminClient } = authResult;
+    // S6.2A: adminClient removed — all data ops now use userClient (RLS-protected)
+    const { userClient } = authResult;
 
     // ─── START CYCLE ────────────────────────────────────────
     if (action === 'start_cycle') {
@@ -154,9 +155,8 @@ serve(async (req) => {
         .eq('id', cycle_id)
         .single();
 
-      // Exception: erp_audit_events SELECT requires audit.read permission via RLS
-      // Retain adminClient to avoid breaking transition history view
-      const { data: events } = await adminClient
+      // S6.2A: Migrated to userClient — erp_audit_events already uses userClient for INSERT (lines 60, 130)
+      const { data: events } = await userClient
         .from('erp_audit_events')
         .select('*')
         .eq('entity_id', cycle_id)

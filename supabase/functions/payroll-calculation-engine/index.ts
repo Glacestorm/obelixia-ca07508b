@@ -115,9 +115,8 @@ serve(async (req) => {
         status: authResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
-    // userClient for RLS-protected tables (erp_hr_employees, erp_audit_events)
-    // adminClient for hr_payroll_records (permissive USING(true) policy — S3 defect, keep on adminClient)
-    const { userClient, adminClient } = authResult;
+    // S6.2A: All data ops use userClient (RLS-protected). adminClient removed — no longer needed.
+    const { userClient } = authResult;
 
     // ─── CALCULATE PAYROLL ──────────────────────────────────
     if (action === 'calculate_payroll') {
