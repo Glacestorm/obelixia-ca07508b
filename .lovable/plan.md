@@ -1,44 +1,37 @@
 
 
-# S3 Fix: INSERT Policy for erp_hr_innovation_logs
+# S4.4A-1: Reducción selectiva de service_role — COMPLETADO
 
-## Current State
+## Funciones migradas
 
-**Table:** `erp_hr_innovation_logs`
-- Has `company_id` column (uuid, nullable)
-- Has `performed_by` column (uuid, nullable)
+### 1. hr-board-pack
+- **9/9 operaciones → userClient** (0 adminClient residual)
+- Eliminado: creación manual de `supabase` (service_role) y auth gate inline
+- Añadido: `validateTenantAccess(req, companyId)` → `userClient`
 
-**Existing policies:**
-| Policy | Command | USING | WITH CHECK |
-|--------|---------|-------|------------|
-| View innovation logs | SELECT | `user_has_erp_company_access(company_id)` | — |
+### 2. erp-hr-compliance-enterprise
+- **~33/~45 operaciones → userClient**
+- **~12 operaciones en adminClient**: `seed_demo` (DELETE + INSERT sin DELETE RLS policies)
+- Eliminado: creación manual de `supabase` (service_role) y auth gate inline
+- Añadido: `validateTenantAccess(req, companyId)` → `userClient` + `adminClient`
 
-No INSERT policy exists — this is the blocker for `erp-hr-innovation-discovery` migration.
+### 3. erp-hr-innovation-discovery
+- **8/10 operaciones → userClient**
+- **2 operaciones en adminClient**: setTimeout (JWT puede expirar post-response)
+- Eliminado: creación manual de `adminClient`/`userClient` y auth gate inline
+- Añadido: `validateTenantAccess(req, company_id)` → `userClient` + `adminClient`
 
-## Proposed Fix
+## Resumen
 
-Add one INSERT policy using the same tenant isolation function:
+| Función | Ops totales | → userClient | → adminClient | Motivo residual |
+|---------|:-----------:|:------------:|:-------------:|-----------------|
+| hr-board-pack | 9 | **9** | 0 | — |
+| erp-hr-compliance-enterprise | ~45 | **~33** | ~12 | seed_demo (sin DELETE policies) |
+| erp-hr-innovation-discovery | 10 | **8** | 2 | setTimeout (JWT expirado) |
+| **TOTAL** | **~64** | **~50** | **~14** | |
 
-```sql
-CREATE POLICY "insert_innovation_logs"
-  ON public.erp_hr_innovation_logs
-  FOR INSERT TO authenticated
-  WITH CHECK (public.user_has_erp_company_access(company_id));
-```
-
-## Risk Assessment
-
-- **No rupture**: Existing SELECT policy untouched. INSERT was previously done via service_role (bypassing RLS), so no existing userClient path is affected.
-- **Nullable company_id**: `user_has_erp_company_access(NULL)` returns false, so inserts without company_id will be rejected via userClient — this is correct behavior since the edge function always provides company_id.
-- **Scope**: Single table, single policy, zero logic changes.
-
-## Deliverable
-
-| Item | Value |
-|------|-------|
-| Table | `erp_hr_innovation_logs` |
-| Policy added | `insert_innovation_logs` (INSERT, authenticated) |
-| Isolation | `user_has_erp_company_access(company_id)` |
-| Tables touched | 1 |
-| Breaking changes | None |
-
+## Confirmación
+- ✅ Contratos API sin cambios
+- ✅ Lógica de negocio sin cambios
+- ✅ CORS y error sanitization intactos
+- ✅ 3 funciones desplegadas exitosamente
