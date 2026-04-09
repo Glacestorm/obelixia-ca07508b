@@ -1,66 +1,79 @@
 
 
-# S6.3B — Auth Hardening Batch 1: Payroll / Compliance / Reporting
+# S6.3C — Auth Hardening Batch 2: AI + Datos Sensibles
 
 ## Step 0 — Current Auth State
 
-| Function | JWT method | Membership check | Data ops client | service_role data ops | Target |
-|---|---|---|---|---|---|
-| erp-hr-payroll-recalculation | getClaims (manual) | adminClient (manual) | userClient (anon+JWT) | 0 (only membership) | `validateTenantAccess()` |
-| hr-compliance-automation | getClaims (manual) | adminClient (manual) | None (AI-only) | 0 (only membership) | `validateTenantAccess()` |
-| erp-hr-accounting-bridge | getClaims (manual) | service_role (manual) | **service_role for ALL ops** | ~15+ INSERT/SELECT/UPDATE | `validateTenantAccess()` — MAJOR |
-| hr-regulatory-reporting | getUser (manual) | service_role (manual) | **service_role for ALL ops** | ~20+ SELECT/INSERT/UPDATE | `validateTenantAccess()` — MAJOR |
-| hr-reporting-engine | getUser (manual) | service_role (manual) | **service_role for ALL ops** | ~15+ SELECT/INSERT/UPDATE/UPSERT | `validateTenantAccess()` — MAJOR |
+```text
+Function                        | JWT method     | Membership check         | Data ops client          | service_role data ops | Target
+────────────────────────────────┼────────────────┼──────────────────────────┼──────────────────────────┼───────────────────────┼────────────────────
+erp-hr-ai-agent (1322 lines)    | getUser manual | service_role (manual)    | service_role for ALL ops | ~20+ SELECT/INSERT    | validateTenantAccess() — MAJOR
+erp-hr-analytics-agent (460 ln) | getClaims man. | service_role (manual)    | AI-only (no data ops)    | 0 (membership only)   | validateTenantAccess()
+erp-hr-analytics-intelligence   | getClaims man. | NONE (no membership!)    | AI-only (no data ops)    | 0                     | validateTenantAccess()
+erp-hr-autonomous-copilot       | getUser manual | service_role (manual)    | AI-only (no data ops)    | 0 (membership only)   | validateTenantAccess()
+erp-hr-people-analytics-ai      | getClaims man. | service_role (manual)    | AI-only (no data ops)    | 0 (membership only)   | validateTenantAccess()
+```
 
-All 5 touch company-scoped data → all go to `validateTenantAccess()`. No exceptions needed.
+All 5 touch company-scoped data or operate on company context. All go to `validateTenantAccess()`.
+
+**Critical finding**: `erp-hr-analytics-intelligence` has NO membership check at all — any authenticated user can call it for any company. This is a tenant isolation gap.
 
 ---
 
 ## Changes per Function
 
-### 1. erp-hr-payroll-recalculation (826 lines) — MODERATE
-**Before**: Manual JWT via `getClaims` + manual `adminClient` for membership only. Data ops already on userClient.
-**Change**:
-- Replace lines 336-378 (manual auth + manual adminClient membership) with `validateTenantAccess(req, company_id)` + `isAuthError()` guard
-- Remove `createClient` import (use shared)
-- Rename existing `supabase` variable to use `userClient` from `validateTenantAccess`
-- All data ops already use the user-scoped client — minimal refactor
-**adminClient after**: 0
+### 1. erp-hr-ai-agent (1322 lines) — MAJOR REFACTOR
 
-### 2. hr-compliance-automation (230 lines) — SIMPLE
-**Before**: Manual JWT via `getClaims` + manual `adminClient` for membership. No DB data ops (pure AI function).
-**Change**:
-- Replace lines 31-70 (manual auth + manual adminClient membership) with `validateTenantAccess(req, body.company_id)` + `isAuthError()` guard
-- Remove manual `createClient` for service_role
-- No data ops to migrate (function only calls AI gateway)
-**adminClient after**: 0
+**Before**: Manual `getUser()` + `createClient(SERVICE_ROLE_KEY)` as `supabase`. ALL ~20+ data operations (knowledge base, collective agreements, PRL, leave requests, alerts, employees, contracts, payrolls, performance reviews, compliance alerts, agent actions) use the service_role client.
 
-### 3. erp-hr-accounting-bridge (947 lines) — MAJOR
-**Before**: Manual JWT via `getClaims` + service_role `supabase` for ALL operations. The `supabase` var on line 93 is `createClient(url, serviceKey)` — every INSERT/SELECT/UPDATE in all 7 handler functions uses it.
 **Change**:
-- Replace lines 82-121 (manual auth + manual membership) with `validateTenantAccess(req, companyId)` + `isAuthError()` guard
-- Pass `userClient` instead of `supabase` (service_role) to all handler functions: `generatePayrollEntry`, `generateSettlementEntry`, `generateSSContributionEntry`, `generateBatchPayrollEntries`, `reverseEntry`, `validateEntry`, `getAccountingStatus`
-- All ~15+ data ops on `erp_journal_entries`, `erp_journal_entry_lines`, `erp_hr_journal_entries`, `erp_hr_integration_log` migrate to `userClient`
-- Remove manual `createClient` for service_role
-**adminClient after**: 0
+- Replace lines 56-84 (manual auth + manual service_role client) with `validateTenantAccess(req, effectiveCompanyId)`
+- Body must be parsed before auth call to extract `company_id` — parse body first, then call `validateTenantAccess`
+- Rename all `supabase.from(...)` references to `userClient.from(...)`
+- All ~20+ data ops migrate to `userClient`
+- Remove manual `createClient` import for service_role
+- **adminClient after**: 0
 
-### 4. hr-regulatory-reporting (581 lines) — MAJOR
-**Before**: `getUser()` + service_role `supabase` for ALL operations (~20+ SELECTs on employee, compliance, fairness, security, AI governance tables + INSERTs on reports and evidence).
-**Change**:
-- Replace lines 104-132 (manual auth + manual membership) with `validateTenantAccess(req, company_id)` + `isAuthError()` guard
-- Replace all `supabase` (service_role) references with `userClient` throughout the function
-- All SELECTs on `erp_hr_employees`, `erp_hr_pay_equity_analyses`, `erp_hr_compliance_frameworks`, etc. and INSERTs on `erp_hr_generated_reports`, `erp_hr_regulatory_report_evidence`, `erp_hr_regulatory_report_reviews` move to `userClient`
-- Remove manual `createClient` for service_role
-**adminClient after**: 0
+### 2. erp-hr-analytics-agent (460 lines) — SIMPLE
 
-### 5. hr-reporting-engine (361 lines) — MAJOR
-**Before**: `getUser()` + service_role `supabase` for ALL operations (~15+ SELECTs + INSERTs/UPDATEs on report tables, template tables, schedule tables).
+**Before**: Manual `getClaims` + manual `adminClient` for membership only. No data ops beyond membership.
+
 **Change**:
-- Replace lines 19-47 (manual auth + manual membership) with `validateTenantAccess(req, company_id)` + `isAuthError()` guard
-- Replace all `supabase` (service_role) references with `userClient`
-- All operations on `erp_hr_report_templates`, `erp_hr_generated_reports`, `erp_hr_report_schedules` move to `userClient`
+- Replace lines 26-71 (manual auth + manual adminClient membership) with `validateTenantAccess(req, companyId)`
+- Remove `createClient` for service_role
+- No data ops to migrate (pure AI function)
+- **adminClient after**: 0
+
+### 3. erp-hr-analytics-intelligence (727 lines) — MODERATE + SECURITY FIX
+
+**Before**: Manual `getClaims` only. **NO membership check** — any authenticated user can invoke for any company context passed in params. No data ops (pure AI).
+
+**Change**:
+- Replace lines 26-39 (manual auth) with `validateTenantAccess(req, companyId)` where `companyId` comes from `context.companyId` or `params.companyId`
+- This ADDS tenant isolation that was completely missing
+- Remove manual `createClient`
+- **adminClient after**: 0
+- **Security improvement**: Closes tenant isolation gap
+
+### 4. erp-hr-autonomous-copilot (448 lines) — MODERATE
+
+**Before**: Manual `getUser()` + `createClient(SERVICE_ROLE_KEY)` as `supabase`. Membership check uses service_role. No data ops beyond membership (pure AI).
+
+**Change**:
+- Replace lines 21-64 (manual auth + manual service_role membership) with `validateTenantAccess(req, company_id)`
 - Remove manual `createClient` for service_role
-**adminClient after**: 0
+- No data ops to migrate
+- **adminClient after**: 0
+
+### 5. erp-hr-people-analytics-ai (232 lines) — SIMPLE
+
+**Before**: Manual `getClaims` + manual `adminClient` for membership only. No data ops beyond membership (pure AI).
+
+**Change**:
+- Replace lines 21-64 (manual auth + manual adminClient membership) with `validateTenantAccess(req, companyId)`
+- Remove `createClient` for service_role
+- No data ops to migrate
+- **adminClient after**: 0
 
 ---
 
@@ -69,20 +82,20 @@ All 5 touch company-scoped data → all go to `validateTenantAccess()`. No excep
 ```text
 Function                        | adminClient remaining | Status
 ────────────────────────────────┼───────────────────────┼─────────────────
-erp-hr-payroll-recalculation    | 0                     | Clean (S6.3B)
-hr-compliance-automation        | 0                     | Clean (S6.3B)
-erp-hr-accounting-bridge        | 0                     | Clean (S6.3B)
-hr-regulatory-reporting         | 0                     | Clean (S6.3B)
-hr-reporting-engine             | 0                     | Clean (S6.3B)
+erp-hr-ai-agent                 | 0                     | Clean (S6.3C)
+erp-hr-analytics-agent          | 0                     | Clean (S6.3C)
+erp-hr-analytics-intelligence   | 0                     | Clean (S6.3C) + security fix
+erp-hr-autonomous-copilot       | 0                     | Clean (S6.3C)
+erp-hr-people-analytics-ai      | 0                     | Clean (S6.3C)
 ```
 
 - **5/5 functions migrated** to `validateTenantAccess()`
-- **~50+ service_role data ops eliminated** across 3 major functions
+- **~20+ service_role data ops eliminated** (all in erp-hr-ai-agent)
+- **1 tenant isolation gap closed** (erp-hr-analytics-intelligence had no membership check)
 - **0 exceptions** — no residual adminClient needed
-- **Risk**: Low — all tables have existing RLS policies. Functions will now respect them instead of bypassing.
 
 ## Deliverables
 
 1. Code changes in all 5 edge functions
-2. `/docs/S6_auth_batch1_report.md` with before/after validation
+2. `/docs/S6_auth_batch2_report.md` with before/after validation
 
