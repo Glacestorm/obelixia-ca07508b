@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
-import { validateTenantAccess } from '../_shared/tenant-auth.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface RequestBody {
   action: string;
@@ -33,8 +33,8 @@ serve(async (req) => {
 
     // S6.2A: Replaced manual auth + adminClient with validateTenantAccess
     const authResult = await validateTenantAccess(req, companyId);
-    if ('status' in authResult && typeof authResult.status === 'number') {
-      return new Response(JSON.stringify({ error: authResult.error || 'Unauthorized' }), {
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
         status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
