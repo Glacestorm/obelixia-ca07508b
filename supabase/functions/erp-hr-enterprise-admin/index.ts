@@ -331,7 +331,7 @@ serve(async (req) => {
       // This action seeds demo/enterprise data. Not part of normal multi-tenant runtime.
       // adminClient is extracted from authResult only here to limit scope.
       case 'seed_enterprise_data': {
-        const { adminClient } = await validateTenantAccess(req, companyId) as any;
+        const { adminClient } = authResult as any;
         const { company_id } = params;
 
         // Seed legal entities

@@ -244,7 +244,7 @@ FORMATO DE RESPUESTA (JSON estricto):
         // adminClient required: DELETE ops on compliance tables lack RLS DELETE policies.
         // This action is seed/demo-only, not part of normal multi-tenant runtime.
         // adminClient is extracted from authResult only here to limit scope.
-        const { adminClient } = await validateTenantAccess(req, companyId) as any;
+        const { adminClient } = authResult as any;
         // Clean existing demo data
         await Promise.all([
           adminClient.from('erp_hr_compliance_policies').delete().eq('company_id', companyId),
