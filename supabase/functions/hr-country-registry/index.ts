@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess } from '../_shared/tenant-auth.ts';
 
 interface RequestBody {
   action: string;
@@ -16,7 +16,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Helper inside serve() so corsHeaders is in scope
   function jsonResponse(data: Record<string, unknown>) {
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -24,30 +23,6 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
-
     const { action, companyId, countryCode, data, params } = await req.json() as RequestBody;
 
     if (!companyId) {
@@ -56,21 +31,20 @@ serve(async (req) => {
       });
     }
 
-    // Tenant isolation
-    const { data: membership } = await adminClient
-      .from('erp_user_companies').select('id')
-      .eq('user_id', userId).eq('company_id', companyId)
-      .eq('is_active', true).maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // S6.2A: Replaced manual auth + adminClient with validateTenantAccess
+    const authResult = await validateTenantAccess(req, companyId);
+    if ('status' in authResult && typeof authResult.status === 'number') {
+      return new Response(JSON.stringify({ error: authResult.error || 'Unauthorized' }), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    // S6.2A: All data ops use userClient (RLS-protected). adminClient eliminated.
+    const { userClient } = authResult;
 
     switch (action) {
       // ==================== COUNTRY REGISTRY ====================
       case 'list_countries': {
-        const { data: countries, error } = await adminClient
+        const { data: countries, error } = await userClient
           .from('hr_country_registry')
           .select('*')
           .eq('company_id', companyId)
@@ -81,7 +55,7 @@ serve(async (req) => {
 
       case 'upsert_country': {
         const record = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
-        const { data: country, error } = await adminClient
+        const { data: country, error } = await userClient
           .from('hr_country_registry')
           .upsert(record, { onConflict: 'company_id,country_code' })
           .select()
@@ -91,7 +65,7 @@ serve(async (req) => {
       }
 
       case 'toggle_country': {
-        const { data: updated, error } = await adminClient
+        const { data: updated, error } = await userClient
           .from('hr_country_registry')
           .update({ is_enabled: data?.is_enabled, updated_at: new Date().toISOString() })
           .eq('id', data?.id)
@@ -103,7 +77,7 @@ serve(async (req) => {
 
       // ==================== POLICIES ====================
       case 'list_policies': {
-        let query = adminClient
+        let query = userClient
           .from('hr_country_policies')
           .select('*')
           .eq('company_id', companyId)
@@ -118,7 +92,7 @@ serve(async (req) => {
 
       case 'upsert_policy': {
         const record = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
-        const { data: policy, error } = await adminClient
+        const { data: policy, error } = await userClient
           .from('hr_country_policies')
           .upsert(record)
           .select()
@@ -130,7 +104,7 @@ serve(async (req) => {
       case 'resolve_policy': {
         const { employee_id, policy_type, policy_key } = params as Record<string, string>;
         
-        const { data: emp } = await adminClient
+        const { data: emp } = await userClient
           .from('erp_hr_employees')
           .select('country_code, department_id')
           .eq('id', employee_id)
@@ -138,7 +112,7 @@ serve(async (req) => {
         
         const cc = emp?.country_code || 'ES';
         
-        const { data: policies, error } = await adminClient
+        const { data: policies, error } = await userClient
           .from('hr_country_policies')
           .select('*')
           .eq('company_id', companyId)
@@ -155,7 +129,7 @@ serve(async (req) => {
 
       // ==================== EMPLOYEE EXTENSIONS ====================
       case 'get_employee_extension': {
-        const { data: ext, error } = await adminClient
+        const { data: ext, error } = await userClient
           .from('hr_employee_extensions')
           .select('*')
           .eq('employee_id', params?.employee_id as string)
@@ -167,7 +141,7 @@ serve(async (req) => {
 
       case 'upsert_employee_extension': {
         const record = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
-        const { data: ext, error } = await adminClient
+        const { data: ext, error } = await userClient
           .from('hr_employee_extensions')
           .upsert(record, { onConflict: 'employee_id,country_code' })
           .select()
@@ -177,7 +151,7 @@ serve(async (req) => {
       }
 
       case 'list_extensions_by_country': {
-        const { data: exts, error } = await adminClient
+        const { data: exts, error } = await userClient
           .from('hr_employee_extensions')
           .select('*')
           .eq('company_id', companyId)
@@ -188,18 +162,18 @@ serve(async (req) => {
 
       // ==================== STATS ====================
       case 'get_stats': {
-        const { data: countries } = await adminClient
+        const { data: countries } = await userClient
           .from('hr_country_registry')
           .select('id, is_enabled')
           .eq('company_id', companyId);
         
-        const { data: policies } = await adminClient
+        const { data: policies } = await userClient
           .from('hr_country_policies')
           .select('id, policy_type')
           .eq('company_id', companyId)
           .eq('is_active', true);
         
-        const { data: extensions } = await adminClient
+        const { data: extensions } = await userClient
           .from('hr_employee_extensions')
           .select('id')
           .eq('company_id', companyId);
@@ -249,7 +223,8 @@ serve(async (req) => {
           }
         };
 
-        const { error: countryErr } = await adminClient
+        // S6.2A: Seed data uses userClient — user is authenticated and data is company-scoped
+        const { error: countryErr } = await userClient
           .from('hr_country_registry')
           .upsert(spainDefaults, { onConflict: 'company_id,country_code' });
         if (countryErr) throw countryErr;
@@ -293,7 +268,7 @@ serve(async (req) => {
         ];
 
         for (const policy of defaultPolicies) {
-          await adminClient.from('hr_country_policies').upsert(policy);
+          await userClient.from('hr_country_policies').upsert(policy);
         }
 
         return jsonResponse({ success: true, message: 'Spain defaults seeded' });
@@ -304,13 +279,13 @@ serve(async (req) => {
         const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
         if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-        const { data: countries } = await adminClient
+        const { data: countries } = await userClient
           .from('hr_country_registry')
           .select('*')
           .eq('company_id', companyId)
           .eq('is_enabled', true);
 
-        const { data: policies } = await adminClient
+        const { data: policies } = await userClient
           .from('hr_country_policies')
           .select('*')
           .eq('company_id', companyId)

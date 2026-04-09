@@ -154,9 +154,8 @@ serve(async (req) => {
         .eq('id', cycle_id)
         .single();
 
-      // Exception: erp_audit_events SELECT requires audit.read permission via RLS
-      // Retain adminClient to avoid breaking transition history view
-      const { data: events } = await adminClient
+      // S6.2A: Migrated to userClient — erp_audit_events already uses userClient for INSERT (lines 60, 130)
+      const { data: events } = await userClient
         .from('erp_audit_events')
         .select('*')
         .eq('entity_id', cycle_id)
