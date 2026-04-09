@@ -99,7 +99,7 @@ serve(async (req) => {
         headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
-    const supabase = authResult.adminClient;
+    const supabase = authResult.userClient;
 
     // ─── CALCULATE RATE ─────────────────────────────────────
     if (action === 'calculate_rate') {

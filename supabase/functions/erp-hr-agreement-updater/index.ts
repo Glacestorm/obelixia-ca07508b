@@ -3,12 +3,17 @@
  * Busca renovaciones de convenios y actualiza tablas salariales
  * Se ejecuta diariamente vía pg_cron o manualmente
  * 
- * HARDENED SP6: dual-path auth (JWT admin | X-Cron-Secret), error sanitization
+ * HARDENED S6.5B: Migrated to shared auth utilities (validateCronOrServiceAuth + validateAuth).
+ * LEGITIMATE EXCEPTION: Uses service_role for data ops — writes to system-level catalog tables
+ * (erp_hr_collective_agreements, erp_hr_agreement_salary_tables) that are NOT company-scoped.
+ * RLS policies are designed for company-scoped access; system catalog writes require service_role.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateCronOrServiceAuth } from '../_shared/cron-auth.ts';
+import { validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface UpdateRequest {
   action: 'check_renewals' | 'update_agreement' | 'bulk_update' | 'daily_scan';
@@ -45,64 +50,44 @@ serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase credentials not configured');
 
-    // ===================== DUAL-PATH AUTH =====================
-    const authHeader = req.headers.get('Authorization');
-    let authenticated = false;
+    // ===================== DUAL-PATH AUTH (shared utilities) =====================
+    const cronAuth = validateCronOrServiceAuth(req);
 
-    // Path 1: JWT de usuario → admin role check
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      
-      // Create anon client to validate user JWT
-      const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '', {
-        global: { headers: { Authorization: authHeader } },
-      });
-
-      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-
-      if (!claimsError && claimsData?.claims?.sub) {
-        const userId = claimsData.claims.sub;
-        
-        // Admin role check using service-role client
-        const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const { data: roles } = await adminClient
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId);
-
-        const userRoles = (roles || []).map((r: any) => r.role);
-        const isAdmin = userRoles.includes('admin') || userRoles.includes('superadmin');
-
-        if (!isAdmin) {
-          console.warn(`[agreement-updater] Non-admin user ${userId} attempted access`);
-          return json({ error: 'Forbidden: admin role required' }, 403);
-        }
-
-        authenticated = true;
-        console.log(`[agreement-updater] Authenticated via JWT: admin user ${userId}`);
+    if (cronAuth.valid && (cronAuth.source === 'cron' || cronAuth.source === 'service_role')) {
+      // Path 1: Cron/service_role — proceed directly
+      console.log(`[agreement-updater] Authenticated via ${cronAuth.source}`);
+    } else if (cronAuth.valid && cronAuth.source === 'user') {
+      // Path 2: User JWT — validate + admin role check
+      const authResult = await validateAuth(req);
+      if (isAuthError(authResult)) {
+        return json({ error: 'Unauthorized' }, 401);
       }
-      // If claims invalid, fall through to cron path
-    }
 
-    // Path 2: Cron/system call → X-Cron-Secret header
-    if (!authenticated) {
-      const cronSecret = req.headers.get('X-Cron-Secret');
-      const expectedSecret = Deno.env.get('CRON_SECRET');
-      if (cronSecret && expectedSecret && cronSecret === expectedSecret) {
-        authenticated = true;
-        console.log('[agreement-updater] Authenticated via X-Cron-Secret (system/cron)');
+      // Admin role check using service-role client
+      const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: roles } = await adminClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authResult.userId);
+
+      const userRoles = (roles || []).map((r: any) => r.role);
+      const isAdmin = userRoles.includes('admin') || userRoles.includes('superadmin');
+
+      if (!isAdmin) {
+        console.warn(`[agreement-updater] Non-admin user ${authResult.userId} attempted access`);
+        return json({ error: 'Forbidden: admin role required' }, 403);
       }
-    }
 
-    // No auth → reject
-    if (!authenticated) {
+      console.log(`[agreement-updater] Authenticated via JWT: admin user ${authResult.userId}`);
+    } else {
+      // No valid auth
       return json({ error: 'Unauthorized' }, 401);
     }
     // ===================== END AUTH =====================
 
+    // service_role client for data ops (LEGITIMATE EXCEPTION: system catalog writes)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { action, target_year, sector, agreement_codes, dry_run } = await req.json() as UpdateRequest;
