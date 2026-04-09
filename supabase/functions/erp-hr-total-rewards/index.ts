@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface TotalRewardsRequest {
   action: 'analyze_compensation' | 'compare_market' | 'generate_recommendations' | 'forecast_total_package';
@@ -24,79 +24,71 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // === AUTH GATE ===
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || supabaseKey;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub as string;
-
     const { action, employee_id, company_id, fiscal_year, job_level, job_family, location } = await req.json() as TotalRewardsRequest;
 
     // === UNIFIED TENANT RESOLUTION ===
-    let companyId: string | null = null;
+    let resolvedCompanyId: string | null = null;
 
     if (employee_id) {
-      // Path 1: Resolve company from employee
-      const { data: empData, error: empError } = await supabase
-        .from('erp_hr_employees')
-        .select('company_id')
-        .eq('id', employee_id)
-        .maybeSingle();
+      // Path 1: Need to resolve company from employee first — use a preliminary auth check
+      // We'll validate tenant access after resolving the company_id
+      if (company_id) {
+        resolvedCompanyId = company_id;
+      } else {
+        // We need userClient to resolve employee → company_id via RLS
+        // Use company_id from a preliminary lookup; for now validate auth only
+        const { validateAuth } = await import('../_shared/tenant-auth.ts');
+        const authResult = await validateAuth(req);
+        if (isAuthError(authResult)) {
+          return new Response(JSON.stringify(authResult.body), {
+            status: authResult.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
 
-      if (empError || !empData?.company_id) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        // Create a temporary userClient for the employee lookup
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+        const authHeader = req.headers.get('Authorization')!;
+        const tempUserClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
         });
-      }
 
-      companyId = empData.company_id;
+        const { data: empData, error: empError } = await tempUserClient
+          .from('erp_hr_employees')
+          .select('company_id')
+          .eq('id', employee_id)
+          .maybeSingle();
+
+        if (empError || !empData?.company_id) {
+          return new Response(JSON.stringify({ error: 'Forbidden' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        resolvedCompanyId = empData.company_id;
+      }
     } else if (company_id) {
-      // Path 2: company_id provided directly (for actions without employee)
-      companyId = company_id;
+      resolvedCompanyId = company_id;
     } else {
-      // No tenant context → reject
       return new Response(JSON.stringify({ error: 'Bad Request: employee_id or company_id required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Validate user membership to resolved company
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
+    // === VALIDATE TENANT ACCESS ===
+    const authResult = await validateTenantAccess(req, resolvedCompanyId!);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userId, userClient } = authResult;
+    const companyId = resolvedCompanyId!;
 
     console.log(`[erp-hr-total-rewards] Processing action: ${action}, user: ${userId}, company: ${companyId}`);
 
@@ -106,13 +98,12 @@ serve(async (req) => {
 
     // Fetch relevant data based on action
     if (action === 'analyze_compensation' && employee_id && fiscal_year) {
-      // Use the actual tables from schema
-      const { data: compensations } = await supabase
+      const { data: compensations } = await userClient
         .from('erp_hr_compensation')
         .select('*')
         .eq('employee_id', employee_id);
 
-      const { data: benefitsEnrollments } = await supabase
+      const { data: benefitsEnrollments } = await userClient
         .from('erp_hr_benefits_enrollments')
         .select(`
           *,
@@ -121,7 +112,7 @@ serve(async (req) => {
         .eq('employee_id', employee_id)
         .eq('status', 'active');
 
-      const { data: benchmarks } = await supabase
+      const { data: benchmarks } = await userClient
         .from('erp_hr_salary_bands')
         .select('*')
         .eq('company_id', companyId)
@@ -184,7 +175,7 @@ Proporciona un análisis completo del paquete de compensación total, incluyendo
     }
 
     else if (action === 'compare_market') {
-      const { data: benchmarks } = await supabase
+      const { data: benchmarks } = await userClient
         .from('erp_hr_salary_bands')
         .select('*')
         .eq('company_id', companyId)
@@ -241,7 +232,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     }
 
     else if (action === 'forecast_total_package' && employee_id) {
-      const { data: currentComp } = await supabase
+      const { data: currentComp } = await userClient
         .from('erp_hr_compensation')
         .select('*')
         .eq('employee_id', employee_id)

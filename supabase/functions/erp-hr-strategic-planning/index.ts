@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface Request {
   action: string;
@@ -13,48 +13,25 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    // --- AUTH GATE ---
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return json({ success: false, error: 'Unauthorized' }, 401);
-    }
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-    if (authError || !authUser) {
-      return json({ success: false, error: 'Invalid token' }, 401);
-    }
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
-
-    const supabaseUrl = SUPABASE_URL;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { action, company_id, params } = await req.json() as Request;
     console.log(`[erp-hr-strategic-planning] Action: ${action}`);
 
-    // --- COMPANY ACCESS VALIDATION ---
-    if (company_id) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return json({ success: false, error: 'Forbidden' }, 403);
-      }
+    // === VALIDATE TENANT ACCESS ===
+    if (!company_id) {
+      return json({ success: false, error: 'company_id is required' }, 400);
     }
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return json(authResult.body, authResult.status);
+    }
+    const { userClient } = authResult;
 
     // === CRUD ACTIONS ===
     if (action === 'list_plans') {
-      const { data, error } = await supabase.from('erp_hr_workforce_plans').select('*').eq('company_id', company_id).order('created_at', { ascending: false });
+      const { data, error } = await userClient.from('erp_hr_workforce_plans').select('*').eq('company_id', company_id).order('created_at', { ascending: false });
       if (error) throw error;
       return json({ success: true, data });
     }
@@ -62,11 +39,11 @@ serve(async (req) => {
     if (action === 'get_plan_detail') {
       const planId = params?.plan_id as string;
       const [planRes, hcRes, scenRes, skillRes, costRes] = await Promise.all([
-        supabase.from('erp_hr_workforce_plans').select('*').eq('id', planId).single(),
-        supabase.from('erp_hr_headcount_models').select('*').eq('plan_id', planId).order('department'),
-        supabase.from('erp_hr_scenarios').select('*').eq('plan_id', planId).order('created_at', { ascending: false }),
-        supabase.from('erp_hr_skill_gap_forecasts').select('*').eq('plan_id', planId).order('criticality'),
-        supabase.from('erp_hr_cost_projections').select('*').eq('plan_id', planId).order('period'),
+        userClient.from('erp_hr_workforce_plans').select('*').eq('id', planId).single(),
+        userClient.from('erp_hr_headcount_models').select('*').eq('plan_id', planId).order('department'),
+        userClient.from('erp_hr_scenarios').select('*').eq('plan_id', planId).order('created_at', { ascending: false }),
+        userClient.from('erp_hr_skill_gap_forecasts').select('*').eq('plan_id', planId).order('criticality'),
+        userClient.from('erp_hr_cost_projections').select('*').eq('plan_id', planId).order('period'),
       ]);
       if (planRes.error) throw planRes.error;
       return json({ success: true, data: {
@@ -79,7 +56,7 @@ serve(async (req) => {
     }
 
     if (action === 'list_scenarios') {
-      const { data, error } = await supabase.from('erp_hr_scenarios').select('*').eq('company_id', company_id).order('created_at', { ascending: false });
+      const { data, error } = await userClient.from('erp_hr_scenarios').select('*').eq('company_id', company_id).order('created_at', { ascending: false });
       if (error) throw error;
       return json({ success: true, data });
     }
@@ -87,20 +64,19 @@ serve(async (req) => {
     if (action === 'upsert_scenario') {
       const scenarioData = params?.scenario as Record<string, unknown>;
       if (!scenarioData) throw new Error('scenario data required');
-      const { data, error } = await supabase.from('erp_hr_scenarios').upsert({ ...scenarioData, company_id } as any).select().single();
+      const { data, error } = await userClient.from('erp_hr_scenarios').upsert({ ...scenarioData, company_id } as any).select().single();
       if (error) throw error;
       return json({ success: true, data });
     }
 
     if (action === 'get_stats') {
       const [plansRes, scenRes, hcRes, skillRes, realEmpRes, realDeptRes] = await Promise.all([
-        supabase.from('erp_hr_workforce_plans').select('id, status, budget_total, budget_used', { count: 'exact' }).eq('company_id', company_id),
-        supabase.from('erp_hr_scenarios').select('id, status, risk_level', { count: 'exact' }).eq('company_id', company_id),
-        supabase.from('erp_hr_headcount_models').select('current_headcount, projected_headcount, gap, hiring_priority').eq('company_id', company_id),
-        supabase.from('erp_hr_skill_gap_forecasts').select('gap, criticality').eq('company_id', company_id),
-        // Real headcount from erp_hr_employees
-        supabase.from('erp_hr_employees').select('id, department_id, base_salary', { count: 'exact' }).eq('company_id', company_id).eq('status', 'active'),
-        supabase.from('erp_hr_departments').select('id, name, budget').eq('company_id', company_id).eq('is_active', true),
+        userClient.from('erp_hr_workforce_plans').select('id, status, budget_total, budget_used', { count: 'exact' }).eq('company_id', company_id),
+        userClient.from('erp_hr_scenarios').select('id, status, risk_level', { count: 'exact' }).eq('company_id', company_id),
+        userClient.from('erp_hr_headcount_models').select('current_headcount, projected_headcount, gap, hiring_priority').eq('company_id', company_id),
+        userClient.from('erp_hr_skill_gap_forecasts').select('gap, criticality').eq('company_id', company_id),
+        userClient.from('erp_hr_employees').select('id, department_id, base_salary', { count: 'exact' }).eq('company_id', company_id).eq('status', 'active'),
+        userClient.from('erp_hr_departments').select('id, name, budget').eq('company_id', company_id).eq('is_active', true),
       ]);
       const hcData = hcRes.data || [];
       const totalCurrentHC = hcData.reduce((s: number, r: any) => s + (r.current_headcount || 0), 0);
@@ -111,7 +87,6 @@ serve(async (req) => {
       const plans = plansRes.data || [];
       const totalBudget = plans.reduce((s: number, p: any) => s + Number(p.budget_total || 0), 0);
       
-      // Real data enrichment
       const realHeadcount = realEmpRes.count || 0;
       const realTotalSalary = (realEmpRes.data || []).reduce((s: number, e: any) => s + Number(e.base_salary || 0), 0);
       const realDepts = (realDeptRes.data || []).length;
@@ -127,7 +102,6 @@ serve(async (req) => {
         critical_hires: criticalHires,
         critical_skill_gaps: criticalSkills,
         total_budget: totalBudget,
-        // Real data from ERP base
         real_data: {
           source: 'erp_hr_employees',
           real_headcount: realHeadcount,
@@ -140,13 +114,13 @@ serve(async (req) => {
 
     // === DATA BRIDGE: Real headcount breakdown ===
     if (action === 'get_real_headcount') {
-      const { data: employees } = await supabase
+      const { data: employees } = await userClient
         .from('erp_hr_employees')
         .select('id, department_id, position_id, job_title, category, base_salary, contract_type, hire_date, status')
         .eq('company_id', company_id)
         .eq('status', 'active');
       
-      const { data: departments } = await supabase
+      const { data: departments } = await userClient
         .from('erp_hr_departments')
         .select('id, name, budget')
         .eq('company_id', company_id)
@@ -155,7 +129,6 @@ serve(async (req) => {
       const deptMap: Record<string, { name: string; budget: number }> = {};
       (departments || []).forEach((d: any) => { deptMap[d.id] = { name: d.name, budget: Number(d.budget || 0) }; });
 
-      // Group by department
       const byDept: Record<string, { count: number; totalSalary: number; contractTypes: Record<string, number> }> = {};
       (employees || []).forEach((e: any) => {
         const deptId = e.department_id || 'unassigned';
@@ -188,14 +161,13 @@ serve(async (req) => {
       });
     }
 
-    // === SEED ACTIONS (P9.6) ===
+    // === SEED ACTIONS ===
     if (action === 'workforce_seed_demo') {
-      // Workforce Planning seed (P3)
       const plans = [
         { company_id, plan_name: 'Plan Estratégico RRHH 2026-2028', plan_type: 'strategic', status: 'active', horizon_months: 36, budget_total: 2500000, budget_used: 450000, target_headcount: 320, current_headcount: 275, description: 'Plan estratégico de crecimiento y transformación digital' },
         { company_id, plan_name: 'Plan Expansión Internacional Q3', plan_type: 'expansion', status: 'draft', horizon_months: 12, budget_total: 800000, budget_used: 0, target_headcount: 45, current_headcount: 0, description: 'Apertura mercado LATAM con equipo local' },
       ];
-      const { data: planData } = await supabase.from('erp_hr_workforce_plans').insert(plans as any).select();
+      const { data: planData } = await userClient.from('erp_hr_workforce_plans').insert(plans as any).select();
 
       if (planData?.[0]) {
         const planId = planData[0].id;
@@ -205,21 +177,21 @@ serve(async (req) => {
           { company_id, plan_id: planId, department: 'Operations', current_headcount: 95, projected_headcount: 100, gap: 5, hiring_priority: 'medium', avg_cost_per_hire: 5000, timeline_months: 18 },
           { company_id, plan_id: planId, department: 'HR', current_headcount: 20, projected_headcount: 22, gap: 2, hiring_priority: 'low', avg_cost_per_hire: 7000, timeline_months: 24 },
         ];
-        await supabase.from('erp_hr_headcount_models').insert(headcountModels as any);
+        await userClient.from('erp_hr_headcount_models').insert(headcountModels as any);
 
         const scenarios = [
           { company_id, plan_id: planId, scenario_name: 'Crecimiento Orgánico', scenario_type: 'growth', status: 'active', risk_level: 'low', assumptions: { growth_rate: 15, attrition_rate: 8, hiring_success: 85 }, projected_cost: 1200000 },
           { company_id, plan_id: planId, scenario_name: 'Recesión Moderada', scenario_type: 'downturn', status: 'active', risk_level: 'high', assumptions: { growth_rate: -5, attrition_rate: 12, hiring_freeze: true }, projected_cost: -350000 },
           { company_id, plan_id: planId, scenario_name: 'Automatización Acelerada', scenario_type: 'transformation', status: 'draft', risk_level: 'medium', assumptions: { automation_pct: 30, reskill_budget: 200000 }, projected_cost: 800000 },
         ];
-        await supabase.from('erp_hr_scenarios').insert(scenarios as any);
+        await userClient.from('erp_hr_scenarios').insert(scenarios as any);
 
         const skillGaps = [
           { company_id, plan_id: planId, skill_name: 'AI/ML Engineering', current_level: 2, required_level: 4, gap: 2, criticality: 'critical', mitigation: 'Programa de formación + contratación externa', department: 'Engineering' },
           { company_id, plan_id: planId, skill_name: 'Cloud Architecture (AWS)', current_level: 3, required_level: 5, gap: 2, criticality: 'high', mitigation: 'Certificaciones + mentoring', department: 'Engineering' },
           { company_id, plan_id: planId, skill_name: 'Data Analytics', current_level: 2, required_level: 4, gap: 2, criticality: 'high', mitigation: 'Bootcamp interno', department: 'Sales' },
         ];
-        await supabase.from('erp_hr_skill_gap_forecasts').insert(skillGaps as any);
+        await userClient.from('erp_hr_skill_gap_forecasts').insert(skillGaps as any);
 
         const costs = [
           { company_id, plan_id: planId, period: '2026-Q1', category: 'hiring', amount: 180000, description: 'Contrataciones Q1' },
@@ -227,19 +199,18 @@ serve(async (req) => {
           { company_id, plan_id: planId, period: '2026-Q1', category: 'training', amount: 75000, description: 'Formación y certificaciones' },
           { company_id, plan_id: planId, period: '2026-Q2', category: 'training', amount: 95000, description: 'Bootcamps internos' },
         ];
-        await supabase.from('erp_hr_cost_projections').insert(costs as any);
+        await userClient.from('erp_hr_cost_projections').insert(costs as any);
       }
 
       return json({ success: true, data: { message: 'Workforce Planning demo data seeded' } });
     }
 
     if (action === 'twin_seed_demo') {
-      // Digital Twin seed (P5)
       const twins = [
         { company_id, twin_name: 'Digital Twin - Producción', twin_type: 'production', status: 'active', sync_frequency_minutes: 30, last_sync_at: new Date().toISOString(), health_score: 92, divergence_score: 4, modules_tracked: ['hr', 'operations', 'payroll'], description: 'Réplica del entorno productivo para simulaciones seguras' },
         { company_id, twin_name: 'Digital Twin - Sandbox', twin_type: 'sandbox', status: 'paused', sync_frequency_minutes: 60, health_score: 78, divergence_score: 18, modules_tracked: ['hr', 'compensation'], description: 'Entorno de pruebas para cambios organizacionales' },
       ];
-      const { data: twinData } = await supabase.from('erp_hr_twin_instances').insert(twins as any).select();
+      const { data: twinData } = await userClient.from('erp_hr_twin_instances').insert(twins as any).select();
 
       if (twinData?.[0]) {
         const twinId = twinData[0].id;
@@ -248,26 +219,26 @@ serve(async (req) => {
           { company_id, twin_id: twinId, module_name: 'payroll', snapshot_data: { total_gross: 1250000, avg_salary: 38500, deductions: 312000 }, recorded_at: new Date().toISOString() },
           { company_id, twin_id: twinId, module_name: 'operations', snapshot_data: { active_projects: 12, utilization: 87, overtime_hours: 340 }, recorded_at: new Date().toISOString() },
         ];
-        await supabase.from('erp_hr_twin_module_snapshots').insert(snapshots as any);
+        await userClient.from('erp_hr_twin_module_snapshots').insert(snapshots as any);
 
         const metrics = [
           { company_id, twin_id: twinId, metric_key: 'headcount', metric_value: 275, metric_type: 'workforce', baseline_value: 260, variance_pct: 5.8 },
           { company_id, twin_id: twinId, metric_key: 'turnover_rate', metric_value: 8.5, metric_type: 'retention', baseline_value: 10.2, variance_pct: -16.7 },
           { company_id, twin_id: twinId, metric_key: 'cost_per_employee', metric_value: 42000, metric_type: 'financial', baseline_value: 40500, variance_pct: 3.7 },
         ];
-        await supabase.from('erp_hr_twin_metrics').insert(metrics as any);
+        await userClient.from('erp_hr_twin_metrics').insert(metrics as any);
 
         const experiments = [
           { company_id, twin_id: twinId, experiment_name: 'Semana laboral 4 días', hypothesis: 'Reducir jornada a 4 días mantiene productividad y reduce rotación', status: 'completed', variables: { work_days: 4, salary_impact: 0, hours_reduction: 20 }, results: { productivity_change: -2, turnover_reduction: 25, satisfaction_increase: 18, roi: 1.4 }, started_at: '2026-01-15', completed_at: '2026-03-01' },
           { company_id, twin_id: twinId, experiment_name: 'Incremento salarial 8% Engineering', hypothesis: 'Aumento salarial reducirá rotación en Engineering >40%', status: 'running', variables: { department: 'Engineering', salary_increase: 8 }, started_at: '2026-02-01' },
         ];
-        await supabase.from('erp_hr_twin_experiments').insert(experiments as any);
+        await userClient.from('erp_hr_twin_experiments').insert(experiments as any);
 
         const alerts = [
           { company_id, twin_id: twinId, alert_type: 'divergence', severity: 'medium', title: 'Divergencia creciente en módulo payroll', description: 'La divergencia del módulo payroll ha superado el 15% respecto al entorno de producción', is_resolved: false },
           { company_id, twin_id: twinId, alert_type: 'health', severity: 'low', title: 'Sync delay detectado', description: 'El último sync tardó 45s (umbral: 30s)', is_resolved: true, resolved_at: new Date().toISOString() },
         ];
-        await supabase.from('erp_hr_twin_alerts').insert(alerts as any);
+        await userClient.from('erp_hr_twin_alerts').insert(alerts as any);
       }
 
       return json({ success: true, data: { message: 'Digital Twin demo data seeded' } });
@@ -409,7 +380,7 @@ FORMATO JSON estricto:
 
     // If simulating, store results back
     if (action === 'simulate_scenario' && params?.scenario_id && result && !result.parseError) {
-      await supabase.from('erp_hr_scenarios').update({
+      await userClient.from('erp_hr_scenarios').update({
         results: result,
         impact_summary: result.executive_summary || '',
         status: 'simulated',
