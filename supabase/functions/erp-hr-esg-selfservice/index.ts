@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.84.0";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface FunctionRequest {
@@ -21,33 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
-
+    // Parse body first to extract companyId
     const { action, params, context } = await req.json() as FunctionRequest;
     const companyId = params?.companyId as string;
     if (!companyId || companyId === 'demo-company-id') {
@@ -56,23 +30,24 @@ serve(async (req) => {
       });
     }
 
-    // Tenant isolation
-    const { data: membership } = await supabase
-      .from('erp_user_companies').select('id')
-      .eq('user_id', userId).eq('company_id', companyId)
-      .eq('is_active', true).maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // === AUTH GATE — validateTenantAccess ===
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userClient } = authResult;
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     console.log(`[erp-hr-esg-selfservice] Action: ${action}`);
 
     switch (action) {
       // ===== ESG SOCIAL =====
       case 'get_esg_metrics': {
-        const { data } = await supabase
+        const { data } = await userClient
           .from('erp_hr_esg_social_metrics')
           .select('*')
           .eq('company_id', companyId)
@@ -82,7 +57,7 @@ serve(async (req) => {
       }
 
       case 'get_esg_kpis': {
-        const { data } = await supabase
+        const { data } = await userClient
           .from('erp_hr_esg_social_kpis')
           .select('*')
           .eq('company_id', companyId)
@@ -91,7 +66,7 @@ serve(async (req) => {
       }
 
       case 'get_surveys': {
-        const { data } = await supabase
+        const { data } = await userClient
           .from('erp_hr_esg_social_surveys')
           .select('*')
           .eq('company_id', companyId)
@@ -101,7 +76,7 @@ serve(async (req) => {
 
       case 'upsert_survey': {
         const survey = params?.survey as Record<string, unknown>;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_esg_social_surveys')
           .upsert({ ...survey, company_id: companyId })
           .select()
@@ -113,7 +88,7 @@ serve(async (req) => {
       // ===== SELF-SERVICE =====
       case 'get_requests': {
         const status = params?.status as string;
-        let query = supabase
+        let query = userClient
           .from('erp_hr_self_service_requests')
           .select('*')
           .eq('company_id', companyId)
@@ -126,7 +101,7 @@ serve(async (req) => {
 
       case 'create_request': {
         const request = params?.request as Record<string, unknown>;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_self_service_requests')
           .insert({ ...request, company_id: companyId })
           .select()
@@ -137,7 +112,7 @@ serve(async (req) => {
 
       case 'update_request': {
         const { id, ...updates } = params as Record<string, unknown>;
-        const { error } = await supabase
+        const { error } = await userClient
           .from('erp_hr_self_service_requests')
           .update(updates)
           .eq('id', id);
@@ -146,7 +121,7 @@ serve(async (req) => {
       }
 
       case 'get_faq': {
-        const { data } = await supabase
+        const { data } = await userClient
           .from('erp_hr_self_service_faq')
           .select('*')
           .eq('company_id', companyId)
@@ -156,7 +131,7 @@ serve(async (req) => {
       }
 
       case 'get_document_requests': {
-        const { data } = await supabase
+        const { data } = await userClient
           .from('erp_hr_document_requests')
           .select('*')
           .eq('company_id', companyId)
@@ -167,7 +142,7 @@ serve(async (req) => {
 
       case 'create_document_request': {
         const docReq = params?.request as Record<string, unknown>;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_document_requests')
           .insert({ ...docReq, company_id: companyId })
           .select()
@@ -178,13 +153,13 @@ serve(async (req) => {
 
       // ===== AI ANALYSIS =====
       case 'ai_esg_social_analysis': {
-        const { data: metrics } = await supabase
+        const { data: metrics } = await userClient
           .from('erp_hr_esg_social_metrics')
           .select('*')
           .eq('company_id', companyId)
           .limit(50);
 
-        const { data: kpis } = await supabase
+        const { data: kpis } = await userClient
           .from('erp_hr_esg_social_kpis')
           .select('*')
           .eq('company_id', companyId);
@@ -277,7 +252,7 @@ Contexto adicional: ${JSON.stringify(context || {})}`;
 
       case 'ai_selfservice_assist': {
         const question = params?.question as string;
-        const { data: faqs } = await supabase
+        const { data: faqs } = await userClient
           .from('erp_hr_self_service_faq')
           .select('*')
           .eq('company_id', companyId)
@@ -341,7 +316,7 @@ FORMATO JSON:
           { metric_name: 'Temporary Contract Rate', category: 'employment', metric_value: 12, unit: '%', target_value: 8, trend: 'improving', period: '2026-Q1' },
         ].map(m => ({ ...m, company_id: companyId }));
 
-        await supabase.from('erp_hr_esg_social_metrics').upsert(metrics as any);
+        await userClient.from('erp_hr_esg_social_metrics').upsert(metrics as any);
 
         // ESG Social KPIs
         const kpis = [
@@ -353,7 +328,7 @@ FORMATO JSON:
           { kpi_name: 'Cobertura Negociación Colectiva', kpi_code: 'ESG-S-006', category: 'labor_rights', current_value: 92, target_value: 100, previous_value: 90, unit: '%', period: '2026', framework: 'GRI', gri_disclosure: 'GRI 407-1', status: 'on_track' },
         ].map(k => ({ ...k, company_id: companyId }));
 
-        await supabase.from('erp_hr_esg_social_kpis').upsert(kpis as any);
+        await userClient.from('erp_hr_esg_social_kpis').upsert(kpis as any);
 
         // FAQs
         const faqs = [
@@ -365,7 +340,7 @@ FORMATO JSON:
           { category: 'documentos', question: '¿Cómo solicito un certificado de empresa?', answer: 'Desde el Portal del Empleado > Solicitar Documento > Certificado de Empresa. Se genera automáticamente en 24-48h. Para el SEPE se emite en 10 días.', tags: ['certificado', 'documentos', 'empresa'] },
         ].map(f => ({ ...f, company_id: companyId }));
 
-        await supabase.from('erp_hr_self_service_faq').upsert(faqs as any);
+        await userClient.from('erp_hr_self_service_faq').upsert(faqs as any);
 
         // Sample survey
         const surveys = [
@@ -392,7 +367,7 @@ FORMATO JSON:
           }
         ];
 
-        await supabase.from('erp_hr_esg_social_surveys').upsert(surveys as any);
+        await userClient.from('erp_hr_esg_social_surveys').upsert(surveys as any);
 
         return jsonResponse({ success: true, message: 'Demo data seeded' });
       }
@@ -403,14 +378,9 @@ FORMATO JSON:
 
   } catch (error) {
     console.error('[erp-hr-esg-selfservice] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-// jsonResponse is no longer used — all responses use corsHeaders from getSecureCorsHeaders(req) above

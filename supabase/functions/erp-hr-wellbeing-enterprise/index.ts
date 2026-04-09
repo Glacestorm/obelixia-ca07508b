@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 serve(async (req) => {
@@ -17,34 +17,28 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // ============ AUTH GATE ============
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
-    const userId = claimsData.claims.sub as string;
-
+    // Parse body first to extract company_id
     const { action, params } = await req.json();
+    const companyId = params?.company_id as string;
+
+    if (!companyId) {
+      return json({ error: 'company_id is required' }, 400);
+    }
+
+    // === AUTH GATE — validateTenantAccess ===
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { userId, userClient } = authResult;
+
     console.log(`[wellbeing-enterprise] Action: ${action}, userId: ${userId}`);
 
-    // ============ SEED_DEMO → ADMIN ROLE CHECK ============
+    // ============ SEED_DEMO → ADMIN ROLE CHECK (uses userClient — RLS allows reading own roles) ============
     if (action === 'seed_demo') {
-      const { data: roleData } = await supabase
+      const { data: roleData } = await userClient
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
@@ -55,41 +49,18 @@ serve(async (req) => {
       // Proceed to seed (handled in switch below)
     }
 
-    // ============ MEMBERSHIP CHECK (all actions except seed_demo) ============
+    // ============ RESOLVE ENTITY IDS ============
     let entityIds: string[] = [];
-
-    if (action !== 'seed_demo') {
-      const companyId = params?.company_id;
-      if (!companyId) {
-        return json({ error: 'company_id is required' }, 400);
-      }
-
-      // Verify user membership
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .limit(1);
-
-      if (!membership || membership.length === 0) {
-        return json({ error: 'Forbidden' }, 403);
-      }
-
-      // Resolve entity_ids for this company
-      const { data: entities } = await supabase
-        .from('erp_hr_legal_entities')
-        .select('id')
-        .eq('company_id', companyId);
-
-      entityIds = entities?.map((e: any) => e.id) || [];
-    }
+    const { data: entities } = await userClient
+      .from('erp_hr_legal_entities')
+      .select('id')
+      .eq('company_id', companyId);
+    entityIds = entities?.map((e: any) => e.id) || [];
 
     switch (action) {
       // ============ ASSESSMENTS ============
       case 'list_assessments': {
-        let query = supabase
+        let query = userClient
           .from('erp_hr_wellbeing_assessments')
           .select('*')
           .order('created_at', { ascending: false })
@@ -97,7 +68,6 @@ serve(async (req) => {
         if (entityIds.length > 0) {
           query = query.in('entity_id', entityIds);
         } else {
-          // No entities → return empty
           return json({ success: true, data: [] });
         }
         const { data, error } = await query;
@@ -106,12 +76,11 @@ serve(async (req) => {
       }
 
       case 'create_assessment': {
-        // Validate entity_id belongs to allowed entities
         if (params.entity_id && !entityIds.includes(params.entity_id)) {
           return json({ error: 'Forbidden: entity not accessible' }, 403);
         }
         const { company_id: _c, ...insertParams } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_wellbeing_assessments')
           .insert([insertParams])
           .select()
@@ -122,7 +91,7 @@ serve(async (req) => {
 
       // ============ SURVEYS ============
       case 'list_surveys': {
-        let query = supabase
+        let query = userClient
           .from('erp_hr_wellbeing_surveys')
           .select('*')
           .order('created_at', { ascending: false })
@@ -142,7 +111,7 @@ serve(async (req) => {
           return json({ error: 'Forbidden: entity not accessible' }, 403);
         }
         const { company_id: _c, ...upsertParams } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_wellbeing_surveys')
           .upsert([upsertParams])
           .select()
@@ -152,9 +121,8 @@ serve(async (req) => {
       }
 
       case 'submit_response': {
-        // Validate survey belongs to allowed entities
         if (entityIds.length > 0) {
-          const { data: survey } = await supabase
+          const { data: survey } = await userClient
             .from('erp_hr_wellbeing_surveys')
             .select('id')
             .eq('id', params.survey_id)
@@ -165,19 +133,19 @@ serve(async (req) => {
           }
         }
         const { company_id: _c, ...responseParams } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_wellbeing_survey_responses')
           .insert([responseParams])
           .select()
           .single();
         if (error) throw error;
-        await supabase.rpc('increment_survey_responses', { survey_id_param: params.survey_id }).catch(() => {});
+        await userClient.rpc('increment_survey_responses', { survey_id_param: params.survey_id }).catch(() => {});
         return json({ success: true, data });
       }
 
       // ============ PROGRAMS ============
       case 'list_programs': {
-        let query = supabase
+        let query = userClient
           .from('erp_hr_wellness_programs')
           .select('*')
           .order('created_at', { ascending: false });
@@ -196,7 +164,7 @@ serve(async (req) => {
           return json({ error: 'Forbidden: entity not accessible' }, 403);
         }
         const { company_id: _c, ...programParams } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_wellness_programs')
           .upsert([programParams])
           .select()
@@ -206,9 +174,8 @@ serve(async (req) => {
       }
 
       case 'enroll_program': {
-        // Validate program belongs to allowed entities
         if (entityIds.length > 0) {
-          const { data: program } = await supabase
+          const { data: program } = await userClient
             .from('erp_hr_wellness_programs')
             .select('id')
             .eq('id', params.program_id)
@@ -219,7 +186,7 @@ serve(async (req) => {
           }
         }
         const { company_id: _c, ...enrollParams } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_wellness_enrollments')
           .insert([enrollParams])
           .select()
@@ -230,7 +197,7 @@ serve(async (req) => {
 
       // ============ BURNOUT ALERTS ============
       case 'list_burnout_alerts': {
-        let query = supabase
+        let query = userClient
           .from('erp_hr_burnout_alerts')
           .select('*')
           .order('created_at', { ascending: false })
@@ -246,9 +213,8 @@ serve(async (req) => {
       }
 
       case 'acknowledge_alert': {
-        // Verify alert belongs to allowed entities
         if (entityIds.length > 0) {
-          const { data: alert } = await supabase
+          const { data: alert } = await userClient
             .from('erp_hr_burnout_alerts')
             .select('id')
             .eq('id', params.id)
@@ -258,7 +224,7 @@ serve(async (req) => {
             return json({ error: 'Forbidden: alert not accessible' }, 403);
           }
         }
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_burnout_alerts')
           .update({
             status: 'acknowledged',
@@ -274,7 +240,7 @@ serve(async (req) => {
 
       case 'resolve_alert': {
         if (entityIds.length > 0) {
-          const { data: alert } = await supabase
+          const { data: alert } = await userClient
             .from('erp_hr_burnout_alerts')
             .select('id')
             .eq('id', params.id)
@@ -284,7 +250,7 @@ serve(async (req) => {
             return json({ error: 'Forbidden: alert not accessible' }, 403);
           }
         }
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_burnout_alerts')
           .update({
             status: 'resolved',
@@ -300,7 +266,7 @@ serve(async (req) => {
 
       // ============ KPIs ============
       case 'get_kpis': {
-        let query = supabase
+        let query = userClient
           .from('erp_hr_wellbeing_kpis')
           .select('*')
           .order('calculated_at', { ascending: false })
@@ -322,10 +288,10 @@ serve(async (req) => {
         }
 
         const [assessments, alerts, programs, surveys] = await Promise.all([
-          supabase.from('erp_hr_wellbeing_assessments').select('*').in('entity_id', entityFilter).order('created_at', { ascending: false }).limit(200),
-          supabase.from('erp_hr_burnout_alerts').select('*').in('entity_id', entityFilter).eq('status', 'active'),
-          supabase.from('erp_hr_wellness_programs').select('*').in('entity_id', entityFilter).eq('status', 'active'),
-          supabase.from('erp_hr_wellbeing_surveys').select('*').in('entity_id', entityFilter).eq('status', 'closed').order('created_at', { ascending: false }).limit(5),
+          userClient.from('erp_hr_wellbeing_assessments').select('*').in('entity_id', entityFilter).order('created_at', { ascending: false }).limit(200),
+          userClient.from('erp_hr_burnout_alerts').select('*').in('entity_id', entityFilter).eq('status', 'active'),
+          userClient.from('erp_hr_wellness_programs').select('*').in('entity_id', entityFilter).eq('status', 'active'),
+          userClient.from('erp_hr_wellbeing_surveys').select('*').in('entity_id', entityFilter).eq('status', 'closed').order('created_at', { ascending: false }).limit(5),
         ]);
 
         const assessmentData = assessments.data || [];
@@ -365,7 +331,7 @@ serve(async (req) => {
           })),
         };
 
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_wellbeing_kpis')
           .insert([kpi])
           .select()
@@ -385,9 +351,9 @@ serve(async (req) => {
         }
 
         const [assessments, alerts, programs] = await Promise.all([
-          supabase.from('erp_hr_wellbeing_assessments').select('*').in('entity_id', entityFilter).order('created_at', { ascending: false }).limit(100),
-          supabase.from('erp_hr_burnout_alerts').select('*').in('entity_id', entityFilter).eq('status', 'active'),
-          supabase.from('erp_hr_wellness_programs').select('*').in('entity_id', entityFilter).eq('status', 'active'),
+          userClient.from('erp_hr_wellbeing_assessments').select('*').in('entity_id', entityFilter).order('created_at', { ascending: false }).limit(100),
+          userClient.from('erp_hr_burnout_alerts').select('*').in('entity_id', entityFilter).eq('status', 'active'),
+          userClient.from('erp_hr_wellness_programs').select('*').in('entity_id', entityFilter).eq('status', 'active'),
         ]);
 
         const context = {
@@ -478,7 +444,7 @@ FORMATO DE RESPUESTA (JSON estricto):
             recognition: 3 + Math.random() * 7,
           },
         }));
-        await supabase.from('erp_hr_wellbeing_assessments').insert(assessments);
+        await userClient.from('erp_hr_wellbeing_assessments').insert(assessments);
 
         const surveys = [
           { title: 'Pulse Semanal - Semana 10', survey_type: 'pulse', status: 'active', anonymized: true, frequency: 'weekly', total_responses: 45, response_rate: 78.5, questions: [
@@ -493,7 +459,7 @@ FORMATO DE RESPUESTA (JSON estricto):
             { id: '3', text: '¿Qué mejorarías?', type: 'text' },
           ]},
         ];
-        await supabase.from('erp_hr_wellbeing_surveys').insert(surveys);
+        await userClient.from('erp_hr_wellbeing_surveys').insert(surveys);
 
         const programs = [
           { name: 'Mindfulness & Meditación', category: 'mental', status: 'active', provider: 'Calm Business', budget: 15000, max_participants: 100, current_participants: 67, satisfaction_score: 8.7, benefits: ['Reducción estrés 30%', 'Mejor foco', 'Mejor sueño'] },
@@ -503,7 +469,7 @@ FORMATO DE RESPUESTA (JSON estricto):
           { name: 'Terapia Psicológica Online', category: 'mental', status: 'active', provider: 'TherapyChat', budget: 30000, max_participants: 80, current_participants: 41, satisfaction_score: 9.5, benefits: ['Apoyo emocional', 'Gestión ansiedad', 'Confidencialidad'] },
           { name: 'Programa Ergonomía', category: 'physical', status: 'active', budget: 5000, max_participants: 200, current_participants: 156, satisfaction_score: 7.8, benefits: ['Prevención lesiones', 'Confort', 'Productividad'] },
         ];
-        await supabase.from('erp_hr_wellness_programs').insert(programs);
+        await userClient.from('erp_hr_wellness_programs').insert(programs);
 
         const burnoutAlerts = [
           { employee_id: crypto.randomUUID(), risk_level: 'critical', risk_score: 92, status: 'active', contributing_factors: ['Horas extra sostenidas', 'Sin vacaciones 8 meses', 'Equipo subdimensionado'], recommended_actions: ['Vacaciones inmediatas', 'Redistribución carga', 'Sesión con psicólogo'] },
@@ -511,14 +477,14 @@ FORMATO DE RESPUESTA (JSON estricto):
           { employee_id: crypto.randomUUID(), risk_level: 'high', risk_score: 75, status: 'acknowledged', contributing_factors: ['Monotonía tareas', 'Sin desarrollo profesional'], recommended_actions: ['Rotación proyecto', 'Plan formación', 'Mentoring'] },
           { employee_id: crypto.randomUUID(), risk_level: 'medium', risk_score: 55, status: 'active', contributing_factors: ['Nuevo rol', 'Curva aprendizaje', 'Presión resultados'], recommended_actions: ['Buddy asignado', 'Check-ins semanales', 'Expectativas claras'] },
         ];
-        await supabase.from('erp_hr_burnout_alerts').insert(burnoutAlerts);
+        await userClient.from('erp_hr_burnout_alerts').insert(burnoutAlerts);
 
         const kpis = [
           { period: '2026-01', enps_score: 12, engagement_index: 7.2, burnout_rate: 8.5, avg_satisfaction: 7.4, avg_stress: 4.8, avg_work_life_balance: 6.9, wellness_adoption: 65, absenteeism_rate: 3.2, survey_participation: 82 },
           { period: '2026-02', enps_score: 18, engagement_index: 7.5, burnout_rate: 7.2, avg_satisfaction: 7.8, avg_stress: 4.3, avg_work_life_balance: 7.2, wellness_adoption: 71, absenteeism_rate: 2.8, survey_participation: 85 },
           { period: '2026-03', enps_score: 22, engagement_index: 7.8, burnout_rate: 6.1, avg_satisfaction: 8.1, avg_stress: 3.9, avg_work_life_balance: 7.5, wellness_adoption: 78, absenteeism_rate: 2.5, survey_participation: 89 },
         ];
-        await supabase.from('erp_hr_wellbeing_kpis').insert(kpis);
+        await userClient.from('erp_hr_wellbeing_kpis').insert(kpis);
 
         return json({ success: true, message: 'Demo data seeded' });
       }
@@ -530,7 +496,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     console.error('[wellbeing-enterprise] Error:', error);
     return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
