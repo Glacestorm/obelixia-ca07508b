@@ -157,15 +157,16 @@ describe('Schema Contract: erp_user_companies', () => {
     expect(r).toBe(true);
   });
 
-  it('is_active field exists for membership filtering', () => {
-    const row = {} as Row;
-    const _active: typeof row.is_active = row.is_active;
-    expect(typeof _active === 'boolean' || _active === null).toBe(true);
+  it('is_active field is part of the Row type', () => {
+    // Type-level: this won't compile if is_active is removed
+    type HasIsActive = Row extends { is_active: boolean | null } ? true : false;
+    const check: HasIsActive = true;
+    expect(check).toBe(true);
   });
 
-  it('is_default field exists for default company selection', () => {
-    const row = {} as Row;
-    const _default: typeof row.is_default = row.is_default;
-    expect(typeof _default === 'boolean' || _default === null).toBe(true);
+  it('is_default field is part of the Row type', () => {
+    type HasIsDefault = Row extends { is_default: boolean | null } ? true : false;
+    const check: HasIsDefault = true;
+    expect(check).toBe(true);
   });
 });
