@@ -1,12 +1,13 @@
 /**
  * hr-workforce-simulation — V2-RRHH-FASE-8B
  * AI narrative enrichment for workforce simulations.
- * Hardened: auth validation, company access check, prompt injection defense.
+ * Hardened: validateTenantAccess + advisor fallback, prompt injection defense.
+ * S6.5C: Migrated from custom validateUserAccess to standard auth pattern.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 // ── Prompt injection patterns ────────────────────────────────────────────────
 const INJECTION_PATTERNS = [
@@ -26,56 +27,17 @@ function containsInjection(text: string): boolean {
   return INJECTION_PATTERNS.some(p => p.test(text));
 }
 
-// ── Access validation ────────────────────────────────────────────────────────
-async function validateUserAccess(
-  authHeader: string,
-  companyId: string | undefined,
-): Promise<{ valid: boolean; userId?: string; error?: string }> {
-  if (!authHeader) return { valid: false, error: 'No authorization header' };
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  // Verify JWT
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-  if (authError || !user) return { valid: false, error: 'Invalid token' };
-
-  if (!companyId) return { valid: false, error: 'No company_id in simulation' };
-
-  // Check advisory access OR direct company membership
-  const [advisorRes, companyRes] = await Promise.all([
-    supabase
-      .from('erp_hr_advisor_assignments')
-      .select('id')
-      .eq('advisor_user_id', user.id)
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .limit(1),
-    supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .limit(1),
-  ]);
-
-  const hasAccess =
-    (advisorRes.data && advisorRes.data.length > 0) ||
-    (companyRes.data && companyRes.data.length > 0);
-
-  if (!hasAccess) return { valid: false, error: 'No access to this company' };
-
-  return { valid: true, userId: user.id };
-}
-
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const json = (data: unknown, status = 200) =>
+    new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -85,33 +47,65 @@ serve(async (req) => {
     const { result } = body;
 
     if (!result?.input || !result?.baseline || !result?.impact) {
-      return new Response(JSON.stringify({ error: 'Invalid simulation result' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Invalid simulation result' }, 400);
     }
 
-    // ── 8B: Server-side access validation ──
-    const authHeader = req.headers.get('Authorization') || '';
+    // ── S6.5C: company_id mandatory ──
     const companyId = result.baseline?.companyId;
-    const access = await validateUserAccess(authHeader, companyId);
-    if (!access.valid) {
-      return new Response(JSON.stringify({ error: access.error || 'Unauthorized' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!companyId) {
+      return json({ error: 'company_id is required in baseline.companyId' }, 400);
     }
 
-    // ── 8B: Prompt injection check on any user-supplied text ──
+    // ── S6.5C: Standard tenant access gate ──
+    const authResult = await validateTenantAccess(req, companyId);
+
+    if (isAuthError(authResult)) {
+      // If 403 (not a direct member), try advisor fallback
+      if (authResult.status === 403) {
+        // We need an adminClient for the advisor check — get one via env
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+        const adminClient = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        );
+
+        // Extract userId from JWT for advisor check
+        const authHeader = req.headers.get('Authorization') || '';
+        const token = authHeader.replace('Bearer ', '');
+        const { data: claimsData } = await adminClient.auth.getClaims(token);
+        const userId = claimsData?.claims?.sub as string | undefined;
+
+        if (userId) {
+          const { data: advisor } = await adminClient
+            .from('erp_hr_advisor_assignments')
+            .select('id')
+            .eq('advisor_user_id', userId)
+            .eq('company_id', companyId)
+            .eq('is_active', true)
+            .limit(1);
+
+          if (advisor && advisor.length > 0) {
+            // Advisor access confirmed — proceed (no adminClient used beyond this point)
+            console.log(`[hr-workforce-simulation] Advisor fallback granted for user ${userId.substring(0, 8)}`);
+          } else {
+            return json({ error: 'No access to this company' }, 403);
+          }
+        } else {
+          return json({ error: authResult.body.error }, authResult.status);
+        }
+      } else {
+        // 401 — pass through
+        return json({ error: authResult.body.error }, authResult.status);
+      }
+    }
+
+    // ── Prompt injection check on any user-supplied text ──
     const textFields = [
       result.input?.label,
       JSON.stringify(result.input?.parameters),
     ].filter(Boolean).join(' ');
     if (containsInjection(textFields)) {
-      return new Response(JSON.stringify({ error: 'Contenido no permitido detectado' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Contenido no permitido detectado' }, 400);
     }
 
     const { input, baseline, impact } = result;
@@ -185,14 +179,10 @@ LIMITACIONES: ${impact.limitations?.join('; ')}`;
     if (!response.ok) {
       const status = response.status;
       if (status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return json({ error: 'Rate limit exceeded' }, 429);
       }
       if (status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return json({ error: 'Payment required' }, 402);
       }
       throw new Error(`AI gateway error: ${status}`);
     }

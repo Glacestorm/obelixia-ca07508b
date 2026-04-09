@@ -1,6 +1,13 @@
+/**
+ * hr-labor-copilot — V2-RRHH-FASE-7B
+ * AI copilot for labor advisory multi-company operations.
+ * Hardened: validateTenantAccess + advisor fallback + soft-fail, prompt injection defense.
+ * S6.5C: Migrated from custom validateUserAccess to standard auth pattern.
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
 
 // ─── Prompt Injection Defense (server-side mirror) ──────────────────────────
 
@@ -24,68 +31,6 @@ function sanitizeQuestion(question: string): string {
   return question.trim().slice(0, 2000);
 }
 
-// ─── Server-side Context Validation ─────────────────────────────────────────
-
-async function validateUserAccess(
-  authHeader: string,
-  context: Record<string, unknown>,
-): Promise<{ valid: boolean; userId: string | null; error?: string }> {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
-
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    return { valid: false, userId: null, error: 'Usuario no autenticado' };
-  }
-
-  // Validate that the user has advisory assignments for the companies in context
-  const companyIds: string[] = [];
-  if (context.focusedCompany && typeof context.focusedCompany === 'object') {
-    const fc = context.focusedCompany as Record<string, unknown>;
-    if (fc.companyId) companyIds.push(fc.companyId as string);
-  }
-  if (Array.isArray(context.companies)) {
-    for (const c of context.companies as Array<Record<string, unknown>>) {
-      if (c.companyId) companyIds.push(c.companyId as string);
-    }
-  }
-
-  if (companyIds.length > 0) {
-    // S2.1: Tenant isolation — verify membership in erp_user_companies
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('company_id')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .in('company_id', companyIds.slice(0, 50))
-      .limit(50);
-
-    if (!membership || membership.length === 0) {
-      // Fallback: check advisory assignments
-      const { data: assignments, error: assignErr } = await supabase
-        .from('erp_hr_advisory_assignments')
-        .select('company_id')
-        .eq('advisor_id', user.id)
-        .eq('is_active', true)
-        .in('company_id', companyIds.slice(0, 50))
-        .limit(50);
-
-      if (assignErr) {
-        console.warn('[hr-labor-copilot] Assignment check error:', assignErr.message);
-      } else if (!assignments || assignments.length === 0) {
-        console.warn(`[hr-labor-copilot] User ${user.id} has no membership or assignments for provided companies`);
-        return { valid: true, userId: user.id, error: 'no_assignments' };
-      }
-    }
-  }
-
-  return { valid: true, userId: user.id };
-}
-
 // ─── Request Types ──────────────────────────────────────────────────────────
 
 interface CopilotRequest {
@@ -102,6 +47,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const json = (data: unknown, status = 200) =>
+    new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -114,21 +65,19 @@ serve(async (req) => {
       throw new Error('Missing question or context');
     }
 
-    // ── 7B: Server-side prompt injection defense ──
+    // ── Prompt injection defense ──
     const sanitizedQuestion = sanitizeQuestion(question);
     if (detectInjection(sanitizedQuestion)) {
       console.warn(`[hr-labor-copilot] Prompt injection detected: ${sanitizedQuestion.substring(0, 80)}`);
-      return new Response(JSON.stringify({
+      return json({
         success: true,
         response: '⚠️ **Tu pregunta no pudo procesarse**\n\nHe detectado un patrón no permitido en tu consulta. Por favor, reformula tu pregunta sobre gestión laboral, cartera de empresas, cierre mensual o readiness.\n\nPuedes usar las **preguntas sugeridas** como referencia.',
         model: 'guardrail',
         timestamp: new Date().toISOString(),
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Also sanitize conversation history
+    // Sanitize conversation history
     const safeHistory = (conversationHistory || [])
       .slice(-6)
       .filter(m => !detectInjection(m.content || ''))
@@ -137,23 +86,68 @@ serve(async (req) => {
         content: (m.content || '').slice(0, 3000),
       }));
 
-    // ── 7B: Server-side access validation ──
-    const authHeader = req.headers.get('Authorization') || '';
-    const accessCheck = await validateUserAccess(authHeader, context);
+    // ── S6.5C: Standard auth with advisor fallback + soft-fail ──
+    const focusedCompany = context.focusedCompany as Record<string, unknown> | null;
+    const companyId = focusedCompany?.companyId as string | undefined;
 
-    if (!accessCheck.valid) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: accessCheck.error || 'Acceso no autorizado',
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    let userId: string | undefined;
+    let limitedContext = false;
+
+    if (companyId) {
+      // Primary path: validateTenantAccess for the focused company
+      const authResult = await validateTenantAccess(req, companyId);
+
+      if (isAuthError(authResult)) {
+        if (authResult.status === 403) {
+          // Advisor fallback: check erp_hr_advisory_assignments
+          const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+          const adminClient = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+          );
+
+          // Get userId from JWT for advisor check
+          const jwtResult = await validateAuth(req);
+          if (isAuthError(jwtResult)) {
+            return json({ success: false, error: 'Acceso no autorizado' }, 401);
+          }
+          userId = jwtResult.userId;
+
+          const { data: advisor } = await adminClient
+            .from('erp_hr_advisory_assignments')
+            .select('id')
+            .eq('advisor_id', userId)
+            .eq('company_id', companyId)
+            .eq('is_active', true)
+            .limit(1);
+
+          if (!advisor || advisor.length === 0) {
+            // Soft-fail: no membership AND no advisory → limited context mode
+            console.warn(`[hr-labor-copilot] User ${userId.substring(0, 8)} has no membership or assignments — limited context`);
+            limitedContext = true;
+          } else {
+            console.log(`[hr-labor-copilot] Advisor fallback granted for user ${userId.substring(0, 8)}`);
+          }
+        } else {
+          // 401 — hard fail
+          return json({ success: false, error: authResult.body.error }, authResult.status);
+        }
+      } else {
+        userId = authResult.userId;
+      }
+    } else {
+      // No company_id in context — JWT-only validation
+      const jwtResult = await validateAuth(req);
+      if (isAuthError(jwtResult)) {
+        return json({ success: false, error: 'Acceso no autorizado' }, 401);
+      }
+      userId = jwtResult.userId;
+      limitedContext = true;
     }
 
-    // If user has no assignments, provide limited context
+    // Build effective context (soft-fail preserves UX)
     let effectiveContext = context;
-    if (accessCheck.error === 'no_assignments') {
+    if (limitedContext) {
       effectiveContext = {
         ...context,
         companies: [],
@@ -213,9 +207,9 @@ IMPORTANTE:
       { role: 'user', content: sanitizedQuestion },
     ];
 
-    console.log(`[hr-labor-copilot] User=${accessCheck.userId?.substring(0, 8)} Q=${sanitizedQuestion.substring(0, 60)}...`);
+    console.log(`[hr-labor-copilot] User=${userId?.substring(0, 8)} Q=${sanitizedQuestion.substring(0, 60)}...`);
 
-    // ── 7B: Streaming response ──
+    // ── Streaming response ──
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -233,31 +227,16 @@ IMPORTANTE:
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'rate_limit',
-          message: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.',
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return json({ success: false, error: 'rate_limit', message: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.' }, 429);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'credits_exhausted',
-          message: 'Créditos de IA insuficientes.',
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return json({ success: false, error: 'credits_exhausted', message: 'Créditos de IA insuficientes.' }, 402);
       }
       const errorText = await response.text();
       console.error('[hr-labor-copilot] AI gateway error:', response.status, errorText);
       throw new Error(`AI API error: ${response.status}`);
     }
 
-    // Stream the response back to the client
     console.log(`[hr-labor-copilot] Streaming response`);
     return new Response(response.body, {
       headers: {
@@ -269,12 +248,6 @@ IMPORTANTE:
 
   } catch (error) {
     console.error('[hr-labor-copilot] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return json({ success: false, error: 'Internal server error' }, 500);
   }
 });
