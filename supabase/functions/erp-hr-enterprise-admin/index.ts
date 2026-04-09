@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
@@ -9,35 +9,24 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error('Unauthorized');
-
     const { action, params } = await req.json();
 
-    // S2.1: Tenant isolation — verify user belongs to target company
-    const targetCompanyId = params?.company_id;
-    if (targetCompanyId) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('company_id', targetCompanyId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // S4.4A-2: validateTenantAccess replaces inline auth gate + tenant check
+    const companyId = params?.company_id;
+    if (!companyId) {
+      return new Response(JSON.stringify({ success: false, error: 'Missing company_id' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { userId, userClient, adminClient } = authResult;
 
     let result: any;
 
@@ -45,7 +34,7 @@ serve(async (req) => {
       // ===== LEGAL ENTITIES =====
       case 'list_legal_entities': {
         const { company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_legal_entities')
           .select('*')
           .eq('company_id', company_id)
@@ -58,15 +47,15 @@ serve(async (req) => {
       case 'upsert_legal_entity': {
         const { id, ...entityData } = params;
         if (id) {
-          const { data: old } = await supabase.from('erp_hr_legal_entities').select('*').eq('id', id).single();
-          const { data, error } = await supabase.from('erp_hr_legal_entities').update(entityData).eq('id', id).select().single();
+          const { data: old } = await userClient.from('erp_hr_legal_entities').select('*').eq('id', id).single();
+          const { data, error } = await userClient.from('erp_hr_legal_entities').update(entityData).eq('id', id).select().single();
           if (error) throw error;
-          await supabase.rpc('hr_log_audit', { _company_id: entityData.company_id, _user_id: user.id, _action: 'UPDATE', _table_name: 'erp_hr_legal_entities', _record_id: id, _old_data: old, _new_data: data, _category: 'enterprise', _severity: 'info' });
+          await userClient.rpc('hr_log_audit', { _company_id: entityData.company_id, _user_id: userId, _action: 'UPDATE', _table_name: 'erp_hr_legal_entities', _record_id: id, _old_data: old, _new_data: data, _category: 'enterprise', _severity: 'info' });
           result = data;
         } else {
-          const { data, error } = await supabase.from('erp_hr_legal_entities').insert(entityData).select().single();
+          const { data, error } = await userClient.from('erp_hr_legal_entities').insert(entityData).select().single();
           if (error) throw error;
-          await supabase.rpc('hr_log_audit', { _company_id: entityData.company_id, _user_id: user.id, _action: 'INSERT', _table_name: 'erp_hr_legal_entities', _record_id: data.id, _new_data: data, _category: 'enterprise', _severity: 'info' });
+          await userClient.rpc('hr_log_audit', { _company_id: entityData.company_id, _user_id: userId, _action: 'INSERT', _table_name: 'erp_hr_legal_entities', _record_id: data.id, _new_data: data, _category: 'enterprise', _severity: 'info' });
           result = data;
         }
         break;
@@ -74,10 +63,10 @@ serve(async (req) => {
 
       case 'delete_legal_entity': {
         const { id, company_id } = params;
-        const { data: old } = await supabase.from('erp_hr_legal_entities').select('*').eq('id', id).single();
-        const { error } = await supabase.from('erp_hr_legal_entities').delete().eq('id', id);
+        const { data: old } = await userClient.from('erp_hr_legal_entities').select('*').eq('id', id).single();
+        const { error } = await userClient.from('erp_hr_legal_entities').delete().eq('id', id);
         if (error) throw error;
-        await supabase.rpc('hr_log_audit', { _company_id: company_id, _user_id: user.id, _action: 'DELETE', _table_name: 'erp_hr_legal_entities', _record_id: id, _old_data: old, _category: 'enterprise', _severity: 'warning' });
+        await userClient.rpc('hr_log_audit', { _company_id: company_id, _user_id: userId, _action: 'DELETE', _table_name: 'erp_hr_legal_entities', _record_id: id, _old_data: old, _category: 'enterprise', _severity: 'warning' });
         result = { deleted: true };
         break;
       }
@@ -85,7 +74,7 @@ serve(async (req) => {
       // ===== WORK CENTERS =====
       case 'list_work_centers': {
         const { company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_work_centers')
           .select('*, erp_hr_legal_entities(id, name)')
           .eq('company_id', company_id)
@@ -98,15 +87,15 @@ serve(async (req) => {
       case 'upsert_work_center': {
         const { id, ...centerData } = params;
         if (id) {
-          const { data: old } = await supabase.from('erp_hr_work_centers').select('*').eq('id', id).single();
-          const { data, error } = await supabase.from('erp_hr_work_centers').update(centerData).eq('id', id).select().single();
+          const { data: old } = await userClient.from('erp_hr_work_centers').select('*').eq('id', id).single();
+          const { data, error } = await userClient.from('erp_hr_work_centers').update(centerData).eq('id', id).select().single();
           if (error) throw error;
-          await supabase.rpc('hr_log_audit', { _company_id: centerData.company_id, _user_id: user.id, _action: 'UPDATE', _table_name: 'erp_hr_work_centers', _record_id: id, _old_data: old, _new_data: data, _category: 'enterprise', _severity: 'info' });
+          await userClient.rpc('hr_log_audit', { _company_id: centerData.company_id, _user_id: userId, _action: 'UPDATE', _table_name: 'erp_hr_work_centers', _record_id: id, _old_data: old, _new_data: data, _category: 'enterprise', _severity: 'info' });
           result = data;
         } else {
-          const { data, error } = await supabase.from('erp_hr_work_centers').insert(centerData).select().single();
+          const { data, error } = await userClient.from('erp_hr_work_centers').insert(centerData).select().single();
           if (error) throw error;
-          await supabase.rpc('hr_log_audit', { _company_id: centerData.company_id, _user_id: user.id, _action: 'INSERT', _table_name: 'erp_hr_work_centers', _record_id: data.id, _new_data: data, _category: 'enterprise', _severity: 'info' });
+          await userClient.rpc('hr_log_audit', { _company_id: centerData.company_id, _user_id: userId, _action: 'INSERT', _table_name: 'erp_hr_work_centers', _record_id: data.id, _new_data: data, _category: 'enterprise', _severity: 'info' });
           result = data;
         }
         break;
@@ -114,10 +103,10 @@ serve(async (req) => {
 
       case 'delete_work_center': {
         const { id, company_id } = params;
-        const { data: old } = await supabase.from('erp_hr_work_centers').select('*').eq('id', id).single();
-        const { error } = await supabase.from('erp_hr_work_centers').delete().eq('id', id);
+        const { data: old } = await userClient.from('erp_hr_work_centers').select('*').eq('id', id).single();
+        const { error } = await userClient.from('erp_hr_work_centers').delete().eq('id', id);
         if (error) throw error;
-        await supabase.rpc('hr_log_audit', { _company_id: company_id, _user_id: user.id, _action: 'DELETE', _table_name: 'erp_hr_work_centers', _record_id: id, _old_data: old, _category: 'enterprise', _severity: 'warning' });
+        await userClient.rpc('hr_log_audit', { _company_id: company_id, _user_id: userId, _action: 'DELETE', _table_name: 'erp_hr_work_centers', _record_id: id, _old_data: old, _category: 'enterprise', _severity: 'warning' });
         result = { deleted: true };
         break;
       }
@@ -125,7 +114,7 @@ serve(async (req) => {
       // ===== ORG UNITS =====
       case 'list_org_units': {
         const { company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_org_units')
           .select('*, erp_hr_legal_entities(id, name)')
           .eq('company_id', company_id)
@@ -138,11 +127,11 @@ serve(async (req) => {
       case 'upsert_org_unit': {
         const { id, ...unitData } = params;
         if (id) {
-          const { data, error } = await supabase.from('erp_hr_org_units').update(unitData).eq('id', id).select().single();
+          const { data, error } = await userClient.from('erp_hr_org_units').update(unitData).eq('id', id).select().single();
           if (error) throw error;
           result = data;
         } else {
-          const { data, error } = await supabase.from('erp_hr_org_units').insert(unitData).select().single();
+          const { data, error } = await userClient.from('erp_hr_org_units').insert(unitData).select().single();
           if (error) throw error;
           result = data;
         }
@@ -152,7 +141,7 @@ serve(async (req) => {
       // ===== CALENDARS =====
       case 'list_calendars': {
         const { company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_work_calendars')
           .select('*, erp_hr_calendar_entries(*)')
           .eq('company_id', company_id)
@@ -166,21 +155,21 @@ serve(async (req) => {
         const { id, entries, ...calData } = params;
         let calendarId = id;
         if (id) {
-          const { data, error } = await supabase.from('erp_hr_work_calendars').update(calData).eq('id', id).select().single();
+          const { data, error } = await userClient.from('erp_hr_work_calendars').update(calData).eq('id', id).select().single();
           if (error) throw error;
           result = data;
         } else {
-          const { data, error } = await supabase.from('erp_hr_work_calendars').insert(calData).select().single();
+          const { data, error } = await userClient.from('erp_hr_work_calendars').insert(calData).select().single();
           if (error) throw error;
           calendarId = data.id;
           result = data;
         }
         // Manage entries if provided
         if (entries && Array.isArray(entries) && calendarId) {
-          await supabase.from('erp_hr_calendar_entries').delete().eq('calendar_id', calendarId);
+          await userClient.from('erp_hr_calendar_entries').delete().eq('calendar_id', calendarId);
           if (entries.length > 0) {
             const entriesWithCalendar = entries.map((e: any) => ({ ...e, calendar_id: calendarId }));
-            await supabase.from('erp_hr_calendar_entries').insert(entriesWithCalendar);
+            await userClient.from('erp_hr_calendar_entries').insert(entriesWithCalendar);
           }
         }
         break;
@@ -189,7 +178,7 @@ serve(async (req) => {
       // ===== ROLES & PERMISSIONS =====
       case 'list_roles': {
         const { company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_enterprise_roles')
           .select('*, erp_hr_role_permissions(*, erp_hr_enterprise_permissions(*))')
           .eq('company_id', company_id)
@@ -200,7 +189,7 @@ serve(async (req) => {
       }
 
       case 'list_permissions': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_enterprise_permissions')
           .select('*')
           .order('module, action');
@@ -213,21 +202,21 @@ serve(async (req) => {
         const { id, permission_ids, ...roleData } = params;
         let roleId = id;
         if (id) {
-          const { data, error } = await supabase.from('erp_hr_enterprise_roles').update(roleData).eq('id', id).select().single();
+          const { data, error } = await userClient.from('erp_hr_enterprise_roles').update(roleData).eq('id', id).select().single();
           if (error) throw error;
           result = data;
         } else {
-          const { data, error } = await supabase.from('erp_hr_enterprise_roles').insert(roleData).select().single();
+          const { data, error } = await userClient.from('erp_hr_enterprise_roles').insert(roleData).select().single();
           if (error) throw error;
           roleId = data.id;
           result = data;
         }
         // Update permissions
         if (permission_ids && Array.isArray(permission_ids) && roleId) {
-          await supabase.from('erp_hr_role_permissions').delete().eq('role_id', roleId);
+          await userClient.from('erp_hr_role_permissions').delete().eq('role_id', roleId);
           if (permission_ids.length > 0) {
             const perms = permission_ids.map((pid: string) => ({ role_id: roleId, permission_id: pid }));
-            await supabase.from('erp_hr_role_permissions').insert(perms);
+            await userClient.from('erp_hr_role_permissions').insert(perms);
           }
         }
         break;
@@ -235,7 +224,7 @@ serve(async (req) => {
 
       case 'list_role_assignments': {
         const { company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_role_assignments')
           .select('*, erp_hr_enterprise_roles(id, code, name)')
           .eq('company_id', company_id)
@@ -248,9 +237,9 @@ serve(async (req) => {
 
       case 'assign_role': {
         const assignData = params;
-        const { data, error } = await supabase.from('erp_hr_role_assignments').insert({ ...assignData, assigned_by: user.id }).select().single();
+        const { data, error } = await userClient.from('erp_hr_role_assignments').insert({ ...assignData, assigned_by: userId }).select().single();
         if (error) throw error;
-        await supabase.rpc('hr_log_audit', { _company_id: assignData.company_id, _user_id: user.id, _action: 'INSERT', _table_name: 'erp_hr_role_assignments', _record_id: data.id, _new_data: data, _category: 'security', _severity: 'warning' });
+        await userClient.rpc('hr_log_audit', { _company_id: assignData.company_id, _user_id: userId, _action: 'INSERT', _table_name: 'erp_hr_role_assignments', _record_id: data.id, _new_data: data, _category: 'security', _severity: 'warning' });
         result = data;
         break;
       }
@@ -258,7 +247,7 @@ serve(async (req) => {
       // ===== AUDIT LOG =====
       case 'query_audit_log': {
         const { company_id, category, severity, table_name, action: auditAction, user_id: filterUserId, date_from, date_to, limit: queryLimit = 100 } = params;
-        let query = supabase
+        let query = userClient
           .from('erp_hr_audit_log')
           .select('*')
           .eq('company_id', company_id)
@@ -281,7 +270,7 @@ serve(async (req) => {
 
       case 'list_critical_events': {
         const { company_id, resolved } = params;
-        let query = supabase
+        let query = userClient
           .from('erp_hr_critical_events')
           .select('*')
           .eq('company_id', company_id)
@@ -299,14 +288,14 @@ serve(async (req) => {
 
       case 'resolve_critical_event': {
         const { id, action_taken, company_id } = params;
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_critical_events')
-          .update({ resolved_at: new Date().toISOString(), resolved_by: user.id, action_taken })
+          .update({ resolved_at: new Date().toISOString(), resolved_by: userId, action_taken })
           .eq('id', id)
           .select()
           .single();
         if (error) throw error;
-        await supabase.rpc('hr_log_audit', { _company_id: company_id, _user_id: user.id, _action: 'RESOLVE', _table_name: 'erp_hr_critical_events', _record_id: id, _new_data: data, _category: 'security', _severity: 'info' });
+        await userClient.rpc('hr_log_audit', { _company_id: company_id, _user_id: userId, _action: 'RESOLVE', _table_name: 'erp_hr_critical_events', _record_id: id, _new_data: data, _category: 'security', _severity: 'info' });
         result = data;
         break;
       }
@@ -315,12 +304,12 @@ serve(async (req) => {
       case 'get_enterprise_stats': {
         const { company_id } = params;
         const [entities, centers, orgUnits, employees, auditCount, criticalCount] = await Promise.all([
-          supabase.from('erp_hr_legal_entities').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          supabase.from('erp_hr_work_centers').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          supabase.from('erp_hr_org_units').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
-          supabase.from('erp_hr_audit_log').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
-          supabase.from('erp_hr_critical_events').select('id', { count: 'exact', head: true }).eq('company_id', company_id).is('resolved_at', null),
+          userClient.from('erp_hr_legal_entities').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          userClient.from('erp_hr_work_centers').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          userClient.from('erp_hr_org_units').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          userClient.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
+          userClient.from('erp_hr_audit_log').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
+          userClient.from('erp_hr_critical_events').select('id', { count: 'exact', head: true }).eq('company_id', company_id).is('resolved_at', null),
         ]);
 
         result = {
@@ -335,6 +324,7 @@ serve(async (req) => {
       }
 
       // ===== SEED ENTERPRISE DATA =====
+      // S4.4A-2: adminClient — erp_hr_enterprise_permissions has no write RLS policy (global catalog)
       case 'seed_enterprise_data': {
         const { company_id } = params;
 
@@ -345,7 +335,7 @@ serve(async (req) => {
           { company_id, name: 'Andorra Operations', legal_name: 'Obelixia Andorra S.L.', tax_id: 'L-800123-A', entity_type: 'SL', jurisdiction: 'AD', country: 'AD', city: 'Andorra la Vella', address: 'Av. Meritxell 45', postal_code: 'AD500', cnae_code: '6201', is_active: true, metadata: { is_demo: true } },
         ];
 
-        const { data: insertedEntities, error: entErr } = await supabase.from('erp_hr_legal_entities').insert(entities).select();
+        const { data: insertedEntities, error: entErr } = await adminClient.from('erp_hr_legal_entities').insert(entities).select();
         if (entErr) throw entErr;
 
         // Seed work centers
@@ -356,7 +346,7 @@ serve(async (req) => {
           { company_id, legal_entity_id: insertedEntities[2].id, code: 'AND-01', name: 'Oficina Andorra', city: 'Andorra la Vella', province: 'Andorra la Vella', country: 'AD', jurisdiction: 'AD', address: 'Av. Meritxell 45', postal_code: 'AD500', cnae_code: '6201', max_capacity: 20, is_active: true, metadata: { is_demo: true } },
         ];
 
-        const { data: insertedCenters, error: cenErr } = await supabase.from('erp_hr_work_centers').insert(centers).select();
+        const { data: insertedCenters, error: cenErr } = await adminClient.from('erp_hr_work_centers').insert(centers).select();
         if (cenErr) throw cenErr;
 
         // Seed org units
@@ -369,10 +359,10 @@ serve(async (req) => {
           { company_id, legal_entity_id: insertedEntities[1].id, code: 'DEV-BCN', name: 'Desarrollo Barcelona', unit_type: 'department', is_active: true, metadata: { is_demo: true } },
         ];
 
-        await supabase.from('erp_hr_org_units').insert(orgUnits);
+        await adminClient.from('erp_hr_org_units').insert(orgUnits);
 
         // Seed calendar 2026
-        const { data: cal } = await supabase.from('erp_hr_work_calendars').insert({
+        const { data: cal } = await adminClient.from('erp_hr_work_calendars').insert({
           company_id, name: 'Calendario General España 2026', year: 2026, jurisdiction: 'ES', weekly_hours: 40, daily_hours: 8, is_default: true, is_active: true, metadata: { is_demo: true }
         }).select().single();
 
@@ -392,7 +382,7 @@ serve(async (req) => {
             { calendar_id: cal.id, entry_date: '2026-05-15', name: 'San Isidro (Madrid)', entry_type: 'holiday', is_local: true },
             { calendar_id: cal.id, entry_date: '2026-11-09', name: 'Almudena (Madrid)', entry_type: 'holiday', is_local: true },
           ];
-          await supabase.from('erp_hr_calendar_entries').insert(holidays2026);
+          await adminClient.from('erp_hr_calendar_entries').insert(holidays2026);
         }
 
         // Seed enterprise roles
@@ -406,9 +396,9 @@ serve(async (req) => {
           { company_id, code: 'EMPLOYEE', name: 'Empleado', description: 'Self-service: sus datos, nóminas, vacaciones, formación.', is_system: true, priority: 10 },
         ];
 
-        const { data: insertedRoles } = await supabase.from('erp_hr_enterprise_roles').insert(roles).select();
+        const { data: insertedRoles } = await adminClient.from('erp_hr_enterprise_roles').insert(roles).select();
 
-        // Seed permissions catalog
+        // Seed permissions catalog — adminClient required: no write RLS on erp_hr_enterprise_permissions
         const permModules = ['employees', 'payroll', 'contracts', 'vacations', 'training', 'performance', 'recruitment', 'compliance', 'analytics', 'enterprise', 'documents', 'benefits', 'safety'];
         const permActions = ['read', 'create', 'update', 'delete', 'approve', 'export'];
         const permsToInsert = [];
@@ -417,24 +407,24 @@ serve(async (req) => {
             permsToInsert.push({ module: mod, action: act, description: `${act} on ${mod}`, is_sensitive: ['delete', 'approve', 'export'].includes(act) });
           }
         }
-        const { data: insertedPerms } = await supabase.from('erp_hr_enterprise_permissions').upsert(permsToInsert, { onConflict: 'module,action,resource' }).select();
+        const { data: insertedPerms } = await adminClient.from('erp_hr_enterprise_permissions').upsert(permsToInsert, { onConflict: 'module,action,resource' }).select();
 
         // Assign all permissions to HR_DIRECTOR
         if (insertedRoles?.length && insertedPerms?.length) {
           const directorRole = insertedRoles.find((r: any) => r.code === 'HR_DIRECTOR');
           if (directorRole) {
             const dirPerms = insertedPerms.map((p: any) => ({ role_id: directorRole.id, permission_id: p.id }));
-            await supabase.from('erp_hr_role_permissions').upsert(dirPerms, { onConflict: 'role_id,permission_id' });
+            await adminClient.from('erp_hr_role_permissions').upsert(dirPerms, { onConflict: 'role_id,permission_id' });
           }
           // Read-only for EMPLOYEE
           const empRole = insertedRoles.find((r: any) => r.code === 'EMPLOYEE');
           if (empRole) {
             const readPerms = insertedPerms.filter((p: any) => p.action === 'read').map((p: any) => ({ role_id: empRole.id, permission_id: p.id }));
-            await supabase.from('erp_hr_role_permissions').upsert(readPerms, { onConflict: 'role_id,permission_id' });
+            await adminClient.from('erp_hr_role_permissions').upsert(readPerms, { onConflict: 'role_id,permission_id' });
           }
         }
 
-        await supabase.rpc('hr_log_audit', { _company_id: company_id, _user_id: user.id, _action: 'SEED', _table_name: 'enterprise', _record_id: company_id, _category: 'enterprise', _severity: 'info' });
+        await adminClient.rpc('hr_log_audit', { _company_id: company_id, _user_id: userId, _action: 'SEED', _table_name: 'enterprise', _record_id: company_id, _category: 'enterprise', _severity: 'info' });
 
         result = {
           legal_entities: insertedEntities?.length || 0,
