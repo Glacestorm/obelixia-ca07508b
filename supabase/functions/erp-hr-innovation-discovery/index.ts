@@ -4,8 +4,8 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface InnovationRequest {
   action: 'discover_trends' | 'get_pending_ideas' | 'implement_feature' | 
@@ -24,34 +24,10 @@ serve(async (req) => {
   }
 
   try {
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = claimsData.claims.sub;
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json() as InnovationRequest;
     const { action, company_id, feature_code, idea_id, config, reason } = body;
@@ -62,16 +38,14 @@ serve(async (req) => {
       });
     }
 
-    // Tenant isolation
-    const { data: membership } = await adminClient
-      .from('erp_user_companies').select('id')
-      .eq('user_id', userId).eq('company_id', company_id)
-      .eq('is_active', true).maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Auth + tenant isolation via shared utility
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userId, userClient, adminClient } = authResult;
 
     console.log(`[erp-hr-innovation-discovery] Action: ${action}`);
 
@@ -163,7 +137,7 @@ FORMATO DE RESPUESTA (JSON estricto):
             metadata: { discovered_by: 'ai', model: 'gemini-2.5-flash' }
           }));
 
-          await adminClient.from('erp_hr_innovation_ideas').insert(ideasToInsert);
+          await userClient.from('erp_hr_innovation_ideas').insert(ideasToInsert);
         }
 
         result = { 
@@ -175,7 +149,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'get_pending_ideas': {
-        const { data } = await adminClient
+        const { data } = await userClient
           .from('erp_hr_innovation_ideas')
           .select('*')
           .eq('company_id', company_id)
@@ -189,7 +163,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'get_features_status': {
-        const { data: features } = await adminClient
+        const { data: features } = await userClient
           .from('erp_hr_innovation_features')
           .select('*')
           .eq('company_id', company_id)
@@ -211,7 +185,7 @@ FORMATO DE RESPUESTA (JSON estricto):
           throw new Error('feature_code and company_id required');
         }
 
-        const { data: existing } = await adminClient
+        const { data: existing } = await userClient
           .from('erp_hr_innovation_features')
           .select('*')
           .eq('company_id', company_id)
@@ -234,7 +208,7 @@ FORMATO DE RESPUESTA (JSON estricto):
         };
 
         if (existing) {
-          await adminClient
+          await userClient
             .from('erp_hr_innovation_features')
             .update({
               implementation_status: 'implementing',
@@ -242,12 +216,12 @@ FORMATO DE RESPUESTA (JSON estricto):
             })
             .eq('id', existing.id);
         } else {
-          await adminClient
+          await userClient
             .from('erp_hr_innovation_features')
             .insert([featureData]);
         }
 
-        await adminClient.from('erp_hr_innovation_logs').insert([{
+        await userClient.from('erp_hr_innovation_logs').insert([{
           feature_id: existing?.id,
           company_id,
           action: 'started',
@@ -255,6 +229,7 @@ FORMATO DE RESPUESTA (JSON estricto):
           status_message: `Implementación de ${feature_code} iniciada`
         }]);
 
+        // setTimeout ops stay on adminClient — JWT may expire after response
         setTimeout(async () => {
           await adminClient
             .from('erp_hr_innovation_features')
@@ -286,7 +261,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       case 'approve_idea': {
         if (!idea_id) throw new Error('idea_id required');
 
-        await adminClient
+        await userClient
           .from('erp_hr_innovation_ideas')
           .update({
             is_reviewed: true,
@@ -302,7 +277,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       case 'reject_idea': {
         if (!idea_id) throw new Error('idea_id required');
 
-        await adminClient
+        await userClient
           .from('erp_hr_innovation_ideas')
           .update({
             is_reviewed: true,

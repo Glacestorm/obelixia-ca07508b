@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 8,
@@ -39,43 +39,18 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const { action, companyId, templateId, packId, period, status, comments, reviewerName } = await req.json() as BoardPackRequest;
 
     if (!companyId || companyId === 'demo-company-id') {
       return json({ success: false, error: 'company_id is required' }, 400);
     }
 
-    // Auth gate
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return json({ error: 'Unauthorized' }, 401);
+    // Auth + tenant isolation via shared utility
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return json(authResult.body, authResult.status);
     }
-    const token = authHeader.replace('Bearer ', '');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
-    const userId = claimsData.claims.sub as string;
-
-    // Tenant isolation
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (!membership) {
-      return json({ error: 'Forbidden' }, 403);
-    }
+    const { userId, userClient } = authResult;
 
     // Rate limit for expensive actions (generate_pack)
     if (action === 'generate_pack') {
@@ -90,7 +65,7 @@ serve(async (req) => {
 
     switch (action) {
       case 'list_templates': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_board_pack_templates')
           .select('*')
           .eq('is_active', true)
@@ -101,7 +76,7 @@ serve(async (req) => {
       }
 
       case 'list_packs': {
-        const { data, error } = await supabase
+        const { data, error } = await userClient
           .from('erp_hr_board_packs')
           .select('*, erp_hr_board_pack_sections(*)')
           .eq('company_id', companyId)
@@ -116,7 +91,7 @@ serve(async (req) => {
         if (!packId || !status) throw new Error('packId and status required');
 
         // Get current pack
-        const { data: pack } = await supabase
+        const { data: pack } = await userClient
           .from('erp_hr_board_packs')
           .select('status')
           .eq('id', packId)
@@ -129,7 +104,7 @@ serve(async (req) => {
           updates.approved_at = new Date().toISOString();
         }
 
-        const { error } = await supabase
+        const { error } = await userClient
           .from('erp_hr_board_packs')
           .update(updates)
           .eq('id', packId);
@@ -137,7 +112,7 @@ serve(async (req) => {
         if (error) throw error;
 
         // Log review
-        await supabase.from('erp_hr_board_pack_reviews').insert({
+        await userClient.from('erp_hr_board_pack_reviews').insert({
           board_pack_id: packId,
           action: status === 'approved' ? 'approve' : status === 'reviewed' ? 'review' : 'comment',
           reviewer_name: reviewerName || 'Sistema',
@@ -153,7 +128,7 @@ serve(async (req) => {
         if (!templateId || !companyId || !period) throw new Error('templateId, companyId, period required');
 
         // Fetch template
-        const { data: template, error: tplErr } = await supabase
+        const { data: template, error: tplErr } = await userClient
           .from('erp_hr_board_pack_templates')
           .select('*')
           .eq('id', templateId)
@@ -253,7 +228,7 @@ Contexto: Suite HR Premium con módulos de Fairness, Workforce Planning, Legal E
         }
 
         // Insert board pack
-        const { data: pack, error: packErr } = await supabase
+        const { data: pack, error: packErr } = await userClient
           .from('erp_hr_board_packs')
           .insert({
             company_id: companyId,
@@ -291,11 +266,11 @@ Contexto: Suite HR Premium con módulos de Fairness, Workforce Planning, Legal E
         }));
 
         if (sections.length > 0) {
-          await supabase.from('erp_hr_board_pack_sections').insert(sections);
+          await userClient.from('erp_hr_board_pack_sections').insert(sections);
         }
 
         // Log review creation
-        await supabase.from('erp_hr_board_pack_reviews').insert({
+        await userClient.from('erp_hr_board_pack_reviews').insert({
           board_pack_id: pack.id,
           action: 'created',
           reviewer_name: 'Sistema',
