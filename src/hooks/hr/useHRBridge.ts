@@ -4,6 +4,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { extractErrorMessage } from '@/lib/hr/extractErrorMessage';
 
 export interface BridgeLogRow {
   id: string;
@@ -97,7 +98,7 @@ export function useHRBridge(companyId: string | undefined) {
         await fetchLogs();
         return data;
       }
-      throw new Error(data?.error || 'Error desconocido');
+      throw new Error(extractErrorMessage(data, 'Error desconocido'));
     } catch (err) {
       toast.error('Error al sincronizar');
       if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
