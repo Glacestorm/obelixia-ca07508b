@@ -21,6 +21,8 @@ import { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 import { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
 import { MonthlyClosingSummaryCard } from './MonthlyClosingSummaryCard';
 import { ClosingIntelligenceCard } from './ClosingIntelligenceCard';
+import { PayrollCycleTrackingCard } from './PayrollCycleTrackingCard';
+import { PaymentRegistrationDialog } from './PaymentRegistrationDialog';
 
 interface Props {
   companyId: string;
@@ -76,6 +78,8 @@ export function HRPayrollPeriodManager({
   const [reopenPeriodId, setReopenPeriodId] = useState<string | null>(null);
   const [reopenReason, setReopenReason] = useState('');
   const [reopenLoading, setReopenLoading] = useState(false);
+  // Payment
+  const [paymentDialogPeriod, setPaymentDialogPeriod] = useState<PayrollPeriod | null>(null);
 
   const handleCreate = async () => {
     await onOpenPeriod(newYear, newMonth);
@@ -205,6 +209,13 @@ export function HRPayrollPeriodManager({
           return (
             <Card key={p.id} className={`transition-colors ${isClosed ? 'border-border/60' : 'hover:bg-muted/30'}`}>
               <CardContent className="py-3 space-y-2">
+                {/* Payroll Cycle Tracking Card */}
+                <PayrollCycleTrackingCard
+                  period={p}
+                  companyId={companyId}
+                  latestRunStatus={null}
+                  onRegisterPayment={isClosed ? () => setPaymentDialogPeriod(p) : undefined}
+                />
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${
@@ -513,6 +524,18 @@ export function HRPayrollPeriodManager({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Payment Registration Dialog */}
+      {paymentDialogPeriod && (
+        <PaymentRegistrationDialog
+          open={!!paymentDialogPeriod}
+          onOpenChange={(open) => { if (!open) setPaymentDialogPeriod(null); }}
+          periodId={paymentDialogPeriod.id}
+          periodName={paymentDialogPeriod.period_name}
+          companyId={companyId}
+          onSuccess={onRefresh}
+        />
+      )}
     </div>
   );
 }
