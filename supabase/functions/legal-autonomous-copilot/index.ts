@@ -43,10 +43,7 @@ serve(async (req) => {
     // --- S7.1: Auth hardening — validateAuth ---
     const authResult = await validateAuth(req);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- end auth ---
 
@@ -615,18 +612,11 @@ ${JSON.stringify(params || context || {})}`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Rate limit exceeded. Please try again later.' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Please try again later.', 429, corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Payment required. Please add credits.' 
+        return errorResponse('PAYMENT_REQUIRED', 'Payment required. Please add credits.', 402, corsHeaders);
+      }
         }), {
           status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -667,12 +657,6 @@ ${JSON.stringify(params || context || {})}`;
 
   } catch (error) {
     console.error('[legal-autonomous-copilot] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

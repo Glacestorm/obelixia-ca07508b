@@ -76,10 +76,7 @@ serve(async (req) => {
     // --- S7.1: Auth hardening — validateAuth ---
     const authResult = await validateAuth(req);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- end auth ---
 
@@ -538,13 +535,7 @@ ${JSON.stringify(context, null, 2)}`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: 'Rate limit exceeded',
-          message: 'Demasiadas solicitudes. Intenta más tarde.'
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Please try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -580,12 +571,6 @@ ${JSON.stringify(context, null, 2)}`;
 
   } catch (error) {
     console.error('[legal-validation-gateway-enhanced] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

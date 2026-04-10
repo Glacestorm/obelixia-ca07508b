@@ -37,10 +37,7 @@ serve(async (req) => {
     // --- S7.1: Auth hardening — validateAuth ---
     const authResult = await validateAuth(req);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- end auth ---
 
@@ -666,22 +663,10 @@ FORMATO DE RESPUESTA (JSON estricto):
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: 'Rate limit exceeded', 
-          message: 'Demasiadas solicitudes. Intenta más tarde.' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Please try again later.', 429, corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: 'Payment required', 
-          message: 'Créditos de IA insuficientes.' 
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('PAYMENT_REQUIRED', 'Payment required. Please add credits.', 402, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -717,12 +702,6 @@ FORMATO DE RESPUESTA (JSON estricto):
 
   } catch (error) {
     console.error('[legal-entity-management] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
