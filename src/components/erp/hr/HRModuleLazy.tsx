@@ -222,3 +222,6 @@ export const LazyIRPFMotorPanel = lazyPanel(() => import('./payroll-engine'), 'I
 export const LazyBankAccountsPanel = lazyPanel(() => import('./domains/people'), 'BankAccountsPanel');
 export const LazyGovernanceCockpit = lazyPanel(() => import('./domains/ai-tower'), 'GovernanceCockpit');
 export const LazyPredictiveAuditPanel = lazyPanel(() => import('./domains/analytics'), 'PredictiveAuditPanel');
+
+// ─── S8.5b Exclusive simulators ────────────────────────────
+export const LazyGarnishmentSimulator = lazyPanel(() => import('@/components/hr/garnishments/GarnishmentSimulator'), 'GarnishmentSimulator');
