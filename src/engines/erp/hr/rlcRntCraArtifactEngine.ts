@@ -22,6 +22,11 @@ export type RLCRNTCRAArtifactStatus =
   | 'validated_internal'
   | 'dry_run_ready'
   | 'pending_approval'
+  | 'sent'
+  | 'accepted'
+  | 'rejected'
+  | 'confirmed'
+  | 'archived'
   | 'error';
 
 export const RLCRNTCRA_STATUS_META: Record<RLCRNTCRAArtifactStatus, { label: string; color: string; disclaimer: string }> = {
@@ -44,6 +49,31 @@ export const RLCRNTCRA_STATUS_META: Record<RLCRNTCRAArtifactStatus, { label: str
     label: 'Pendiente de aprobación',
     color: 'bg-amber-500/10 text-amber-700',
     disclaimer: 'Requiere aprobación interna. NO es una liquidación oficial.',
+  },
+  sent: {
+    label: 'Enviado (interno)',
+    color: 'bg-sky-500/10 text-sky-700',
+    disclaimer: 'Marcado como enviado internamente. isRealSubmissionBlocked === true. No se ha transmitido a SILTRA/TGSS.',
+  },
+  accepted: {
+    label: 'Aceptado por TGSS',
+    color: 'bg-emerald-500/10 text-emerald-700',
+    disclaimer: 'Respuesta TGSS registrada como aceptada. Pendiente de reconciliación para confirmar.',
+  },
+  rejected: {
+    label: 'Rechazado por TGSS',
+    color: 'bg-red-500/10 text-red-700',
+    disclaimer: 'Respuesta TGSS registrada como rechazada. Requiere corrección y reenvío.',
+  },
+  confirmed: {
+    label: 'Confirmado',
+    color: 'bg-green-500/10 text-green-700',
+    disclaimer: 'Aceptado y reconciliado. Liquidación confirmada con validación operativa completa.',
+  },
+  archived: {
+    label: 'Archivado',
+    color: 'bg-slate-500/10 text-slate-700',
+    disclaimer: 'Artefacto archivado con trazabilidad completa.',
   },
   error: {
     label: 'Error en validación',
@@ -622,7 +652,12 @@ const VALID_TRANSITIONS: Record<RLCRNTCRAArtifactStatus, RLCRNTCRAArtifactStatus
   generated: ['validated_internal', 'error'],
   validated_internal: ['dry_run_ready', 'error'],
   dry_run_ready: ['pending_approval', 'error'],
-  pending_approval: ['validated_internal'],
+  pending_approval: ['sent', 'validated_internal', 'error'],
+  sent: ['accepted', 'rejected', 'error'],
+  accepted: ['confirmed', 'error'],
+  rejected: ['generated', 'error'],
+  confirmed: ['archived'],
+  archived: [],
   error: ['generated'],
 };
 
