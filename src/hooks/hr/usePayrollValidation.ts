@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { extractErrorMessage } from '@/lib/hr/extractErrorMessage';
 
 export function useValidatePayrollCycle() {
   return useMutation({
@@ -8,7 +9,8 @@ export function useValidatePayrollCycle() {
         body: { action: 'get_legal_validations_batch', ...payload },
       });
       if (error) throw new Error(error.message);
-      return data as { total: number; errors: number; warnings: number; validations_by_employee: Record<string, any[]> };
+      if (!data?.success) throw new Error(extractErrorMessage(data, 'Error en validación'));
+      return (data.data ?? data) as { total: number; errors: number; warnings: number; validations_by_employee: Record<string, any[]> };
     },
   });
 }
@@ -20,7 +22,8 @@ export function useCalculatePayroll() {
         body: { action: 'calculate_payroll', ...payload },
       });
       if (error) throw new Error(error.message);
-      return data;
+      if (!data?.success) throw new Error(extractErrorMessage(data, 'Error en cálculo'));
+      return data.data ?? data;
     },
   });
 }
