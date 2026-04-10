@@ -100,13 +100,17 @@ export function usePaymentTracking(companyId: string) {
         [
           {
             evidenceType: 'system_generated',
-            label: 'Registro de pago de nómina',
-            description: `Pago registrado: ${registration.paymentReference} (${registration.paymentMethod}) — ${recordCount} nóminas`,
-            fileUrl: null,
-            metadata: {
+            evidenceLabel: 'Registro de pago de nómina',
+            refEntityType: 'payroll_period',
+            refEntityId: periodId,
+            evidenceSnapshot: {
               payment_date: registration.paymentDate,
               payment_reference: registration.paymentReference,
               payment_method: registration.paymentMethod,
+              records_updated: recordCount,
+            },
+            metadata: {
+              description: `Pago registrado: ${registration.paymentReference} (${registration.paymentMethod}) — ${recordCount} nóminas`,
             },
           },
         ],
