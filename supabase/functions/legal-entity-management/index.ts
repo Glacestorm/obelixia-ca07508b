@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateAuth, isAuthError } from "../_shared/tenant-auth.ts";
+import { mapAuthError, validationError, internalError, errorResponse } from "../_shared/error-contract.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
