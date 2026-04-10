@@ -135,6 +135,11 @@ import {
   LazyHRPayrollReconciliationPanel,
   LazyUnifiedAuditGenerator,
   LazyAIUnifiedDashboard,
+  LazySymbolicValuesPanel,
+  LazyIRPFMotorPanel,
+  LazyBankAccountsPanel,
+  LazyGovernanceCockpit,
+  LazyPredictiveAuditPanel,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -515,6 +520,13 @@ function HRModuleInner() {
         {activeModule === 'es-localization' && <LazyESLocalizationPlugin companyId={companyId} />}
         {activeModule === 'people-analytics' && <LazyPeopleAnalyticsModule companyId={companyId} />}
         {activeModule === 'contract-expiry-report' && <LazyHRContractExpiryReport companyId={companyId} />}
+
+        {/* S8.5 Absorbed panels */}
+        {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
+        {activeModule === 'irpf-motor' && <LazyIRPFMotorPanel companyId={companyId} />}
+        {activeModule === 'bank-accounts' && <LazyBankAccountsPanel companyId={companyId} />}
+        {activeModule === 'governance-cockpit' && <LazyGovernanceCockpit companyId={companyId} />}
+        {activeModule === 'predictive-audit' && <LazyPredictiveAuditPanel companyId={companyId} />}
 
         {/* Employee Expedient */}
         {activeModule === 'employee-expedient' && selectedEmployeeId && (

@@ -215,3 +215,10 @@ export const LazyAIUnifiedDashboard = lazyPanel(() => import('@/components/admin
 // ─── Contract Lifecycle ─────────────────────────────────────
 export const LazyHRContractExpiryWidget = lazyPanel(() => import('./widgets/HRContractExpiryWidget'), 'HRContractExpiryWidget');
 export const LazyHRContractExpiryReport = lazyPanel(() => import('./reports/HRContractExpiryReport'), 'HRContractExpiryReport');
+
+// ─── S8.5 Absorbed panels ──────────────────────────────────
+export const LazySymbolicValuesPanel = lazyPanel(() => import('./payroll-engine'), 'SymbolicValuesPanel');
+export const LazyIRPFMotorPanel = lazyPanel(() => import('./payroll-engine'), 'IRPFMotorPanel');
+export const LazyBankAccountsPanel = lazyPanel(() => import('./domains/people'), 'BankAccountsPanel');
+export const LazyGovernanceCockpit = lazyPanel(() => import('./domains/ai-tower'), 'GovernanceCockpit');
+export const LazyPredictiveAuditPanel = lazyPanel(() => import('./domains/analytics'), 'PredictiveAuditPanel');

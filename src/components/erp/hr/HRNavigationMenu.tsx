@@ -19,7 +19,7 @@ import {
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
-  Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane
+  Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane, CreditCard
 } from 'lucide-react';
 
 // ─── Types ───
@@ -82,11 +82,11 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
   // Tier 1: visible_mvp — shown to all users
   const mvpItems = new Set([
     // People
-    'employees', 'contracts', 'document-expedient',
+    'employees', 'contracts', 'document-expedient', 'bank-accounts',
     'departments', 'work-centers', 'legal-entities',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-engine',
+    'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values',
     'ss', 'integration', 'compensation-suite',
     // Workforce
     'vacations', 'time-clock', 'leave-incidents',
@@ -144,6 +144,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 'employees', label: 'Empleados', icon: Users, description: 'Directorio y expedientes' },
             { id: 'contracts', label: 'Contratos', icon: FileText, description: 'Gestión contractual' },
             { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Documentos, evidencias y compliance' },
+            { id: 'bank-accounts', label: 'Cuentas Bancarias', icon: CreditCard, description: 'Multi-IBAN y SWIFT/BIC' },
           ]
         },
         {
@@ -190,6 +191,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
             { id: 'payroll-engine', label: 'Motor de Nómina', icon: Calculator, description: 'Períodos · Runs · Conceptos' },
+            { id: 'irpf-motor', label: 'Motor IRPF', icon: Calculator, description: 'Mod. 111/190 · Certificados' },
+            { id: 'symbolic-values', label: 'Valores Simbólicos', icon: Database, description: 'Editor por empleado' },
             { id: 'ss', label: 'Seguridad Social', icon: Landmark, description: 'Cotizaciones y expediente SS' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones y ceses' },
@@ -392,6 +395,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-violet-500',
           items: [
             { id: 'ai-governance', label: 'AI Governance', icon: Brain, description: 'Gobernanza de IA' },
+            { id: 'governance-cockpit', label: 'Supervisor Nómina', icon: Shield, description: 'Gobernanza completa + HITL' },
+            { id: 'predictive-audit', label: 'Auditoría Predictiva', icon: TrendingUp, description: 'IA predictiva + validación cruzada' },
             { id: 'security-governance', label: 'Security & SoD', icon: ShieldAlert, description: 'Seguridad avanzada' },
             { id: 'labor-digital-twin', label: 'Gemelo Digital Laboral', icon: Layers, description: 'Simulación what-if sobre datos reales', badge: 'NUEVO' as any, badgeVariant: 'secondary' as const },
             { id: 'digital-twin', label: 'Digital Twin (Legacy)', icon: Layers, description: 'Gemelo digital org.' },

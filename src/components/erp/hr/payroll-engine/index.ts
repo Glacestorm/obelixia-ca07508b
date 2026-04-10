@@ -17,3 +17,5 @@ export { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 export { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
 export { MonthlyClosingSummaryCard } from './MonthlyClosingSummaryCard';
 export { ClosingIntelligenceCard } from './ClosingIntelligenceCard';
+export { SymbolicValuesPanel } from './SymbolicValuesPanel';
+export { IRPFMotorPanel } from './IRPFMotorPanel';
