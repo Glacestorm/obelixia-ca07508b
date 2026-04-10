@@ -9,6 +9,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError } from '../_shared/error-contract.ts';
 
 interface PayrollData {
   id: string;
@@ -77,10 +78,7 @@ serve(async (req) => {
     // S6.3B: Standard auth gate
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -109,17 +107,11 @@ serve(async (req) => {
         return await getAccountingStatus(userClient, payload);
       
       default:
-        return new Response(
-          JSON.stringify({ error: `Unknown action: ${action}` }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return validationError(`Unknown action: ${action}`, corsHeaders);
     }
   } catch (error: unknown) {
     console.error('[erp-hr-accounting-bridge] Error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ..._corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return internalError(_corsHeaders);
   }
 });
 

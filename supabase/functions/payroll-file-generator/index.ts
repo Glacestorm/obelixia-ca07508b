@@ -7,6 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError } from '../_shared/error-contract.ts';
 
 // corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
@@ -189,17 +190,13 @@ Deno.serve(async (req) => {
     if (company_id) {
       const tenantResult = await validateTenantAccess(req, company_id);
       if (isAuthError(tenantResult)) {
-        return new Response(JSON.stringify({ error: tenantResult.body.error }), {
-          status: tenantResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-        });
+        return mapAuthError(tenantResult, getSecureCorsHeaders(req));
       }
       userId = tenantResult.userId;
     } else {
       const authResult = await validateAuth(req);
       if (isAuthError(authResult)) {
-        return new Response(JSON.stringify({ error: authResult.body.error }), {
-          status: authResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-        });
+        return mapAuthError(authResult, getSecureCorsHeaders(req));
       }
       userId = authResult.userId;
     }
@@ -214,18 +211,12 @@ Deno.serve(async (req) => {
 
     if (action === "generate") {
       if (!company_id || !file_type || !period_month || !period_year) {
-        return new Response(
-          JSON.stringify({ error: "Missing required fields: company_id, file_type, period_month, period_year" }),
-          { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-        );
+        return validationError('Missing required fields: company_id, file_type, period_month, period_year', getSecureCorsHeaders(req));
       }
 
       const generator = GENERATORS[file_type];
       if (!generator) {
-        return new Response(
-          JSON.stringify({ error: `Unsupported file_type: ${file_type}. Supported: ${Object.keys(GENERATORS).join(", ")}` }),
-          { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-        );
+        return validationError(`Unsupported file_type: ${file_type}. Supported: ${Object.keys(GENERATORS).join(", ")}`, getSecureCorsHeaders(req));
       }
 
       const result = generator({ company_id, file_type, period_month, period_year, employees: employees || [] });
@@ -284,15 +275,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(
-      JSON.stringify({ error: `Unknown action: ${action}` }),
-      { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-    );
+    return validationError(`Unknown action: ${action}`, getSecureCorsHeaders(req));
   } catch (err) {
     console.error("[payroll-file-generator] Error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-    );
+    return internalError(getSecureCorsHeaders(req));
   }
 });

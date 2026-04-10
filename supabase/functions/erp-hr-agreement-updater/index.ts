@@ -14,6 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateCronOrServiceAuth } from '../_shared/cron-auth.ts';
 import { validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface UpdateRequest {
   action: 'check_renewals' | 'update_agreement' | 'bulk_update' | 'daily_scan';
@@ -62,7 +63,7 @@ serve(async (req) => {
       // Path 2: User JWT — validate + admin role check
       const authResult = await validateAuth(req);
       if (isAuthError(authResult)) {
-        return json({ error: 'Unauthorized' }, 401);
+        return errorResponse('AUTH_MISSING', 'Unauthorized', 401, corsHeaders);
       }
 
       // Admin role check using service-role client
@@ -77,13 +78,13 @@ serve(async (req) => {
 
       if (!isAdmin) {
         console.warn(`[agreement-updater] Non-admin user ${authResult.userId} attempted access`);
-        return json({ error: 'Forbidden: admin role required' }, 403);
+        return errorResponse('AUTH_FORBIDDEN', 'Forbidden: admin role required', 403, corsHeaders);
       }
 
       console.log(`[agreement-updater] Authenticated via JWT: admin user ${authResult.userId}`);
     } else {
       // No valid auth
-      return json({ error: 'Unauthorized' }, 401);
+      return errorResponse('AUTH_MISSING', 'Unauthorized', 401, corsHeaders);
     }
     // ===================== END AUTH =====================
 
@@ -237,7 +238,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[agreement-updater] Error:', error);
-    return json({ success: false, error: 'Internal server error' }, 500);
+    return internalError(corsHeaders);
   }
 });
 
