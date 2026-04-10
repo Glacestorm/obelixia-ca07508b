@@ -274,6 +274,7 @@ function HRModuleInner() {
         const { data, error } = await supabase.functions.invoke('erp-hr-ai-agent', {
           body: {
             action: 'get_dashboard_stats',
+            companyId,
             context: { companyId }
           }
         });
