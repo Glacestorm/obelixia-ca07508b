@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateTenantAccess, isAuthError } from "../_shared/tenant-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,6 +28,24 @@ serve(async (req) => {
     }
 
     const { action, context, params } = await req.json() as LegalSpendRequest;
+
+    // --- S7.1: Auth hardening — validateTenantAccess with mandatory companyId ---
+    const companyId = context?.companyId || (params?.companyId as string);
+    if (!companyId) {
+      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // --- end auth ---
 
     let systemPrompt = '';
     let userPrompt = '';
