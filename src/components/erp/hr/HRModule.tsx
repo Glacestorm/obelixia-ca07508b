@@ -19,6 +19,7 @@ import {
 import { useERPContext } from '@/hooks/erp';
 import { supabase } from '@/integrations/supabase/client';
 import { HRNavigationMenu } from './HRNavigationMenu';
+import { HRCockpitHeader } from './HRCockpitHeader';
 import { HREnvironmentProvider, useHREnvironment } from '@/contexts/HREnvironmentContext';
 import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
 import { HRCommandPalette } from './shared/HRCommandPalette';
@@ -319,6 +320,23 @@ function HRModuleInner() {
     <div className="space-y-4">
       {/* Environment Banner */}
       <HREnvironmentBanner />
+
+      {/* Cockpit Header — ERP-style contextual bar */}
+      <HRCockpitHeader
+        companyName={currentCompany?.name}
+        companyId={companyId}
+        onSearch={() => {
+          // Trigger command palette via Cmd+K simulation
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+        }}
+        onClear={() => {
+          setSelectedEmployeeId(null);
+          setActiveModule('dashboard');
+        }}
+        onRefresh={() => window.location.reload()}
+        onHelp={() => setActiveModule('help')}
+        onViewHistory={() => setActiveModule('audit-trail')}
+      />
 
       {/* Command Palette (Cmd+K) */}
       <HRCommandPalette
