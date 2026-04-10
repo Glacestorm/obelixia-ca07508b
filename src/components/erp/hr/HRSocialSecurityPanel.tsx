@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 import { SSMonthlyExpedientTab } from './payroll-engine/SSMonthlyExpedientTab';
+import { SiltraCotizacionTrackingCard } from './payroll-engine/SiltraCotizacionTrackingCard';
+import { SiltraResponseDialog } from './payroll-engine/SiltraResponseDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SSNewCommunicationDialog } from './dialogs/SSNewCommunicationDialog';
@@ -62,6 +64,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
   const [showNewCommDialog, setShowNewCommDialog] = useState(false);
   const [showCertificateDialog, setShowCertificateDialog] = useState(false);
   const [showSILTRADialog, setShowSILTRADialog] = useState(false);
+  const [showSiltraResponseDialog, setShowSiltraResponseDialog] = useState(false);
   // Demo data - Cotizaciones mensuales
   const contributions = [
     {
@@ -491,6 +494,14 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
 
             {/* Tab Expediente Mensual SS — V2-ES.7 Paso 4 */}
             <TabsContent value="expediente" className="space-y-4">
+              <SiltraCotizacionTrackingCard
+                periodLabel={selectedPeriod}
+                fanStatus="generated"
+                rlcData={{ type: 'rlc', status: 'generated', label: 'RLC' }}
+                rntData={{ type: 'rnt', status: 'generated', label: 'RNT' }}
+                craData={{ type: 'cra', status: 'generated', label: 'CRA' }}
+                onRegisterResponse={() => setShowSiltraResponseDialog(true)}
+              />
               <SSMonthlyExpedientTab companyId={companyId} periods={periods} />
             </TabsContent>
 
@@ -693,6 +704,15 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
         period={selectedPeriod}
         contributionData={currentContribution}
         onSuccess={() => toast.success('Presentación SILTRA completada')}
+      />
+
+      <SiltraResponseDialog
+        open={showSiltraResponseDialog}
+        onOpenChange={setShowSiltraResponseDialog}
+        companyId={companyId}
+        periodYear={parseInt(selectedPeriod.split('-')[0]) || 2026}
+        periodMonth={parseInt(selectedPeriod.split('-')[1]) || 1}
+        onSuccess={() => toast.success('Respuesta TGSS registrada')}
       />
     </div>
   );
