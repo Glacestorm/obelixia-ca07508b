@@ -6,10 +6,13 @@
  * - Legal-Compliance: regulatory compliance, risk, data protection, audits
  * - Legal-Contracts: CLM, smart contracts, contract review, negotiation
  * Validates HR actions via escalation protocol
+ *
+ * Auth: validateTenantAccess(req, company_id) — S7.3
+ * Chaining: forwards user JWT to downstream agents (no SERVICE_ROLE_KEY)
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from "../_shared/tenant-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,19 +59,12 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Auth
-    const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
-    }
+    // Capture original Authorization header for downstream forwarding
+    const originalAuthHeader = req.headers.get('Authorization');
 
+    // Parse body first to extract company_id
     const input: LegalSupervisorRequest = await req.json();
     const { action, company_id, query, context, source_agent } = input;
 
@@ -78,11 +74,20 @@ serve(async (req) => {
       });
     }
 
+    // Auth: validateTenantAccess — JWT + membership check
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const { userId, userClient } = authResult;
+
     const agentFunctionUrl = `${supabaseUrl}/functions/v1`;
 
     // === GET STATUS ===
     if (action === 'get_status') {
-      const { data: recentInvocations } = await supabase
+      const { data: recentInvocations } = await userClient
         .from('erp_ai_agent_invocations')
         .select('*')
         .eq('company_id', company_id)
@@ -169,7 +174,7 @@ serve(async (req) => {
 
       console.log(`[legal-multiagent-supervisor] Classification: ${classification.domain} (${classification.confidence})`);
 
-      // Route to agent
+      // Route to agent — forward user JWT, not SERVICE_ROLE_KEY
       const route = LEGAL_ROUTES[classification.domain] || LEGAL_ROUTES.labor;
       let agentResponse: any = null;
       let outcomeStatus = 'success';
@@ -192,7 +197,10 @@ serve(async (req) => {
 
         const resp = await fetch(`${agentFunctionUrl}/${route.fn}`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': originalAuthHeader || '',
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify(body),
         });
         agentResponse = await resp.json();
@@ -204,9 +212,9 @@ serve(async (req) => {
 
       const executionTime = Date.now() - startTime;
 
-      // Log
+      // Log invocation via userClient
       try {
-        await supabase.from('erp_ai_agent_invocations').insert({
+        await userClient.from('erp_ai_agent_invocations').insert({
           agent_code: route.code,
           supervisor_code: 'legal-supervisor',
           company_id,
@@ -256,11 +264,14 @@ serve(async (req) => {
       let advisorResponse: any = null;
       let outcomeStatus = 'success';
 
-      // Step 1: Get legal validation via gateway
+      // Step 1: Get legal validation via gateway — forward user JWT
       try {
         const resp = await fetch(`${agentFunctionUrl}/legal-validation-gateway-enhanced`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': originalAuthHeader || '',
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
             action: 'validate_operation',
             company_id,
@@ -273,11 +284,14 @@ serve(async (req) => {
         console.error('[legal-multiagent-supervisor] Validation gateway error:', err);
       }
 
-      // Step 2: Get legal advisory opinion
+      // Step 2: Get legal advisory opinion — forward user JWT
       try {
         const resp = await fetch(`${agentFunctionUrl}/legal-ai-advisor`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': originalAuthHeader || '',
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
             action: 'advise',
             company_id,
@@ -320,9 +334,9 @@ serve(async (req) => {
         outcomeStatus = 'human_review';
       }
 
-      // Log
+      // Log invocation via userClient
       try {
-        await supabase.from('erp_ai_agent_invocations').insert({
+        await userClient.from('erp_ai_agent_invocations').insert({
           agent_code: 'legal-labor',
           supervisor_code: 'legal-supervisor',
           company_id,
