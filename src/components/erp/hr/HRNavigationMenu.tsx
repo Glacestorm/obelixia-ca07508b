@@ -86,7 +86,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'departments', 'work-centers', 'legal-entities',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values',
+    'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values', 'garnishment-simulator',
     'ss', 'integration', 'compensation-suite',
     // Workforce
     'vacations', 'time-clock', 'leave-incidents',
@@ -196,6 +196,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 'ss', label: 'Seguridad Social', icon: Landmark, description: 'Cotizaciones y expediente SS' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones y ceses' },
+            { id: 'garnishment-simulator', label: 'Embargos Art. 607', icon: Scale, description: 'Simulador Art. 607-608 LEC' },
             { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Acceso directo al ciclo mensual' },
           ]
         },

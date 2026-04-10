@@ -140,6 +140,7 @@ import {
   LazyBankAccountsPanel,
   LazyGovernanceCockpit,
   LazyPredictiveAuditPanel,
+  LazyGarnishmentSimulator,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -527,6 +528,7 @@ function HRModuleInner() {
         {activeModule === 'bank-accounts' && <LazyBankAccountsPanel companyId={companyId} />}
         {activeModule === 'governance-cockpit' && <LazyGovernanceCockpit companyId={companyId} />}
         {activeModule === 'predictive-audit' && <LazyPredictiveAuditPanel companyId={companyId} />}
+        {activeModule === 'garnishment-simulator' && <LazyGarnishmentSimulator />}
 
         {/* Employee Expedient */}
         {activeModule === 'employee-expedient' && selectedEmployeeId && (
