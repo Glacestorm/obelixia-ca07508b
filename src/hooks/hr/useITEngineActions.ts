@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { extractErrorMessage } from '@/lib/hr/extractErrorMessage';
 
 async function callITEngine(action: string, payload: object) {
   const { data, error } = await supabase.functions.invoke('payroll-it-engine', {
     body: { action, ...payload },
   });
   if (error) throw new Error(error.message);
-  if (!data.success) throw new Error(data.error ?? 'Error en payroll-it-engine');
+  if (!data.success) throw new Error(extractErrorMessage(data, 'Error en payroll-it-engine'));
   return data;
 }
 
