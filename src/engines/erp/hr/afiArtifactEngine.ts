@@ -140,6 +140,10 @@ export type AFIArtifactStatus =
   | 'validated_internal'
   | 'dry_run_ready'
   | 'pending_approval'
+  | 'sent'
+  | 'accepted'
+  | 'rejected'
+  | 'archived'
   | 'error';
 
 export interface AFIFieldValidation {
@@ -174,6 +178,26 @@ export const AFI_STATUS_META: Record<AFIArtifactStatus, { label: string; color: 
     color: 'bg-amber-500/10 text-amber-700',
     disclaimer: 'Requiere aprobación interna antes de avanzar. NO es un envío oficial.',
   },
+  sent: {
+    label: 'Enviado (preparatorio)',
+    color: 'bg-cyan-500/10 text-cyan-700',
+    disclaimer: 'Marcado como enviado. isRealSubmissionBlocked sigue activo — esto es un registro preparatorio.',
+  },
+  accepted: {
+    label: 'Aceptado (TA2 recibido)',
+    color: 'bg-emerald-600/10 text-emerald-800',
+    disclaimer: 'Respuesta positiva de la TGSS registrada. TA2 archivado como evidencia.',
+  },
+  rejected: {
+    label: 'Rechazado (TGSS)',
+    color: 'bg-red-500/10 text-red-700',
+    disclaimer: 'La TGSS ha rechazado este trámite. Revisar motivo y regenerar si procede.',
+  },
+  archived: {
+    label: 'Archivado',
+    color: 'bg-muted text-muted-foreground',
+    disclaimer: 'Artefacto archivado. No admite más transiciones.',
+  },
   error: {
     label: 'Error en validación',
     color: 'bg-destructive/10 text-destructive',
@@ -206,10 +230,34 @@ function validateNAF(v: string): string | null {
   return /^\d{12}$/.test(c) ? null : 'NAF: 12 dígitos';
 }
 
+const DNI_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE';
+
 function validateDNINIE(v: string): { valid: boolean; type: 'DNI' | 'NIE'; error: string | null } {
   const c = v.trim().toUpperCase();
-  if (/^\d{8}[A-Z]$/.test(c)) return { valid: true, type: 'DNI', error: null };
-  if (/^[XYZ]\d{7}[A-Z]$/.test(c)) return { valid: true, type: 'NIE', error: null };
+
+  // DNI: 8 digits + letter
+  if (/^\d{8}[A-Z]$/.test(c)) {
+    const num = parseInt(c.slice(0, 8), 10);
+    const expectedLetter = DNI_LETTERS[num % 23];
+    const actualLetter = c[8];
+    if (actualLetter !== expectedLetter) {
+      return { valid: false, type: 'DNI', error: `Letra incorrecta: esperada ${expectedLetter}, recibida ${actualLetter}` };
+    }
+    return { valid: true, type: 'DNI', error: null };
+  }
+
+  // NIE: X/Y/Z + 7 digits + letter
+  if (/^[XYZ]\d{7}[A-Z]$/.test(c)) {
+    const niePrefix: Record<string, string> = { X: '0', Y: '1', Z: '2' };
+    const num = parseInt(niePrefix[c[0]] + c.slice(1, 8), 10);
+    const expectedLetter = DNI_LETTERS[num % 23];
+    const actualLetter = c[8];
+    if (actualLetter !== expectedLetter) {
+      return { valid: false, type: 'NIE', error: `Letra incorrecta: esperada ${expectedLetter}, recibida ${actualLetter}` };
+    }
+    return { valid: true, type: 'NIE', error: null };
+  }
+
   return { valid: false, type: /^[XYZ]/.test(c) ? 'NIE' : 'DNI', error: 'Formato inválido' };
 }
 
@@ -455,7 +503,11 @@ export function promoteAFIStatus(
     generated: ['validated_internal', 'error'],
     validated_internal: ['dry_run_ready', 'error'],
     dry_run_ready: ['pending_approval', 'error'],
-    pending_approval: ['validated_internal'],
+    pending_approval: ['sent', 'validated_internal'],
+    sent: ['accepted', 'rejected', 'error'],
+    accepted: ['archived'],
+    rejected: ['generated', 'archived'],
+    archived: [],
     error: ['generated'],
   };
 
