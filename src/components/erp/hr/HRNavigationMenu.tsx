@@ -82,11 +82,11 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
   // Tier 1: visible_mvp — shown to all users
   const mvpItems = new Set([
     // People
-    'employees', 'contracts', 'document-expedient',
+    'employees', 'contracts', 'document-expedient', 'bank-accounts',
     'departments', 'work-centers', 'legal-entities',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-engine',
+    'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values',
     'ss', 'integration', 'compensation-suite',
     // Workforce
     'vacations', 'time-clock', 'leave-incidents',
