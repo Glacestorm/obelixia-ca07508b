@@ -6,6 +6,7 @@
  * NO es validación oficial — es readiness interno.
  */
 import type { ContractProcessData } from '@/hooks/erp/hr/useHRContractProcess';
+import { validateDNINIE } from '@/engines/erp/hr/dniNieValidator';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -85,8 +86,7 @@ export interface ContrataPayloadResult {
 
 // ─── Format validators ──────────────────────────────────────────────────────
 
-// V2-RRHH-P1.2: Use shared MOD 23 validator instead of regex-only
-import { validateDNINIE } from '@/engines/erp/hr/dniNieValidator';
+// V2-RRHH-P1.2: DNI/NIE validation uses shared MOD 23 helper (imported at top)
 export { validateDNINIE };
 
 function validateNAF(value: string): string | null {
