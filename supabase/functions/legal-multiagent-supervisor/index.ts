@@ -13,6 +13,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from "../_shared/tenant-auth.ts";
+import { successResponse, mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,23 +65,15 @@ serve(async (req) => {
     // Capture original Authorization header for downstream forwarding
     const originalAuthHeader = req.headers.get('Authorization');
 
-    // Parse body first to extract company_id
     const input: LegalSupervisorRequest = await req.json();
     const { action, company_id, query, context, source_agent } = input;
 
-    if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    if (!company_id) return validationError('company_id required', corsHeaders);
+    if (!action) return validationError('action required', corsHeaders);
 
     // Auth: validateTenantAccess — JWT + membership check
     const authResult = await validateTenantAccess(req, company_id);
-    if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
     const { userId, userClient } = authResult;
 
     const agentFunctionUrl = `${supabaseUrl}/functions/v1`;
@@ -95,34 +88,24 @@ serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      return new Response(JSON.stringify({
-        success: true,
-        data: {
-          supervisor_status: 'active',
-          recent_invocations: recentInvocations || [],
-          escalations_from_hr: (recentInvocations || []).filter(
-            (inv: any) => inv.metadata?.source_agent === 'hr-supervisor'
-          ).length,
-          timestamp: new Date().toISOString()
-        }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return successResponse({
+        supervisor_status: 'active',
+        recent_invocations: recentInvocations || [],
+        escalations_from_hr: (recentInvocations || []).filter(
+          (inv: any) => inv.metadata?.source_agent === 'hr-supervisor'
+        ).length,
+        timestamp: new Date().toISOString()
+      }, corsHeaders);
     }
 
     // === ROUTE QUERY (direct legal query) ===
     if (action === 'route_query') {
-      if (!query) {
-        return new Response(JSON.stringify({ success: false, error: 'query required' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!query) return validationError('query required', corsHeaders);
 
       if (!LOVABLE_API_KEY) {
         throw new Error('LOVABLE_API_KEY is not configured');
       }
 
-      // Classify the legal query
       console.log(`[legal-multiagent-supervisor] Classifying legal query: ${query.substring(0, 80)}...`);
 
       const classifierResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -144,14 +127,10 @@ serve(async (req) => {
 
       if (!classifierResponse.ok) {
         if (classifierResponse.status === 429) {
-          return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded.' }), {
-            status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return errorResponse('RATE_LIMITED', 'Rate limit exceeded', 429, corsHeaders);
         }
         if (classifierResponse.status === 402) {
-          return new Response(JSON.stringify({ success: false, error: 'Créditos IA insuficientes.' }), {
-            status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return errorResponse('PAYMENT_REQUIRED', 'Créditos IA insuficientes', 402, corsHeaders);
         }
         throw new Error(`Classifier API error: ${classifierResponse.status}`);
       }
@@ -231,32 +210,23 @@ serve(async (req) => {
         console.error('[legal-multiagent-supervisor] Logging error:', logErr);
       }
 
-      return new Response(JSON.stringify({
-        success: true,
-        data: {
-          response: agentResponse,
-          routing: {
-            domain: classification.domain,
-            agent_code: route.code,
-            confidence: classification.confidence,
-            reasoning: classification.reasoning,
-          },
-          execution_time_ms: executionTime,
-          outcome_status: outcomeStatus,
-          timestamp: new Date().toISOString(),
-        }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return successResponse({
+        response: agentResponse,
+        routing: {
+          domain: classification.domain,
+          agent_code: route.code,
+          confidence: classification.confidence,
+          reasoning: classification.reasoning,
+        },
+        execution_time_ms: executionTime,
+        outcome_status: outcomeStatus,
+        timestamp: new Date().toISOString(),
+      }, corsHeaders);
     }
 
     // === VALIDATE HR ACTION (escalation from HR-Supervisor) ===
     if (action === 'validate_hr_action') {
-      if (!query) {
-        return new Response(JSON.stringify({ success: false, error: 'query required for validation' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      if (!query) return validationError('query required for validation', corsHeaders);
 
       console.log(`[legal-multiagent-supervisor] Validating HR action via gateway: ${query.substring(0, 80)}...`);
 
@@ -313,7 +283,6 @@ serve(async (req) => {
 
       const executionTime = Date.now() - startTime;
 
-      // Compose combined result
       const riskLevel = validationResponse?.data?.risk_level || 
                         (advisorResponse?.data?.risk_level) || 'medium';
       const requiresHumanReview = riskLevel === 'high' || riskLevel === 'critical';
@@ -362,28 +331,18 @@ serve(async (req) => {
         console.error('[legal-multiagent-supervisor] Logging error:', logErr);
       }
 
-      return new Response(JSON.stringify({
-        success: true,
-        data: combinedResult,
+      return successResponse({
+        ...combinedResult,
         execution_time_ms: executionTime,
         outcome_status: outcomeStatus,
         timestamp: new Date().toISOString(),
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      }, corsHeaders);
     }
 
-    return new Response(JSON.stringify({ success: false, error: `Unknown action: ${action}` }), {
-      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return validationError(`Unknown action: ${action}`, corsHeaders);
 
   } catch (error) {
     console.error('[legal-multiagent-supervisor] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return internalError(corsHeaders);
   }
 });

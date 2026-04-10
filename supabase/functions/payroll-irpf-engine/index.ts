@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
-
-// corsHeaders now computed per-request via getSecureCorsHeaders(req)
+import { successResponse, mapAuthError, validationError, notFoundError, internalError } from '../_shared/error-contract.ts';
 
 function r2(n: number): number { return Math.round(n * 100) / 100; }
 
@@ -38,72 +37,53 @@ function workIncomeReduction(grossAnnual: number): number {
 function personalFamilyMinimum(data: any): number {
   let min = 5550; // Personal
 
-  // Children < 25
   const children = data.descendants ?? 0;
   const childAmounts = [2400, 2700, 4000, 4500];
   for (let i = 0; i < children; i++) {
     min += childAmounts[Math.min(i, 3)];
   }
 
-  // Children < 3
   const childrenUnder3 = data.children_under_3 ?? 0;
   min += childrenUnder3 * 2800;
 
-  // Ascendants > 65
   const ascendants65 = data.ascendants_over_65 ?? 0;
   min += ascendants65 * 1150;
 
-  // Ascendants > 75
   const ascendants75 = data.ascendants_over_75 ?? 0;
-  min += ascendants75 * (2550 - 1150); // Additional over 65
+  min += ascendants75 * (2550 - 1150);
 
-  // Worker disability
   const disability = data.disability_degree ?? 0;
   if (disability >= 65) min += 9000;
   else if (disability >= 33) min += 3000;
 
-  // Geographic mobility
   if (data.geographic_mobility) min += 2000;
 
   return min;
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
+  const cors = getSecureCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
     const body = await req.json();
     const { action, company_id, employee_id, period_year, period_quarter } = body;
 
-    // --- Input validation ---
-    if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
-    }
+    if (!company_id) return validationError('company_id required', cors);
 
     const VALID_ACTIONS = ['calculate_rate', 'regularize', 'generate_model_190_data', 'generate_retention_certificate'];
     if (!action || !VALID_ACTIONS.includes(action)) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid or missing action' }), {
-        status: 400,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+      return validationError('Invalid or missing action', cors);
     }
 
     // --- Auth + tenant membership ---
     const authResult = await validateTenantAccess(req, company_id);
-    if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
-    }
+    if (isAuthError(authResult)) return mapAuthError(authResult, cors);
     const supabase = authResult.userClient;
 
     // ─── CALCULATE RATE ─────────────────────────────────────
     if (action === 'calculate_rate') {
-      if (!employee_id) throw new Error('employee_id required');
+      if (!employee_id) return validationError('employee_id required', cors);
 
       const { data: emp } = await supabase
         .from('erp_hr_employees')
@@ -112,42 +92,27 @@ serve(async (req) => {
         .eq('company_id', company_id)
         .single();
 
-      if (!emp) throw new Error('Employee not found');
+      if (!emp) return notFoundError('Employee', cors);
 
       const grossAnnual = (emp.base_salary ?? 2000) * 12 * (emp.part_time_coefficient ?? 1);
-      
-      // SS annual deductions
       const ssAnnual = r2(grossAnnual * 6.45 / 100);
-
-      // Work income reduction
       const reduction = workIncomeReduction(grossAnnual);
-
-      // Pension contributions
       const pensionContrib = emp.pension_contributions ?? 0;
-
-      // Taxable base
       const taxableBase = Math.max(grossAnnual - ssAnnual - reduction - pensionContrib, 0);
-
-      // Personal & family minimum
       const pfMin = personalFamilyMinimum(emp);
-
-      // Tax calculation
       const taxOnBase = applyScale(taxableBase);
       const taxOnMinimum = applyScale(pfMin);
       const estimatedTax = Math.max(taxOnBase - taxOnMinimum, 0);
 
-      // Retention rate
       let retentionRate = grossAnnual > 0 ? r2(estimatedTax / grossAnnual * 100) : 0;
-      retentionRate = Math.max(retentionRate, 2); // Minimum 2%
+      retentionRate = Math.max(retentionRate, 2);
 
-      // Two payers check
       if (emp.two_payers && emp.second_payer_amount > 1500) {
         retentionRate = Math.max(retentionRate, 2);
       }
 
       const monthlyRetention = r2(grossAnnual * retentionRate / 100 / 12);
 
-      // Update employee IRPF rate
       await supabase
         .from('erp_hr_employees')
         .update({ irpf_rate: retentionRate })
@@ -163,8 +128,7 @@ serve(async (req) => {
         performed_by: employee_id,
       });
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         retention_rate: retentionRate,
         monthly_retention: monthlyRetention,
         breakdown: {
@@ -176,12 +140,12 @@ serve(async (req) => {
           liquidableIncome: taxableBase,
           estimatedTax,
         },
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      }, cors);
     }
 
     // ─── REGULARIZE ─────────────────────────────────────────
     if (action === 'regularize') {
-      if (!employee_id) throw new Error('employee_id required');
+      if (!employee_id) return validationError('employee_id required', cors);
 
       const { data: emp } = await supabase
         .from('erp_hr_employees')
@@ -190,7 +154,7 @@ serve(async (req) => {
         .eq('company_id', company_id)
         .single();
 
-      if (!emp) throw new Error('Employee not found');
+      if (!emp) return notFoundError('Employee', cors);
 
       const year = period_year ?? new Date().getFullYear();
       const { data: records } = await supabase
@@ -230,13 +194,12 @@ serve(async (req) => {
         performed_by: employee_id,
       });
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         old_rate: oldRate,
         new_rate: newRate,
         adjustment: r2(newRate - oldRate),
         months_remaining: monthsRemaining,
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      }, cors);
     }
 
     // ─── GENERATE MODEL 190 DATA ────────────────────────────
@@ -280,14 +243,12 @@ serve(async (req) => {
         generated_at: new Date().toISOString(),
       });
 
-      return new Response(JSON.stringify({ success: true, perceptors, year }), {
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+      return successResponse({ perceptors, year }, cors);
     }
 
     // ─── GENERATE RETENTION CERTIFICATE ─────────────────────
     if (action === 'generate_retention_certificate') {
-      if (!employee_id) throw new Error('employee_id required');
+      if (!employee_id) return validationError('employee_id required', cors);
       const year = period_year ?? new Date().getFullYear();
 
       const { data: emp } = await supabase
@@ -318,8 +279,7 @@ serve(async (req) => {
         .select('id')
         .single();
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         certificate_data: {
           employee: emp?.full_name,
           nif: emp?.nif_nie,
@@ -328,15 +288,12 @@ serve(async (req) => {
           total_retained: totalRetained,
         },
         file_id: file?.id,
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      }, cors);
     }
 
-    throw new Error(`Unknown action: ${action}`);
+    return validationError(`Unknown action: ${action}`, cors);
   } catch (error) {
     console.error('[payroll-irpf-engine] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-    });
+    return internalError(cors);
   }
 });

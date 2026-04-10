@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from "../_shared/tenant-auth.ts";
+import { successResponse, mapAuthError, validationError, internalError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,32 +55,21 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    // --- Parse body first to extract company_id ---
     const body: ActionRequest = await req.json();
     const { action, company_id } = body;
 
-    // --- company_id mandatory ---
-    if (!company_id) {
-      return new Response(JSON.stringify({ error: 'company_id is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!company_id) return validationError('company_id is required', corsHeaders);
+    if (!action) return validationError('action is required', corsHeaders);
 
     // --- AUTH: validateTenantAccess (JWT + membership) ---
     const authResult = await validateTenantAccess(req, company_id);
-    if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
     const { userId, userClient } = authResult;
 
     // ============= CLASSIFY INTENT =============
     if (action === 'classify_intent') {
       const { query, jurisdiction = 'ES', specialty = 'labor', conversation_history = [], session_id } = body;
-      if (!query) throw new Error('Query required');
+      if (!query) return validationError('Query required', corsHeaders);
 
       const classifyPrompt = `Eres un clasificador de intenciones jurídico-laborales enterprise. Analiza la consulta del usuario y determina:
 
@@ -151,9 +141,7 @@ RESPONDE EN JSON ESTRICTO:
 
       if (!response.ok) {
         if (response.status === 429) {
-          return new Response(JSON.stringify({ error: 'Rate limit', message: 'Demasiadas solicitudes' }), {
-            status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return internalError(corsHeaders); // rate limit handled generically
         }
         throw new Error(`AI error: ${response.status}`);
       }
@@ -210,14 +198,7 @@ RESPONDE EN JSON ESTRICTO:
         classification.module_deep_link = deepLink;
       }
 
-      return new Response(JSON.stringify({
-        success: true,
-        action: 'classify_intent',
-        data: classification,
-        timestamp: new Date().toISOString(),
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return successResponse(classification, corsHeaders);
     }
 
     // ============= GET PROCEDURES =============
@@ -238,18 +219,13 @@ RESPONDE EN JSON ESTRICTO:
       const { data, error } = await query;
       if (error) throw error;
 
-      return new Response(JSON.stringify({
-        success: true,
-        data: data || [],
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return successResponse(data || [], corsHeaders);
     }
 
     // ============= UPDATE PROCEDURE =============
     if (action === 'update_procedure') {
       const { procedure_id, procedure_update } = body;
-      if (!procedure_id) throw new Error('procedure_id required');
+      if (!procedure_id) return validationError('procedure_id required', corsHeaders);
 
       const { data, error } = await userClient
         .from('erp_legal_procedures')
@@ -260,20 +236,12 @@ RESPONDE EN JSON ESTRICTO:
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({ success: true, data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return successResponse(data, corsHeaders);
     }
 
-    throw new Error(`Unsupported action: ${action}`);
+    return validationError(`Unsupported action: ${action}`, corsHeaders);
   } catch (error) {
     console.error('[legal-action-router] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

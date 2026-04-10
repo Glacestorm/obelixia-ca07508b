@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { successResponse, mapAuthError, validationError, notFoundError, internalError } from '../_shared/error-contract.ts';
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr);
@@ -26,25 +27,23 @@ function calcNextConfirmation(processClass: string, emissionDate: string, partCo
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
+  const cors = getSecureCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
     const { action, company_id, employee_id, process_id, data } = await req.json();
 
-    if (!company_id) throw new Error('company_id required');
+    if (!company_id) return validationError('company_id required', cors);
+    if (!action) return validationError('action required', cors);
 
     // Auth + tenant isolation via shared utility
     const authResult = await validateTenantAccess(req, company_id);
-    if (isAuthError(authResult)) {
-      return new Response(JSON.stringify({ success: false, error: authResult.body.error }), {
-        status: authResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
-      });
-    }
+    if (isAuthError(authResult)) return mapAuthError(authResult, cors);
     const { userClient } = authResult;
 
     // ─── CREATE PROCESS ─────────────────────────────────────
     if (action === 'create_process') {
-      if (!employee_id || !data) throw new Error('employee_id and data required');
+      if (!employee_id || !data) return validationError('employee_id and data required', cors);
 
       const processClass = classifyProcess(data.estimated_duration_days ?? 30);
       const m365 = addDays(data.start_date, 365);
@@ -81,17 +80,16 @@ serve(async (req) => {
         performed_by: employee_id,
       });
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         process_id: proc.id,
         process_class: processClass,
         milestones: { d365: m365, d545: m545 },
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      }, cors);
     }
 
     // ─── ADD PART ────────────────────────────────────────────
     if (action === 'add_part') {
-      if (!process_id || !data) throw new Error('process_id and data required');
+      if (!process_id || !data) return validationError('process_id and data required', cors);
 
       const { data: proc } = await userClient
         .from('erp_hr_it_processes')
@@ -136,17 +134,16 @@ serve(async (req) => {
         performed_by: employee_id ?? process_id,
       });
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         part_id: part.id,
         next_confirmation_date: nextConf,
         complementary_report_required: compReport,
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      }, cors);
     }
 
     // ─── CALCULATE BASE ─────────────────────────────────────
     if (action === 'calculate_base') {
-      if (!process_id) throw new Error('process_id required');
+      if (!process_id) return validationError('process_id required', cors);
 
       const { data: proc } = await userClient
         .from('erp_hr_it_processes')
@@ -154,7 +151,7 @@ serve(async (req) => {
         .eq('id', process_id)
         .single();
 
-      if (!proc) throw new Error('Process not found');
+      if (!proc) return notFoundError('Process', cors);
 
       const bcPrevMonth = data?.bc_prev_month ?? 2000;
       const extraHoursAnnual = data?.extra_hours_annual ?? 0;
@@ -204,12 +201,11 @@ serve(async (req) => {
         performed_by: employee_id ?? process_id,
       });
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         base_reguladora: baseReguladora,
         base_daily: baseDaily,
         calculation_method: calcMethod,
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      }, cors);
     }
 
     // ─── CHECK MILESTONES ───────────────────────────────────
@@ -234,17 +230,12 @@ serve(async (req) => {
         }
       }
 
-      return new Response(JSON.stringify({ success: true, alerts, total: alerts.length }), {
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+      return successResponse({ alerts, total: alerts.length }, cors);
     }
 
-    throw new Error(`Unknown action: ${action}`);
+    return validationError(`Unknown action: ${action}`, cors);
   } catch (error) {
     console.error('[payroll-it-engine] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 400,
-      headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-    });
+    return internalError(cors);
   }
 });

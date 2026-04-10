@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { successResponse, mapAuthError, validationError, notFoundError, businessRuleError, internalError } from '../_shared/error-contract.ts';
 
 const VALID_TRANSITIONS: Record<string, string> = {
   'draft': 'calculated',
@@ -12,28 +13,24 @@ const VALID_TRANSITIONS: Record<string, string> = {
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
+  const cors = getSecureCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
     const body = await req.json();
     const { action, company_id, cycle_id, period_year, period_month, actor_id, reason, details } = body;
 
-    if (!company_id) throw new Error('company_id required');
+    if (!company_id) return validationError('company_id required', cors);
+    if (!action) return validationError('action required', cors);
 
     // --- AUTH + TENANT GATE (shared utility) ---
     const authResult = await validateTenantAccess(req, company_id);
-    if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
-    }
-    // S6.2A: adminClient removed — all data ops now use userClient (RLS-protected)
+    if (isAuthError(authResult)) return mapAuthError(authResult, cors);
     const { userClient } = authResult;
 
     // ─── START CYCLE ────────────────────────────────────────
     if (action === 'start_cycle') {
-      if (!period_year || !period_month) throw new Error('period_year and period_month required');
+      if (!period_year || !period_month) return validationError('period_year and period_month required', cors);
 
       const { data: existing } = await userClient
         .from('erp_audit_nomina_cycles')
@@ -43,7 +40,7 @@ serve(async (req) => {
         .eq('period_month', period_month)
         .maybeSingle();
 
-      if (existing) throw new Error(`Cycle already exists for ${period_year}/${period_month}`);
+      if (existing) return businessRuleError(`Cycle already exists for ${period_year}/${period_month}`, cors);
 
       const { data: cycle, error } = await userClient
         .from('erp_audit_nomina_cycles')
@@ -68,16 +65,12 @@ serve(async (req) => {
         performed_by: actor_id ?? 'system',
       });
 
-      return new Response(JSON.stringify({
-        success: true,
-        cycle_id: cycle.id,
-        status: 'draft',
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      return successResponse({ cycle_id: cycle.id, status: 'draft' }, cors);
     }
 
     // ─── ADVANCE STATUS ─────────────────────────────────────
     if (action === 'advance_status') {
-      if (!cycle_id) throw new Error('cycle_id required');
+      if (!cycle_id) return validationError('cycle_id required', cors);
 
       const { data: cycle } = await userClient
         .from('erp_audit_nomina_cycles')
@@ -85,18 +78,17 @@ serve(async (req) => {
         .eq('id', cycle_id)
         .single();
 
-      if (!cycle) throw new Error('Cycle not found');
+      if (!cycle) return notFoundError('Cycle', cors);
 
       const expectedNext = VALID_TRANSITIONS[cycle.status];
       const newStatus = body.new_status ?? expectedNext;
 
       if (!expectedNext || newStatus !== expectedNext) {
-        throw new Error(`Invalid transition: ${cycle.status} → ${newStatus}. Expected: ${expectedNext}`);
+        return businessRuleError(`Invalid transition: ${cycle.status} → ${newStatus}. Expected: ${expectedNext}`, cors);
       }
 
-      // Transition-specific validations
       if (newStatus === 'approved' && !actor_id) {
-        throw new Error('approved requires actor_id');
+        return validationError('approved requires actor_id', cors);
       }
 
       if (newStatus === 'filed') {
@@ -109,10 +101,7 @@ serve(async (req) => {
           .in('file_type', ['FAN', 'RLC']);
 
         if (!count || count === 0) {
-          return new Response(JSON.stringify({
-            success: false,
-            blocked_by: 'No filing documents generated for this period',
-          }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+          return businessRuleError('No filing documents generated for this period', cors);
         }
       }
 
@@ -138,16 +127,12 @@ serve(async (req) => {
         performed_by: actor_id ?? 'system',
       });
 
-      return new Response(JSON.stringify({
-        success: true,
-        cycle_id,
-        new_status: newStatus,
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      return successResponse({ cycle_id, new_status: newStatus }, cors);
     }
 
     // ─── GET CYCLE STATUS ───────────────────────────────────
     if (action === 'get_cycle_status') {
-      if (!cycle_id) throw new Error('cycle_id required');
+      if (!cycle_id) return validationError('cycle_id required', cors);
 
       const { data: cycle } = await userClient
         .from('erp_audit_nomina_cycles')
@@ -155,7 +140,6 @@ serve(async (req) => {
         .eq('id', cycle_id)
         .single();
 
-      // S6.2A: Migrated to userClient — erp_audit_events already uses userClient for INSERT (lines 60, 130)
       const { data: events } = await userClient
         .from('erp_audit_events')
         .select('*')
@@ -164,16 +148,11 @@ serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(12);
 
-      return new Response(JSON.stringify({
-        success: true,
-        cycle,
-        transitions_history: events ?? [],
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      return successResponse({ cycle, transitions_history: events ?? [] }, cors);
     }
 
     // ─── GET KPIs ───────────────────────────────────────────
     if (action === 'get_kpis') {
-      // KPI 1: Cycles on time
       const { data: cycles } = await userClient
         .from('erp_audit_nomina_cycles')
         .select('status, period_year, period_month')
@@ -185,7 +164,6 @@ serve(async (req) => {
       const paidOnTime = (cycles ?? []).filter(c => c.status === 'paid').length;
       const cyclesOnTimePct = totalCycles > 0 ? Math.round(paidOnTime / totalCycles * 100) : 100;
 
-      // KPI 2: Files accepted
       const { data: files } = await userClient
         .from('erp_hr_generated_files')
         .select('status')
@@ -197,7 +175,6 @@ serve(async (req) => {
       const acceptedFiles = (files ?? []).filter(f => f.status === 'accepted' || f.status === 'generated').length;
       const filesAcceptedPct = totalFiles > 0 ? Math.round(acceptedFiles / totalFiles * 100) : 100;
 
-      // KPI 3: Critical findings
       const { count: openFindings } = await userClient
         .from('erp_audit_findings')
         .select('*', { count: 'exact', head: true })
@@ -205,7 +182,6 @@ serve(async (req) => {
         .eq('status', 'open')
         .eq('criticality', 'high');
 
-      // KPI 4: Days since last audit
       const { data: lastAudit } = await userClient
         .from('erp_audit_reports')
         .select('created_at')
@@ -217,22 +193,19 @@ serve(async (req) => {
         ? Math.floor((Date.now() - new Date(lastAudit[0].created_at).getTime()) / 86400000)
         : 999;
 
-      // KPI 5: IT overdue communications
       const { count: itOverdue } = await userClient
         .from('erp_hr_it_processes')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', company_id)
         .eq('status', 'active');
 
-      // KPI 6: Garnishments compliant
       const { count: totalGarnishments } = await userClient
         .from('erp_hr_garnishments')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', company_id)
         .eq('status', 'active');
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         kpis: {
           cycles_on_time_pct: cyclesOnTimePct,
           files_accepted_pct: filesAcceptedPct,
@@ -241,12 +214,12 @@ serve(async (req) => {
           it_processes_overdue_communication: itOverdue ?? 0,
           garnishments_lec_compliant: totalGarnishments ? 100 : 100,
         },
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      }, cors);
     }
 
     // ─── ESCALATE TO LEGAL ──────────────────────────────────
     if (action === 'escalate_to_legal') {
-      if (!cycle_id) throw new Error('cycle_id required');
+      if (!cycle_id) return validationError('cycle_id required', cors);
 
       const { data: finding, error } = await userClient
         .from('erp_audit_findings')
@@ -265,18 +238,12 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      return new Response(JSON.stringify({
-        success: true,
-        escalation_id: finding.id,
-      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
+      return successResponse({ escalation_id: finding.id }, cors);
     }
 
-    throw new Error(`Unknown action: ${action}`);
+    return validationError(`Unknown action: ${action}`, cors);
   } catch (error) {
     console.error('[payroll-supervisor] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 400,
-      headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-    });
+    return internalError(cors);
   }
 });
