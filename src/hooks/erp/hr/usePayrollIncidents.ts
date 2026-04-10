@@ -312,6 +312,51 @@ export function usePayrollIncidents(companyId?: string) {
     }
   }, [companyId, incidents]);
 
+  // ── Batch pre-calc validation ── P1.3
+
+  const validateBatchPreCalc = useCallback(async (periodId: string): Promise<BatchIncidentValidationResult | null> => {
+    if (!companyId) return null;
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_payroll_incidents' as any)
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('period_id', periodId)
+        .neq('status', 'cancelled');
+
+      if (error) throw error;
+
+      const periodIncidents = (data ?? []) as unknown as PayrollIncident[];
+      const result = validateBatchIncidents(periodIncidents);
+
+      // Ledger: batch pre-calc validation run
+      writeLedger({
+        eventType: 'payroll_validation_completed' as any,
+        eventLabel: 'Validación pre-cálculo de incidencias',
+        entityType: 'payroll_period',
+        entityId: periodId,
+        afterSnapshot: {
+          total_incidents: periodIncidents.length,
+          errors: result.totalErrors,
+          warnings: result.totalWarnings,
+          is_valid: result.isValid,
+        },
+      });
+
+      if (result.isValid) {
+        toast.success(`Validación pre-cálculo OK: ${periodIncidents.length} incidencia(s) verificadas`);
+      } else {
+        toast.warning(`Validación pre-cálculo: ${result.totalErrors} error(es), ${result.totalWarnings} aviso(s)`);
+      }
+
+      return result;
+    } catch (err) {
+      console.error('[usePayrollIncidents] validateBatchPreCalc:', err);
+      toast.error('Error en validación pre-cálculo');
+      return null;
+    }
+  }, [companyId, writeLedger]);
+
   return {
     incidents,
     isLoading,
@@ -323,5 +368,6 @@ export function usePayrollIncidents(companyId?: string) {
     validateIncident,
     cancelIncident,
     validateAllPending,
+    validateBatchPreCalc,
   };
 }
