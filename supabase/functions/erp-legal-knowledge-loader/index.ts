@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { validateAuth, isAuthError } from "../_shared/tenant-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,9 +13,20 @@ serve(async (req) => {
   }
 
   try {
+    // === AUTH GATE: validateAuth(req) — require authenticated user for all actions ===
+    const authResult = await validateAuth(req);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authenticatedUserId = authResult.userId;
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
+    // service_role client for global catalog ops (legitimate exception — not tenant-scoped)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -22,7 +34,7 @@ serve(async (req) => {
     const { action, entity_type, category } = await req.json();
 
     if (action === 'get_rules') {
-      // Fetch entity type rules
+      // Read-only global catalog — service_role justified (no user-scoped RLS on this table)
       let query = supabase.from('erp_entity_type_rules').select('*');
       if (entity_type) query = query.eq('entity_type', entity_type);
       const { data, error } = await query;
@@ -33,6 +45,7 @@ serve(async (req) => {
     }
 
     if (action === 'get_knowledge') {
+      // Read-only global catalog — service_role justified (no user-scoped RLS on this table)
       let query = supabase.from('erp_legal_knowledge_base').select('*').eq('is_active', true);
       if (entity_type) query = query.contains('applicable_entity_types', [entity_type]);
       if (category) query = query.eq('category', category);
@@ -44,6 +57,30 @@ serve(async (req) => {
     }
 
     if (action === 'expand_knowledge') {
+      // === ADMIN ROLE CHECK: expand_knowledge is an admin-level write operation ===
+      const { data: roles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authenticatedUserId);
+
+      if (roleError) {
+        console.error('[erp-legal-knowledge-loader] Role check failed:', roleError.message);
+        return new Response(JSON.stringify({ error: 'Authorization check failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const userRoles = (roles || []).map(r => r.role);
+      const isAdmin = userRoles.includes('admin') || userRoles.includes('superadmin');
+      if (!isAdmin) {
+        console.warn(`[erp-legal-knowledge-loader] User ${authenticatedUserId} lacks admin role for expand_knowledge. Roles: ${userRoles.join(',')}`);
+        return new Response(JSON.stringify({ error: 'Insufficient permissions: admin role required' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Use AI to generate additional legal knowledge for a given entity type
       const targetType = entity_type || 'all';
 
@@ -105,7 +142,7 @@ Incluye leyes vigentes con referencias BOE exactas.`
         entries = [];
       }
 
-      // Insert into knowledge base
+      // Insert into knowledge base — service_role justified (global catalog write)
       let inserted = 0;
       for (const entry of entries) {
         const { error } = await supabase.from('erp_legal_knowledge_base').insert({
