@@ -36,6 +36,7 @@ import { useContrataReadiness } from '@/hooks/erp/hr/useContrataReadiness';
 import { useContractClosure } from '@/hooks/erp/hr/useContractClosure';
 import { ContractClosureSection } from '../shared/ContractClosureSection';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
+import { ContrataTrackingCard } from '../shared/ContrataTrackingCard';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
 
