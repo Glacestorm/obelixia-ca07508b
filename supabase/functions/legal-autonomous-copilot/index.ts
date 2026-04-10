@@ -617,11 +617,6 @@ ${JSON.stringify(params || context || {})}`;
       if (response.status === 402) {
         return errorResponse('PAYMENT_REQUIRED', 'Payment required. Please add credits.', 402, corsHeaders);
       }
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
       throw new Error(`AI API error: ${response.status}`);
     }
 
