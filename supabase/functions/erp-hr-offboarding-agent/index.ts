@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface OffboardingRequest {
   action: 'analyze_termination' | 'suggest_optimal_dates' | 'calculate_costs' | 
@@ -33,17 +34,13 @@ serve(async (req) => {
     if (companyId) {
       const tenantResult = await validateTenantAccess(req, companyId);
       if (isAuthError(tenantResult)) {
-        return new Response(JSON.stringify({ success: false, error: tenantResult.body.error }), {
-          status: tenantResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return mapAuthError(tenantResult, corsHeaders);
       }
       userId = tenantResult.userId;
     } else {
       const authResult = await validateAuth(req);
       if (isAuthError(authResult)) {
-        return new Response(JSON.stringify({ success: false, error: authResult.body.error }), {
-          status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return mapAuthError(authResult, corsHeaders);
       }
       userId = authResult.userId;
     }

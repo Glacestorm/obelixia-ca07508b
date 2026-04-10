@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface FunctionRequest {
   action: string;
@@ -25,9 +26,7 @@ serve(async (req) => {
     // --- AUTH + TENANT via shared utility ---
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify({ success: false, ...authResult.body }), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 
@@ -219,8 +218,6 @@ FORMATO JSON estricto:
 
   } catch (error) {
     console.error('[erp-hr-copilot-twin] Error:', error);
-    return new Response(JSON.stringify({
-      success: false, error: 'Internal server error'
-    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return internalError(corsHeaders);
   }
 });

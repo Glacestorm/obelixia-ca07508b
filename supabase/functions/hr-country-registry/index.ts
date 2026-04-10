@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface RequestBody {
   action: string;
@@ -339,9 +340,6 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('[hr-country-registry] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return internalError(corsHeaders);
   }
 });

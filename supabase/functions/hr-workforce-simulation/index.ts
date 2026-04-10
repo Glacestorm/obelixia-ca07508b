@@ -8,6 +8,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 // ── Prompt injection patterns ────────────────────────────────────────────────
 const INJECTION_PATTERNS = [
@@ -47,13 +48,13 @@ serve(async (req) => {
     const { result } = body;
 
     if (!result?.input || !result?.baseline || !result?.impact) {
-      return json({ error: 'Invalid simulation result' }, 400);
+      return validationError('Invalid simulation result', corsHeaders);
     }
 
     // ── S6.5C: company_id mandatory ──
     const companyId = result.baseline?.companyId;
     if (!companyId) {
-      return json({ error: 'company_id is required in baseline.companyId' }, 400);
+      return validationError('company_id is required in baseline.companyId', corsHeaders);
     }
 
     // ── S6.5C: Standard tenant access gate ──
@@ -105,7 +106,7 @@ serve(async (req) => {
       JSON.stringify(result.input?.parameters),
     ].filter(Boolean).join(' ');
     if (containsInjection(textFields)) {
-      return json({ error: 'Contenido no permitido detectado' }, 400);
+      return validationError('Contenido no permitido detectado', corsHeaders);
     }
 
     const { input, baseline, impact } = result;
@@ -179,10 +180,10 @@ LIMITACIONES: ${impact.limitations?.join('; ')}`;
     if (!response.ok) {
       const status = response.status;
       if (status === 429) {
-        return json({ error: 'Rate limit exceeded' }, 429);
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       if (status === 402) {
-        return json({ error: 'Payment required' }, 402);
+        return errorResponse('PAYMENT_REQUIRED', 'AI credits exhausted.', 402, corsHeaders);
       }
       throw new Error(`AI gateway error: ${status}`);
     }
@@ -193,11 +194,6 @@ LIMITACIONES: ${impact.limitations?.join('; ')}`;
 
   } catch (error) {
     console.error('[hr-workforce-simulation] Error:', error);
-    return new Response(JSON.stringify({
-      error: 'Internal server error',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

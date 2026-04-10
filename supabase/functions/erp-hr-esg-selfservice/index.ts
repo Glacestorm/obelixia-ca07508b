@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface FunctionRequest {
   action: string;
@@ -235,7 +236,7 @@ Contexto adicional: ${JSON.stringify(context || {})}`;
         });
 
         if (!response.ok) {
-          if (response.status === 429) return jsonResponse({ error: 'Rate limit' }, 429);
+          if (response.status === 429) return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
           throw new Error(`AI error: ${response.status}`);
         }
 

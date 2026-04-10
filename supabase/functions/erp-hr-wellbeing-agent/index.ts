@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface WellbeingRequest {
   action: 'analyze_wellbeing' | 'generate_survey' | 'analyze_survey_results' | 'recommend_programs' | 'predict_burnout' | 'create_wellness_plan';

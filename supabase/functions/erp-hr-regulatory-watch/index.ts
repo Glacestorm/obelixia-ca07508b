@@ -9,6 +9,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface WatchRequest {
   action: 'check_updates' | 'analyze_document' | 'get_cno_changes' | 'search_boe';
@@ -47,7 +48,7 @@ serve(async (req) => {
     const { action, company_id, jurisdictions, categories, document_url, query } = await req.json() as WatchRequest;
 
     if (!company_id || typeof company_id !== 'string') {
-      return json({ success: false, error: 'company_id is required' }, 400);
+      return validationError('company_id is required', corsHeaders);
     }
 
     console.log(`[erp-hr-regulatory-watch] Action: ${action}, Company: ${company_id}`);
@@ -248,7 +249,7 @@ FORMATO DE RESPUESTA (JSON):
 
     if (!response.ok) {
       if (response.status === 429) {
-        return json({ success: false, error: 'Rate limit exceeded' }, 429);
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -282,6 +283,6 @@ FORMATO DE RESPUESTA (JSON):
 
   } catch (error) {
     console.error('[erp-hr-regulatory-watch] Error:', error);
-    return json({ success: false, error: 'Internal server error' }, 500);
+    return internalError(corsHeaders);
   }
 });

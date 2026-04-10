@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 8,
@@ -42,7 +43,7 @@ serve(async (req) => {
     const { action, companyId, templateId, packId, period, status, comments, reviewerName } = await req.json() as BoardPackRequest;
 
     if (!companyId || companyId === 'demo-company-id') {
-      return json({ success: false, error: 'company_id is required' }, 400);
+      return validationError('company_id is required', corsHeaders);
     }
 
     // Auth + tenant isolation via shared utility
@@ -201,8 +202,8 @@ Contexto: Suite HR Premium con módulos de Fairness, Workforce Planning, Legal E
         });
 
         if (!aiResponse.ok) {
-          if (aiResponse.status === 429) return json({ success: false, error: 'Rate limit' }, 429);
-          if (aiResponse.status === 402) return json({ success: false, error: 'Payment required' }, 402);
+          if (aiResponse.status === 429) return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
+          if (aiResponse.status === 402) return errorResponse('PAYMENT_REQUIRED', 'AI credits exhausted.', 402, corsHeaders);
           throw new Error(`AI API error: ${aiResponse.status}`);
         }
 
@@ -293,6 +294,6 @@ Contexto: Suite HR Premium con módulos de Fairness, Workforce Planning, Legal E
     }
   } catch (error) {
     console.error('[hr-board-pack] Error:', error);
-    return json({ success: false, error: 'Internal server error' }, 500);
+    return internalError(corsHeaders);
   }
 });
