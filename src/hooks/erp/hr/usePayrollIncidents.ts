@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import type { PayrollIncident, IncidentStatus } from '@/engines/erp/hr/payrollIncidentEngine';
 import { deriveOperationalFlags } from '@/engines/erp/hr/payrollIncidentEngine';
 import { isPeriodWritable } from '@/engines/erp/hr/payrollRunEngine';
+import { validateBatchIncidents, type BatchIncidentValidationResult } from '@/engines/erp/hr/incidentPreCalcValidator';
 import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 export function usePayrollIncidents(companyId?: string) {
