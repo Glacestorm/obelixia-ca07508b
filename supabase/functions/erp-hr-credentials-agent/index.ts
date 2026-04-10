@@ -308,12 +308,6 @@ Incluye todas las operaciones registradas en blockchain.`;
 
   } catch (error) {
     console.error('[erp-hr-credentials-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

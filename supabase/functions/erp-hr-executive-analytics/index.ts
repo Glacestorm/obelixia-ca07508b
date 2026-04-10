@@ -358,12 +358,6 @@ Considera especialmente:
 
   } catch (error) {
     console.error('[erp-hr-executive-analytics] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

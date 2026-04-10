@@ -328,12 +328,6 @@ RESPONDE SOLO EN JSON con esta estructura:
 
   } catch (error) {
     console.error('[compensation-suite] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
