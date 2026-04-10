@@ -1,11 +1,16 @@
 /**
  * legal-ai-advisor - Edge Function para el Agente Jurídico Central
  * Asesor legal IA multi-jurisdiccional para todos los agentes del sistema
+ *
+ * Auth (S7.3 dual-path):
+ *   - User path: validateTenantAccess(req, companyId) or validateAuth(req) → userClient for DB ops
+ *   - Internal path: x-internal-secret → service_role for DB ops (justified — no user JWT)
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, validateAuth, isAuthError } from "../_shared/tenant-auth.ts";
 
 // Tipos de acciones soportadas
 type LegalAction = 
@@ -159,12 +164,13 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
     const requestData = await req.json() as LegalRequest;
 
-    // ========== DUAL-PATH AUTH GATE ==========
+    // ========== DUAL-PATH AUTH GATE (S7.3) ==========
     const isInternalCall = !!requestData.requesting_agent;
+    let dbClient: ReturnType<typeof createClient>;
+    let authenticatedUserId: string | null = null;
 
     if (isInternalCall) {
       // Inter-agent calls: require dedicated X-Internal-Secret header
@@ -184,55 +190,43 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      // Internal path: service_role client (justified — no user JWT available)
+      dbClient = createClient(supabaseUrl, supabaseServiceKey);
     } else {
-      // User calls: require valid JWT
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader?.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-
-      const token = authHeader.replace('Bearer ', '');
-      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-      if (claimsError || !claimsData?.claims) {
-        console.warn('[legal-ai-advisor] Invalid JWT');
-        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Tenant validation if companyId present
+      // User path: use shared auth utilities
       const companyId = requestData.context?.companyId as string | undefined;
-      if (companyId) {
-        const userId = claimsData.claims.sub;
-        const svcClient = createClient(supabaseUrl, supabaseServiceKey);
-        const { data: membership, error: membershipError } = await svcClient
-          .from('erp_user_companies')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('company_id', companyId)
-          .eq('status', 'active')
-          .maybeSingle();
 
-        if (membershipError || !membership) {
-          console.warn(`[legal-ai-advisor] Tenant access denied: user=${userId} company=${companyId}`);
-          return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-            status: 403,
+      if (companyId) {
+        // Company-scoped: validateTenantAccess
+        const authResult = await validateTenantAccess(req, companyId);
+        if (isAuthError(authResult)) {
+          return new Response(JSON.stringify(authResult.body), {
+            status: authResult.status,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        authenticatedUserId = authResult.userId;
+        dbClient = authResult.userClient;
+      } else {
+        // No company scope: validateAuth only
+        const authResult = await validateAuth(req);
+        if (isAuthError(authResult)) {
+          return new Response(JSON.stringify(authResult.body), {
+            status: authResult.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        authenticatedUserId = authResult.userId;
+        // Create userClient manually (anon key + JWT)
+        const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+        const authHeader = req.headers.get('Authorization')!;
+        dbClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
       }
     }
     // ========== END AUTH GATE ==========
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { 
       action, 
       requesting_agent,
@@ -255,7 +249,7 @@ serve(async (req) => {
 
     // Acciones que no requieren IA
     if (action === 'get_jurisdictions') {
-      const { data: jurisdictionsData, error } = await supabase
+      const { data: jurisdictionsData, error } = await dbClient
         .from('legal_jurisdictions')
         .select('*')
         .eq('is_active', true);
@@ -273,7 +267,7 @@ serve(async (req) => {
     }
 
     if (action === 'get_knowledge') {
-      const { data: knowledgeData, error } = await supabase
+      const { data: knowledgeData, error } = await dbClient
         .from('legal_knowledge_base')
         .select('*')
         .eq('is_active', true)
@@ -297,7 +291,7 @@ serve(async (req) => {
       const companyId = context?.companyId as string || null;
       
       // Obtener estadísticas de compliance
-      const { data: complianceData } = await supabase
+      const { data: complianceData } = await dbClient
         .from('legal_compliance_checks')
         .select('overall_score')
         .limit(100);
@@ -307,26 +301,26 @@ serve(async (req) => {
         : 0;
       
       // Obtener conteo de documentos pendientes
-      const { count: pendingReviews } = await supabase
+      const { count: pendingReviews } = await dbClient
         .from('legal_documents')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending_review');
       
       // Obtener contratos activos
-      const { count: activeContracts } = await supabase
+      const { count: activeContracts } = await dbClient
         .from('legal_documents')
         .select('*', { count: 'exact', head: true })
         .eq('document_type', 'contract')
         .eq('status', 'active');
       
       // Obtener alertas de riesgo (checks con score < 50)
-      const { count: riskAlerts } = await supabase
+      const { count: riskAlerts } = await dbClient
         .from('legal_compliance_checks')
         .select('*', { count: 'exact', head: true })
         .lt('overall_score', 50);
       
       // Obtener items de conocimiento
-      const { count: knowledgeItems } = await supabase
+      const { count: knowledgeItems } = await dbClient
         .from('legal_knowledge_base')
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true);
@@ -335,7 +329,7 @@ serve(async (req) => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { count: agentQueries } = await supabase
+      const { count: agentQueries } = await dbClient
         .from('agent_help_conversations')
         .select('*', { count: 'exact', head: true })
         .eq('agent_type', 'legal')
@@ -784,7 +778,7 @@ Tipo filtro: ${context?.type || 'all'}`;
       result = { response: content, parseError: true };
     }
 
-    // Save to FAQ if it's a direct user consultation
+    // Save to FAQ if it's a direct user consultation (user path only)
     if (action === 'consult_legal' && !requesting_agent) {
       try {
         const ctxJurisdiction = (context as any)?.jurisdiction || jurisdictions[0] || 'ES';
@@ -793,7 +787,7 @@ Tipo filtro: ${context?.type || 'all'}`;
         const answerText = result.advice || result.response || content;
 
         // Check if similar question exists
-        const { data: existingFaq } = await supabase
+        const { data: existingFaq } = await dbClient
           .from('legal_advisor_faq')
           .select('id, asked_count')
           .eq('jurisdiction', ctxJurisdiction)
@@ -802,7 +796,7 @@ Tipo filtro: ${context?.type || 'all'}`;
           .limit(1);
 
         if (existingFaq && existingFaq.length > 0) {
-          await supabase.from('legal_advisor_faq')
+          await dbClient.from('legal_advisor_faq')
             .update({ 
               asked_count: (existingFaq[0].asked_count || 1) + 1,
               answer: answerText,
@@ -812,7 +806,7 @@ Tipo filtro: ${context?.type || 'all'}`;
             })
             .eq('id', existingFaq[0].id);
         } else {
-          await supabase.from('legal_advisor_faq').insert({
+          await dbClient.from('legal_advisor_faq').insert({
             question: userQuery,
             answer: answerText,
             jurisdiction: ctxJurisdiction,
@@ -827,10 +821,10 @@ Tipo filtro: ${context?.type || 'all'}`;
       }
     }
 
-    // Registrar consulta si viene de otro agente
+    // Registrar consulta si viene de otro agente (internal path — uses dbClient which is service_role)
     if (requesting_agent) {
       try {
-        await supabase.from('legal_agent_queries').insert({
+        await dbClient.from('legal_agent_queries').insert({
           requesting_agent,
           requesting_agent_type: requesting_agent_type || 'unknown',
           query_type: action,
@@ -855,7 +849,7 @@ Tipo filtro: ${context?.type || 'all'}`;
       // Si es validación, registrar en validation_logs
       if (action === 'validate_action' && agent_action) {
         try {
-          await supabase.from('legal_validation_logs').insert({
+          await dbClient.from('legal_validation_logs').insert({
             agent_id: requesting_agent,
             agent_type: requesting_agent_type || 'unknown',
             action_type: agent_action.action_type,
