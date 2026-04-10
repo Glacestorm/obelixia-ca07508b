@@ -31,10 +31,7 @@ serve(async (req) => {
     // S6.3B: Standard auth gate
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient: supabase } = authResult;
 
@@ -333,10 +330,7 @@ RESPONDE SOLO CON EL TEXTO DEL RESUMEN, sin JSON.`;
     }
   } catch (error) {
     console.error('[hr-reporting-engine] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 
   function jsonResponse(data: unknown) {

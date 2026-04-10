@@ -49,7 +49,7 @@ serve(async (req) => {
     // Auth + tenant isolation via shared utility
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return json(authResult.body, authResult.status);
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 

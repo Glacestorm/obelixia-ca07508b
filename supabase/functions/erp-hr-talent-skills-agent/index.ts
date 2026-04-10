@@ -25,16 +25,12 @@ serve(async (req) => {
     const { action, company_id, employee_id, department_id, position_id, skills_data, opportunity_data, career_data } = await req.json() as TalentRequest;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing company_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Missing company_id', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');

@@ -13,17 +13,13 @@ serve(async (req) => {
     // S6.3F: company_id is now REQUIRED — closes conditional membership gap
     const targetCompanyId = params?.company_id;
     if (!targetCompanyId) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id required', corsHeaders);
     }
 
     // S6.3F: validateTenantAccess replaces manual auth + service_role
     const authResult = await validateTenantAccess(req, targetCompanyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
     // Use userId for audit — replaces user.id from getUser()
@@ -564,8 +560,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('[erp-hr-workflow-engine] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

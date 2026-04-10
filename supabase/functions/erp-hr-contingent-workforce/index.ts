@@ -51,10 +51,7 @@ serve(async (req) => {
 
     // === VALIDATE company_id ===
     if (!company_id || typeof company_id !== 'string') {
-      return new Response(JSON.stringify({ error: 'company_id is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // === AUTH GATE: validateTenantAccess ===
@@ -62,10 +59,7 @@ serve(async (req) => {
     // Returns adminClient/userClient but neither is used (AI-only function)
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     console.log(`[erp-hr-contingent-workforce] Authenticated user: ${authResult.userId}, company: ${authResult.companyId}`);
 

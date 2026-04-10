@@ -29,9 +29,7 @@ serve(async (req) => {
     // === AUTH GATE — validateTenantAccess ===
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -495,9 +493,6 @@ FORMATO DE RESPUESTA (JSON estricto):
     }
   } catch (error) {
     console.error('[wellbeing-enterprise] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

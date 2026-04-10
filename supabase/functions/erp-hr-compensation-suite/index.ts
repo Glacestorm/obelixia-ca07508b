@@ -15,16 +15,12 @@ serve(async (req) => {
     // Tenant isolation via shared utility
     const tenantCompanyId = params?.company_id;
     if (!tenantCompanyId) {
-      return new Response(JSON.stringify({ error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id required', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, tenantCompanyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 

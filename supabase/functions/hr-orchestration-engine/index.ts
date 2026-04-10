@@ -32,17 +32,13 @@ serve(async (req) => {
     const { action, company_id, trigger_module, trigger_event, trigger_table, trigger_data } = input;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id required', corsHeaders);
     }
 
     // S6.3F: validateTenantAccess replaces manual auth + service_role
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -59,9 +55,7 @@ serve(async (req) => {
       // ── Emit Event: find matching rules and execute them ──
       case 'emit_event': {
         if (!trigger_module || !trigger_event) {
-          return new Response(JSON.stringify({ success: false, error: 'trigger_module and trigger_event required' }), {
-            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return validationError('trigger_module and trigger_event required', corsHeaders);
         }
 
         // Fetch active rules matching this trigger — S6.3F: userClient

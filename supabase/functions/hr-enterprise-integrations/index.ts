@@ -28,17 +28,13 @@ serve(async (req) => {
 
     const { action, companyId, params } = await req.json() as FunctionRequest;
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // S6.3F: validateTenantAccess replaces manual getClaims + manual adminClient membership
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
 
     // Rate limit check
@@ -328,10 +324,6 @@ Genera 10-15 entradas de log realistas.`;
 
   } catch (error) {
     console.error('[hr-enterprise-integrations] Error:', error);
-    return new Response(JSON.stringify({
-      success: false, error: 'Internal server error'
-    }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

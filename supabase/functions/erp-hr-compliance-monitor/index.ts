@@ -25,9 +25,7 @@ serve(async (req) => {
 
     // --- AUTH + TENANT via shared utility ---
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, company_id);

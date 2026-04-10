@@ -27,17 +27,13 @@ serve(async (req) => {
     // Extract company_id from body or company_context
     const company_id = body.company_id || (company_context?.company_id as string);
     if (!company_id) {
-      return new Response(JSON.stringify({ error: 'Missing company_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Missing company_id', corsHeaders);
     }
 
     // === AUTH GATE — validateTenantAccess ===
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     console.log(`[erp-hr-wellbeing-agent] Authenticated user: ${authResult.userId}, company: ${company_id}`);
 

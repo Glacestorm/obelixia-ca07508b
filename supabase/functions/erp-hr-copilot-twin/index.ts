@@ -18,9 +18,7 @@ serve(async (req) => {
   try {
     const { action, companyId, params } = await req.json() as FunctionRequest;
     if (!companyId || companyId === 'demo-company-id') {
-      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // --- AUTH + TENANT via shared utility ---

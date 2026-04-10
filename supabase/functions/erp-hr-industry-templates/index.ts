@@ -93,17 +93,13 @@ serve(async (req) => {
     const { action, company_id, template_id, entity_type, entity_id, variable_values, params, context } = await req.json() as TemplateRequest;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // S6.2B: validateTenantAccess replaces manual auth + manual adminClient + manual membership check
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 

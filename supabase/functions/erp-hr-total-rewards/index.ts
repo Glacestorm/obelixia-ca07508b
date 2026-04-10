@@ -41,10 +41,7 @@ serve(async (req) => {
         const { validateAuth } = await import('../_shared/tenant-auth.ts');
         const authResult = await validateAuth(req);
         if (isAuthError(authResult)) {
-          return new Response(JSON.stringify(authResult.body), {
-            status: authResult.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return mapAuthError(authResult, corsHeaders);
         }
 
         // Create a temporary userClient for the employee lookup
@@ -74,19 +71,13 @@ serve(async (req) => {
     } else if (company_id) {
       resolvedCompanyId = company_id;
     } else {
-      return new Response(JSON.stringify({ error: 'Bad Request: employee_id or company_id required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Bad Request: employee_id or company_id required', corsHeaders);
     }
 
     // === VALIDATE TENANT ACCESS ===
     const authResult = await validateTenantAccess(req, resolvedCompanyId!);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
     const companyId = resolvedCompanyId!;

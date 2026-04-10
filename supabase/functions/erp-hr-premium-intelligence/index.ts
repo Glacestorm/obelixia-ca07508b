@@ -30,7 +30,7 @@ serve(async (req) => {
     // --- AUTH + TENANT GATE ---
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return json(authResult.body, authResult.status);
+      return mapAuthError(authResult, corsHeaders);
     }
     const supabase = authResult.userClient;
 

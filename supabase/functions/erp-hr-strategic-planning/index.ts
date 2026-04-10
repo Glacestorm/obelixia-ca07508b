@@ -26,7 +26,7 @@ serve(async (req) => {
     }
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return json(authResult.body, authResult.status);
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 

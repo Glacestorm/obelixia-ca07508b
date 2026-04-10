@@ -34,17 +34,13 @@ serve(async (req) => {
     const { action, company_id, feature_code, idea_id, config, reason } = body;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // Auth + tenant isolation via shared utility
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient, adminClient } = authResult;
 

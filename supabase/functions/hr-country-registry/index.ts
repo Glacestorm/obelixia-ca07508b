@@ -27,17 +27,13 @@ serve(async (req) => {
     const { action, companyId, countryCode, data, params } = await req.json() as RequestBody;
 
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // S6.2A: Replaced manual auth + adminClient with validateTenantAccess
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // S6.2A: All data ops use userClient (RLS-protected). adminClient eliminated.
     const { userClient } = authResult;

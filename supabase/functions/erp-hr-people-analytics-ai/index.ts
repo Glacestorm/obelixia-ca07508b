@@ -31,17 +31,13 @@ serve(async (req) => {
     const { action, companyId, domain, context, anomalyData, messages } = await req.json() as FunctionRequest;
 
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // --- AUTH + TENANT VALIDATION (S6.3C) ---
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- END AUTH + TENANT VALIDATION ---
 
@@ -199,8 +195,6 @@ Si detectas un problema, sugiere crear una tarea de seguimiento.`;
 
   } catch (error) {
     console.error('[erp-hr-people-analytics-ai] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

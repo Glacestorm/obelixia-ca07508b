@@ -34,7 +34,7 @@ serve(async (req) => {
     // Auth + tenant isolation via shared utility
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return jsonResponse(authResult.body, authResult.status);
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
     // S6.2B: adminClient only used in seed_demo action below — extracted on demand

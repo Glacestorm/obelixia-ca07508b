@@ -56,7 +56,7 @@ serve(async (req) => {
     // --- AUTH + TENANT GATE ---
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return json(authResult.body, authResult.status);
+      return mapAuthError(authResult, corsHeaders);
     }
     // AI-only function: userClient/adminClient returned but unused (no DB ops)
 

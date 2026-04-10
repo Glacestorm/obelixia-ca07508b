@@ -26,17 +26,13 @@ serve(async (req) => {
     const { action, params, context } = await req.json() as FunctionRequest;
     const companyId = params?.companyId as string;
     if (!companyId || companyId === 'demo-company-id') {
-      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // === AUTH GATE — validateTenantAccess ===
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 
@@ -379,9 +375,6 @@ FORMATO JSON:
 
   } catch (error) {
     console.error('[erp-hr-esg-selfservice] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
