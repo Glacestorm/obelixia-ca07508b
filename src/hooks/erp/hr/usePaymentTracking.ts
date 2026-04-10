@@ -99,7 +99,7 @@ export function usePaymentTracking(companyId: string) {
         },
         [
           {
-            evidenceType: 'internal_record',
+            evidenceType: 'system_generated',
             label: 'Registro de pago de nómina',
             description: `Pago registrado: ${registration.paymentReference} (${registration.paymentMethod}) — ${recordCount} nóminas`,
             fileUrl: null,
