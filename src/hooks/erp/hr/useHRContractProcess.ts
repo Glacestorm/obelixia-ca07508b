@@ -689,6 +689,66 @@ export function useHRContractProcess(companyId: string) {
     }
   }, [user, contractData, companyId]);
 
+  // ── V2-RRHH-P1.2: Link contract process ↔ Contrat@ artifact ─────────────
+  const linkContrataArtifact = useCallback(async (
+    requestId: string,
+    artifactDbRowId: string,
+  ): Promise<boolean> => {
+    if (!user?.id) return false;
+
+    try {
+      // Persist cross-reference in payload_snapshot metadata
+      const currentSnapshot = contractData?.payload_snapshot ?? {};
+      const updatedSnapshot = {
+        ...currentSnapshot,
+        linked_contrata_artifact_id: artifactDbRowId,
+        linked_at: new Date().toISOString(),
+        linked_by: user.id,
+      };
+
+      const { error } = await (supabase as any)
+        .from('erp_hr_contract_process_data')
+        .update({
+          payload_snapshot: updatedSnapshot,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('request_id', requestId)
+        .eq('company_id', companyId);
+
+      if (error) throw error;
+
+      setContractData(prev => prev ? {
+        ...prev,
+        payload_snapshot: updatedSnapshot,
+      } : null);
+
+      // Audit log
+      logContractAudit(
+        'CONTRATA_ARTIFACT_LINKED',
+        companyId,
+        user.id,
+        requestId,
+        null,
+        { artifact_id: artifactDbRowId },
+        'info',
+        ['payload_snapshot'],
+      );
+
+      writeLedger({
+        eventType: 'official_export_prepared',
+        eventLabel: 'Artefacto Contrat@ vinculado al proceso contractual',
+        entityType: 'contract_process',
+        entityId: contractData?.id || requestId,
+        afterSnapshot: { linked_artifact_id: artifactDbRowId },
+      });
+
+      return true;
+    } catch (err) {
+      console.error('[useHRContractProcess] linkContrataArtifact error:', err);
+      return false;
+    }
+  }, [user, contractData, companyId, writeLedger]);
+
   return {
     contractData,
     loading,
@@ -701,6 +761,7 @@ export function useHRContractProcess(companyId: string) {
     persistDeadlineAndPayload,
     closeContractProcess,
     reopenContractProcess,
+    linkContrataArtifact,
     CONTRACT_PROCESS_STATUS_CONFIG,
   };
 }

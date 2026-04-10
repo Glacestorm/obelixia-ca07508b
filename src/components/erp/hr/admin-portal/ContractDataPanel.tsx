@@ -36,6 +36,7 @@ import { useContrataReadiness } from '@/hooks/erp/hr/useContrataReadiness';
 import { useContractClosure } from '@/hooks/erp/hr/useContractClosure';
 import { ContractClosureSection } from '../shared/ContractClosureSection';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
+import { ContrataTrackingCard } from '../shared/ContrataTrackingCard';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
 
@@ -235,6 +236,20 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* V2-RRHH-P1.2: Tracking card */}
+        <ContrataTrackingCard
+          companyId={companyId}
+          employeeId={employeeId}
+          contractProcessId={requestId}
+          contractStatus={currentStatus as any}
+          contrataArtifactId={(contractData?.payload_snapshot as any)?.linked_contrata_artifact_id ?? null}
+          contrataArtifactStatus={null}
+          sepeReference={contractData?.contrata_code ?? null}
+          sepeResponseType={contractData?.confirmed_reference ? 'accepted' : null}
+          sepeReceptionDate={contractData?.confirmed_at ?? null}
+          onSEPERegistered={() => fetchContractData(requestId)}
+        />
+
         {/* Readiness progress */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">

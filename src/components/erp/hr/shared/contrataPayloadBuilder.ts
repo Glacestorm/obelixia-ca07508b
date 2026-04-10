@@ -6,6 +6,7 @@
  * NO es validación oficial — es readiness interno.
  */
 import type { ContractProcessData } from '@/hooks/erp/hr/useHRContractProcess';
+import { validateDNINIE } from '@/engines/erp/hr/dniNieValidator';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -85,16 +86,8 @@ export interface ContrataPayloadResult {
 
 // ─── Format validators ──────────────────────────────────────────────────────
 
-function validateDNINIE(value: string): { valid: boolean; type: 'DNI' | 'NIE'; error: string | null } {
-  const cleaned = value.trim().toUpperCase();
-  if (/^\d{8}[A-Z]$/.test(cleaned)) return { valid: true, type: 'DNI', error: null };
-  if (/^[XYZ]\d{7}[A-Z]$/.test(cleaned)) return { valid: true, type: 'NIE', error: null };
-  return {
-    valid: false,
-    type: /^[XYZ]/.test(cleaned) ? 'NIE' : 'DNI',
-    error: 'Formato inválido: no coincide con DNI (8+1) ni NIE (X/Y/Z+7+1)',
-  };
-}
+// V2-RRHH-P1.2: DNI/NIE validation uses shared MOD 23 helper (imported at top)
+export { validateDNINIE };
 
 function validateNAF(value: string): string | null {
   const cleaned = value.replace(/[\s\-\/]/g, '');
