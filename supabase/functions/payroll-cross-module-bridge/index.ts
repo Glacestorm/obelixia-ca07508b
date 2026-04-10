@@ -5,6 +5,7 @@
 
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError } from '../_shared/error-contract.ts';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,19 +17,13 @@ Deno.serve(async (req) => {
     const { action, company_id, bridge_type, source_record_id, payload } = body;
 
     if (!company_id) {
-      return new Response(
-        JSON.stringify({ error: "company_id required" }),
-        { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-      );
+      return validationError('company_id required', getSecureCorsHeaders(req));
     }
 
     // S6.3F: validateTenantAccess replaces manual getClaims + manual adminClient membership
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, getSecureCorsHeaders(req));
     }
     const { userId, userClient } = authResult;
 
@@ -124,15 +119,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    return new Response(
-      JSON.stringify({ error: `Unknown action: ${action}` }),
-      { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-    );
+    return validationError(`Unknown action: ${action}`, getSecureCorsHeaders(req));
   } catch (err) {
     console.error("[bridge] Error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-    );
+    return internalError(getSecureCorsHeaders(req));
   }
 });

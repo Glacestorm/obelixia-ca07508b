@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateAuth, isAuthError } from "../_shared/tenant-auth.ts";
+import { mapAuthError, validationError, internalError, errorResponse } from "../_shared/error-contract.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,10 +40,7 @@ serve(async (req) => {
     // --- S7.1: Auth hardening — validateAuth ---
     const authResult = await validateAuth(req);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- end auth ---
 
@@ -491,22 +489,10 @@ ${JSON.stringify(params || context || {})}`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Rate limit exceeded. Please try again later.' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Please try again later.', 429, corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Payment required. Please add credits.' 
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('PAYMENT_REQUIRED', 'Payment required. Please add credits.', 402, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -542,12 +528,6 @@ ${JSON.stringify(params || context || {})}`;
 
   } catch (error) {
     console.error('[legal-predictive-analytics] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

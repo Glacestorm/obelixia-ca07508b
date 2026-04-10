@@ -11,6 +11,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, validateAuth, isAuthError } from "../_shared/tenant-auth.ts";
+import { mapAuthError, validationError, internalError, errorResponse } from "../_shared/error-contract.ts";
 
 // Tipos de acciones soportadas
 type LegalAction = 
@@ -177,18 +178,12 @@ serve(async (req) => {
       const legalInternalSecret = Deno.env.get('LEGAL_INTERNAL_SECRET');
       if (!legalInternalSecret) {
         console.error('[legal-ai-advisor] LEGAL_INTERNAL_SECRET not configured — inter-agent path disabled');
-        return new Response(JSON.stringify({ success: false, error: 'Service unavailable' }), {
-          status: 503,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('INTERNAL_ERROR', 'Service unavailable', 503, corsHeaders);
       }
       const internalSecret = req.headers.get('x-internal-secret');
       if (internalSecret !== legalInternalSecret) {
         console.warn('[legal-ai-advisor] Unauthorized internal call attempt');
-        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('AUTH_MISSING', 'Unauthorized', 401, corsHeaders);
       }
       // Internal path: service_role client (justified — no user JWT available)
       dbClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -200,10 +195,7 @@ serve(async (req) => {
         // Company-scoped: validateTenantAccess
         const authResult = await validateTenantAccess(req, companyId);
         if (isAuthError(authResult)) {
-          return new Response(JSON.stringify(authResult.body), {
-            status: authResult.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return mapAuthError(authResult, corsHeaders);
         }
         authenticatedUserId = authResult.userId;
         dbClient = authResult.userClient;
@@ -211,10 +203,7 @@ serve(async (req) => {
         // No company scope: validateAuth only
         const authResult = await validateAuth(req);
         if (isAuthError(authResult)) {
-          return new Response(JSON.stringify(authResult.body), {
-            status: authResult.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return mapAuthError(authResult, corsHeaders);
         }
         authenticatedUserId = authResult.userId;
         // Create userClient manually (anon key + JWT)
@@ -736,24 +725,10 @@ Tipo filtro: ${context?.type || 'all'}`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Rate limit exceeded',
-          message: 'Demasiadas solicitudes. Intenta más tarde.'
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Please try again later.', 429, corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Payment required',
-          message: 'Créditos de IA insuficientes.'
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('PAYMENT_REQUIRED', 'Payment required. Please add credits.', 402, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -889,12 +864,6 @@ Tipo filtro: ${context?.type || 'all'}`;
 
   } catch (error) {
     console.error('[legal-ai-advisor] Error:', error instanceof Error ? error.message : error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
