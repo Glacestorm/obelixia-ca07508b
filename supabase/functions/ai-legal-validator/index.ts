@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { validateAuth, isAuthError } from "../_shared/tenant-auth.ts";
+import { successResponse, mapAuthError, validationError, internalError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -100,12 +101,7 @@ serve(async (req) => {
   try {
     // --- AUTH: validateAuth (real JWT validation) ---
     const authResult = await validateAuth(req);
-    if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
     const authenticatedUserId = authResult.userId;
 
     // --- userClient for DB ops (anon key + user JWT, goes through RLS) ---
@@ -119,6 +115,8 @@ serve(async (req) => {
     const { action, operation_type, data_classification, data_fields, destination_country, context } = 
       await req.json() as LegalValidationRequest;
 
+    if (!action) return validationError('action is required', corsHeaders);
+
     console.log(`[ai-legal-validator] Action: ${action}, Classification: ${data_classification}, User: ${authenticatedUserId}`);
 
     let result: any;
@@ -126,7 +124,7 @@ serve(async (req) => {
 
     switch (action) {
       case 'validate_operation':
-        result = await validateOperation(
+        result = validateOperation(
           data_classification || 'public',
           operation_type || 'unknown',
           data_fields || [],
@@ -171,31 +169,18 @@ serve(async (req) => {
         break;
 
       default:
-        return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return validationError(`Unknown action: ${action}`, corsHeaders);
     }
 
-    return new Response(JSON.stringify({
-      success: true,
+    return successResponse({
       action,
-      data: result,
+      ...result,
       processing_time_ms: Date.now() - startTime,
-      timestamp: new Date().toISOString(),
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    }, corsHeaders);
 
   } catch (error) {
     console.error('[ai-legal-validator] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
 
@@ -211,7 +196,6 @@ function validateOperation(
   const warnings: string[] = [];
   const blockingIssues: string[] = [];
 
-  // Check for sensitive data patterns in fields
   let detectedClassification = classification;
   for (const field of dataFields) {
     for (const pattern of SENSITIVE_PATTERNS) {
@@ -225,10 +209,8 @@ function validateOperation(
     }
   }
 
-  // Use the higher classification if detected
   const effectiveRules = REGULATION_RULES[detectedClassification] || rules;
 
-  // Check cross-border transfer
   let crossBorderAllowed = true;
   const crossBorderConditions: string[] = [];
 
@@ -245,13 +227,11 @@ function validateOperation(
     }
   }
 
-  // Check if external AI is allowed
   if (context?.provider_type === 'external' && detectedClassification === 'restricted') {
     blockingIssues.push('Restricted data cannot be processed by external AI providers');
     crossBorderAllowed = false;
   }
 
-  // Determine risk level
   let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
   if (detectedClassification === 'restricted') {
     riskLevel = blockingIssues.length > 0 ? 'critical' : 'high';
@@ -306,7 +286,6 @@ function getApplicableRegulations(
 
   const jurisdiction: string[] = [];
 
-  // Always applicable in EU/EEA
   if (classification !== 'public') {
     regulations.push({
       code: 'GDPR',
@@ -317,7 +296,6 @@ function getApplicableRegulations(
     jurisdiction.push('EU', 'EEA');
   }
 
-  // Spain-specific
   if (context?.country === 'ES' || !context?.country) {
     regulations.push({
       code: 'LOPDGDD',
@@ -328,7 +306,6 @@ function getApplicableRegulations(
     jurisdiction.push('ES');
   }
 
-  // Andorra-specific
   if (context?.country === 'AD') {
     regulations.push({
       code: 'APDA',
@@ -339,7 +316,6 @@ function getApplicableRegulations(
     jurisdiction.push('AD');
   }
 
-  // Special categories
   if (classification === 'restricted') {
     regulations.push({
       code: 'GDPR-Art9',
@@ -349,7 +325,6 @@ function getApplicableRegulations(
     });
   }
 
-  // Cross-border
   if (context?.cross_border) {
     regulations.push({
       code: 'GDPR-Ch5',
@@ -373,13 +348,10 @@ async function checkConsent(
   consent_type?: string;
   expires_at?: string;
 }> {
-  // In a real implementation, this would check a consents table
-  // For now, return based on classification
   if (classification === 'public' || classification === 'internal') {
     return { has_consent: true, consent_type: 'implicit' };
   }
 
-  // Would check database for explicit consent
   return {
     has_consent: false,
     consent_type: classification === 'restricted' ? 'explicit' : 'implicit',

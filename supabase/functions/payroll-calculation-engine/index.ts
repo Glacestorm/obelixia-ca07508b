@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { successResponse, mapAuthError, validationError, notFoundError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 // corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
@@ -100,29 +101,25 @@ function calculatePayrollForEmployee(emp: any): { result: any; legalValidations:
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
+  const cors = getSecureCorsHeaders(req);
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
 
   try {
     const body = await req.json();
     const { action, company_id, employee_id, period_year, period_month, overrides, employee_ids } = body;
 
-    if (!company_id) throw new Error('company_id required');
+    if (!company_id) return validationError('company_id required', cors);
+    if (!action) return validationError('action required', cors);
 
     // --- AUTH + TENANT via shared utility ---
     const authResult = await validateTenantAccess(req, company_id);
-    if (isAuthError(authResult)) {
-      return new Response(JSON.stringify({ success: false, ...authResult.body }), {
-        status: authResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
-    }
-    // S6.2A: All data ops use userClient (RLS-protected). adminClient removed — no longer needed.
+    if (isAuthError(authResult)) return mapAuthError(authResult, cors);
     const { userClient } = authResult;
 
     // ─── CALCULATE PAYROLL ──────────────────────────────────
     if (action === 'calculate_payroll') {
-      if (!employee_id) throw new Error('employee_id required');
+      if (!employee_id) return validationError('employee_id required', cors);
 
-      // userClient: erp_hr_employees has RLS via user_has_erp_company_access
       const { data: emp } = await userClient
         .from('erp_hr_employees')
         .select('*')
@@ -130,7 +127,7 @@ serve(async (req) => {
         .eq('company_id', company_id)
         .single();
 
-      if (!emp) throw new Error('Employee not found');
+      if (!emp) return notFoundError('Employee', cors);
 
       const { result, legalValidations } = calculatePayrollForEmployee(emp);
 
@@ -142,12 +139,9 @@ serve(async (req) => {
       }
 
       if (hasErrors && !overrides?.forcedNet) {
-        return new Response(JSON.stringify({ success: false, legalValidations, preview: result }), {
-          headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-        });
+        return errorResponse('BUSINESS_RULE_VIOLATION', 'Legal validations failed', 422, cors);
       }
 
-      // userClient: hr_payroll_records now has tenant_isolation_all policy (S3-fix)
       await userClient.from('hr_payroll_records').upsert({
         company_id,
         employee_id,
@@ -166,7 +160,6 @@ serve(async (req) => {
         calculated_at: new Date().toISOString(),
       }, { onConflict: 'company_id,employee_id,period_year,period_month' });
 
-      // userClient: erp_audit_events has RLS via erp_get_user_companies
       await userClient.from('erp_audit_events').insert({
         company_id,
         entity_type: 'hr_payroll_records',
@@ -177,16 +170,13 @@ serve(async (req) => {
         performed_by: employee_id,
       });
 
-      return new Response(JSON.stringify({ success: true, result, legalValidations }), {
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+      return successResponse({ result, legalValidations }, cors);
     }
 
     // ─── VALIDATE ONLY ──────────────────────────────────────
     if (action === 'validate_only') {
-      if (!employee_id) throw new Error('employee_id required');
+      if (!employee_id) return validationError('employee_id required', cors);
 
-      // userClient: erp_hr_employees has RLS
       const { data: emp } = await userClient
         .from('erp_hr_employees')
         .select('*')
@@ -194,19 +184,16 @@ serve(async (req) => {
         .eq('company_id', company_id)
         .single();
 
-      if (!emp) throw new Error('Employee not found');
+      if (!emp) return notFoundError('Employee', cors);
 
       const { result, legalValidations } = calculatePayrollForEmployee(emp);
 
-      return new Response(JSON.stringify({ success: true, legalValidations, previewResult: result }), {
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+      return successResponse({ legalValidations, previewResult: result }, cors);
     }
 
     // ─── BATCH VALIDATION ───────────────────────────────────
     if (action === 'get_legal_validations_batch') {
       const ids = employee_ids ?? [];
-      // userClient: erp_hr_employees has RLS
       let query = userClient.from('erp_hr_employees').select('*').eq('company_id', company_id);
       if (ids.length > 0) query = query.in('id', ids);
 
@@ -223,23 +210,17 @@ serve(async (req) => {
         totalWarnings += legalValidations.filter(v => v.severity === 'warning').length;
       }
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         total: (employees ?? []).length,
         errors: totalErrors,
         warnings: totalWarnings,
         validations_by_employee: validationsByEmployee,
-      }), {
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+      }, cors);
     }
 
-    throw new Error(`Unknown action: ${action}`);
+    return validationError(`Unknown action: ${action}`, cors);
   } catch (error) {
     console.error('[payroll-calculation-engine] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 400,
-      headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-    });
+    return internalError(cors);
   }
 });
