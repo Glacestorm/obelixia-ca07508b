@@ -183,12 +183,6 @@ Genera análisis predictivo detallado.`;
 
   } catch (error) {
     console.error('[hr-analytics-bi] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
