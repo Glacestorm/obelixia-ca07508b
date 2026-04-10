@@ -82,7 +82,7 @@ export function ESLocalizationPlugin({ companyId, employeeId, mvpMode = true }: 
         </TabsContent>
         <TabsContent value="multi-employment" className="mt-4">
           <div className="space-y-4">
-            <HRMultiEmploymentPanel companyId={companyId} />
+            <HRMultiEmploymentPanel />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <BaseDistributionPanel />
               <SolidaritySimulator />
