@@ -150,20 +150,8 @@ const LicenseManagementPage = lazy(() => import('@/pages/admin/LicenseManagement
 const ObelixiaAccountingPage = lazy(() => import('@/pages/admin/ObelixiaAccountingPage'));
 const AIHybridPage = lazy(() => import('@/pages/admin/AIHybridPage'));
 
-// HR Domain
-const HRHubPage = lazy(() => import('@/pages/admin/hr/HRHubPage'));
-const HRAuditPage = lazy(() => import('@/pages/admin/hr/HRAuditPage'));
-const HRITDashboardPage = lazy(() => import('@/pages/admin/hr/HRITDashboardPage'));
-const HRGarnishmentsPage = lazy(() => import('@/pages/admin/hr/HRGarnishmentsPage'));
-const HRContractsPage = lazy(() => import('@/pages/admin/hr/HRContractsPage'));
-const HRMultiEmploymentPage = lazy(() => import('@/pages/admin/hr/HRMultiEmploymentPage'));
-const HRPayrollPage = lazy(() => import('@/pages/admin/hr/HRPayrollPage'));
-const HRFilingsPage = lazy(() => import('@/pages/admin/hr/HRFilingsPage'));
-const HRBridgePage = lazy(() => import('@/pages/admin/hr/HRBridgePage'));
-const HRIRPFPage = lazy(() => import('@/pages/admin/hr/HRIRPFPage'));
-const HRBankAccountsPage = lazy(() => import('@/pages/admin/hr/HRBankAccountsPage'));
-const HRGovernancePage = lazy(() => import('@/pages/admin/hr/HRGovernancePage'));
-const HRPredictivePage = lazy(() => import('@/pages/admin/hr/HRPredictivePage'));
+// HR Domain — removed: standalone pages replaced by redirects to /obelixia-admin/erp?tab=hr
+
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
