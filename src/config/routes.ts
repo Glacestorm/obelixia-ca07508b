@@ -339,20 +339,7 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/erp/ai-center', component: AICommandCenterPage, layout: 'none', priority: 'high', meta: { title: 'AI Command Center', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/erp/audit-center', component: AuditCenterPage, layout: 'none', priority: 'high', meta: { title: 'Centro de Auditoría', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/academia', component: AcademiaModulePage, layout: 'none', priority: 'high', meta: { title: 'Academia - Plataforma Educativa', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  // HR Domain
-  { path: '/obelixia-admin/hr', component: HRHubPage, layout: 'none', priority: 'high', meta: { title: 'RRHH Hub', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/audit', component: HRAuditPage, layout: 'none', priority: 'high', meta: { title: 'Auditoría RRHH', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/it', component: HRITDashboardPage, layout: 'none', priority: 'high', meta: { title: 'Incapacidad Temporal', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/garnishments', component: HRGarnishmentsPage, layout: 'none', priority: 'high', meta: { title: 'Embargos Judiciales', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/contracts', component: HRContractsPage, layout: 'none', priority: 'high', meta: { title: 'Contratos Avanzados', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/multi-employment', component: HRMultiEmploymentPage, layout: 'none', priority: 'high', meta: { title: 'Pluriempleo', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/payroll', component: HRPayrollPage, layout: 'none', priority: 'high', meta: { title: 'Motor de Nómina', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/files', component: HRFilingsPage, layout: 'none', priority: 'high', meta: { title: 'Ficheros TGSS/AEAT', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/bridge', component: HRBridgePage, layout: 'none', priority: 'high', meta: { title: 'Bridge Contabilidad', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/irpf', component: HRIRPFPage, layout: 'none', priority: 'high', meta: { title: 'Motor IRPF', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/bank-accounts', component: HRBankAccountsPage, layout: 'none', priority: 'high', meta: { title: 'Cuentas Bancarias', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/governance', component: HRGovernancePage, layout: 'none', priority: 'high', meta: { title: 'Supervisor Nómina', requiresAuth: true, roles: ['admin', 'superadmin'] } },
-  { path: '/obelixia-admin/hr/predictive', component: HRPredictivePage, layout: 'none', priority: 'high', meta: { title: 'Auditoría Predictiva', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  // HR Domain — redirected to /obelixia-admin/erp?tab=hr (see redirects array)
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
@@ -412,4 +399,18 @@ export const redirects = [
   { from: '/admin?section=whitelabel', to: '/obelixia-admin?tab=whitelabel' },
   { from: '/admin?section=api-docs', to: '/obelixia-admin?tab=api' },
   { from: '/erp', to: '/obelixia-admin/erp' },
+  // S8.5 — HR standalone pages redirected to unified ERP cockpit
+  { from: '/obelixia-admin/hr', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/audit', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/it', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/garnishments', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/contracts', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/multi-employment', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/payroll', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/files', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/bridge', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/irpf', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/bank-accounts', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/governance', to: '/obelixia-admin/erp?tab=hr' },
+  { from: '/obelixia-admin/hr/predictive', to: '/obelixia-admin/erp?tab=hr' },
 ];
