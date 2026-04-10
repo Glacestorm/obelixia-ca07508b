@@ -9,6 +9,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 5,
@@ -40,10 +41,7 @@ serve(async (req) => {
     // S6.3B: Standard auth gate
     const authResult = await validateTenantAccess(req, body.company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -173,9 +171,7 @@ FORMATO DE RESPUESTA (JSON estricto):
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ success: false, error: 'Rate limit. Intenta más tarde.' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -200,11 +196,6 @@ FORMATO DE RESPUESTA (JSON estricto):
 
   } catch (error) {
     console.error('[hr-compliance-automation] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error',
-    }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

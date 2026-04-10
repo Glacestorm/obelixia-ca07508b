@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface FunctionRequest {
   action: 'insights' | 'explain' | 'suggest' | 'copilot';
@@ -30,17 +31,13 @@ serve(async (req) => {
     const { action, companyId, domain, context, anomalyData, messages } = await req.json() as FunctionRequest;
 
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // --- AUTH + TENANT VALIDATION (S6.3C) ---
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- END AUTH + TENANT VALIDATION ---
 
@@ -139,14 +136,10 @@ Si detectas un problema, sugiere crear una tarea de seguimiento.`;
 
       if (!response.ok) {
         if (response.status === 429) {
-          return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-            status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
         }
         if (response.status === 402) {
-          return new Response(JSON.stringify({ error: 'Payment required' }), {
-            status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return errorResponse('PAYMENT_REQUIRED', 'AI credits exhausted.', 402, corsHeaders);
         }
         throw new Error(`AI API error: ${response.status}`);
       }
@@ -176,14 +169,10 @@ Si detectas un problema, sugiere crear una tarea de seguimiento.`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('PAYMENT_REQUIRED', 'AI credits exhausted.', 402, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -206,8 +195,6 @@ Si detectas un problema, sugiere crear una tarea de seguimiento.`;
 
   } catch (error) {
     console.error('[erp-hr-people-analytics-ai] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

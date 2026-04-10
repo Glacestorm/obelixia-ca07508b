@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface SmartContractRequest {
   action: 
@@ -27,16 +28,12 @@ serve(async (req) => {
     const { action, company_id, context, params } = await req.json() as SmartContractRequest;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing company_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Missing company_id', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     console.log(`[erp-hr-smart-contracts] Authenticated user: ${authResult.userId}`);
 
@@ -600,12 +597,6 @@ Parámetros de ejecución: ${JSON.stringify(params?.executionParams)}`;
 
   } catch (error) {
     console.error('[erp-hr-smart-contracts] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

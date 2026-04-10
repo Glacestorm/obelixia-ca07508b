@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface AnalyticsRequest {
   action: 'calculate_kpis' | 'predict_flight_risk' | 'analyze_recruitment' | 'calculate_enps' | 'benchmark_comparison' | 'generate_insights' | 'compa_ratio_analysis';
@@ -37,17 +38,13 @@ serve(async (req) => {
 
     const companyId = context?.companyId;
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // --- AUTH + TENANT VALIDATION (S6.3C) ---
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- END AUTH + TENANT VALIDATION ---
 
@@ -430,12 +427,6 @@ Datos disponibles: ${JSON.stringify(params || {})}`;
 
   } catch (error) {
     console.error('[erp-hr-analytics-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

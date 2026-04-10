@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface CopilotRequest {
   action: 'autonomous_review' | 'proactive_alert' | 'auto_schedule' | 
@@ -33,17 +34,13 @@ serve(async (req) => {
       await req.json() as CopilotRequest;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // --- AUTH + TENANT VALIDATION (S6.3C) ---
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- END AUTH + TENANT VALIDATION ---
 
@@ -378,13 +375,7 @@ Propón también iniciativas estratégicas a largo plazo.`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: 'Rate limit exceeded' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -421,12 +412,6 @@ Propón también iniciativas estratégicas a largo plazo.`;
 
   } catch (error) {
     console.error('[erp-hr-autonomous-copilot] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

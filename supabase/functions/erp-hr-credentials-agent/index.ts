@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface CredentialRequest {
   action: 'issue_credential' | 'verify_credential' | 'revoke_credential' | 
@@ -24,16 +25,12 @@ serve(async (req) => {
       await req.json() as CredentialRequest;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing company_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Missing company_id', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     console.log(`[erp-hr-credentials-agent] Authenticated user: ${authResult.userId}`);
 
@@ -275,13 +272,7 @@ Incluye todas las operaciones registradas en blockchain.`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: 'Rate limit exceeded' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -317,12 +308,6 @@ Incluye todas las operaciones registradas en blockchain.`;
 
   } catch (error) {
     console.error('[erp-hr-credentials-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

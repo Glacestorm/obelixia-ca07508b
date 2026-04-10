@@ -8,6 +8,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 // ─── Prompt Injection Defense (server-side mirror) ──────────────────────────
 
@@ -227,10 +228,10 @@ IMPORTANTE:
 
     if (!response.ok) {
       if (response.status === 429) {
-        return json({ success: false, error: 'rate_limit', message: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.' }, 429);
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       if (response.status === 402) {
-        return json({ success: false, error: 'credits_exhausted', message: 'Créditos de IA insuficientes.' }, 402);
+        return errorResponse('PAYMENT_REQUIRED', 'AI credits exhausted.', 402, corsHeaders);
       }
       const errorText = await response.text();
       console.error('[hr-labor-copilot] AI gateway error:', response.status, errorText);
@@ -248,6 +249,6 @@ IMPORTANTE:
 
   } catch (error) {
     console.error('[hr-labor-copilot] Error:', error);
-    return json({ success: false, error: 'Internal server error' }, 500);
+    return internalError(corsHeaders);
   }
 });

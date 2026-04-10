@@ -8,6 +8,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface TemplateRequest {
   action: 'generate_template' | 'get_recommendations' | 'apply_template' | 'validate_compliance';
@@ -92,17 +93,13 @@ serve(async (req) => {
     const { action, company_id, template_id, entity_type, entity_id, variable_values, params, context } = await req.json() as TemplateRequest;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // S6.2B: validateTenantAccess replaces manual auth + manual adminClient + manual membership check
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 
@@ -442,12 +439,6 @@ FORMATO DE RESPUESTA (JSON estricto):
 
   } catch (error) {
     console.error('[erp-hr-industry-templates] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

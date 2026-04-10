@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface WellbeingRequest {
   action: 'analyze_wellbeing' | 'generate_survey' | 'analyze_survey_results' | 'recommend_programs' | 'predict_burnout' | 'create_wellness_plan';
@@ -26,17 +27,13 @@ serve(async (req) => {
     // Extract company_id from body or company_context
     const company_id = body.company_id || (company_context?.company_id as string);
     if (!company_id) {
-      return new Response(JSON.stringify({ error: 'Missing company_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Missing company_id', corsHeaders);
     }
 
     // === AUTH GATE — validateTenantAccess ===
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     console.log(`[erp-hr-wellbeing-agent] Authenticated user: ${authResult.userId}, company: ${company_id}`);
 
@@ -413,12 +410,6 @@ FORMATO DE RESPUESTA (JSON estricto):
 
   } catch (error) {
     console.error('[erp-hr-wellbeing-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

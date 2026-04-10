@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface OnboardingRequest {
   action: 'generate_onboarding_plan' | 'suggest_buddy' | 'generate_tasks' | 'track_progress';
@@ -31,16 +32,12 @@ serve(async (req) => {
     if (company_id) {
       const tenantResult = await validateTenantAccess(req, company_id);
       if (isAuthError(tenantResult)) {
-        return new Response(JSON.stringify({ error: tenantResult.body.error }), {
-          status: tenantResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return mapAuthError(tenantResult, corsHeaders);
       }
     } else {
       const authResult = await validateAuth(req);
       if (isAuthError(authResult)) {
-        return new Response(JSON.stringify({ error: authResult.body.error }), {
-          status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return mapAuthError(authResult, corsHeaders);
       }
     }
 
@@ -242,12 +239,6 @@ FORMATO DE RESPUESTA (JSON estricto):
 
   } catch (error) {
     console.error('[erp-hr-onboarding-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

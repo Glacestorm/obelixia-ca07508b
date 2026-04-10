@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface PerformanceRequest {
   action: 'analyze_employee' | 'suggest_objectives' | 'calculate_bonus' | 'predict_flight_risk' | 'generate_9box';
@@ -20,16 +21,12 @@ serve(async (req) => {
     const { action, company_id, employee_id, cycle_id, params } = await req.json() as PerformanceRequest;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing company_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Missing company_id', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -258,13 +255,7 @@ Datos de carrera: ${JSON.stringify(params?.career_data || {})}`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Rate limit exceeded' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -300,12 +291,6 @@ Datos de carrera: ${JSON.stringify(params?.career_data || {})}`;
 
   } catch (error) {
     console.error('[erp-hr-performance-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

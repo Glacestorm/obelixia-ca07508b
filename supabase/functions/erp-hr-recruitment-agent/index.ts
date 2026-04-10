@@ -8,6 +8,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface RecruitmentRequest {
   action: 'parse_cv' | 'score_candidate' | 'cultural_fit' | 'generate_rejection_email' | 
@@ -44,17 +45,13 @@ serve(async (req) => {
     const { action, companyId } = request;
 
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // S6.2B: validateTenantAccess replaces manual auth + manual adminClient + manual membership check
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 
@@ -372,12 +369,6 @@ RESPONDE EN FORMATO JSON:
 
   } catch (error) {
     console.error('[erp-hr-recruitment-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

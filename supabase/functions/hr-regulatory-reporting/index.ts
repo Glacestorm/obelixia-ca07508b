@@ -9,6 +9,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 const REGULATORY_TEMPLATES = [
   { template_key: 'reg_equality_plan', template_name: 'Plan de Igualdad', regulatory_framework: 'equality_plan', legal_basis: ['RD 901/2020', 'Ley Orgánica 3/2007', 'RD 902/2020'], sections: ['executive_summary', 'legal_framework', 'workforce_diagnosis', 'gender_pay_gap', 'job_classification', 'recruitment_analysis', 'training_access', 'promotion_equality', 'work_life_balance', 'prevention_harassment', 'action_plan', 'monitoring_indicators'], kpi_definitions: ['gender_ratio', 'pay_gap_percentage', 'promotion_gap', 'training_hours_gap', 'part_time_gender_ratio', 'management_gender_ratio'], target_module: 'fairness' },
@@ -37,10 +38,7 @@ serve(async (req) => {
     // S6.3B: Standard auth gate
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient: supabase } = authResult;
 
@@ -474,10 +472,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     }
   } catch (error) {
     console.error('[hr-regulatory-reporting] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 
   function jsonResponse(data: unknown) {

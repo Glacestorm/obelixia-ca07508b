@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface TotalRewardsRequest {
   action: 'analyze_compensation' | 'compare_market' | 'generate_recommendations' | 'forecast_total_package';
@@ -40,10 +41,7 @@ serve(async (req) => {
         const { validateAuth } = await import('../_shared/tenant-auth.ts');
         const authResult = await validateAuth(req);
         if (isAuthError(authResult)) {
-          return new Response(JSON.stringify(authResult.body), {
-            status: authResult.status,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return mapAuthError(authResult, corsHeaders);
         }
 
         // Create a temporary userClient for the employee lookup
@@ -73,19 +71,13 @@ serve(async (req) => {
     } else if (company_id) {
       resolvedCompanyId = company_id;
     } else {
-      return new Response(JSON.stringify({ error: 'Bad Request: employee_id or company_id required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Bad Request: employee_id or company_id required', corsHeaders);
     }
 
     // === VALIDATE TENANT ACCESS ===
     const authResult = await validateTenantAccess(req, resolvedCompanyId!);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
     const companyId = resolvedCompanyId!;
@@ -332,12 +324,6 @@ ${JSON.stringify(currentComp, null, 2)}`;
 
   } catch (error) {
     console.error('[erp-hr-total-rewards] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

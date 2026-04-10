@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface WhistleblowerRequest {
   action: 'submit_report' | 'get_reports' | 'get_report_detail' | 'update_investigation' | 
@@ -101,16 +102,12 @@ serve(async (req) => {
     // PATH 2: ALL OTHER ACTIONS — Full validateTenantAccess required
     // =========================================================================
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing company_id' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('Missing company_id', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -342,12 +339,6 @@ Canal: ${report.submission_channel}`
     }
   } catch (error) {
     console.error('[erp-hr-whistleblower-agent] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

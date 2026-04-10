@@ -15,6 +15,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface ComplianceRequest {
   action: 'analyze_compliance' | 'evaluate_contract' | 'generate_recommendations';
@@ -50,10 +51,7 @@ serve(async (req) => {
 
     // === VALIDATE company_id ===
     if (!company_id || typeof company_id !== 'string') {
-      return new Response(JSON.stringify({ error: 'company_id is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     // === AUTH GATE: validateTenantAccess ===
@@ -61,10 +59,7 @@ serve(async (req) => {
     // Returns adminClient/userClient but neither is used (AI-only function)
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     console.log(`[erp-hr-contingent-workforce] Authenticated user: ${authResult.userId}, company: ${authResult.companyId}`);
 
@@ -283,13 +278,7 @@ Proporciona un plan de acción priorizado.`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Rate limit exceeded'
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -334,12 +323,6 @@ Proporciona un plan de acción priorizado.`;
 
   } catch (error) {
     console.error('[erp-hr-contingent-workforce] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

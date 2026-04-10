@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 5,
@@ -30,17 +31,13 @@ serve(async (req) => {
     const { action, companyId, realMetrics, currentDashboard, focusArea } = await req.json() as BIRequest;
 
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // S6.3F: validateTenantAccess replaces manual getClaims + manual adminClient membership
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
 
     // Rate limit check
@@ -155,9 +152,7 @@ Genera análisis predictivo detallado.`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ success: false, error: 'Rate limit' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -188,12 +183,6 @@ Genera análisis predictivo detallado.`;
 
   } catch (error) {
     console.error('[hr-analytics-bi] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error',
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

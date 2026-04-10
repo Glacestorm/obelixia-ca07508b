@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
@@ -15,16 +16,12 @@ serve(async (req) => {
     // Tenant isolation via shared utility
     const tenantCompanyId = params?.company_id;
     if (!tenantCompanyId) {
-      return new Response(JSON.stringify({ error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id required', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, tenantCompanyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 
@@ -291,12 +288,6 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
 
   } catch (error) {
     console.error('[talent-intelligence] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 const CLASSIFIER_SYSTEM_PROMPT = `Eres un clasificador experto de consultas de Recursos Humanos. Tu trabajo es determinar a qué agente especializado debe dirigirse cada consulta.
 
@@ -59,17 +60,13 @@ serve(async (req) => {
     const { action, company_id, query, context, session_id } = input;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return validationError('company_id required', corsHeaders);
     }
 
     // S6.3F: validateTenantAccess replaces manual auth + service_role
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -118,9 +115,7 @@ serve(async (req) => {
     // === ROUTE QUERY ===
     if (action === 'route_query') {
       if (!query) {
-        return new Response(JSON.stringify({ success: false, error: 'query required' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return validationError('query required', corsHeaders);
       }
 
       if (!LOVABLE_API_KEY) {
@@ -149,9 +144,7 @@ serve(async (req) => {
 
       if (!classifierResponse.ok) {
         if (classifierResponse.status === 429) {
-          return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded. Intenta más tarde.' }), {
-            status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+          return errorResponse('RATE_LIMITED', 'Rate limit exceeded. Try again later.', 429, corsHeaders);
         }
         if (classifierResponse.status === 402) {
           return new Response(JSON.stringify({ success: false, error: 'Créditos IA insuficientes.' }), {
@@ -317,11 +310,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[hr-multiagent-supervisor] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return internalError(corsHeaders);
   }
 });

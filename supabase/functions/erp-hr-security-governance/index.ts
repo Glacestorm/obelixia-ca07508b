@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface GovernanceRequest {
   action: string;
@@ -25,15 +26,13 @@ serve(async (req) => {
 
     // company_id is now REQUIRED (closes conditional membership gap)
     if (!company_id) {
-      return json({ success: false, error: 'Missing company_id' }, 400);
+      return validationError('Missing company_id', corsHeaders);
     }
 
     // === AUTH GATE — validateTenantAccess ===
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userClient } = authResult;
 
@@ -366,7 +365,7 @@ FORMATO JSON estricto:
 
     if (!response.ok) {
       if (response.status === 429) return json({ error: 'Rate limit', message: 'Demasiadas solicitudes.' }, 429);
-      if (response.status === 402) return json({ error: 'Payment required', message: 'Créditos insuficientes.' }, 402);
+      if (response.status === 402) return errorResponse('PAYMENT_REQUIRED', 'AI credits exhausted.', 402, corsHeaders);
       throw new Error(`AI API error: ${response.status}`);
     }
 
@@ -384,6 +383,6 @@ FORMATO JSON estricto:
 
   } catch (error) {
     console.error('[erp-hr-security-governance] Error:', error);
-    return json({ success: false, error: 'Internal server error' }, 500);
+    return internalError(corsHeaders);
   }
 });

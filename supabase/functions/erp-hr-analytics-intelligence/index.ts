@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface AnalyticsRequest {
   action: 
@@ -39,17 +40,13 @@ serve(async (req) => {
     // Extract companyId from context or params
     const companyId = (context?.companyId || context?.company_id || params?.companyId) as string | undefined;
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required in context' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required in context', corsHeaders);
     }
 
     // --- AUTH + TENANT VALIDATION (S6.3C — SECURITY FIX: previously had NO membership check) ---
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     console.log(`[erp-hr-analytics-intelligence] Authenticated user: ${authResult.userId}`);
     // --- END AUTH + TENANT VALIDATION ---
@@ -725,12 +722,6 @@ Horizonte: ${params?.horizon || '24 meses'}`;
 
   } catch (error) {
     console.error('[erp-hr-analytics-intelligence] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

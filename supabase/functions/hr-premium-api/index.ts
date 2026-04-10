@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface APIRequest {
   action: string;
@@ -19,17 +20,13 @@ serve(async (req) => {
     // S6.3F: company_id is now REQUIRED — closes conditional membership gap
     const companyId = params?.company_id as string;
     if (!companyId) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return validationError('company_id required', corsHeaders);
     }
 
     // S6.3F: validateTenantAccess replaces manual getClaims + conditional membership
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -348,12 +345,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[hr-premium-api] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return internalError(corsHeaders);
   }
 });

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface ComplianceEnterpriseRequest {
   action: 'get_dashboard' | 'list_policies' | 'upsert_policy' | 'list_audits' | 'upsert_audit' |
@@ -33,7 +34,7 @@ serve(async (req) => {
     // Auth + tenant isolation via shared utility
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return jsonResponse(authResult.body, authResult.status);
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
     // S6.2B: adminClient only used in seed_demo action below — extracted on demand
@@ -323,11 +324,11 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       default:
-        return jsonResponse({ success: false, error: `Unsupported action: ${action}` }, 400);
+        return validationError(`Unsupported action: ${action}`, corsHeaders);
     }
 
   } catch (error) {
     console.error('[erp-hr-compliance-enterprise] Error:', error);
-    return jsonResponse({ success: false, error: 'Internal server error' }, 500);
+    return internalError(corsHeaders);
   }
 });

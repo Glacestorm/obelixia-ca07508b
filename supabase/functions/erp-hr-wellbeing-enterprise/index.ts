@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
@@ -22,15 +23,13 @@ serve(async (req) => {
     const companyId = params?.company_id as string;
 
     if (!companyId) {
-      return json({ error: 'company_id is required' }, 400);
+      return validationError('company_id is required', corsHeaders);
     }
 
     // === AUTH GATE — validateTenantAccess ===
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -406,7 +405,7 @@ FORMATO DE RESPUESTA (JSON estricto):
 
         if (!response.ok) {
           if (response.status === 429) return json({ error: 'Rate limit', message: 'Demasiadas solicitudes' }, 429);
-          if (response.status === 402) return json({ error: 'Payment required' }, 402);
+          if (response.status === 402) return errorResponse('PAYMENT_REQUIRED', 'AI credits exhausted.', 402, corsHeaders);
           throw new Error(`AI API error: ${response.status}`);
         }
 
@@ -490,13 +489,10 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       default:
-        return json({ error: `Unknown action: ${action}` }, 400);
+        return validationError(`Unknown action: ${action}`, corsHeaders);
     }
   } catch (error) {
     console.error('[wellbeing-enterprise] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 const RATE_LIMIT_CONFIG = {
   burstPerMinute: 10,
@@ -31,17 +32,13 @@ serve(async (req) => {
     const { action, company_id, trigger_module, trigger_event, trigger_table, trigger_data } = input;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id required', corsHeaders);
     }
 
     // S6.3F: validateTenantAccess replaces manual auth + service_role
     const authResult = await validateTenantAccess(req, company_id);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const { userId, userClient } = authResult;
 
@@ -58,9 +55,7 @@ serve(async (req) => {
       // ── Emit Event: find matching rules and execute them ──
       case 'emit_event': {
         if (!trigger_module || !trigger_event) {
-          return new Response(JSON.stringify({ success: false, error: 'trigger_module and trigger_event required' }), {
-            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+          return validationError('trigger_module and trigger_event required', corsHeaders);
         }
 
         // Fetch active rules matching this trigger — S6.3F: userClient
@@ -209,12 +204,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[hr-orchestration-engine] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error',
-    }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
 

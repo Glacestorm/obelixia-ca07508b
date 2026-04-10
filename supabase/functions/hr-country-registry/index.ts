@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
 
 interface RequestBody {
   action: string;
@@ -26,17 +27,13 @@ serve(async (req) => {
     const { action, companyId, countryCode, data, params } = await req.json() as RequestBody;
 
     if (!companyId) {
-      return new Response(JSON.stringify({ error: 'companyId is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('companyId is required', corsHeaders);
     }
 
     // S6.2A: Replaced manual auth + adminClient with validateTenantAccess
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // S6.2A: All data ops use userClient (RLS-protected). adminClient eliminated.
     const { userClient } = authResult;
@@ -339,9 +336,6 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('[hr-country-registry] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Internal server error'
-    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return internalError(corsHeaders);
   }
 });
