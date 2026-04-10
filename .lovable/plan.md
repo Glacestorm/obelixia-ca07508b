@@ -1,101 +1,148 @@
 
 
-# S6.3C — Auth Hardening Batch 2: AI + Datos Sensibles
+# S8.0 — Error Contract Standardization (Baseline + Pilot Core)
 
-## Step 0 — Current Auth State
+## Step 0 — Baseline: Current Error Contracts
 
-```text
-Function                        | JWT method     | Membership check         | Data ops client          | service_role data ops | Target
-────────────────────────────────┼────────────────┼──────────────────────────┼──────────────────────────┼───────────────────────┼────────────────────
-erp-hr-ai-agent (1322 lines)    | getUser manual | service_role (manual)    | service_role for ALL ops | ~20+ SELECT/INSERT    | validateTenantAccess() — MAJOR
-erp-hr-analytics-agent (460 ln) | getClaims man. | service_role (manual)    | AI-only (no data ops)    | 0 (membership only)   | validateTenantAccess()
-erp-hr-analytics-intelligence   | getClaims man. | NONE (no membership!)    | AI-only (no data ops)    | 0                     | validateTenantAccess()
-erp-hr-autonomous-copilot       | getUser manual | service_role (manual)    | AI-only (no data ops)    | 0 (membership only)   | validateTenantAccess()
-erp-hr-people-analytics-ai      | getClaims man. | service_role (manual)    | AI-only (no data ops)    | 0 (membership only)   | validateTenantAccess()
-```
+### Inconsistencies Inventory
 
-All 5 touch company-scoped data or operate on company context. All go to `validateTenantAccess()`.
+| Function | Auth error shape | Missing param shape | Business error shape | Catch-all status | Catch-all shape |
+|----------|-----------------|---------------------|---------------------|------------------|-----------------|
+| payroll-calculation-engine | `{success:false, error/body}` via authResult | `throw new Error` → caught as 400 | `{success:false, legalValidations, preview}` (200!) | **400** | `{success:false, error:'Internal server error'}` |
+| payroll-it-engine | `{success:false, error}` via authResult | `throw new Error` → caught as 400 | N/A | **400** | `{success:false, error:'Internal server error'}` |
+| payroll-irpf-engine | `authResult.body` (no `success` wrapper) | proper 400 for company_id/action | `throw new Error` → caught as 500 | **500** | `{success:false, error:'Internal server error'}` |
+| payroll-supervisor | `authResult.body` (no `success` wrapper) | `throw new Error` → caught as 400 | `{success:false, blocked_by:...}` (200!) | **400** | `{success:false, error:'Internal server error'}` |
+| legal-action-router | `authResult.body` (no `success` wrapper) | proper 400 for company_id | `throw` → caught as 500 | **500** | `{success:false, error: error.message}` (leaks!) |
+| legal-multiagent-supervisor | `authResult.body` (no `success` wrapper) | proper 400 | N/A | **500** | `{success:false, error: error.message}` (leaks!) |
+| ai-legal-validator | `authResult.body` (no `success` wrapper) | `{error:'Unknown action'}` 400 (no `success` field) | N/A | **500** | `{success:false, error: error.message}` (leaks!) |
 
-**Critical finding**: `erp-hr-analytics-intelligence` has NO membership check at all — any authenticated user can call it for any company. This is a tenant isolation gap.
+### Critical Issues Found
 
----
-
-## Changes per Function
-
-### 1. erp-hr-ai-agent (1322 lines) — MAJOR REFACTOR
-
-**Before**: Manual `getUser()` + `createClient(SERVICE_ROLE_KEY)` as `supabase`. ALL ~20+ data operations (knowledge base, collective agreements, PRL, leave requests, alerts, employees, contracts, payrolls, performance reviews, compliance alerts, agent actions) use the service_role client.
-
-**Change**:
-- Replace lines 56-84 (manual auth + manual service_role client) with `validateTenantAccess(req, effectiveCompanyId)`
-- Body must be parsed before auth call to extract `company_id` — parse body first, then call `validateTenantAccess`
-- Rename all `supabase.from(...)` references to `userClient.from(...)`
-- All ~20+ data ops migrate to `userClient`
-- Remove manual `createClient` import for service_role
-- **adminClient after**: 0
-
-### 2. erp-hr-analytics-agent (460 lines) — SIMPLE
-
-**Before**: Manual `getClaims` + manual `adminClient` for membership only. No data ops beyond membership.
-
-**Change**:
-- Replace lines 26-71 (manual auth + manual adminClient membership) with `validateTenantAccess(req, companyId)`
-- Remove `createClient` for service_role
-- No data ops to migrate (pure AI function)
-- **adminClient after**: 0
-
-### 3. erp-hr-analytics-intelligence (727 lines) — MODERATE + SECURITY FIX
-
-**Before**: Manual `getClaims` only. **NO membership check** — any authenticated user can invoke for any company context passed in params. No data ops (pure AI).
-
-**Change**:
-- Replace lines 26-39 (manual auth) with `validateTenantAccess(req, companyId)` where `companyId` comes from `context.companyId` or `params.companyId`
-- This ADDS tenant isolation that was completely missing
-- Remove manual `createClient`
-- **adminClient after**: 0
-- **Security improvement**: Closes tenant isolation gap
-
-### 4. erp-hr-autonomous-copilot (448 lines) — MODERATE
-
-**Before**: Manual `getUser()` + `createClient(SERVICE_ROLE_KEY)` as `supabase`. Membership check uses service_role. No data ops beyond membership (pure AI).
-
-**Change**:
-- Replace lines 21-64 (manual auth + manual service_role membership) with `validateTenantAccess(req, company_id)`
-- Remove manual `createClient` for service_role
-- No data ops to migrate
-- **adminClient after**: 0
-
-### 5. erp-hr-people-analytics-ai (232 lines) — SIMPLE
-
-**Before**: Manual `getClaims` + manual `adminClient` for membership only. No data ops beyond membership (pure AI).
-
-**Change**:
-- Replace lines 21-64 (manual auth + manual adminClient membership) with `validateTenantAccess(req, companyId)`
-- Remove `createClient` for service_role
-- No data ops to migrate
-- **adminClient after**: 0
+1. **Inconsistent catch-all status**: payroll-calculation-engine, payroll-it-engine, payroll-supervisor return **400** for ALL caught errors (including genuine 500s). payroll-irpf-engine and legal functions return **500**.
+2. **Error message leaking**: Legal functions expose `error.message` in catch-all — can leak internal details. Payroll functions hide it behind "Internal server error".
+3. **Auth error shape inconsistency**: Some wrap in `{success:false, ...authResult.body}`, others return raw `authResult.body` (just `{error:'...'}`), missing the `success` field.
+4. **Business validation errors on 200**: payroll-calculation-engine returns legal validation failures as 200 with `success:false`. payroll-supervisor returns blocked transitions as 200 with `success:false`.
+5. **Missing `success` field in some errors**: ai-legal-validator unknown action returns `{error:...}` without `success:false`.
+6. **No error `code` field**: None of the functions return a machine-readable error code.
+7. **No `meta.timestamp`** on any error response.
 
 ---
 
-## Post-Batch State
+## Step 1 — Error Contract Definition
 
-```text
-Function                        | adminClient remaining | Status
-────────────────────────────────┼───────────────────────┼─────────────────
-erp-hr-ai-agent                 | 0                     | Clean (S6.3C)
-erp-hr-analytics-agent          | 0                     | Clean (S6.3C)
-erp-hr-analytics-intelligence   | 0                     | Clean (S6.3C) + security fix
-erp-hr-autonomous-copilot       | 0                     | Clean (S6.3C)
-erp-hr-people-analytics-ai      | 0                     | Clean (S6.3C)
+### Success Response
+```json
+{
+  "success": true,
+  "data": { ... },
+  "meta": { "timestamp": "ISO-8601" }
+}
 ```
 
-- **5/5 functions migrated** to `validateTenantAccess()`
-- **~20+ service_role data ops eliminated** (all in erp-hr-ai-agent)
-- **1 tenant isolation gap closed** (erp-hr-analytics-intelligence had no membership check)
-- **0 exceptions** — no residual adminClient needed
+### Error Response
+```json
+{
+  "success": false,
+  "error": {
+    "code": "MACHINE_READABLE_CODE",
+    "message": "Human-readable message"
+  },
+  "meta": { "timestamp": "ISO-8601" }
+}
+```
+
+### Standard Error Codes & HTTP Status
+
+| Code | HTTP | When |
+|------|------|------|
+| `AUTH_MISSING` | 401 | No Authorization header or invalid JWT |
+| `AUTH_FORBIDDEN` | 403 | Valid JWT but no tenant membership |
+| `VALIDATION_ERROR` | 400 | Missing/invalid required fields (company_id, action, employee_id) |
+| `BUSINESS_RULE_VIOLATION` | 422 | Legal validations failed, invalid state transition, blocked operation |
+| `NOT_FOUND` | 404 | Entity not found (employee, cycle, process) |
+| `RATE_LIMITED` | 429 | AI API rate limit |
+| `PAYMENT_REQUIRED` | 402 | AI credits exhausted |
+| `INTERNAL_ERROR` | 500 | Unexpected errors (message always generic, never leaked) |
+
+---
+
+## Step 2 — Implementation Plan
+
+### 2.1 Create shared helper: `_shared/error-contract.ts`
+
+A ~40 line utility providing:
+- `successResponse(data, corsHeaders, meta?)` → Response with standard success shape
+- `errorResponse(code, message, status, corsHeaders)` → Response with standard error shape
+- `mapAuthError(authResult, corsHeaders)` → Converts `TenantAuthError` to standard error response
+- Predefined error builders: `validationError(message)`, `notFoundError(entity)`, `businessRuleError(message, details?)`, `internalError()`
+
+### 2.2 Refactor each function (7 functions)
+
+For each function, the changes are mechanical:
+1. Import `{ successResponse, errorResponse, mapAuthError, ... }` from `_shared/error-contract.ts`
+2. Replace auth error handling: `if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders)`
+3. Replace `throw new Error('company_id required')` → `return validationError('company_id required', corsHeaders)`
+4. Replace `throw new Error('Employee not found')` → `return notFoundError('Employee', corsHeaders)`
+5. Replace business validation 200s with 422 + `BUSINESS_RULE_VIOLATION`
+6. Replace catch-all with `internalError(corsHeaders)` (always 500, never leaks message)
+7. Wrap all success responses with `successResponse(data, corsHeaders)`
+
+**Key constraint**: Success response `data` field keeps the exact same shape as today — no breaking changes for frontend consumers.
+
+### 2.3 Per-function specifics
+
+**payroll-calculation-engine**:
+- `!company_id` → `VALIDATION_ERROR` 400
+- `!employee_id` → `VALIDATION_ERROR` 400
+- `!emp` → `NOT_FOUND` 404
+- Legal validation failures with `success:false` → `BUSINESS_RULE_VIOLATION` 422 (keep `legalValidations` and `preview` in error details)
+- Unknown action → `VALIDATION_ERROR` 400
+- Catch-all → `INTERNAL_ERROR` 500
+
+**payroll-it-engine**:
+- Same pattern. `!company_id` / missing params → 400. Not found → 404. Catch-all → 500.
+
+**payroll-irpf-engine**:
+- Already has proper 400 for company_id/action — just wrap in standard shape.
+- `!emp` → 404. Catch-all → 500.
+
+**payroll-supervisor**:
+- `blocked_by` response (filed without docs) → `BUSINESS_RULE_VIOLATION` 422.
+- Invalid transition → `BUSINESS_RULE_VIOLATION` 422.
+- Cycle already exists → `BUSINESS_RULE_VIOLATION` 422.
+
+**legal-action-router**:
+- Already has proper 400 for company_id. Standardize shape.
+- Stop leaking `error.message` in catch-all.
+
+**legal-multiagent-supervisor**:
+- Same: standardize shapes, stop leaking messages.
+
+**ai-legal-validator**:
+- Unknown action → wrap in standard error shape with `success:false`.
+- Stop leaking messages in catch-all.
+
+### 2.4 Documentation
+
+Generate `/docs/S8_error_contract_baseline.md` with:
+- Contract specification
+- Before/after per function
+- Migration notes for frontend consumers (no breaking changes expected since `data` shapes preserved)
+
+---
 
 ## Deliverables
 
-1. Code changes in all 5 edge functions
-2. `/docs/S6_auth_batch2_report.md` with before/after validation
+1. **New file**: `supabase/functions/_shared/error-contract.ts` (~40-50 lines)
+2. **7 function edits** — mechanical refactors, no logic changes
+3. **Report**: `/docs/S8_error_contract_baseline.md`
+
+## Constraints
+
+- No frontend changes
+- No RLS changes
+- No new features
+- Success `data` payloads remain identical
+- Only error response shapes change (wrapped in standard contract)
+- All 7 functions deployed after changes
 
