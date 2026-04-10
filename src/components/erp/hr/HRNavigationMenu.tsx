@@ -86,7 +86,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'departments', 'work-centers', 'legal-entities',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values',
+    'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values', 'garnishment-simulator',
     'ss', 'integration', 'compensation-suite',
     // Workforce
     'vacations', 'time-clock', 'leave-incidents',
