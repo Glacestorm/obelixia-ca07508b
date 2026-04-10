@@ -137,7 +137,7 @@ export function useTA2Reception(companyId: string) {
         entityId: input.artifactId,
         actorId: user.id,
         actorRole: 'hr_admin',
-        payload: record.evidenceSnapshot,
+        afterSnapshot: record.evidenceSnapshot,
         metadata: {
           process: 'alta_afi_ta2',
           employee_id: input.employeeId,
