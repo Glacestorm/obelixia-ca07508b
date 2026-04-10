@@ -17,10 +17,7 @@ serve(async (req) => {
     // === AUTH GATE: validateAuth(req) — require authenticated user for all actions ===
     const authResult = await validateAuth(req);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     const authenticatedUserId = authResult.userId;
 
@@ -66,20 +63,14 @@ serve(async (req) => {
 
       if (roleError) {
         console.error('[erp-legal-knowledge-loader] Role check failed:', roleError.message);
-        return new Response(JSON.stringify({ error: 'Authorization check failed' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return internalError(corsHeaders);
       }
 
       const userRoles = (roles || []).map(r => r.role);
       const isAdmin = userRoles.includes('admin') || userRoles.includes('superadmin');
       if (!isAdmin) {
         console.warn(`[erp-legal-knowledge-loader] User ${authenticatedUserId} lacks admin role for expand_knowledge. Roles: ${userRoles.join(',')}`);
-        return new Response(JSON.stringify({ error: 'Insufficient permissions: admin role required' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('AUTH_FORBIDDEN', 'Insufficient permissions: admin role required', 403, corsHeaders);
       }
 
       // Use AI to generate additional legal knowledge for a given entity type
@@ -126,8 +117,8 @@ Incluye leyes vigentes con referencias BOE exactas.`
 
       if (!response.ok) {
         const status = response.status;
-        if (status === 429) return new Response(JSON.stringify({ error: 'Rate limit' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        if (status === 402) return new Response(JSON.stringify({ error: 'Credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        if (status === 429) return errorResponse('RATE_LIMITED', 'Rate limit exceeded', 429, corsHeaders);
+        if (status === 402) return errorResponse('PAYMENT_REQUIRED', 'Credits exhausted', 402, corsHeaders);
         throw new Error(`AI error: ${status}`);
       }
 
@@ -167,15 +158,9 @@ Incluye leyes vigentes con referencias BOE exactas.`
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return validationError('Invalid action', corsHeaders);
   } catch (error) {
     console.error('[erp-legal-knowledge-loader] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });

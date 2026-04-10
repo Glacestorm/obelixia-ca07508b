@@ -33,18 +33,12 @@ serve(async (req) => {
     // --- S7.1: Auth hardening — validateTenantAccess with mandatory companyId ---
     const companyId = context?.companyId || (params?.companyId as string);
     if (!companyId) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return validationError('company_id is required', corsHeaders);
     }
 
     const authResult = await validateTenantAccess(req, companyId);
     if (isAuthError(authResult)) {
-      return new Response(JSON.stringify(authResult.body), {
-        status: authResult.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return mapAuthError(authResult, corsHeaders);
     }
     // --- end auth ---
 
@@ -320,10 +314,7 @@ FORMATO JSON ESTRICTO:
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Rate limit exceeded', 429, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -352,12 +343,6 @@ FORMATO JSON ESTRICTO:
 
   } catch (error) {
     console.error('[erp-legal-spend] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return internalError(corsHeaders);
   }
 });
