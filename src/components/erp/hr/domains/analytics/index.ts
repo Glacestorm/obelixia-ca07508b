@@ -35,3 +35,6 @@ export { HRBoardPackPanel } from '../../board-pack';
  * Kept for backward compatibility — will be removed in Sprint 4.
  */
 export { HRDashboardPanel } from '../../HRDashboardPanel';
+
+// ── Predictive Audit (S8.5) ──
+export { PredictiveAuditPanel } from './PredictiveAuditPanel';

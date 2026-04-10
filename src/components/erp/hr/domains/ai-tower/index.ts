@@ -20,3 +20,6 @@ export { HRAIGovernancePanel } from '../../ai-governance/HRAIGovernancePanel';
 // ── Utilities ──
 export { HRKnowledgeUploader } from '../../HRKnowledgeUploader';
 export { HRDemoSeedPanel } from '../../HRDemoSeedPanel';
+
+// ── Governance Cockpit (S8.5) ──
+export { GovernanceCockpit } from './GovernanceCockpit';

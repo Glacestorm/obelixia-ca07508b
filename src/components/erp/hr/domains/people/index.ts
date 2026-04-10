@@ -19,3 +19,6 @@ export { HROrgStructurePanel } from '../../enterprise/HROrgStructurePanel';
 // ── Dialogs (Sprint 2 consolidation) ──
 export { HREmployeeFormDialog } from '../../HREmployeeFormDialog';
 export { HRBenefitEnrollmentDialog } from '../../HRBenefitEnrollmentDialog';
+
+// ── Bank Accounts (S8.5) ──
+export { BankAccountsPanel } from './BankAccountsPanel';
