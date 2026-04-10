@@ -38,6 +38,7 @@ import { buildTGSSPayload } from '../shared/tgssPayloadBuilder';
 import { evaluatePreIntegrationReadiness } from '../shared/tgssPreIntegrationReadiness';
 import { TGSSPreIntegrationBadge } from '../shared/TGSSPreIntegrationBadge';
 import { RegistrationClosureSection } from '../shared/RegistrationClosureSection';
+import { AltaAFITrackingCard } from '../shared/AltaAFITrackingCard';
 import { useRegistrationClosure } from '@/hooks/erp/hr/useRegistrationClosure';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
@@ -236,6 +237,22 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Alta/AFI/TA2 Tracking Card */}
+        {registrationData && (
+          <AltaAFITrackingCard
+            companyId={companyId}
+            employeeId={employeeId}
+            requestId={requestId}
+            registrationStatus={currentStatus}
+            afiArtifactId={(registrationData.payload_snapshot as any)?.linked_artifact_id ?? null}
+            afiArtifactStatus={null}
+            ta2Reference={registrationData.confirmed_reference}
+            ta2ResponseType={registrationData.confirmed_at ? 'accepted' : null}
+            ta2ReceptionDate={registrationData.confirmed_at}
+            onTA2Registered={() => fetchRegistrationData(requestId)}
+          />
+        )}
+
         {/* Readiness Summary */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">

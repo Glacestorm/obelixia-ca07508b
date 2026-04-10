@@ -677,6 +677,54 @@ export function useHRRegistrationProcess(companyId: string) {
     }
   }, [registrationData, user, companyId]);
 
+  /** Link an AFI artifact to this registration process */
+  const linkArtifactToRegistration = useCallback(async (
+    requestId: string,
+    artifactDbRowId: string,
+  ): Promise<boolean> => {
+    if (!user?.id) return false;
+    try {
+      const { error: dbError } = await supabase
+        .from('erp_hr_registration_data')
+        .update({
+          payload_snapshot: {
+            ...(registrationData?.payload_snapshot ?? {}),
+            linked_artifact_id: artifactDbRowId,
+            linked_at: new Date().toISOString(),
+          } as any,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('request_id', requestId);
+
+      if (dbError) throw dbError;
+
+      setRegistrationData(prev => prev ? {
+        ...prev,
+        payload_snapshot: {
+          ...(prev.payload_snapshot ?? {}),
+          linked_artifact_id: artifactDbRowId,
+          linked_at: new Date().toISOString(),
+        },
+      } : null);
+
+      logRegistrationAudit(
+        'REGISTRATION_ARTIFACT_LINKED',
+        companyId,
+        user.id,
+        requestId,
+        null,
+        { artifact_id: artifactDbRowId },
+        'info',
+        ['payload_snapshot'],
+      );
+
+      return true;
+    } catch (err) {
+      console.error('[useHRRegistrationProcess] linkArtifact error:', err);
+      return false;
+    }
+  }, [companyId, user, registrationData]);
+
   return {
     registrationData,
     loading,
@@ -689,6 +737,7 @@ export function useHRRegistrationProcess(companyId: string) {
     persistDeadlineAndPayload,
     closeRegistration,
     reopenRegistration,
+    linkArtifactToRegistration,
     REGISTRATION_STATUS_CONFIG,
   };
 }
