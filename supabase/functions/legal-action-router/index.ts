@@ -4,7 +4,7 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from "../_shared/tenant-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,16 +54,31 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
+    // --- Parse body first to extract company_id ---
     const body: ActionRequest = await req.json();
-    const { action } = body;
+    const { action, company_id } = body;
+
+    // --- company_id mandatory ---
+    if (!company_id) {
+      return new Response(JSON.stringify({ error: 'company_id is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- AUTH: validateTenantAccess (JWT + membership) ---
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { userId, userClient } = authResult;
 
     // ============= CLASSIFY INTENT =============
     if (action === 'classify_intent') {
-      const { query, jurisdiction = 'ES', specialty = 'labor', conversation_history = [], company_id, session_id } = body;
+      const { query, jurisdiction = 'ES', specialty = 'labor', conversation_history = [], session_id } = body;
       if (!query) throw new Error('Query required');
 
       const classifyPrompt = `Eres un clasificador de intenciones jurídico-laborales enterprise. Analiza la consulta del usuario y determina:
@@ -155,18 +170,11 @@ RESPONDE EN JSON ESTRICTO:
         classification = { intent_type: 'informative', procedure_type: null, confidence: 0.5 };
       }
 
-      // If actionable, create procedure in DB
+      // If actionable, create procedure in DB via userClient
       if (classification?.intent_type === 'actionable' && classification.procedure_type) {
         const deepLink = MODULE_DEEP_LINKS[classification.procedure_type] || '/obelixia-admin/erp';
 
-        const authHeader = req.headers.get('Authorization');
-        let userId = body.user_id;
-        if (authHeader && !userId) {
-          const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-          userId = user?.id;
-        }
-
-        const { data: procedure, error: insertError } = await supabase
+        const { data: procedure, error: insertError } = await userClient
           .from('erp_legal_procedures')
           .insert({
             company_id,
@@ -214,9 +222,9 @@ RESPONDE EN JSON ESTRICTO:
 
     // ============= GET PROCEDURES =============
     if (action === 'get_procedures') {
-      const { company_id, session_id } = body;
+      const { session_id } = body;
 
-      let query = supabase
+      let query = userClient
         .from('erp_legal_procedures')
         .select('*')
         .eq('company_id', company_id)
@@ -243,7 +251,7 @@ RESPONDE EN JSON ESTRICTO:
       const { procedure_id, procedure_update } = body;
       if (!procedure_id) throw new Error('procedure_id required');
 
-      const { data, error } = await supabase
+      const { data, error } = await userClient
         .from('erp_legal_procedures')
         .update({ ...procedure_update, updated_at: new Date().toISOString() })
         .eq('id', procedure_id)

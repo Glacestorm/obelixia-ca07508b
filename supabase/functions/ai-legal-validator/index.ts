@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { validateAuth, isAuthError } from "../_shared/tenant-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,23 +98,28 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No authorization header' }), {
-        status: 401,
+    // --- AUTH: validateAuth (real JWT validation) ---
+    const authResult = await validateAuth(req);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const authenticatedUserId = authResult.userId;
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    // --- userClient for DB ops (anon key + user JWT, goes through RLS) ---
+    const authHeader = req.headers.get('Authorization')!;
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { action, operation_type, data_classification, data_fields, user_id, destination_country, context } = 
+    const { action, operation_type, data_classification, data_fields, destination_country, context } = 
       await req.json() as LegalValidationRequest;
 
-    console.log(`[ai-legal-validator] Action: ${action}, Classification: ${data_classification}`);
+    console.log(`[ai-legal-validator] Action: ${action}, Classification: ${data_classification}, User: ${authenticatedUserId}`);
 
     let result: any;
     const startTime = Date.now();
@@ -128,25 +134,23 @@ serve(async (req) => {
           context
         );
         
-        // Log the validation
-        if (user_id) {
-          await supabase.rpc('log_ai_legal_validation', {
-            p_request_id: crypto.randomUUID(),
-            p_user_id: user_id,
-            p_operation_type: operation_type || 'unknown',
-            p_data_classification: data_classification || 'public',
-            p_is_approved: result.is_allowed,
-            p_legal_basis: result.legal_basis,
-            p_applicable_regulations: result.applicable_regulations,
-            p_warnings: result.warnings,
-            p_blocking_issues: result.blocking_issues,
-            p_requires_consent: result.requires_consent,
-            p_consent_type: result.consent_type,
-            p_cross_border_transfer: !!destination_country,
-            p_destination_countries: destination_country ? [destination_country] : [],
-            p_processing_time_ms: Date.now() - startTime,
-          });
-        }
+        // Log the validation — use authenticatedUserId, not body.user_id
+        await userClient.rpc('log_ai_legal_validation', {
+          p_request_id: crypto.randomUUID(),
+          p_user_id: authenticatedUserId,
+          p_operation_type: operation_type || 'unknown',
+          p_data_classification: data_classification || 'public',
+          p_is_approved: result.is_allowed,
+          p_legal_basis: result.legal_basis,
+          p_applicable_regulations: result.applicable_regulations,
+          p_warnings: result.warnings,
+          p_blocking_issues: result.blocking_issues,
+          p_requires_consent: result.requires_consent,
+          p_consent_type: result.consent_type,
+          p_cross_border_transfer: !!destination_country,
+          p_destination_countries: destination_country ? [destination_country] : [],
+          p_processing_time_ms: Date.now() - startTime,
+        });
         break;
 
       case 'get_applicable_regulations':
@@ -154,12 +158,12 @@ serve(async (req) => {
         break;
 
       case 'check_consent':
-        result = await checkConsent(supabase, user_id || '', data_classification || 'public');
+        result = await checkConsent(userClient, authenticatedUserId, data_classification || 'public');
         break;
 
       case 'log_gdpr_event':
-        result = await logGDPREvent(supabase, {
-          user_id,
+        result = await logGDPREvent(userClient, {
+          user_id: authenticatedUserId,
           operation_type,
           data_classification,
           context,
@@ -360,7 +364,7 @@ function getApplicableRegulations(
 
 // === CHECK CONSENT ===
 async function checkConsent(
-  supabase: any,
+  client: any,
   userId: string,
   classification: string
 ): Promise<{
@@ -384,16 +388,16 @@ async function checkConsent(
 
 // === LOG GDPR EVENT ===
 async function logGDPREvent(
-  supabase: any,
+  client: any,
   event: {
-    user_id?: string;
+    user_id: string;
     operation_type?: string;
     data_classification?: string;
     context?: Record<string, any>;
   }
 ): Promise<{ logged: boolean; event_id?: string }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('ai_audit_logs')
       .insert({
         event_type: 'gdpr_' + (event.operation_type || 'access'),
