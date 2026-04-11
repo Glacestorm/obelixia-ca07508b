@@ -479,7 +479,7 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
                             € {(integration.amount || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                           </p>
                           <Badge variant="outline" className={cn(
-                            integration.status === 'synced' && "text-green-600",
+                          (integration.status as string) === 'synced' && "text-green-600",
                             integration.status === 'pending' && "text-amber-600"
                           )}>
                             {integration.status === 'synced' ? 'Sincronizado' : 'Pendiente'}

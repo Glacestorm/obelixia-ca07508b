@@ -211,20 +211,19 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     try {
       const { data, error } = await supabase
         .from('erp_hr_official_artifacts')
-        .select('id, artifact_type, status, period_reference, created_at')
+        .select('id, artifact_type, status, period_label, created_at')
         .eq('company_id', companyId)
-        .in('artifact_type', ['SILTRA', 'RLC', 'RNT', 'CRA', 'AFI', 'BAJ', 'VAR'])
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setFilings(data.map(d => ({
+        setFilings((data as any[]).map((d: any) => ({
           id: d.id,
           type: d.artifact_type || 'L00',
           desc: d.artifact_type || 'Movimiento',
-          period: d.period_reference || '',
+          period: d.period_label || '',
           status: d.status === 'generated' ? 'pending' : d.status === 'confirmed_internal' ? 'confirmed' : d.status || 'pending',
           deadline: '',
         })));
@@ -615,9 +614,10 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
             <TabsContent value="expediente">
               <SSMonthlyExpedientTab companyId={companyId} periods={periods} />
               <div className="mt-4">
-                <SiltraCotizacionTrackingCard 
-                  companyId={companyId} 
-                  onOpenResponseDialog={() => setShowSiltraResponseDialog(true)} 
+              <SiltraCotizacionTrackingCard 
+                  periodLabel={selectedPeriod}
+                  fanStatus="not_generated"
+                  onRegisterResponse={() => setShowSiltraResponseDialog(true)} 
                 />
               </div>
             </TabsContent>
@@ -788,11 +788,14 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
         open={showSILTRADialog}
         onOpenChange={setShowSILTRADialog}
         companyId={companyId}
+        period={selectedPeriod}
       />
       <SiltraResponseDialog
         open={showSiltraResponseDialog}
         onOpenChange={setShowSiltraResponseDialog}
         companyId={companyId}
+        periodYear={parseInt(selectedPeriod.split('-')[0]) || 2026}
+        periodMonth={parseInt(selectedPeriod.split('-')[1]) || 1}
       />
     </div>
   );
