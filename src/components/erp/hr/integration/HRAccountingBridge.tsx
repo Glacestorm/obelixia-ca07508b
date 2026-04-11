@@ -1,9 +1,9 @@
 /**
  * HRAccountingBridge - Panel de integración contable de nóminas
- * Permite generar asientos contables desde el módulo de RRHH
+ * H1.2: Connected to real erp_hr_payrolls data
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,9 +18,10 @@ import {
 import {
   Calculator, CheckCircle, AlertTriangle, BookOpen,
   FileSpreadsheet, RefreshCw, Eye, Undo2, Loader2,
-  ArrowRight, Banknote, Receipt
+  ArrowRight, Banknote, Receipt, Info
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { useHRAccountingIntegration } from '@/hooks/admin/useHRAccountingIntegration';
 import { useHRIntegrationLog } from '@/hooks/admin/hr';
 import { formatDistanceToNow } from 'date-fns';
@@ -45,74 +46,93 @@ interface PayrollForAccounting {
   journal_entry_id?: string;
 }
 
-// Demo data para nóminas pendientes de contabilizar
-const demoPayrolls: PayrollForAccounting[] = [
-  {
-    id: 'pay-001',
-    employee_name: 'María García López',
-    department: 'Administración',
-    gross_salary: 2800,
-    net_salary: 2156.80,
-    irpf_amount: 425.60,
-    ss_employee: 177.80,
-    ss_company: 840.00,
-    status: 'calculated',
-    is_accounted: false
-  },
-  {
-    id: 'pay-002',
-    employee_name: 'Juan Martínez Ruiz',
-    department: 'Producción',
-    gross_salary: 2400,
-    net_salary: 1891.20,
-    irpf_amount: 300.00,
-    ss_employee: 152.40,
-    ss_company: 720.00,
-    status: 'calculated',
-    is_accounted: false
-  },
-  {
-    id: 'pay-003',
-    employee_name: 'Ana Fernández Castro',
-    department: 'Comercial',
-    gross_salary: 3200,
-    net_salary: 2432.00,
-    irpf_amount: 576.00,
-    ss_employee: 203.20,
-    ss_company: 960.00,
-    status: 'paid',
-    is_accounted: true,
-    journal_entry_id: 'je-456'
-  },
-  {
-    id: 'pay-004',
-    employee_name: 'Carlos Rodríguez Pérez',
-    department: 'IT',
-    gross_salary: 3500,
-    net_salary: 2625.00,
-    irpf_amount: 700.00,
-    ss_employee: 222.25,
-    ss_company: 1050.00,
-    status: 'calculated',
-    is_accounted: false
-  },
+// Demo fallback
+const DEMO_PAYROLLS: PayrollForAccounting[] = [
+  { id: 'demo-1', employee_name: 'María García López', department: 'Administración', gross_salary: 2800, net_salary: 2156.80, irpf_amount: 425.60, ss_employee: 177.80, ss_company: 840.00, status: 'calculated', is_accounted: false },
+  { id: 'demo-2', employee_name: 'Juan Martínez Ruiz', department: 'Producción', gross_salary: 2400, net_salary: 1891.20, irpf_amount: 300.00, ss_employee: 152.40, ss_company: 720.00, status: 'calculated', is_accounted: false },
 ];
 
 export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProps) {
-  const [payrolls, setPayrolls] = useState<PayrollForAccounting[]>(demoPayrolls);
+  const [payrolls, setPayrolls] = useState<PayrollForAccounting[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [hasRealData, setHasRealData] = useState(false);
 
-  const {
-    generateBatchPayrollEntries,
-    isLoading
-  } = useHRAccountingIntegration();
-
-  // Hook de logging para registrar sincronizaciones
+  const { generateBatchPayrollEntries, isLoading } = useHRAccountingIntegration();
   const { syncToAccounting } = useHRIntegrationLog(companyId);
 
-  const pendingPayrolls = payrolls.filter(p => !p.is_accounted && p.status === 'calculated');
+  // Load real payroll data
+  const loadPayrolls = useCallback(async () => {
+    setIsLoadingData(true);
+    try {
+      const [year, month] = period.split('-').map(Number);
+      
+      const { data, error } = await supabase
+        .from('erp_hr_payrolls')
+        .select('id, employee_id, gross_salary, net_salary, irpf_amount, ss_worker, ss_company, status')
+        .eq('company_id', companyId)
+        .eq('period_year', year)
+        .eq('period_month', month)
+        .in('status', ['calculated', 'approved', 'paid']);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Fetch employee names
+        const empIds = [...new Set(data.map(d => d.employee_id).filter(Boolean))];
+        const { data: employees } = await supabase
+          .from('erp_hr_employees')
+          .select('id, first_name, last_name, department_id')
+          .in('id', empIds);
+
+        const empMap = new Map(
+          (employees || []).map(e => [e.id, { name: `${e.first_name} ${e.last_name}`, dept: e.department_id || '' }])
+        );
+
+        // Check bridge logs for accounted status
+        const { data: bridgeLogs } = await supabase
+          .from('erp_hr_bridge_logs')
+          .select('source_record_id, status')
+          .eq('company_id', companyId)
+          .eq('bridge_type', 'payroll_to_accounting');
+
+        const accountedSet = new Set(
+          (bridgeLogs || []).filter(l => l.status === 'completed').map(l => l.source_record_id)
+        );
+
+        const mapped: PayrollForAccounting[] = data.map(d => ({
+          id: d.id,
+          employee_name: empMap.get(d.employee_id)?.name || `Empleado ${d.employee_id?.slice(0, 8)}`,
+          department: empMap.get(d.employee_id)?.dept || '',
+          gross_salary: d.gross_salary || 0,
+          net_salary: d.net_salary || 0,
+          irpf_amount: d.irpf_amount || 0,
+          ss_employee: d.ss_worker || 0,
+          ss_company: d.ss_company || 0,
+          status: d.status as 'calculated' | 'paid',
+          is_accounted: accountedSet.has(d.id),
+        }));
+
+        setPayrolls(mapped);
+        setHasRealData(true);
+      } else {
+        setPayrolls(DEMO_PAYROLLS);
+        setHasRealData(false);
+      }
+    } catch (err) {
+      console.error('[HRAccountingBridge] Load error:', err);
+      setPayrolls(DEMO_PAYROLLS);
+      setHasRealData(false);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [companyId, period]);
+
+  useEffect(() => { loadPayrolls(); }, [loadPayrolls]);
+
+  const pendingPayrolls = payrolls.filter(p => !p.is_accounted && (p.status === 'calculated' || p.status === 'paid'));
   const accountedPayrolls = payrolls.filter(p => p.is_accounted);
 
   const handleSelectAll = useCallback(() => {
@@ -125,13 +145,10 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
 
   const handleToggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => 
-      prev.includes(id) 
-        ? prev.filter(i => i !== id)
-        : [...prev, id]
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   }, []);
 
-  // Calcular totales de nóminas seleccionadas
   const selectedPayrolls = payrolls.filter(p => selectedIds.includes(p.id));
   const totals = selectedPayrolls.reduce((acc, p) => ({
     gross: acc.gross + p.gross_salary,
@@ -157,7 +174,7 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
         gross_salary: p.gross_salary,
         net_salary: p.net_salary,
         irpf_amount: p.irpf_amount,
-        irpf_percentage: (p.irpf_amount / p.gross_salary) * 100,
+        irpf_percentage: p.gross_salary > 0 ? (p.irpf_amount / p.gross_salary) * 100 : 0,
         ss_employee: p.ss_employee,
         ss_company: p.ss_company,
         extras: 0,
@@ -165,23 +182,17 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
       }));
 
       const result = await generateBatchPayrollEntries(
-        companyId,
-        period,
-        payrollsToProcess,
-        new Date().toISOString().split('T')[0],
-        undefined,
-        consolidate
+        companyId, period, payrollsToProcess,
+        new Date().toISOString().split('T')[0], undefined, consolidate
       );
 
       if (result) {
-        // Marcar como contabilizadas
         setPayrolls(prev => prev.map(p => 
           selectedIds.includes(p.id) 
             ? { ...p, is_accounted: true, journal_entry_id: result.journal_entry_id }
             : p
         ));
         
-        // Registrar en el log de integración
         await syncToAccounting({
           payrollId: result.journal_entry_id || 'batch',
           payrollRef: `BATCH-${selectedIds.length}`,
@@ -232,7 +243,17 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
 
   return (
     <div className="space-y-4">
-      {/* Resumen de integración */}
+      {/* Data source badge */}
+      {!hasRealData && !isLoadingData && (
+        <Alert className="bg-warning/5 border-warning/30">
+          <Info className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-sm text-warning">
+            Datos de ejemplo — No hay nóminas calculadas para el período {period}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Resumen */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5">
           <CardContent className="p-4">
@@ -305,9 +326,12 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={loadPayrolls} disabled={isLoadingData}>
+                <RefreshCw className={`h-4 w-4 mr-1 ${isLoadingData ? 'animate-spin' : ''}`} />
+                Recargar
+              </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant="outline" size="sm"
                 onClick={() => setShowPreview(!showPreview)}
                 disabled={selectedIds.length === 0}
               >
@@ -331,7 +355,6 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
         </CardHeader>
 
         <CardContent>
-          {/* Vista previa del asiento */}
           {showPreview && selectedIds.length > 0 && (
             <Alert className="mb-4 bg-muted/50">
               <Calculator className="h-4 w-4" />
@@ -361,7 +384,11 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
             </Alert>
           )}
 
-          {/* Tabla de nóminas */}
+          {isLoadingData ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
           <ScrollArea className="h-[350px]">
             <Table>
               <TableHeader>
@@ -374,56 +401,36 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
                     />
                   </TableHead>
                   <TableHead>Empleado</TableHead>
-                  <TableHead>Departamento</TableHead>
                   <TableHead className="text-right">Bruto</TableHead>
                   <TableHead className="text-right">IRPF</TableHead>
                   <TableHead className="text-right">SS Emp.</TableHead>
                   <TableHead className="text-right">Neto</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payrolls.map((payroll) => (
-                  <TableRow 
-                    key={payroll.id}
-                    className={payroll.is_accounted ? 'opacity-60' : ''}
-                  >
+                  <TableRow key={payroll.id} className={payroll.is_accounted ? 'opacity-60' : ''}>
                     <TableCell>
                       <Checkbox
                         checked={selectedIds.includes(payroll.id)}
                         onCheckedChange={() => handleToggleSelect(payroll.id)}
-                        disabled={payroll.is_accounted || payroll.status !== 'calculated'}
+                        disabled={payroll.is_accounted}
                       />
                     </TableCell>
                     <TableCell className="font-medium">{payroll.employee_name}</TableCell>
-                    <TableCell>{payroll.department}</TableCell>
                     <TableCell className="text-right">€{payroll.gross_salary.toLocaleString()}</TableCell>
-                    <TableCell className="text-right text-purple-600">
-                      €{payroll.irpf_amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right text-amber-600">
-                      €{payroll.ss_company.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      €{payroll.net_salary.toLocaleString()}
-                    </TableCell>
+                    <TableCell className="text-right text-purple-600">€{payroll.irpf_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-amber-600">€{payroll.ss_company.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-semibold">€{payroll.net_salary.toLocaleString()}</TableCell>
                     <TableCell>{getStatusBadge(payroll)}</TableCell>
-                    <TableCell>
-                      {payroll.is_accounted && payroll.journal_entry_id && (
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ver
-                        </Button>
-                      )}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </ScrollArea>
+          )}
 
-          {/* Acciones adicionales */}
           <Separator className="my-4" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -432,8 +439,7 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
             </div>
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
-                size="sm"
+                variant="outline" size="sm"
                 onClick={() => handleGenerateEntries(false)}
                 disabled={selectedIds.length === 0 || isGenerating}
               >
@@ -444,7 +450,7 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
         </CardContent>
       </Card>
 
-      {/* Flujo de cuentas PGC */}
+      {/* Mapeo PGC */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Mapeo Cuentas PGC 2007</CardTitle>

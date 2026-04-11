@@ -1,9 +1,10 @@
 /**
  * HRSocialSecurityPanel - Gestión de Seguridad Social
  * Cotizaciones, presentaciones RED/SILTRA, certificados, expediente mensual
+ * H1.2: Cotizaciones from real payroll aggregation
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,8 @@ import {
 import { 
   Shield, Calculator, FileUp, FileDown, Search,
   CheckCircle, Clock, AlertTriangle, Users, Calendar,
-  Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download, FileCheck
+  Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download, FileCheck,
+  Info
 } from 'lucide-react';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 import { SSMonthlyExpedientTab } from './payroll-engine/SSMonthlyExpedientTab';
@@ -39,8 +41,8 @@ interface HRSocialSecurityPanelProps {
 
 // Tipos de cotización SS España 2026
 const SS_RATES = {
-  cc_company: 23.60,  // Contingencias comunes empresa
-  cc_worker: 4.70,    // Contingencias comunes trabajador
+  cc_company: 23.60,
+  cc_worker: 4.70,
   unemployment_general_company: 5.50,
   unemployment_general_worker: 1.55,
   unemployment_temporal_company: 6.70,
@@ -48,16 +50,73 @@ const SS_RATES = {
   fogasa: 0.20,
   fp_company: 0.60,
   fp_worker: 0.10,
-  mef: 0.10, // Mecanismo Equidad Intergeneracional
+  mef: 0.10,
 };
+
+interface ContributionRow {
+  id: string;
+  period: string;
+  workers: number;
+  baseCC: number;
+  baseAT: number;
+  ccCompany: number;
+  ccWorker: number;
+  unemployment: number;
+  fogasa: number;
+  fp: number;
+  atEp: number;
+  totalCompany: number;
+  totalWorker: number;
+  total: number;
+  status: string;
+  filingRef: string;
+  paymentDate?: string;
+  isRealData: boolean;
+}
+
+// Demo fallback data
+const DEMO_CONTRIBUTIONS: ContributionRow[] = [
+  {
+    id: 'demo-1', period: '2026-01', workers: 47, baseCC: 142800, baseAT: 142800,
+    ccCompany: 33700.80, ccWorker: 6711.60, unemployment: 8349.80, fogasa: 285.60,
+    fp: 999.60, atEp: 2141.00, totalCompany: 45476.80, totalWorker: 7425.60,
+    total: 52902.40, status: 'filed', filingRef: 'RED-2026-01-00123', isRealData: false,
+  },
+];
+
+const DEMO_FILINGS = [
+  { id: '1', type: 'L00', desc: 'Liquidación mensual', period: '2026-01', status: 'pending', deadline: '2026-01-31' },
+  { id: '2', type: 'AFI', desc: 'Alta trabajador', date: '2026-01-15', worker: 'Pedro Sánchez', status: 'confirmed' },
+  { id: '3', type: 'BAJ', desc: 'Baja trabajador', date: '2026-01-10', worker: 'Luis García', status: 'confirmed' },
+  { id: '4', type: 'VAR', desc: 'Variación datos', date: '2026-01-08', worker: 'María López', status: 'error', error: 'CCC incorrecto' },
+];
+
+const DEMO_CERTIFICATES = [
+  { id: '1', type: 'Vida Laboral', worker: 'Ana Fernández', requestDate: '2026-01-20', status: 'ready' },
+  { id: '2', type: 'Bases Cotización', worker: 'Juan Martínez', requestDate: '2026-01-18', status: 'processing' },
+  { id: '3', type: 'Estar al Corriente', company: true, requestDate: '2026-01-15', status: 'ready' },
+];
+
+const DemoBadge = () => (
+  <Badge variant="outline" className="text-[10px] border-warning/30 text-warning gap-1">
+    <Info className="h-3 w-3" />
+    Datos de ejemplo
+  </Badge>
+);
 
 export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps) {
   const [selectedPeriod, setSelectedPeriod] = useState('2026-01');
   const [activeTab, setActiveTab] = useState('cotizaciones');
   const [loading, setLoading] = useState<string | null>(null);
   const { periods, fetchPeriods } = usePayrollEngine(companyId);
+  
+  // Real data state
+  const [contributions, setContributions] = useState<ContributionRow[]>([]);
+  const [isLoadingContributions, setIsLoadingContributions] = useState(true);
+  const [hasRealData, setHasRealData] = useState(false);
+  const [filings, setFilings] = useState(DEMO_FILINGS);
+  const [hasRealFilings, setHasRealFilings] = useState(false);
 
-  // Fetch periods for expedient tab
   useEffect(() => { fetchPeriods(); }, [fetchPeriods]);
   
   // Dialog states
@@ -65,62 +124,127 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
   const [showCertificateDialog, setShowCertificateDialog] = useState(false);
   const [showSILTRADialog, setShowSILTRADialog] = useState(false);
   const [showSiltraResponseDialog, setShowSiltraResponseDialog] = useState(false);
-  // Demo data - Cotizaciones mensuales (H1.1: explicitly labeled)
-  const DEMO_DATA_LABEL = true; // All SS data below is demo — flagged for H1.2 real connection
-  const contributions = [
-    {
-      id: '1',
-      period: '2026-01',
-      workers: 47,
-      baseCC: 142800,
-      baseAT: 142800,
-      ccCompany: 33700.80,
-      ccWorker: 6711.60,
-      unemployment: 8349.80,
-      fogasa: 285.60,
-      fp: 999.60,
-      atEp: 2141.00,
-      totalCompany: 45476.80,
-      totalWorker: 7425.60,
-      total: 52902.40,
-      status: 'filed',
-      filingRef: 'RED-2026-01-00123',
-    },
-    {
-      id: '2',
-      period: '2025-12',
-      workers: 46,
-      baseCC: 138500,
-      baseAT: 138500,
-      ccCompany: 32686.00,
-      ccWorker: 6509.50,
-      unemployment: 8093.25,
-      fogasa: 277.00,
-      fp: 969.50,
-      atEp: 2077.50,
-      totalCompany: 44103.25,
-      totalWorker: 7201.00,
-      total: 51304.25,
-      status: 'paid',
-      filingRef: 'RED-2025-12-00456',
-      paymentDate: '2025-12-28',
-    },
-  ];
 
-  // Demo - Presentaciones RED
-  const filings = [
-    { id: '1', type: 'L00', desc: 'Liquidación mensual', period: '2026-01', status: 'pending', deadline: '2026-01-31' },
-    { id: '2', type: 'AFI', desc: 'Alta trabajador', date: '2026-01-15', worker: 'Pedro Sánchez', status: 'confirmed' },
-    { id: '3', type: 'BAJ', desc: 'Baja trabajador', date: '2026-01-10', worker: 'Luis García', status: 'confirmed' },
-    { id: '4', type: 'VAR', desc: 'Variación datos', date: '2026-01-08', worker: 'María López', status: 'error', error: 'CCC incorrecto' },
-  ];
+  // Load real contributions from erp_hr_payrolls aggregation
+  const loadContributions = useCallback(async () => {
+    setIsLoadingContributions(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_payrolls')
+        .select('period_month, period_year, gross_salary, ss_worker, ss_company, irpf_amount, net_salary, total_deductions, total_cost, status, employee_id')
+        .eq('company_id', companyId)
+        .in('status', ['calculated', 'approved', 'paid']);
 
-  // Demo - Certificados
-  const certificates = [
-    { id: '1', type: 'Vida Laboral', worker: 'Ana Fernández', requestDate: '2026-01-20', status: 'ready' },
-    { id: '2', type: 'Bases Cotización', worker: 'Juan Martínez', requestDate: '2026-01-18', status: 'processing' },
-    { id: '3', type: 'Estar al Corriente', company: true, requestDate: '2026-01-15', status: 'ready' },
-  ];
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Group by period
+        const grouped = new Map<string, typeof data>();
+        for (const row of data) {
+          const period = `${row.period_year}-${String(row.period_month).padStart(2, '0')}`;
+          if (!grouped.has(period)) grouped.set(period, []);
+          grouped.get(period)!.push(row);
+        }
+
+        const rows: ContributionRow[] = [];
+        for (const [period, payrolls] of grouped) {
+          const workers = new Set(payrolls.map(p => p.employee_id)).size;
+          const totalGross = payrolls.reduce((s, p) => s + (p.gross_salary || 0), 0);
+          const totalSSWorker = payrolls.reduce((s, p) => s + (p.ss_worker || 0), 0);
+          const totalSSCompany = payrolls.reduce((s, p) => s + (p.ss_company || 0), 0);
+
+          // Derive SS breakdown from aggregate
+          const baseCC = totalGross; // Approximate: base = gross
+          const ccCompany = +(baseCC * SS_RATES.cc_company / 100).toFixed(2);
+          const ccWorker = +(baseCC * SS_RATES.cc_worker / 100).toFixed(2);
+          const unemployment = +(baseCC * (SS_RATES.unemployment_general_company + SS_RATES.unemployment_general_worker) / 100).toFixed(2);
+          const fogasa = +(baseCC * SS_RATES.fogasa / 100).toFixed(2);
+          const fp = +(baseCC * (SS_RATES.fp_company + SS_RATES.fp_worker) / 100).toFixed(2);
+          const atEp = +(baseCC * 1.50 / 100).toFixed(2);
+
+          // Use real totals from DB where available
+          const totalCompanyReal = totalSSCompany || ccCompany + fogasa + +(baseCC * SS_RATES.fp_company / 100).toFixed(2) + atEp;
+          const totalWorkerReal = totalSSWorker || ccWorker;
+
+          const hasPaid = payrolls.some(p => p.status === 'paid');
+          const allApproved = payrolls.every(p => p.status === 'approved' || p.status === 'paid');
+
+          rows.push({
+            id: `real-${period}`,
+            period,
+            workers,
+            baseCC,
+            baseAT: baseCC,
+            ccCompany: totalSSCompany > 0 ? totalSSCompany : ccCompany,
+            ccWorker: totalSSWorker > 0 ? totalSSWorker : ccWorker,
+            unemployment,
+            fogasa,
+            fp,
+            atEp,
+            totalCompany: totalCompanyReal,
+            totalWorker: totalWorkerReal,
+            total: totalCompanyReal + totalWorkerReal,
+            status: hasPaid ? 'paid' : allApproved ? 'filed' : 'pending',
+            filingRef: `PAYROLL-${period}`,
+            isRealData: true,
+          });
+        }
+
+        rows.sort((a, b) => b.period.localeCompare(a.period));
+        setContributions(rows);
+        setHasRealData(true);
+      } else {
+        setContributions(DEMO_CONTRIBUTIONS);
+        setHasRealData(false);
+      }
+    } catch (err) {
+      console.error('Error loading SS contributions:', err);
+      setContributions(DEMO_CONTRIBUTIONS);
+      setHasRealData(false);
+    } finally {
+      setIsLoadingContributions(false);
+    }
+  }, [companyId]);
+
+  // Load real filings from official artifacts
+  const loadFilings = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_official_artifacts')
+        .select('id, artifact_type, status, period_reference, created_at')
+        .eq('company_id', companyId)
+        .in('artifact_type', ['SILTRA', 'RLC', 'RNT', 'CRA', 'AFI', 'BAJ', 'VAR'])
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setFilings(data.map(d => ({
+          id: d.id,
+          type: d.artifact_type || 'L00',
+          desc: d.artifact_type || 'Movimiento',
+          period: d.period_reference || '',
+          status: d.status === 'generated' ? 'pending' : d.status === 'confirmed_internal' ? 'confirmed' : d.status || 'pending',
+          deadline: '',
+        })));
+        setHasRealFilings(true);
+      } else {
+        setFilings(DEMO_FILINGS);
+        setHasRealFilings(false);
+      }
+    } catch {
+      setFilings(DEMO_FILINGS);
+      setHasRealFilings(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    loadContributions();
+    loadFilings();
+  }, [loadContributions, loadFilings]);
+
+  const certificates = DEMO_CERTIFICATES;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -143,7 +267,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     }
   };
 
-  const currentContribution = contributions[0];
+  const currentContribution = contributions[0] || DEMO_CONTRIBUTIONS[0];
 
   // === HANDLERS ===
   const handleCalculateContributions = useCallback(async () => {
@@ -161,6 +285,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
       
       if (data?.success) {
         toast.success('Cotizaciones calculadas correctamente');
+        await loadContributions();
       } else {
         toast.info('Se ha simulado el cálculo de cotizaciones');
       }
@@ -170,9 +295,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     } finally {
       setLoading(null);
     }
-  }, [companyId, selectedPeriod]);
-
-  // SILTRA now handled via SSSILTRASubmitDialog
+  }, [companyId, selectedPeriod, loadContributions]);
 
   const handleRefreshRED = useCallback(async () => {
     setLoading('refresh');
@@ -217,9 +340,10 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     doc.setFont('helvetica', 'normal');
     doc.text(`Período: ${selectedPeriod}`, 14, 28);
     doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, 14, 34);
+    if (!hasRealData) doc.text('⚠ Datos de ejemplo', 14, 40);
     
     autoTable(doc, {
-      startY: 42,
+      startY: hasRealData ? 42 : 48,
       head: [['Período', 'Trabajadores', 'Base CC', 'Empresa', 'Trabajador', 'Total', 'Estado']],
       body: contributions.map(c => [
         c.period,
@@ -236,11 +360,12 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     
     doc.save(`cotizaciones_ss_${selectedPeriod}.pdf`);
     toast.success('PDF de cotizaciones exportado');
-  }, [selectedPeriod, contributions]);
+  }, [selectedPeriod, contributions, hasRealData]);
 
   const exportContributionsExcel = useCallback(() => {
     const wsData = [
       ['Cotizaciones Seguridad Social', selectedPeriod],
+      ...(hasRealData ? [] : [['⚠ Datos de ejemplo']]),
       [],
       ['Período', 'Trabajadores', 'Base CC', 'Empresa', 'Trabajador', 'Total', 'Estado', 'Referencia'],
       ...contributions.map(c => [
@@ -260,7 +385,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     XLSX.utils.book_append_sheet(wb, ws, 'Cotizaciones');
     XLSX.writeFile(wb, `cotizaciones_ss_${selectedPeriod}.xlsx`);
     toast.success('Excel de cotizaciones exportado');
-  }, [selectedPeriod, contributions]);
+  }, [selectedPeriod, contributions, hasRealData]);
 
   const exportFilingsPDF = useCallback(() => {
     const doc = new jsPDF();
@@ -277,8 +402,8 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
       body: filings.map(f => [
         f.type,
         f.desc,
-        f.period || f.date || '',
-        f.worker || '-',
+        (f as any).period || (f as any).date || '',
+        (f as any).worker || '-',
         f.status === 'confirmed' ? 'Confirmado' : f.status === 'error' ? 'Error' : 'Pendiente'
       ]),
       styles: { fontSize: 8 },
@@ -359,6 +484,14 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
         </Card>
       </div>
 
+      {/* Data source indicator */}
+      {hasRealData && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+          <CheckCircle className="h-3 w-3 text-green-500" />
+          <span>Datos derivados de nóminas calculadas — no son datos oficiales de la TGSS</span>
+        </div>
+      )}
+
       {/* Tabs principales */}
       <Card>
         <CardHeader className="pb-3">
@@ -409,7 +542,13 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
             <TabsContent value="cotizaciones" className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="text-sm font-medium">Liquidaciones mensuales</h4>
-                <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">Datos de ejemplo</Badge>
+                {!hasRealData && <DemoBadge />}
+                {hasRealData && (
+                  <Badge variant="outline" className="text-[10px] border-info/30 text-info gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Derivado de nóminas
+                  </Badge>
+                )}
                 <div className="flex gap-2 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={exportContributionsPDF} title="Exportar PDF">
                     <FileDown className="h-4 w-4 mr-1" />
@@ -435,6 +574,11 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
               </div>
 
               <ScrollArea className="h-[300px]">
+                {isLoadingContributions ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -458,62 +602,33 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
                         <TableCell className="text-right">€{c.totalWorker.toLocaleString()}</TableCell>
                         <TableCell className="text-right font-semibold">€{c.total.toLocaleString()}</TableCell>
                         <TableCell>{getStatusBadge(c.status)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{c.filingRef}</TableCell>
+                        <TableCell className="text-xs">{c.filingRef}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                )}
               </ScrollArea>
-
-              {/* Desglose del periodo actual */}
-              <Card className="bg-muted/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Desglose {selectedPeriod}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Contingencias Comunes</p>
-                      <p className="font-medium">Empresa: €{currentContribution.ccCompany.toLocaleString()}</p>
-                      <p className="font-medium">Trabajador: €{currentContribution.ccWorker.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Desempleo</p>
-                      <p className="font-medium">€{currentContribution.unemployment.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">AT/EP</p>
-                      <p className="font-medium">€{currentContribution.atEp.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">FOGASA + FP</p>
-                      <p className="font-medium">€{(currentContribution.fogasa + currentContribution.fp).toLocaleString()}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
-            {/* Tab Expediente Mensual SS — V2-ES.7 Paso 4 */}
-            <TabsContent value="expediente" className="space-y-4">
-              <SiltraCotizacionTrackingCard
-                periodLabel={selectedPeriod}
-                fanStatus="generated"
-                rlcData={{ type: 'rlc', status: 'generated', label: 'RLC' }}
-                rntData={{ type: 'rnt', status: 'generated', label: 'RNT' }}
-                craData={{ type: 'cra', status: 'generated', label: 'CRA' }}
-                onRegisterResponse={() => setShowSiltraResponseDialog(true)}
-              />
+            {/* Tab Expediente Mensual */}
+            <TabsContent value="expediente">
               <SSMonthlyExpedientTab companyId={companyId} periods={periods} />
+              <div className="mt-4">
+                <SiltraCotizacionTrackingCard 
+                  companyId={companyId} 
+                  onOpenResponseDialog={() => setShowSiltraResponseDialog(true)} 
+                />
+              </div>
             </TabsContent>
 
             {/* Tab Sistema RED */}
             <TabsContent value="red" className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Movimientos Sistema RED</h4>
-                <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">Datos de ejemplo</Badge>
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="ghost" size="sm" onClick={exportFilingsPDF} title="Exportar PDF">
+                <div className="flex items-center gap-2">
+                  {!hasRealFilings && <DemoBadge />}
+                  <Button variant="ghost" size="sm" onClick={exportFilingsPDF}>
                     <FileDown className="h-4 w-4 mr-1" />
                     PDF
                   </Button>
@@ -526,161 +641,133 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
                     Actualizar
                   </Button>
                   <Button size="sm" onClick={handleNewCommunication}>
-                    <FileUp className="h-4 w-4 mr-1" />
-                    Nueva comunicación
+                    <Send className="h-4 w-4 mr-1" />
+                    Nueva Comunicación
                   </Button>
                 </div>
               </div>
 
-              <ScrollArea className="h-[350px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead>Fecha/Período</TableHead>
-                      <TableHead>Trabajador</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Observaciones</TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Período/Fecha</TableHead>
+                    <TableHead>Trabajador</TableHead>
+                    <TableHead>Estado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filings.map((filing) => (
+                    <TableRow key={filing.id}>
+                      <TableCell>
+                        <Badge variant="outline">{filing.type}</Badge>
+                      </TableCell>
+                      <TableCell>{filing.desc}</TableCell>
+                      <TableCell>{(filing as any).period || (filing as any).date || ''}</TableCell>
+                      <TableCell>{(filing as any).worker || '-'}</TableCell>
+                      <TableCell>{getStatusBadge(filing.status)}</TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filings.map((f) => (
-                      <TableRow key={f.id}>
-                        <TableCell>
-                          <Badge variant="outline">{f.type}</Badge>
-                        </TableCell>
-                        <TableCell>{f.desc}</TableCell>
-                        <TableCell>{f.period || f.date}</TableCell>
-                        <TableCell>{f.worker || '-'}</TableCell>
-                        <TableCell>{getStatusBadge(f.status)}</TableCell>
-                        <TableCell className="text-xs text-destructive">
-                          {f.error || (f.deadline ? `Límite: ${f.deadline}` : '-')}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                  ))}
+                </TableBody>
+              </Table>
             </TabsContent>
 
             {/* Tab Certificados */}
             <TabsContent value="certificados" className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <h4 className="text-sm font-medium">Solicitud de certificados</h4>
-                <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">Datos de ejemplo</Badge>
-                <Button size="sm" onClick={handleRequestCertificate}>
-                  <FileText className="h-4 w-4 mr-1" />
-                  Solicitar certificado
-                </Button>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Certificados y Documentación</h4>
+                <div className="flex items-center gap-2">
+                  <DemoBadge />
+                  <Button size="sm" onClick={handleRequestCertificate}>
+                    <FileText className="h-4 w-4 mr-1" />
+                    Solicitar Certificado
+                  </Button>
+                </div>
               </div>
 
-              <ScrollArea className="h-[350px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Trabajador/Empresa</TableHead>
-                      <TableHead>Fecha solicitud</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead></TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Trabajador/Empresa</TableHead>
+                    <TableHead>Fecha Solicitud</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {certificates.map((cert) => (
+                    <TableRow key={cert.id}>
+                      <TableCell className="font-medium">{cert.type}</TableCell>
+                      <TableCell>{cert.company ? 'Empresa' : cert.worker}</TableCell>
+                      <TableCell>{cert.requestDate}</TableCell>
+                      <TableCell>{getStatusBadge(cert.status)}</TableCell>
+                      <TableCell>
+                        {cert.status === 'ready' && (
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4 mr-1" />
+                            Descargar
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {certificates.map((cert) => (
-                      <TableRow key={cert.id}>
-                        <TableCell className="font-medium">{cert.type}</TableCell>
-                        <TableCell>{cert.worker || 'Empresa'}</TableCell>
-                        <TableCell>{cert.requestDate}</TableCell>
-                        <TableCell>{getStatusBadge(cert.status)}</TableCell>
-                        <TableCell>
-                          {cert.status === 'ready' && (
-                            <Button variant="ghost" size="sm">
-                              <FileDown className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                  ))}
+                </TableBody>
+              </Table>
             </TabsContent>
 
-            {/* Tab Tipos de cotización */}
+            {/* Tab Tipos 2026 */}
             <TabsContent value="tipos" className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Tipos Empresa</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Contingencias Comunes</span>
-                      <span className="font-medium">{SS_RATES.cc_company}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Desempleo (General)</span>
-                      <span className="font-medium">{SS_RATES.unemployment_general_company}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>FOGASA</span>
-                      <span className="font-medium">{SS_RATES.fogasa}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Formación Profesional</span>
-                      <span className="font-medium">{SS_RATES.fp_company}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>MEI (Mecanismo Equidad)</span>
-                      <span className="font-medium">{SS_RATES.mef}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm border-t pt-2 font-semibold">
-                      <span>Total (sin AT/EP)</span>
-                      <span>~30%</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Tipos Trabajador</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Contingencias Comunes</span>
-                      <span className="font-medium">{SS_RATES.cc_worker}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Desempleo (General)</span>
-                      <span className="font-medium">{SS_RATES.unemployment_general_worker}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Formación Profesional</span>
-                      <span className="font-medium">{SS_RATES.fp_worker}%</span>
-                    </div>
-                    <div className="flex justify-between text-sm border-t pt-2 font-semibold">
-                      <span>Total</span>
-                      <span>~6.35%</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="bg-amber-500/5 border-amber-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="font-medium text-amber-700">Nota importante</p>
-                      <p className="text-muted-foreground">
-                        Los tipos de AT/EP varían según el CNAE de la empresa. Consulte el cuadro de 
-                        primas de la Disposición Adicional Cuarta de la LGSS para conocer el tipo aplicable.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <h4 className="text-sm font-medium">Tipos de Cotización SS España 2026</h4>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Concepto</TableHead>
+                    <TableHead className="text-right">Empresa %</TableHead>
+                    <TableHead className="text-right">Trabajador %</TableHead>
+                    <TableHead className="text-right">Total %</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Contingencias Comunes</TableCell>
+                    <TableCell className="text-right">{SS_RATES.cc_company}%</TableCell>
+                    <TableCell className="text-right">{SS_RATES.cc_worker}%</TableCell>
+                    <TableCell className="text-right font-medium">{(SS_RATES.cc_company + SS_RATES.cc_worker).toFixed(2)}%</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Desempleo (General)</TableCell>
+                    <TableCell className="text-right">{SS_RATES.unemployment_general_company}%</TableCell>
+                    <TableCell className="text-right">{SS_RATES.unemployment_general_worker}%</TableCell>
+                    <TableCell className="text-right font-medium">{(SS_RATES.unemployment_general_company + SS_RATES.unemployment_general_worker).toFixed(2)}%</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Desempleo (Temporal)</TableCell>
+                    <TableCell className="text-right">{SS_RATES.unemployment_temporal_company}%</TableCell>
+                    <TableCell className="text-right">{SS_RATES.unemployment_temporal_worker}%</TableCell>
+                    <TableCell className="text-right font-medium">{(SS_RATES.unemployment_temporal_company + SS_RATES.unemployment_temporal_worker).toFixed(2)}%</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>FOGASA</TableCell>
+                    <TableCell className="text-right">{SS_RATES.fogasa}%</TableCell>
+                    <TableCell className="text-right">-</TableCell>
+                    <TableCell className="text-right font-medium">{SS_RATES.fogasa}%</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Formación Profesional</TableCell>
+                    <TableCell className="text-right">{SS_RATES.fp_company}%</TableCell>
+                    <TableCell className="text-right">{SS_RATES.fp_worker}%</TableCell>
+                    <TableCell className="text-right font-medium">{(SS_RATES.fp_company + SS_RATES.fp_worker).toFixed(2)}%</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>MEI (Mecanismo Equidad)</TableCell>
+                    <TableCell className="text-right">{SS_RATES.mef}%</TableCell>
+                    <TableCell className="text-right">-</TableCell>
+                    <TableCell className="text-right font-medium">{SS_RATES.mef}%</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -691,32 +778,21 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
         open={showNewCommDialog}
         onOpenChange={setShowNewCommDialog}
         companyId={companyId}
-        onSuccess={() => toast.success('Comunicación enviada al Sistema RED')}
       />
-
       <SSCertificateRequestDialog
         open={showCertificateDialog}
         onOpenChange={setShowCertificateDialog}
         companyId={companyId}
-        onSuccess={() => toast.success('Certificado solicitado correctamente')}
       />
-
       <SSSILTRASubmitDialog
         open={showSILTRADialog}
         onOpenChange={setShowSILTRADialog}
         companyId={companyId}
-        period={selectedPeriod}
-        contributionData={currentContribution}
-        onSuccess={() => toast.success('Presentación SILTRA completada')}
       />
-
       <SiltraResponseDialog
         open={showSiltraResponseDialog}
         onOpenChange={setShowSiltraResponseDialog}
         companyId={companyId}
-        periodYear={parseInt(selectedPeriod.split('-')[0]) || 2026}
-        periodMonth={parseInt(selectedPeriod.split('-')[1]) || 1}
-        onSuccess={() => toast.success('Respuesta TGSS registrada')}
       />
     </div>
   );
