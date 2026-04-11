@@ -1,7 +1,8 @@
 /**
  * HRPayrollPeriodManager — V2-ES.7 Paso 3: cierre formal + resumen ejecutivo
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usePayrollPreflight } from '@/hooks/erp/hr/usePayrollPreflight';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -187,16 +188,9 @@ export function HRPayrollPeriodManager({
         </div>
       </div>
 
-      {/* P1.7 — Mini preflight banner */}
+      {/* P1.7C — Enriched mini preflight card */}
       {onNavigateToPreflight && periods.length > 0 && (
-        <button
-          onClick={onNavigateToPreflight}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
-        >
-          <Gauge className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-sm font-medium text-foreground">Preflight Nómina</span>
-          <span className="text-xs text-muted-foreground ml-auto">Ver cockpit completo del ciclo →</span>
-        </button>
+        <MiniPreflightCard companyId={companyId} onNavigateToPreflight={onNavigateToPreflight} />
       )}
 
       {periods.length === 0 && !isLoading && (
