@@ -312,3 +312,56 @@ export const RETRIBUTIVE_AUDIT_DISCLAIMER =
   'La valoración de puestos es una herramienta de soporte analítico. ' +
   'Las diferencias retributivas requieren análisis individualizado conforme al RD 902/2020. ' +
   'Los porcentajes de contextualización son orientativos y no constituyen justificación legal de brechas salariales.';
+
+// ─── Equity VPT Context (S9.5) ──────────────────────────────
+
+export const VPT_CONTEXT_DISCLAIMER =
+  'La información de Valoración de Puestos de Trabajo (VPT) se presenta como contexto descriptivo complementario. ' +
+  'No modifica, ajusta ni corrige las métricas de brecha salarial existentes. ' +
+  'Las diferencias de score VPT entre grupos no constituyen explicación ni justificación de brechas retributivas.';
+
+export interface EquityVPTContext {
+  /** Whether any approved VPT valuations exist for the company */
+  vptContextAvailable: boolean;
+  /** % of active employees whose position has an approved VPT valuation */
+  vptCoverage: number;
+  /** Total positions with approved VPT */
+  positionsValued: number;
+  /** Total unique positions occupied by active employees */
+  totalPositions: number;
+  /** Average VPT score for male employees (null if no data) */
+  avgScoreMale: number | null;
+  /** Average VPT score for female employees (null if no data) */
+  avgScoreFemale: number | null;
+  /** Absolute difference between M/F average scores */
+  scoreDifference: number | null;
+  /** Whether the score difference is considered relevant (≥15 points) */
+  divergenceRelevant: boolean;
+  /** Prudent descriptive insight, never justificative */
+  insight: string | null;
+  /** Disclaimer text */
+  disclaimer: string;
+}
+
+export interface FairnessVPTSummary {
+  /** Whether VPT data is available */
+  available: boolean;
+  /** Positions valued / total positions ratio */
+  coverageRatio: number;
+  positionsValued: number;
+  totalPositions: number;
+  /** Average VPT score by gender */
+  avgScoreMale: number | null;
+  avgScoreFemale: number | null;
+  /** Score difference M-F (absolute) */
+  scoreDifference: number | null;
+  /** Alert if divergence is relevant (≥15 points) AND gap is also present */
+  divergenceAlert: FairnessVPTAlert | null;
+  /** Disclaimer */
+  disclaimer: string;
+}
+
+export interface FairnessVPTAlert {
+  level: 'info' | 'warning';
+  message: string;
+}
