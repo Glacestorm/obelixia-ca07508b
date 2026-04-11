@@ -359,7 +359,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Código CNO *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    Código CNO *
+                    {prefilledFields.has('occupation_code') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.occupation_code || ''}
@@ -369,7 +372,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">DNI/NIE *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    DNI/NIE *
+                    {prefilledFields.has('dni_nie') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.dni_nie || ''}
@@ -378,7 +384,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">NAF *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    NAF *
+                    {prefilledFields.has('naf') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.naf || ''}
@@ -387,7 +396,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">CCC *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    CCC *
+                    {prefilledFields.has('ccc') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.ccc || ''}
