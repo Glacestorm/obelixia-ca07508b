@@ -21,9 +21,17 @@ export type AEATArtifactStatus =
   | 'validated_internal'
   | 'dry_run_ready'
   | 'pending_approval'
+  | 'sent'
+  | 'accepted'
+  | 'rejected'
+  | 'confirmed'
+  | 'archived'
   | 'error';
 
-export const AEAT_STATUS_META: Record<AEATArtifactStatus, { label: string; color: string; disclaimer: string }> = {
+/** Periodicity for Modelo 111: trimestral (default) or mensual (grandes empresas) */
+export type Modelo111Periodicity = 'trimestral' | 'mensual';
+
+export const AEAT_STATUS_META: Record<AEATArtifactStatus, { label: string; color: string; disclaimer: string; isPostSubmission?: boolean }> = {
   generated: {
     label: 'Generado (interno)',
     color: 'bg-blue-500/10 text-blue-700',
@@ -43,6 +51,36 @@ export const AEAT_STATUS_META: Record<AEATArtifactStatus, { label: string; color
     label: 'Pendiente de aprobación',
     color: 'bg-amber-500/10 text-amber-700',
     disclaimer: 'Requiere aprobación interna. NO es una declaración oficial.',
+  },
+  sent: {
+    label: 'Enviado (registrado)',
+    color: 'bg-sky-500/10 text-sky-700',
+    disclaimer: 'Marcado como enviado. isRealSubmissionBlocked === true: el envío real no se ha producido.',
+    isPostSubmission: true,
+  },
+  accepted: {
+    label: 'Aceptado por AEAT',
+    color: 'bg-emerald-500/10 text-emerald-700',
+    disclaimer: 'Respuesta AEAT registrada como aceptada. Verificar con referencia CSV oficial.',
+    isPostSubmission: true,
+  },
+  rejected: {
+    label: 'Rechazado por AEAT',
+    color: 'bg-red-500/10 text-red-700',
+    disclaimer: 'Respuesta AEAT registrada como rechazada. Requiere corrección y reenvío.',
+    isPostSubmission: true,
+  },
+  confirmed: {
+    label: 'Confirmado (reconciliado)',
+    color: 'bg-green-500/10 text-green-700',
+    disclaimer: 'Artefacto confirmado tras reconciliación fiscal completa.',
+    isPostSubmission: true,
+  },
+  archived: {
+    label: 'Archivado',
+    color: 'bg-gray-500/10 text-gray-700',
+    disclaimer: 'Artefacto archivado. Período fiscal cerrado.',
+    isPostSubmission: true,
   },
   error: {
     label: 'Error en validación',
@@ -477,7 +515,12 @@ const VALID_TRANSITIONS: Record<AEATArtifactStatus, AEATArtifactStatus[]> = {
   generated: ['validated_internal', 'error'],
   validated_internal: ['dry_run_ready', 'error'],
   dry_run_ready: ['pending_approval', 'error'],
-  pending_approval: ['validated_internal'],
+  pending_approval: ['sent', 'validated_internal'],
+  sent: ['accepted', 'rejected', 'error'],
+  accepted: ['confirmed', 'archived'],
+  rejected: ['generated', 'error'],
+  confirmed: ['archived'],
+  archived: [],
   error: ['generated'],
 };
 
