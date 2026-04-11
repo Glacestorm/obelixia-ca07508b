@@ -41,6 +41,58 @@ serve(async (req) => {
     }
     // --- END AUTH + TENANT VALIDATION ---
 
+    // --- VPT CONTEXT INJECTION (S9.8) ---
+    let vptContextBlock = '';
+    try {
+      const { data: vptData } = await authResult.client
+        .from('erp_hr_job_valuations')
+        .select('position_id, total_score')
+        .eq('company_id', companyId)
+        .eq('status', 'approved');
+
+      if (vptData && vptData.length > 0) {
+        const { data: emps } = await authResult.client
+          .from('erp_hr_employees')
+          .select('id, gender, position_id')
+          .eq('company_id', companyId)
+          .eq('is_active', true);
+
+        if (emps && emps.length > 0) {
+          const vptMap: Record<string, number> = {};
+          for (const v of vptData) {
+            if (v.position_id && v.total_score != null) {
+              vptMap[v.position_id] = v.total_score;
+            }
+          }
+
+          const maleScores: number[] = [];
+          const femaleScores: number[] = [];
+          for (const e of emps) {
+            if (e.position_id && vptMap[e.position_id] !== undefined) {
+              if (e.gender === 'M') maleScores.push(vptMap[e.position_id]);
+              else if (e.gender === 'F') femaleScores.push(vptMap[e.position_id]);
+            }
+          }
+
+          const matched = maleScores.length + femaleScores.length;
+          if (matched > 0) {
+            const avgM = maleScores.length > 0 ? (maleScores.reduce((a, b) => a + b, 0) / maleScores.length).toFixed(1) : 'N/A';
+            const avgF = femaleScores.length > 0 ? (femaleScores.reduce((a, b) => a + b, 0) / femaleScores.length).toFixed(1) : 'N/A';
+            const diff = (maleScores.length > 0 && femaleScores.length > 0)
+              ? (parseFloat(avgM as string) - parseFloat(avgF as string)).toFixed(1)
+              : 'N/A';
+
+            vptContextBlock = `\n\n=== CONTEXTO VPT (INFORMATIVO — NO JUSTIFICATIVO) ===\nPosiciones valoradas: ${vptData.length}\nEmpleados con match VPT: ${matched}\nScore medio VPT H: ${avgM}\nScore medio VPT M: ${avgF}\nDiferencia media VPT: ${diff}\nEste contexto es descriptivo y no debe usarse para afirmar que una brecha está justificada o explicada por VPT.\n=== FIN CONTEXTO VPT ===`;
+          }
+        }
+      }
+    } catch (vptErr) {
+      console.warn('[erp-hr-people-analytics-ai] VPT context query failed, continuing without VPT:', vptErr);
+    }
+    // --- END VPT CONTEXT ---
+
+    const vptGuardrail = '\nSi se incluyen datos de Valoración de Puestos de Trabajo (VPT), utilízalos como contexto descriptivo complementario. NUNCA afirmes que una brecha salarial está "justificada", "explicada completamente", "corregida" o "resuelta" por los scores VPT.';
+
     let systemPrompt = '';
     let userPrompt = '';
     let streaming = false;
@@ -65,8 +117,8 @@ RESPONDE SIEMPRE en JSON estricto con esta estructura:
     }
   ]
 }
-Máximo 5 insights, ordenados por severidad.`;
-        userPrompt = `Dominio: ${domain || 'hr'}\nContexto de métricas:\n${JSON.stringify(context || {}, null, 2)}`;
+Máximo 5 insights, ordenados por severidad.` + vptGuardrail;
+        userPrompt = `Dominio: ${domain || 'hr'}\nContexto de métricas:\n${JSON.stringify(context || {}, null, 2)}` + vptContextBlock;
         break;
 
       case 'explain':
@@ -78,8 +130,8 @@ RESPONDE en JSON estricto:
   "probableCauses": ["causa 1", "causa 2"],
   "recommendedAction": "string con acción recomendada",
   "severity": "high" | "medium" | "low"
-}`;
-        userPrompt = `Datos de la anomalía:\n${JSON.stringify(anomalyData || {}, null, 2)}`;
+}` + vptGuardrail;
+        userPrompt = `Datos de la anomalía:\n${JSON.stringify(anomalyData || {}, null, 2)}` + vptContextBlock;
         break;
 
       case 'suggest':
@@ -98,8 +150,8 @@ RESPONDE en JSON estricto:
     }
   ]
 }
-Máximo 5 sugerencias.`;
-        userPrompt = `Contexto de métricas:\n${JSON.stringify(context || {}, null, 2)}`;
+Máximo 5 sugerencias.` + vptGuardrail;
+        userPrompt = `Contexto de métricas:\n${JSON.stringify(context || {}, null, 2)}` + vptContextBlock;
         break;
 
       case 'copilot':
@@ -107,7 +159,7 @@ Máximo 5 sugerencias.`;
         systemPrompt = `Eres un copiloto de RRHH y Payroll con experiencia enterprise. Respondes preguntas sobre métricas, tendencias, anomalías y compliance.
 Tienes acceso al contexto de métricas del sistema. Sé conciso, profesional y accionable.
 Usa markdown para formatear tus respuestas. Incluye datos numéricos cuando sea relevante.
-Si detectas un problema, sugiere crear una tarea de seguimiento.`;
+Si detectas un problema, sugiere crear una tarea de seguimiento.` + vptGuardrail;
         break;
 
       default:
@@ -128,6 +180,7 @@ Si detectas un problema, sugiere crear una tarea de seguimiento.`;
           messages: [
             { role: 'system', content: systemPrompt },
             ...(context ? [{ role: 'system', content: `Contexto de métricas actuales:\n${JSON.stringify(context)}` }] : []),
+            ...(vptContextBlock ? [{ role: 'system', content: vptContextBlock }] : []),
             ...messages,
           ],
           stream: true,
