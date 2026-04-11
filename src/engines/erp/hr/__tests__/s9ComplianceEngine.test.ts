@@ -11,6 +11,8 @@ import {
   computePresenciality,
   computeVPTScore,
   detectVPTIncoherences,
+  suggestEquivalentBand,
+  compareVPTValuations,
   DEFAULT_VPT_METHODOLOGY,
 } from '../s9ComplianceEngine';
 
