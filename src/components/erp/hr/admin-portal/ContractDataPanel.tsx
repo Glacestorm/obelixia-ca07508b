@@ -5,6 +5,7 @@
  * Mirrors RegistrationDataPanel pattern (alta/afiliación).
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEmployeeMasterPrefill, type PrefilledFieldSet } from '@/hooks/erp/hr/useEmployeeMasterPrefill';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
