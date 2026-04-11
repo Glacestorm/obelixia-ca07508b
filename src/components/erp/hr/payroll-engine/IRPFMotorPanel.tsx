@@ -10,11 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import {
   Calculator, FileText, TrendingUp, AlertTriangle,
   CheckCircle, RefreshCw, Download, Users, ShieldAlert
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { FiscalIRPFTrackingCard } from './FiscalIRPFTrackingCard';
 import { AEATResponseDialog } from './AEATResponseDialog';
 import { AEAT_STATUS_META, type AEATArtifactStatus } from '@/engines/erp/hr/aeatArtifactEngine';

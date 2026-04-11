@@ -1,15 +1,19 @@
 /**
  * TaskDetail — Slide-over detail panel for a task
+ * H1.1: UUID→name lookups for employee, assigned_to; copy button for technical IDs
  */
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
   CheckCircle, Clock, AlertTriangle, ArrowUpCircle,
-  User, Calendar, Link2, Tag, Zap
+  User, Calendar, Link2, Tag, Zap, Copy
 } from 'lucide-react';
 import type { HRTask } from '@/hooks/erp/hr/useHRTasksEngine';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Props {
   task: HRTask;
@@ -39,8 +43,80 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   employee: 'Empleado',
 };
 
+/** Batch-resolve UUIDs to human names */
+function useEntityNameResolver(task: HRTask) {
+  const [names, setNames] = useState<Record<string, string>>({});
+
+  // Collect all unique IDs that need resolving
+  const idsToResolve = useMemo(() => {
+    const employeeIds = new Set<string>();
+    const profileIds = new Set<string>();
+
+    if (task.employee_id) employeeIds.add(task.employee_id);
+    if (task.assigned_to) profileIds.add(task.assigned_to);
+
+    return { employeeIds: [...employeeIds], profileIds: [...profileIds] };
+  }, [task.employee_id, task.assigned_to]);
+
+  useEffect(() => {
+    const resolve = async () => {
+      const resolved: Record<string, string> = {};
+
+      // Resolve employees
+      if (idsToResolve.employeeIds.length > 0) {
+        const { data } = await supabase
+          .from('erp_hr_employees')
+          .select('id, first_name, last_name')
+          .in('id', idsToResolve.employeeIds);
+        data?.forEach(e => {
+          resolved[e.id] = `${e.first_name} ${e.last_name}`.trim();
+        });
+      }
+
+      // Resolve profiles (assigned_to is a user_id)
+      if (idsToResolve.profileIds.length > 0) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', idsToResolve.profileIds);
+        data?.forEach(p => {
+          resolved[p.id] = p.full_name || p.email || p.id.slice(0, 8);
+        });
+      }
+
+      setNames(resolved);
+    };
+
+    resolve();
+  }, [idsToResolve]);
+
+  return names;
+}
+
+function CopyableId({ label, id }: { label: string; id: string }) {
+  return (
+    <p className="text-muted-foreground flex items-center gap-1">
+      {label}: <span className="font-medium text-foreground font-mono text-xs">{id.slice(0, 8)}…</span>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-5 w-5 ml-0.5"
+        onClick={() => { navigator.clipboard.writeText(id); toast.info('ID copiado'); }}
+      >
+        <Copy className="h-3 w-3" />
+      </Button>
+    </p>
+  );
+}
+
 export function TaskDetail({ task, engine, onClose }: Props) {
   const isActive = task.status === 'pending' || task.status === 'in_progress';
+  const names = useEntityNameResolver(task);
+
+  const resolvedName = (id: string | null | undefined) => {
+    if (!id) return null;
+    return names[id] || null;
+  };
 
   return (
     <div className="space-y-5 mt-4">
@@ -76,7 +152,7 @@ export function TaskDetail({ task, engine, onClose }: Props) {
         {task.assigned_to && (
           <div>
             <p className="text-muted-foreground flex items-center gap-1"><User className="h-3 w-3" /> Asignado a</p>
-            <p className="font-medium">{task.assigned_to.slice(0, 8)}...</p>
+            <p className="font-medium">{resolvedName(task.assigned_to) || task.assigned_to.slice(0, 8) + '…'}</p>
           </div>
         )}
         {task.assigned_role && (
@@ -111,7 +187,7 @@ export function TaskDetail({ task, engine, onClose }: Props) {
         )}
       </div>
 
-      {/* Source / Origin context — V2-ES.2 Paso 3 */}
+      {/* Source / Origin context */}
       {(task.source_type || task.related_entity_type || task.workflow_instance_id) && (
         <>
           <Separator />
@@ -124,19 +200,13 @@ export function TaskDetail({ task, engine, onClose }: Props) {
                 </p>
               )}
               {task.related_entity_type && task.related_entity_id && (
-                <p className="text-muted-foreground">
-                  {ENTITY_TYPE_LABELS[task.related_entity_type] || task.related_entity_type}: <span className="font-medium text-foreground">{task.related_entity_id.slice(0, 8)}...</span>
-                </p>
+                <CopyableId label={ENTITY_TYPE_LABELS[task.related_entity_type] || task.related_entity_type} id={task.related_entity_id} />
               )}
               {task.workflow_instance_id && (
-                <p className="text-muted-foreground">
-                  Workflow: <span className="font-medium text-foreground">{task.workflow_instance_id.slice(0, 8)}...</span>
-                </p>
+                <CopyableId label="Workflow" id={task.workflow_instance_id} />
               )}
               {task.source_id && task.source_id !== task.related_entity_id && (
-                <p className="text-muted-foreground">
-                  Ref. origen: <span className="font-medium text-foreground">{task.source_id.slice(0, 8)}...</span>
-                </p>
+                <CopyableId label="Ref. origen" id={task.source_id} />
               )}
             </div>
           </div>
@@ -150,11 +220,15 @@ export function TaskDetail({ task, engine, onClose }: Props) {
           <div>
             <p className="text-sm font-medium mb-2 flex items-center gap-1"><Link2 className="h-3 w-3" /> Entidades relacionadas</p>
             <div className="space-y-1 text-sm">
-              {task.employee_id && <p className="text-muted-foreground">Empleado: {task.employee_id.slice(0, 8)}...</p>}
-              {task.contract_id && <p className="text-muted-foreground">Contrato: {task.contract_id.slice(0, 8)}...</p>}
-              {task.payroll_record_id && <p className="text-muted-foreground">Nómina: {task.payroll_record_id.slice(0, 8)}...</p>}
-              {task.submission_id && <p className="text-muted-foreground">Envío: {task.submission_id.slice(0, 8)}...</p>}
-              {task.assignment_id && <p className="text-muted-foreground">Movilidad: {task.assignment_id.slice(0, 8)}...</p>}
+              {task.employee_id && (
+                <p className="text-muted-foreground">
+                  Empleado: <span className="font-medium text-foreground">{resolvedName(task.employee_id) || task.employee_id.slice(0, 8) + '…'}</span>
+                </p>
+              )}
+              {task.contract_id && <CopyableId label="Contrato" id={task.contract_id} />}
+              {task.payroll_record_id && <CopyableId label="Nómina" id={task.payroll_record_id} />}
+              {task.submission_id && <CopyableId label="Envío" id={task.submission_id} />}
+              {task.assignment_id && <CopyableId label="Movilidad" id={task.assignment_id} />}
             </div>
           </div>
         </>
