@@ -1,6 +1,9 @@
 /**
  * S9VPTWorkspace — Valoración de Puestos de Trabajo
  * Directiva UE 2023/970, Art. 4
+ *
+ * Status semantics (aligned with useHRVersionRegistry):
+ *   draft → review → approved (vigente) → closed / superseded
  */
 
 import { memo, useState, useCallback, useMemo } from 'react';
@@ -22,7 +25,7 @@ import {
   Clock,
   Eye,
   FileCheck,
-  Archive,
+  XCircle,
   Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,6 +33,7 @@ import { useS9VPT, type VPTRow } from '@/hooks/erp/hr/useS9VPT';
 import { S9ReadinessBadge } from '../shared/S9ReadinessBadge';
 import {
   computeVPTScore,
+  suggestEquivalentBand,
   DEFAULT_VPT_METHODOLOGY,
   VPT_SUBFACTOR_LABELS,
   VPT_FACTOR_LABELS,
@@ -42,10 +46,10 @@ interface S9VPTWorkspaceProps {
 
 const STATUS_CONFIG: Record<VPTValuationStatus, { label: string; icon: any; color: string }> = {
   draft: { label: 'Borrador', icon: Clock, color: 'bg-muted text-muted-foreground' },
-  under_review: { label: 'En revisión', icon: Eye, color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
-  approved: { label: 'Aprobado', icon: FileCheck, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  active: { label: 'Activo', icon: CheckCircle, color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  archived: { label: 'Archivado', icon: Archive, color: 'bg-secondary text-secondary-foreground' },
+  review: { label: 'En revisión', icon: Eye, color: 'bg-accent text-accent-foreground' },
+  approved: { label: 'Vigente', icon: CheckCircle, color: 'bg-primary/10 text-primary' },
+  closed: { label: 'Cerrado', icon: FileCheck, color: 'bg-secondary text-secondary-foreground' },
+  superseded: { label: 'Superada', icon: XCircle, color: 'bg-muted text-muted-foreground' },
 };
 
 function StatusBadge({ status }: { status: VPTValuationStatus }) {
@@ -62,12 +66,12 @@ function StatusBadge({ status }: { status: VPTValuationStatus }) {
 // ─── Dashboard View ─────────────────────────────────────────
 
 function VPTDashboard({ companyId }: { companyId: string }) {
-  const { analytics, incoherences, isLoading } = useS9VPT(companyId);
+  const { analytics, incoherences } = useS9VPT(companyId);
 
   const kpis = [
     { label: 'Cobertura VPT', value: `${analytics.coverage}%`, sub: `${analytics.valuatedPositions}/${analytics.totalPositions} puestos` },
     { label: 'Score medio', value: analytics.avgScore.toFixed(1), sub: 'Escala 0-100' },
-    { label: 'Valoraciones activas', value: analytics.byStatus.active, sub: `${analytics.totalValuations} total` },
+    { label: 'Valoraciones vigentes', value: analytics.byStatus.approved, sub: `${analytics.totalValuations} total` },
     { label: 'Incoherencias', value: incoherences.length, sub: incoherences.length > 0 ? 'Requieren revisión' : 'Sin alertas' },
   ];
 
@@ -86,17 +90,17 @@ function VPTDashboard({ companyId }: { companyId: string }) {
       </div>
 
       {incoherences.length > 0 && (
-        <Card className="border-yellow-300 dark:border-yellow-700">
+        <Card className="border-destructive/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-destructive" />
               Incoherencias detectadas
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {incoherences.map((inc, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm p-2 rounded bg-yellow-50 dark:bg-yellow-950">
-                <Badge variant="outline" className={inc.level === 'critical' ? 'border-destructive text-destructive' : 'border-yellow-600 text-yellow-700'}>
+              <div key={i} className="flex items-start gap-2 text-sm p-2 rounded bg-destructive/5">
+                <Badge variant="outline" className={inc.level === 'critical' ? 'border-destructive text-destructive' : 'border-muted-foreground text-muted-foreground'}>
                   {inc.level}
                 </Badge>
                 <span>{inc.message}</span>
@@ -121,7 +125,7 @@ function VPTDashboard({ companyId }: { companyId: string }) {
 // ─── Valuation List ─────────────────────────────────────────
 
 function VPTList({ companyId, onSelect }: { companyId: string; onSelect: (v: VPTRow) => void }) {
-  const { valuations, positions, isLoading, createValuation, isCreating } = useS9VPT(companyId);
+  const { valuations, positions, createValuation, isCreating } = useS9VPT(companyId);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedPositionId, setSelectedPositionId] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -204,7 +208,11 @@ function VPTList({ companyId, onSelect }: { companyId: string; onSelect: (v: VPT
               <CardContent className="py-3 px-4 flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{v.position_name}</p>
-                  <p className="text-xs text-muted-foreground">{v.job_level ?? 'Sin nivel'}</p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{v.job_level ?? 'Sin nivel'}</span>
+                    <span>·</span>
+                    <span>v{v.methodology_version}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
@@ -226,11 +234,20 @@ function VPTList({ companyId, onSelect }: { companyId: string; onSelect: (v: VPT
 // ─── Valuation Detail ───────────────────────────────────────
 
 function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; companyId: string; onBack: () => void }) {
-  const { updateScores, transitionStatus, isUpdating } = useS9VPT(companyId);
+  const { updateScores, transitionStatus, setEquivalentBand, isUpdating } = useS9VPT(companyId);
   const [scores, setScores] = useState<VPTFactorScores>(valuation.factor_scores);
   const [notes, setNotes] = useState(valuation.notes ?? '');
 
-  const breakdown = useMemo(() => computeVPTScore(scores, valuation.methodology_snapshot ?? DEFAULT_VPT_METHODOLOGY), [scores, valuation.methodology_snapshot]);
+  const methodology = valuation.methodology_snapshot ?? DEFAULT_VPT_METHODOLOGY;
+  const breakdown = useMemo(() => computeVPTScore(scores, methodology), [scores, methodology]);
+
+  // Band suggestion — separate from score, derived only
+  const bandSuggestion = useMemo(() => {
+    const allApproved = []; // Would need more context; show suggestion button instead
+    return valuation.equivalent_band_min != null
+      ? { min: valuation.equivalent_band_min, max: valuation.equivalent_band_max }
+      : null;
+  }, [valuation]);
 
   const handleSubfactorChange = useCallback((factor: VPTFactor, subfactor: string, value: number) => {
     setScores(prev => ({
@@ -244,23 +261,23 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
       await updateScores({
         valuationId: valuation.id,
         factorScores: scores,
-        methodology: valuation.methodology_snapshot ?? DEFAULT_VPT_METHODOLOGY,
+        methodology,
         notes,
       });
       toast.success('Puntuaciones guardadas');
     } catch {
       toast.error('Error al guardar');
     }
-  }, [updateScores, valuation.id, scores, notes, valuation.methodology_snapshot]);
+  }, [updateScores, valuation.id, scores, notes, methodology]);
 
   const handleTransition = useCallback(async (newStatus: VPTValuationStatus) => {
     try {
-      await transitionStatus({ valuationId: valuation.id, newStatus });
+      await transitionStatus({ valuationId: valuation.id, newStatus, positionId: valuation.position_id });
       toast.success(`Estado cambiado a ${STATUS_CONFIG[newStatus].label}`);
     } catch {
       toast.error('Error al cambiar estado');
     }
-  }, [transitionStatus, valuation.id]);
+  }, [transitionStatus, valuation.id, valuation.position_id]);
 
   const isEditable = valuation.status === 'draft';
 
@@ -272,18 +289,15 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
           <StatusBadge status={valuation.status} />
           {isEditable && (
             <>
-              <Button size="sm" variant="outline" onClick={() => handleTransition('under_review')}>Enviar a revisión</Button>
+              <Button size="sm" variant="outline" onClick={() => handleTransition('review')}>Enviar a revisión</Button>
               <Button size="sm" onClick={handleSave} disabled={isUpdating}>Guardar</Button>
             </>
           )}
-          {valuation.status === 'under_review' && (
-            <Button size="sm" onClick={() => handleTransition('approved')}>Aprobar</Button>
+          {valuation.status === 'review' && (
+            <Button size="sm" onClick={() => handleTransition('approved')}>Aprobar (vigente)</Button>
           )}
           {valuation.status === 'approved' && (
-            <Button size="sm" onClick={() => handleTransition('active')}>Activar</Button>
-          )}
-          {valuation.status === 'active' && (
-            <Button size="sm" variant="outline" onClick={() => handleTransition('archived')}>Archivar</Button>
+            <Button size="sm" variant="outline" onClick={() => handleTransition('closed')}>Cerrar</Button>
           )}
         </div>
       </div>
@@ -292,7 +306,7 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
         <CardHeader className="pb-2">
           <CardTitle className="text-base">{valuation.position_name}</CardTitle>
           <p className="text-xs text-muted-foreground">
-            Nivel: {valuation.job_level ?? '—'} · Banda: {valuation.salary_band_min ?? '—'}€ – {valuation.salary_band_max ?? '—'}€
+            Nivel: {valuation.job_level ?? '—'} · Banda actual: {valuation.salary_band_min ?? '—'}€ – {valuation.salary_band_max ?? '—'}€ · Metodología: v{valuation.methodology_version}
           </p>
         </CardHeader>
         <CardContent>
@@ -311,6 +325,13 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
               ))}
             </div>
           </div>
+
+          {bandSuggestion && (
+            <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+              Banda equivalente sugerida: {bandSuggestion.min}€ – {bandSuggestion.max}€
+              <span className="italic ml-1">(recomendación derivada, no parte del score)</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -368,14 +389,14 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
 
 function VPTComparator({ companyId }: { companyId: string }) {
   const { valuations } = useS9VPT(companyId);
-  const activeVals = useMemo(() => valuations.filter(v => v.status === 'active'), [valuations]);
+  const approvedVals = useMemo(() => valuations.filter(v => v.status === 'approved'), [valuations]);
 
-  if (activeVals.length < 2) {
+  if (approvedVals.length < 2) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
           <BarChart3 className="h-10 w-10 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Se necesitan al menos 2 valoraciones activas para comparar</p>
+          <p className="text-sm">Se necesitan al menos 2 valoraciones vigentes para comparar</p>
         </CardContent>
       </Card>
     );
@@ -397,7 +418,7 @@ function VPTComparator({ companyId }: { companyId: string }) {
             </tr>
           </thead>
           <tbody>
-            {activeVals.map(v => {
+            {approvedVals.map(v => {
               const bd = computeVPTScore(v.factor_scores, v.methodology_snapshot ?? DEFAULT_VPT_METHODOLOGY);
               return (
                 <tr key={v.id} className="border-b hover:bg-muted/50">
