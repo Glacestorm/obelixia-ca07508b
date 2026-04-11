@@ -1,4 +1,11 @@
+/**
+ * Galia Smart Audit
+ * G1.1: Auth hardened with validateAuth
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +26,11 @@ serve(async (req) => {
   }
 
   try {
+    // --- G1.1: AUTH GATE ---
+    const authResult = await validateAuth(req);
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
+    // --- END AUTH GATE ---
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
@@ -128,15 +140,12 @@ RESPONDE EN JSON ESTRICTO:
         break;
 
       case 'get_stats':
+        // G1.1: Honest degradation — stats require DB integration
         return new Response(JSON.stringify({
           success: true,
           stats: {
-            totalAudits: 47,
-            findingsResolved: 189,
-            averageResolutionTime: 4.2,
-            complianceImprovement: 12.5,
-            anomaliesDetected: 23,
-            autoFixesApplied: 67
+            source: 'no_data_available',
+            message: 'Las estadísticas de auditoría requieren datos reales del módulo GALIA. Configure la integración con expedientes.',
           }
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -147,7 +156,9 @@ RESPONDE EN JSON ESTRICTO:
         return new Response(JSON.stringify({
           success: true,
           message: action === 'apply_autofix' ? 'Auto-fix aplicado' : 'Hallazgo resuelto',
-          findingId
+          findingId,
+          source: 'stub',
+          mode: 'requires_configuration',
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
