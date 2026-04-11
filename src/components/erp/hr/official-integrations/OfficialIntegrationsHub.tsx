@@ -36,6 +36,7 @@ import { useInstitutionalSubmission } from '@/hooks/erp/hr/useInstitutionalSubmi
 import { HRFilingsPanel, HRFileGeneratorPanel } from '@/components/hr/filings';
 import { LastMileOperationsDashboard } from './LastMileOperationsDashboard';
 import { OrganismReadinessPanel } from './OrganismReadinessPanel';
+import { useCredentialOnboarding } from '@/hooks/erp/hr/useCredentialOnboarding';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
