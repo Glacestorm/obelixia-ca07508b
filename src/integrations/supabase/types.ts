@@ -44920,6 +44920,7 @@ export type Database = {
           ai_analysis: Json | null
           approved_at: string | null
           approved_by: string | null
+          closed_at: string | null
           company_id: string
           coordination_legal_module_id: string | null
           cost_breakdown: Json | null
@@ -44940,10 +44941,13 @@ export type Database = {
           notice_given_at: string | null
           notice_period_days: number | null
           optimal_dates: Json | null
+          pipeline_state: string | null
+          pipeline_timeline: Json | null
           proposed_termination_date: string | null
           recommended_approach: string | null
           requested_at: string
           requested_by: string | null
+          settlement_snapshot: Json | null
           severance_calculated: boolean | null
           status: string
           termination_reason: string | null
@@ -44956,6 +44960,7 @@ export type Database = {
           ai_analysis?: Json | null
           approved_at?: string | null
           approved_by?: string | null
+          closed_at?: string | null
           company_id: string
           coordination_legal_module_id?: string | null
           cost_breakdown?: Json | null
@@ -44976,10 +44981,13 @@ export type Database = {
           notice_given_at?: string | null
           notice_period_days?: number | null
           optimal_dates?: Json | null
+          pipeline_state?: string | null
+          pipeline_timeline?: Json | null
           proposed_termination_date?: string | null
           recommended_approach?: string | null
           requested_at?: string
           requested_by?: string | null
+          settlement_snapshot?: Json | null
           severance_calculated?: boolean | null
           status?: string
           termination_reason?: string | null
@@ -44992,6 +45000,7 @@ export type Database = {
           ai_analysis?: Json | null
           approved_at?: string | null
           approved_by?: string | null
+          closed_at?: string | null
           company_id?: string
           coordination_legal_module_id?: string | null
           cost_breakdown?: Json | null
@@ -45012,10 +45021,13 @@ export type Database = {
           notice_given_at?: string | null
           notice_period_days?: number | null
           optimal_dates?: Json | null
+          pipeline_state?: string | null
+          pipeline_timeline?: Json | null
           proposed_termination_date?: string | null
           recommended_approach?: string | null
           requested_at?: string
           requested_by?: string | null
+          settlement_snapshot?: Json | null
           severance_calculated?: boolean | null
           status?: string
           termination_reason?: string | null
