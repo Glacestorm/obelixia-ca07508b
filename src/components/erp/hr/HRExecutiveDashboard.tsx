@@ -522,28 +522,28 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
               <CardContent className="p-4 text-center">
                 <UserPlus className="h-6 w-6 mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold">5</p>
+                <p className="text-2xl font-bold">{workforceStats.newHiresMonth}</p>
                 <p className="text-xs text-muted-foreground">Altas este mes</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
               <CardContent className="p-4 text-center">
                 <UserMinus className="h-6 w-6 mx-auto mb-2 text-warning" />
-                <p className="text-2xl font-bold">2</p>
+                <p className="text-2xl font-bold">{workforceStats.departuresMonth}</p>
                 <p className="text-xs text-muted-foreground">Bajas este mes</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
               <CardContent className="p-4 text-center">
                 <Calendar className="h-6 w-6 mx-auto mb-2 text-success" />
-                <p className="text-2xl font-bold">12</p>
+                <p className="text-2xl font-bold">{workforceStats.onLeave}</p>
                 <p className="text-xs text-muted-foreground">De vacaciones</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-accent/20 to-accent/10 border-accent/30">
               <CardContent className="p-4 text-center">
                 <Briefcase className="h-6 w-6 mx-auto mb-2 text-accent-foreground" />
-                <p className="text-2xl font-bold">3.2</p>
+                <p className="text-2xl font-bold">{workforceStats.avgTenureYears}</p>
                 <p className="text-xs text-muted-foreground">Años antigüedad media</p>
               </CardContent>
             </Card>
