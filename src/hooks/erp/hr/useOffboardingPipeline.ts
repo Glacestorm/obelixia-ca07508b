@@ -211,7 +211,7 @@ export function useOffboardingPipeline(companyId: string) {
 
       // Ledger event
       await writeLedger({
-        eventType: 'pipeline_state_changed',
+        eventType: 'system_event',
         entityType: 'termination',
         entityId: activeCase.id,
         beforeSnapshot: { state: activeCase.pipelineState },
