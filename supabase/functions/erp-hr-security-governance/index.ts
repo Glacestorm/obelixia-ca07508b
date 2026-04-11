@@ -284,8 +284,25 @@ FORMATO JSON estricto:
       (realEmps || []).forEach((e: any) => { const g = e.gender || 'unknown'; if (!genderStats[g]) genderStats[g] = { count: 0, total: 0 }; genderStats[g].count++; genderStats[g].total += Number(e.base_salary || 0); });
       const realContext = { total_active_employees: (realEmps || []).length, gender_distribution: Object.entries(genderStats).map(([g, s]) => ({ gender: g, count: s.count, avg_salary: Math.round(s.total / s.count) })), data_source: 'real_erp_data' };
 
+      // --- S9.7: VPT context injection (informative, non-justificative) ---
+      let vptContextBlock = '';
+      try {
+        const { data: vptData } = await userClient.from('erp_hr_job_valuations').select('position_title, total_score, gender_lessor').eq('company_id', company_id).eq('status', 'approved');
+        if (vptData && vptData.length > 0) {
+          const maleScores = vptData.filter((v: any) => v.gender_lessor === 'M').map((v: any) => Number(v.total_score || 0));
+          const femaleScores = vptData.filter((v: any) => v.gender_lessor === 'F').map((v: any) => Number(v.total_score || 0));
+          const avgM = maleScores.length > 0 ? Math.round(maleScores.reduce((a: number, b: number) => a + b, 0) / maleScores.length * 100) / 100 : null;
+          const avgF = femaleScores.length > 0 ? Math.round(femaleScores.reduce((a: number, b: number) => a + b, 0) / femaleScores.length * 100) / 100 : null;
+          const diff = (avgM !== null && avgF !== null) ? Math.round((avgM - avgF) * 100) / 100 : null;
+          vptContextBlock = `\n\n=== CONTEXTO VPT (INFORMATIVO — NO JUSTIFICATIVO) ===\nPosiciones valoradas: ${vptData.length}\n${avgM !== null ? `Score medio VPT posiciones H: ${avgM}` : 'Score medio VPT H: sin datos suficientes'}\n${avgF !== null ? `Score medio VPT posiciones M: ${avgF}` : 'Score medio VPT M: sin datos suficientes'}\n${diff !== null ? `Diferencia media VPT: ${diff}` : ''}\nEste contexto es descriptivo y no debe usarse para afirmar que una brecha está justificada o explicada por VPT.\n=== FIN CONTEXTO VPT ===`;
+        }
+      } catch (vptErr) {
+        console.log('[erp-hr-security-governance] VPT query failed (graceful degradation):', vptErr);
+      }
+
       systemPrompt = `Eres un experto en equidad organizacional, justicia laboral, RD 902/2020 y Directiva UE 2023/970.
 Analiza la situación de equidad basándote en DATOS REALES de nómina proporcionados.
+Si se incluyen datos de Valoración de Puestos de Trabajo (VPT), utilízalos como contexto descriptivo complementario. NUNCA afirmes que una brecha salarial está "justificada", "explicada completamente", "corregida" o "resuelta" por los scores VPT. Las diferencias de valoración NO constituyen justificación legal de brechas retributivas.
 FORMATO JSON estricto:
 {
   "overall_fairness_index": 0-100,
@@ -297,16 +314,32 @@ FORMATO JSON estricto:
   "data_source": "real",
   "executive_summary": "string"
 }`;
-      userPrompt = `Analiza la equidad organizacional con DATOS REALES: ${JSON.stringify({ ...params, real_data: realContext })}`;
-
+      userPrompt = `Analiza la equidad organizacional con DATOS REALES: ${JSON.stringify({ ...params, real_data: realContext })}${vptContextBlock}`;
     } else if (action === 'ai_pay_equity_analysis') {
       const { data: realEmps } = await userClient.from('erp_hr_employees').select('gender, base_salary, department_id, job_title, category, hire_date').eq('company_id', company_id).eq('status', 'active');
       const { data: depts } = await userClient.from('erp_hr_departments').select('id, name').eq('company_id', company_id);
       const dm: Record<string, string> = {}; (depts || []).forEach((d: any) => { dm[d.id] = d.name; });
       const enrichedEmps = (realEmps || []).map((e: any) => ({ gender: e.gender, base_salary: e.base_salary, department: dm[e.department_id] || 'N/A', job_title: e.job_title, category: e.category }));
 
+      // --- S9.7: VPT context injection (informative, non-justificative) ---
+      let vptContextBlock = '';
+      try {
+        const { data: vptData } = await userClient.from('erp_hr_job_valuations').select('position_title, total_score, gender_lessor').eq('company_id', company_id).eq('status', 'approved');
+        if (vptData && vptData.length > 0) {
+          const maleScores = vptData.filter((v: any) => v.gender_lessor === 'M').map((v: any) => Number(v.total_score || 0));
+          const femaleScores = vptData.filter((v: any) => v.gender_lessor === 'F').map((v: any) => Number(v.total_score || 0));
+          const avgM = maleScores.length > 0 ? Math.round(maleScores.reduce((a: number, b: number) => a + b, 0) / maleScores.length * 100) / 100 : null;
+          const avgF = femaleScores.length > 0 ? Math.round(femaleScores.reduce((a: number, b: number) => a + b, 0) / femaleScores.length * 100) / 100 : null;
+          const diff = (avgM !== null && avgF !== null) ? Math.round((avgM - avgF) * 100) / 100 : null;
+          vptContextBlock = `\n\n=== CONTEXTO VPT (INFORMATIVO — NO JUSTIFICATIVO) ===\nPosiciones valoradas: ${vptData.length}\n${avgM !== null ? `Score medio VPT posiciones H: ${avgM}` : 'Score medio VPT H: sin datos suficientes'}\n${avgF !== null ? `Score medio VPT posiciones M: ${avgF}` : 'Score medio VPT M: sin datos suficientes'}\n${diff !== null ? `Diferencia media VPT: ${diff}` : ''}\nEste contexto es descriptivo y no debe usarse para afirmar que una brecha está justificada o explicada por VPT.\n=== FIN CONTEXTO VPT ===`;
+        }
+      } catch (vptErr) {
+        console.log('[erp-hr-security-governance] VPT query failed (graceful degradation):', vptErr);
+      }
+
       systemPrompt = `Eres un auditor de equidad retributiva especializado en RD 902/2020 y Directiva UE 2023/970.
 Genera un análisis basado en DATOS REALES de ${enrichedEmps.length} empleados.
+Si se incluyen datos de Valoración de Puestos de Trabajo (VPT), utilízalos como contexto descriptivo complementario. NUNCA afirmes que una brecha salarial está "justificada", "explicada completamente", "corregida" o "resuelta" por los scores VPT. Las diferencias de valoración NO constituyen justificación legal de brechas retributivas.
 FORMATO JSON estricto:
 {
   "overall_equity_score": 0-100, "gap_percentage": number, "affected_employees": number, "remediation_cost": number,
@@ -315,8 +348,7 @@ FORMATO JSON estricto:
   "recommendations": [{ "action": "string", "priority": "high|medium|low", "cost_estimate": number, "timeline": "string" }],
   "legal_obligations": ["string"], "data_source": "real", "summary": "string"
 }`;
-      userPrompt = `Análisis equidad tipo: ${params?.analysis_type || 'comprehensive'}. DATOS REALES (${enrichedEmps.length} empleados, muestra): ${JSON.stringify(enrichedEmps.slice(0, 50))}. Distribución género: ${JSON.stringify(enrichedEmps.reduce((acc: any, e: any) => { acc[e.gender || 'N/A'] = (acc[e.gender || 'N/A'] || 0) + 1; return acc; }, {}))}. Media salarial: ${Math.round(enrichedEmps.reduce((s: number, e: any) => s + Number(e.base_salary || 0), 0) / (enrichedEmps.length || 1))}€`;
-
+      userPrompt = `Análisis equidad tipo: ${params?.analysis_type || 'comprehensive'}. DATOS REALES (${enrichedEmps.length} empleados, muestra): ${JSON.stringify(enrichedEmps.slice(0, 50))}. Distribución género: ${JSON.stringify(enrichedEmps.reduce((acc: any, e: any) => { acc[e.gender || 'N/A'] = (acc[e.gender || 'N/A'] || 0) + 1; return acc; }, {}))}. Media salarial: ${Math.round(enrichedEmps.reduce((s: number, e: any) => s + Number(e.base_salary || 0), 0) / (enrichedEmps.length || 1))}€${vptContextBlock}`;
     } else if (action === 'ai_security_analysis') {
       systemPrompt = `Eres un CISO experto en seguridad de RRHH enterprise, GDPR, LOPDGDD, ISO 27001 y SOX.
 Analiza la postura de seguridad de la organización y genera un informe ejecutivo.
