@@ -503,3 +503,69 @@ export function detectVPTIncoherences(
 
   return incoherences;
 }
+
+export const DEFAULT_METHODOLOGY_VERSION = 'v1.0';
+
+/**
+ * Suggest equivalent salary band based on VPT score and reference bands.
+ * Strictly separated from the scoring formula — this is a derived recommendation.
+ */
+export function suggestEquivalentBand(
+  totalScore: number,
+  referenceBands: Array<{ score: number; bandMin: number; bandMax: number }>,
+): { suggestedMin: number; suggestedMax: number; basis: string } | null {
+  if (referenceBands.length < 2) return null;
+
+  const sorted = [...referenceBands].sort((a, b) => a.score - b.score);
+
+  // Find bracketing entries
+  const lower = sorted.filter(r => r.score <= totalScore).pop();
+  const upper = sorted.find(r => r.score >= totalScore);
+
+  if (!lower && !upper) return null;
+  if (!lower) return { suggestedMin: upper!.bandMin, suggestedMax: upper!.bandMax, basis: 'extrapolación inferior' };
+  if (!upper) return { suggestedMin: lower.bandMin, suggestedMax: lower.bandMax, basis: 'extrapolación superior' };
+  if (lower.score === upper.score) return { suggestedMin: lower.bandMin, suggestedMax: lower.bandMax, basis: 'coincidencia exacta' };
+
+  // Linear interpolation
+  const ratio = (totalScore - lower.score) / (upper.score - lower.score);
+  const suggestedMin = Math.round(lower.bandMin + ratio * (upper.bandMin - lower.bandMin));
+  const suggestedMax = Math.round(lower.bandMax + ratio * (upper.bandMax - lower.bandMax));
+
+  return { suggestedMin, suggestedMax, basis: 'interpolación lineal' };
+}
+
+/**
+ * Compare multiple VPT valuations side by side.
+ * Returns normalized comparison data for UI rendering.
+ */
+export function compareVPTValuations(
+  valuations: Array<{
+    positionId: string;
+    positionName: string;
+    factorScores: VPTFactorScores;
+    methodology: VPTMethodology;
+    totalScore: number;
+    salaryBandMax?: number;
+    jobLevel?: string;
+  }>,
+): Array<{
+  positionId: string;
+  positionName: string;
+  totalScore: number;
+  factorBreakdown: Record<VPTFactor, number>;
+  salaryBandMax?: number;
+  jobLevel?: string;
+}> {
+  return valuations.map(v => {
+    const bd = computeVPTScore(v.factorScores, v.methodology);
+    return {
+      positionId: v.positionId,
+      positionName: v.positionName,
+      totalScore: bd.totalScore,
+      factorBreakdown: bd.factorScores,
+      salaryBandMax: v.salaryBandMax,
+      jobLevel: v.jobLevel,
+    };
+  });
+}
