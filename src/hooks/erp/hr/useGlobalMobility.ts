@@ -507,6 +507,7 @@ export function useGlobalMobility(companyId: string) {
     createAssignment,
     updateAssignment,
     updateStatus,
+    deleteAssignment,
     fetchDocuments,
     addDocument,
     updateDocument,
