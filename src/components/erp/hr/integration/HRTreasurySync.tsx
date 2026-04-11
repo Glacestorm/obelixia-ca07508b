@@ -482,7 +482,7 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
                           (integration.status as string) === 'synced' && "text-green-600",
                             integration.status === 'pending' && "text-amber-600"
                           )}>
-                            {integration.status === 'synced' ? 'Sincronizado' : 'Pendiente'}
+                            (integration.status as string) === 'synced' ? 'Sincronizado' : 'Pendiente'
                           </Badge>
                         </div>
                       </div>
