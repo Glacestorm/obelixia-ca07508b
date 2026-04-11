@@ -424,17 +424,27 @@ export interface ReadinessInput {
   hasPassedUAT: boolean;
   payloadGenerated: boolean;
   signatureCompleted: boolean;
+  /** LM3: extended readiness inputs */
+  formatValidationStatus?: 'not_verified' | 'partially_aligned' | 'spec_aligned' | 'sandbox_validated' | 'rejected';
+  parserVerified?: boolean;
+  sandboxScenariosPassedCount?: number;
+  uatScenariosPassedCount?: number;
 }
 
 export function computeOrganismReadiness(input: ReadinessInput): ReadinessLevel {
-  // NEVER go_live_ready without credentials + certificate + UAT
-  if (input.hasCredentials && input.hasCertificate && input.hasPassedUAT) {
+  const fmtOk = input.formatValidationStatus === 'spec_aligned' || input.formatValidationStatus === 'sandbox_validated';
+  const parserOk = input.parserVerified ?? false;
+  const sandboxCount = input.sandboxScenariosPassedCount ?? (input.hasPassedSandbox ? 1 : 0);
+  const uatCount = input.uatScenariosPassedCount ?? (input.hasPassedUAT ? 1 : 0);
+
+  // HARD RULE: go_live_ready requires ALL 6 conditions
+  if (input.hasCredentials && input.hasCertificate && fmtOk && parserOk && sandboxCount > 0 && uatCount > 0) {
     return 'go_live_ready';
   }
-  if (input.hasCredentials && input.hasCertificate && input.hasPassedSandbox) {
+  if (input.hasCredentials && input.hasCertificate && sandboxCount > 0) {
     return 'uat_ready';
   }
-  if (input.payloadGenerated && input.signatureCompleted && input.hasCertificate) {
+  if ((fmtOk || sandboxCount > 0) && input.hasCertificate) {
     return 'sandbox_ready';
   }
   if (input.payloadGenerated) {

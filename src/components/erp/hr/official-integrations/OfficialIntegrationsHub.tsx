@@ -35,6 +35,7 @@ import { Modelo190PipelinePanel } from '@/components/erp/hr/official/Modelo190Pi
 import { useInstitutionalSubmission } from '@/hooks/erp/hr/useInstitutionalSubmission';
 import { HRFilingsPanel, HRFileGeneratorPanel } from '@/components/hr/filings';
 import { LastMileOperationsDashboard } from './LastMileOperationsDashboard';
+import { OrganismReadinessPanel } from './OrganismReadinessPanel';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
@@ -156,6 +157,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
           <TabsTrigger value="ficheros-tgss" className="text-xs">Ficheros TGSS</TabsTrigger>
           <TabsTrigger value="ultima-milla" className="text-xs">Última Milla</TabsTrigger>
+          <TabsTrigger value="go-live" className="text-xs">Go-Live</TabsTrigger>
           <TabsTrigger value="export" className="text-xs">Exportación</TabsTrigger>
         </TabsList>
 
@@ -219,6 +221,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         </TabsContent>
         <TabsContent value="ultima-milla">
           <LastMileOperationsDashboard companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="go-live">
+          <OrganismReadinessPanel companyId={companyId} />
         </TabsContent>
         <TabsContent value="ficheros-tgss">
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
