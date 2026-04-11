@@ -157,3 +157,73 @@ export interface RemoteWorkAgreement {
   signedBy?: string;
   validation?: RemoteWorkValidation;
 }
+
+// ─── VPT (Valoración de Puestos de Trabajo) ─────────────────
+
+export type VPTFactor = 'qualifications' | 'responsibility' | 'effort' | 'conditions';
+
+export type VPTSubfactor =
+  | 'formal_education'
+  | 'experience'
+  | 'certifications'
+  | 'people_decisions'
+  | 'economic_decisions'
+  | 'organizational_impact'
+  | 'intellectual_complexity'
+  | 'physical_effort'
+  | 'emotional_load'
+  | 'hardship_danger'
+  | 'atypical_schedules'
+  | 'availability_travel';
+
+export interface VPTSubfactorWeight {
+  subfactor: VPTSubfactor;
+  weight: number; // 0-1 within factor
+}
+
+export interface VPTFactorConfig {
+  factor: VPTFactor;
+  weight: number; // 0-1, all factors sum to 1
+  subfactors: VPTSubfactorWeight[];
+}
+
+export type VPTMethodology = VPTFactorConfig[];
+
+export type VPTFactorScores = Record<VPTFactor, Record<string, number>>; // subfactor → 1-5
+
+export type VPTValuationStatus = 'draft' | 'under_review' | 'approved' | 'active' | 'archived';
+
+export interface VPTValuation {
+  id: string;
+  companyId: string;
+  positionId: string;
+  positionName?: string;
+  versionId?: string;
+  status: VPTValuationStatus;
+  methodologySnapshot: VPTMethodology;
+  factorScores: VPTFactorScores;
+  totalScore: number;
+  equivalentBandMin?: number;
+  equivalentBandMax?: number;
+  notes?: string;
+  scoredBy?: string;
+  reviewedBy?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  aiSuggestions?: VPTFactorScores;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VPTIncoherence {
+  type: 'score_vs_band' | 'level_divergence' | 'similar_positions';
+  level: 'warning' | 'critical';
+  message: string;
+  positionIds: string[];
+  details: Record<string, unknown>;
+}
+
+export interface VPTScoreBreakdown {
+  factorScores: Record<VPTFactor, number>; // 0-100 per factor
+  totalScore: number; // 0-100
+}
