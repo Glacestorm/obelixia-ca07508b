@@ -248,3 +248,67 @@ export interface VPTBandSuggestion {
   suggestedMax: number;
   basis: string;
 }
+
+// ─── VPT-Enriched Salary Register (S9.4) ────────────────────
+
+export type VPTBandLabel = 'Q1 (0-25)' | 'Q2 (25-50)' | 'Q3 (50-75)' | 'Q4 (75-100)';
+
+export interface VPTEnrichedSalaryEntry extends SalaryRegisterEntry {
+  vptScore: number | null;
+  vptBandLabel: VPTBandLabel | null;
+}
+
+export interface VPTEnrichedSalaryReport extends Omit<SalaryRegisterReport, 'entries'> {
+  entries: VPTEnrichedSalaryEntry[];
+  byVPTBand: VPTBandGroupSummary[];
+}
+
+export interface VPTBandGroupSummary {
+  band: VPTBandLabel;
+  maleCount: number;
+  femaleCount: number;
+  maleMeanSalary: number;
+  femaleMeanSalary: number;
+  gapPercent: number;
+}
+
+// ─── Retributive Audit (S9.4) ───────────────────────────────
+
+export interface RetributiveAuditEntry {
+  groupKey: string;
+  groupLabel: string;
+  maleCount: number;
+  femaleCount: number;
+  maleMeanSalary: number;
+  femaleMeanSalary: number;
+  totalGapPercent: number;
+  maleAvgVPT: number | null;
+  femaleAvgVPT: number | null;
+  /** Portion of the gap partially contextualized by VPT score differences. Never >80%. */
+  gapContextualizedByVPT: number;
+  /** Remaining gap not explained by position valuation differences. */
+  gapUnexplained: number;
+  alerts: RetributiveAuditAlert[];
+}
+
+export interface RetributiveAuditAlert {
+  level: 'info' | 'warning' | 'critical';
+  message: string;
+}
+
+export interface RetributiveAuditReport {
+  period: string;
+  generatedAt: string;
+  entries: RetributiveAuditEntry[];
+  globalGapPercent: number;
+  globalContextualizedPercent: number;
+  globalUnexplainedPercent: number;
+  groupsWithAlert: number;
+  disclaimer: string;
+  version: number;
+}
+
+export const RETRIBUTIVE_AUDIT_DISCLAIMER =
+  'La valoración de puestos es una herramienta de soporte analítico. ' +
+  'Las diferencias retributivas requieren análisis individualizado conforme al RD 902/2020. ' +
+  'Los porcentajes de contextualización son orientativos y no constituyen justificación legal de brechas salariales.';

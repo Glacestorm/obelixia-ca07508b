@@ -20,7 +20,15 @@ import type {
   VPTFactor,
   VPTScoreBreakdown,
   VPTIncoherence,
+  VPTBandLabel,
+  VPTEnrichedSalaryEntry,
+  VPTEnrichedSalaryReport,
+  VPTBandGroupSummary,
+  RetributiveAuditEntry,
+  RetributiveAuditAlert,
+  RetributiveAuditReport,
 } from '@/types/s9-compliance';
+import { RETRIBUTIVE_AUDIT_DISCLAIMER } from '@/types/s9-compliance';
 
 // ─── LISMI / LGD ─────────────────────────────────────────────
 
