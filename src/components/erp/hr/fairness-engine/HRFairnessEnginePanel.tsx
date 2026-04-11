@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   Scale, RefreshCw, Sparkles, Database, TrendingUp, AlertTriangle,
   CheckCircle, XCircle, FileText, Users, DollarSign, Shield,
-  BarChart3, ArrowUpRight, ArrowDownRight, Minus, Gavel
+  BarChart3, ArrowUpRight, ArrowDownRight, Minus, Gavel, Briefcase
 } from 'lucide-react';
 import { useHRFairnessEngine } from '@/hooks/admin/hr/useHRFairnessEngine';
 import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
