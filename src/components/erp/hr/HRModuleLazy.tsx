@@ -237,3 +237,4 @@ export const LazyS9LISMIDashboard = lazyPanel(() => import('./compliance/S9LISMI
 export const LazyS9SalaryRegisterPanel = lazyPanel(() => import('./compliance/S9SalaryRegisterPanel'), 'S9SalaryRegisterPanel');
 export const LazyS9DisconnectionPanel = lazyPanel(() => import('./compliance/S9DisconnectionPanel'), 'S9DisconnectionPanel');
 export const LazyS9RemoteWorkPanel = lazyPanel(() => import('./compliance/S9RemoteWorkPanel'), 'S9RemoteWorkPanel');
+export const LazyS9VPTWorkspace = lazyPanel(() => import('./compliance/S9VPTWorkspace'), 'S9VPTWorkspace');
