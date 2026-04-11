@@ -157,7 +157,12 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
           <TabsTrigger value="ficheros-tgss" className="text-xs">Ficheros TGSS</TabsTrigger>
           <TabsTrigger value="ultima-milla" className="text-xs">Última Milla</TabsTrigger>
-          <TabsTrigger value="go-live" className="text-xs">Go-Live</TabsTrigger>
+          <TabsTrigger value="go-live" className="text-xs relative">
+            Go-Live
+            <Badge variant="outline" className="absolute -top-1.5 -right-1.5 h-4 min-w-4 text-[8px] px-1 flex items-center justify-center">
+              0/5
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="export" className="text-xs">Exportación</TabsTrigger>
         </TabsList>
 
