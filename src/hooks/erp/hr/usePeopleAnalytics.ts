@@ -372,7 +372,7 @@ export function usePeopleAnalytics() {
     try {
       const { data: employees, error: empErr } = await supabase
         .from('erp_hr_employees')
-        .select('id, first_name, last_name, gender, base_salary, department_id, job_title')
+        .select('id, first_name, last_name, gender, base_salary, department_id, job_title, position_id')
         .eq('company_id', companyId)
         .eq('status', 'active')
         .not('base_salary', 'is', null);
@@ -393,6 +393,36 @@ export function usePeopleAnalytics() {
       };
 
       setEquityMetrics(metrics);
+
+      // S9.5 — VPT Context (optional, descriptive only)
+      try {
+        const { data: vptData } = await (supabase as any)
+          .from('erp_hr_job_valuations')
+          .select('position_id, total_score')
+          .eq('company_id', companyId)
+          .eq('status', 'approved');
+
+        if (vptData && vptData.length > 0) {
+          const { computeEquityVPTContext } = await import('@/engines/erp/hr/s9ComplianceEngine');
+          const vptMap: Record<string, number> = {};
+          for (const v of vptData) {
+            vptMap[v.position_id] = Number(v.total_score);
+          }
+          const empInputs = all.map(e => ({
+            employeeId: e.id,
+            gender: e.gender === 'female' ? 'F' : e.gender === 'male' ? 'M' : (e.gender || 'M'),
+            positionId: (e as any).position_id ?? null,
+          }));
+          const ctx = computeEquityVPTContext(empInputs, vptMap);
+          setVptContext(ctx);
+        } else {
+          setVptContext(null);
+        }
+      } catch (vptErr) {
+        console.error('[usePeopleAnalytics] VPT context (non-blocking):', vptErr);
+        setVptContext(null);
+      }
+
       return metrics;
     } catch (err) {
       console.error('[usePeopleAnalytics] fetchEquityMetrics:', err);
