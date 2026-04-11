@@ -409,11 +409,17 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                 <Input placeholder="Razón social" value={formData.legal_entity || ''} onChange={e => set('legal_entity', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Código CNO</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Código CNO
+                  {prefilledFields.has('occupation_code') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Input placeholder="Clasificación ocupación" value={formData.occupation_code || ''} onChange={e => set('occupation_code', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Convenio colectivo</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Convenio colectivo
+                  {prefilledFields.has('collective_agreement') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Input placeholder="Convenio aplicable" value={formData.collective_agreement || ''} onChange={e => set('collective_agreement', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
