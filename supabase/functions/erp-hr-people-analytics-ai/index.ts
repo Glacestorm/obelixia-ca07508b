@@ -164,6 +164,7 @@ Si detectas un problema, sugiere crear una tarea de seguimiento.` + vptGuardrail
 
       default:
         throw new Error(`Acción no soportada: ${action}`);
+    }
 
     console.log(`[erp-hr-people-analytics-ai] action=${action}, domain=${domain}`);
 
