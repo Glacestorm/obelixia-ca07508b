@@ -81,7 +81,7 @@ export function useCredentialOnboarding(companyId: string) {
     }));
 
     writeLedger({
-      eventType: 'field_change',
+      eventType: 'master_data_changed',
       entityType: 'credential_onboarding',
       entityId: `${organism}:${credentialType}`,
       afterSnapshot: { organism, credentialType, status, notes },
@@ -98,7 +98,7 @@ export function useCredentialOnboarding(companyId: string) {
     setCertificateStatuses(prev => ({ ...prev, [organism]: status }));
 
     writeLedger({
-      eventType: 'field_change',
+      eventType: 'master_data_changed',
       entityType: 'certificate_binding',
       entityId: organism,
       afterSnapshot: { organism, certificateStatus: status },
@@ -119,7 +119,7 @@ export function useCredentialOnboarding(companyId: string) {
     }));
 
     writeLedger({
-      eventType: 'field_change',
+      eventType: 'system_event',
       entityType: 'format_validation',
       entityId: `${organism}:${artifactType}`,
       afterSnapshot: { organism, artifactType, formatStatus: status },
@@ -133,7 +133,7 @@ export function useCredentialOnboarding(companyId: string) {
     setParserStatuses(prev => ({ ...prev, [organism]: verified }));
 
     writeLedger({
-      eventType: 'field_change',
+      eventType: 'system_event',
       entityType: 'parser_verification',
       entityId: organism,
       afterSnapshot: { organism, parserVerified: verified },
@@ -157,7 +157,7 @@ export function useCredentialOnboarding(companyId: string) {
     const scenario = scenarios.find(s => s.id === scenarioId);
     if (scenario) {
       writeLedger({
-        eventType: status === 'passed' ? 'status_change' : 'field_change',
+        eventType: 'system_event',
         entityType: `${scenario.phase}_scenario`,
         entityId: scenarioId,
         afterSnapshot: { scenarioId, organism: scenario.organism, phase: scenario.phase, status, notes },
