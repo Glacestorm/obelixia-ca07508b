@@ -178,7 +178,7 @@ export function FiscalModule() {
         <TabsContent value="actions" className="mt-6">
           <div className="grid lg:grid-cols-2 gap-6">
             <FiscalActionsPanel 
-              companyId={demoCompanyId}
+              companyId={companyId}
               className="min-h-[500px]"
             />
             <Card className="p-6 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border-indigo-500/20">
@@ -203,7 +203,7 @@ export function FiscalModule() {
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="space-y-4">
               <FiscalAIAgentPanel 
-                companyId={demoCompanyId} 
+                companyId={companyId} 
                 className="min-h-[600px]"
               />
               {/* Voice Controls */}
@@ -221,7 +221,7 @@ export function FiscalModule() {
               </Card>
             </div>
             <ActiveHelpPanel 
-              companyId={demoCompanyId}
+              companyId={companyId}
               className="min-h-[600px]"
             />
           </div>
@@ -231,7 +231,7 @@ export function FiscalModule() {
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <FiscalNewsPanel 
-                companyId={demoCompanyId}
+                companyId={companyId}
                 companyCnae="6201"
                 className="min-h-[600px]"
               />
@@ -289,7 +289,7 @@ export function FiscalModule() {
 
         <TabsContent value="help" className="mt-6">
           <ActiveHelpPanel 
-            companyId={demoCompanyId}
+            companyId={companyId}
             className="max-w-3xl mx-auto min-h-[600px]"
           />
         </TabsContent>
