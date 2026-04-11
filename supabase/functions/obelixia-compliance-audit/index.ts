@@ -1,10 +1,12 @@
 /**
  * ObelixIA Compliance & Audit Edge Function
  * Fase 5: Motor de cumplimiento normativo y auditoría automatizada
- * Usa Lovable AI para análisis inteligente de cumplimiento
+ * G1.1: Auth hardened with validateAuth
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,13 +21,16 @@ interface FunctionRequest {
 }
 
 serve(async (req) => {
-  // === CORS ===
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // === VALIDATE API KEY ===
+    // --- G1.1: AUTH GATE ---
+    const authResult = await validateAuth(req);
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
+    // --- END AUTH GATE ---
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
@@ -35,7 +40,6 @@ serve(async (req) => {
 
     console.log(`[obelixia-compliance-audit] Processing action: ${action}`);
 
-    // === DYNAMIC PROMPTS ===
     let systemPrompt = '';
     let userPrompt = '';
 
@@ -220,35 +224,14 @@ FORMATO DE RESPUESTA (JSON estricto):
         break;
 
       case 'get_audit_trail':
-        // Return mock audit trail without AI
+        // G1.1: Honest degradation — no mock data, return empty with source marker
         return new Response(JSON.stringify({
           success: true,
           action,
           data: {
-            trail: [
-              {
-                id: crypto.randomUUID(),
-                action_type: 'create',
-                entity_type: 'journal_entry',
-                entity_id: 'entry-001',
-                entity_name: 'Asiento #1245',
-                user_id: 'user-001',
-                user_name: 'María García',
-                timestamp: new Date().toISOString(),
-                risk_score: 0.1
-              },
-              {
-                id: crypto.randomUUID(),
-                action_type: 'approve',
-                entity_type: 'invoice',
-                entity_id: 'inv-001',
-                entity_name: 'Factura F-2024-0089',
-                user_id: 'user-002',
-                user_name: 'Carlos López',
-                timestamp: new Date(Date.now() - 3600000).toISOString(),
-                risk_score: 0.05
-              }
-            ]
+            trail: [],
+            source: 'no_data_available',
+            message: 'El registro de auditoría requiere configuración del módulo de trazabilidad.',
           },
           timestamp: new Date().toISOString()
         }), {
@@ -258,7 +241,6 @@ FORMATO DE RESPUESTA (JSON estricto):
       case 'get_rules':
       case 'resolve_issue':
       case 'export_report':
-        // These don't need AI
         return new Response(JSON.stringify({
           success: true,
           action,
@@ -272,7 +254,6 @@ FORMATO DE RESPUESTA (JSON estricto):
         throw new Error(`Acción no soportada: ${action}`);
     }
 
-    // === AI CALL ===
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -290,7 +271,6 @@ FORMATO DE RESPUESTA (JSON estricto):
       }),
     });
 
-    // === ERROR HANDLING ===
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ 
@@ -313,7 +293,6 @@ FORMATO DE RESPUESTA (JSON estricto):
       throw new Error(`AI API error: ${response.status}`);
     }
 
-    // === PARSE RESPONSE ===
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 

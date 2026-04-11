@@ -1,9 +1,13 @@
 /**
  * ERP Agent AI - Edge Function para análisis inteligente de agentes ERP
  * Usa Lovable AI para análisis real, predicciones y orquestación multi-agente
+ * 
+ * G1.1: Auth hardened with validateAuth
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,6 +64,11 @@ serve(async (req) => {
   }
 
   try {
+    // --- G1.1: AUTH GATE ---
+    const authResult = await validateAuth(req);
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
+    // --- END AUTH GATE ---
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
@@ -343,13 +352,13 @@ Siempre estructura tus respuestas con:
         if (!chatResponse.ok) {
           const status = chatResponse.status;
           if (status === 429) {
-            return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+            return new Response(JSON.stringify({ success: false, error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded. Please try again later.' }, meta: { timestamp: new Date().toISOString() } }), {
               status: 429,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
           if (status === 402) {
-            return new Response(JSON.stringify({ error: 'Payment required. Please add credits.' }), {
+            return new Response(JSON.stringify({ success: false, error: { code: 'PAYMENT_REQUIRED', message: 'Payment required. Please add credits.' }, meta: { timestamp: new Date().toISOString() } }), {
               status: 402,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -399,13 +408,13 @@ Siempre estructura tus respuestas con:
     if (!response.ok) {
       const status = response.status;
       if (status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
+        return new Response(JSON.stringify({ success: false, error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded. Please try again later.' }, meta: { timestamp: new Date().toISOString() } }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       if (status === 402) {
-        return new Response(JSON.stringify({ error: 'Payment required. Please add credits.' }), {
+        return new Response(JSON.stringify({ success: false, error: { code: 'PAYMENT_REQUIRED', message: 'Payment required. Please add credits.' }, meta: { timestamp: new Date().toISOString() } }), {
           status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

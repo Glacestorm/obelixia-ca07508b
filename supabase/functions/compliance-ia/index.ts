@@ -1,4 +1,11 @@
+/**
+ * compliance-ia — Compliance IA Agent
+ * G1.1: Auth hardened with validateTenantAccess + mock data removed
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +15,7 @@ const corsHeaders = {
 interface ComplianceRequest {
   action: 'run_check' | 'get_summary' | 'get_alerts' | 'analyze_document' | 'generate_remediation' | 'update_check' |
           'check_compliance' | 'generate_report' | 'assess_risk' | 'get_recommendations' | 'monitor_changes';
+  company_id?: string;
   regulation?: string;
   documentContent?: string;
   checkIds?: string[];
@@ -25,44 +33,6 @@ interface ComplianceRequest {
   entityType?: string;
 }
 
-// Mock data generators
-function generateMockSummary() {
-  return [
-    { regulation: 'GDPR', compliance_score: 87, checks_total: 45, checks_passed: 39, last_audit: '2025-01-15' },
-    { regulation: 'SOX', compliance_score: 92, checks_total: 30, checks_passed: 28, last_audit: '2025-01-10' },
-    { regulation: 'HIPAA', compliance_score: 78, checks_total: 50, checks_passed: 39, last_audit: '2025-01-05' },
-    { regulation: 'PCI-DSS', compliance_score: 95, checks_total: 25, checks_passed: 24, last_audit: '2025-01-20' },
-    { regulation: 'ISO 27001', compliance_score: 88, checks_total: 60, checks_passed: 53, last_audit: '2025-01-12' }
-  ];
-}
-
-function generateMockAlerts() {
-  return [
-    { id: 'alert-1', type: 'deadline' as const, title: 'Renovación certificación ISO', description: 'Certificación ISO 27001 vence en 30 días', regulation: 'ISO 27001', due_date: '2025-02-27', severity: 'high' as const },
-    { id: 'alert-2', type: 'violation' as const, title: 'Política de retención incumplida', description: 'Datos de clientes exceden período de retención', regulation: 'GDPR', severity: 'critical' as const },
-    { id: 'alert-3', type: 'change' as const, title: 'Nueva regulación de IA', description: 'EU AI Act entra en vigor Q2 2025', regulation: 'EU AI Act', due_date: '2025-04-01', severity: 'medium' as const },
-    { id: 'alert-4', type: 'audit' as const, title: 'Auditoría SOX programada', description: 'Auditoría externa programada para marzo', regulation: 'SOX', due_date: '2025-03-15', severity: 'medium' as const }
-  ];
-}
-
-function generateMockReport(regulation: string) {
-  return {
-    id: `report-${Date.now()}`,
-    regulation,
-    overall_score: Math.floor(Math.random() * 20) + 80,
-    checks: [
-      { id: 'chk-1', regulation, requirement: 'Consentimiento explícito', status: 'compliant', evidence: 'Forms actualizados', last_checked: new Date().toISOString(), next_review: '2025-04-01', risk_level: 'low' },
-      { id: 'chk-2', regulation, requirement: 'Derecho al olvido', status: 'partial', evidence: 'Proceso manual', last_checked: new Date().toISOString(), next_review: '2025-03-01', risk_level: 'medium' },
-      { id: 'chk-3', regulation, requirement: 'Portabilidad de datos', status: 'compliant', evidence: 'API implementada', last_checked: new Date().toISOString(), next_review: '2025-04-01', risk_level: 'low' }
-    ],
-    gaps: [
-      { requirement: 'Automatización del derecho al olvido', recommendation: 'Implementar flujo automatizado de eliminación de datos' },
-      { requirement: 'Registro de actividades de procesamiento', recommendation: 'Completar registro de todas las actividades de procesamiento' }
-    ],
-    generated_at: new Date().toISOString()
-  };
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -70,15 +40,28 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json() as ComplianceRequest;
-    const { action } = requestBody;
+    const { action, company_id } = requestBody;
     console.log(`[compliance-ia] Processing action: ${action}`);
 
-    // Handle mock data actions (no AI needed)
+    // --- G1.1: AUTH GATE ---
+    if (!company_id) {
+      return new Response(JSON.stringify({ success: false, error: { code: 'VALIDATION_ERROR', message: 'company_id is required' }, meta: { timestamp: new Date().toISOString() } }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
+    // --- END AUTH GATE ---
+
+    // G1.1: Replaced mock data with honest degradation
     switch (action) {
       case 'get_summary':
         return new Response(JSON.stringify({
           success: true,
-          summary: generateMockSummary(),
+          summary: [],
+          source: 'no_data_available',
+          mode: 'requires_configuration',
+          message: 'No hay datos de cumplimiento configurados. Configure regulaciones y controles en el módulo de compliance para obtener un resumen real.',
           timestamp: new Date().toISOString()
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -87,27 +70,27 @@ serve(async (req) => {
       case 'get_alerts':
         return new Response(JSON.stringify({
           success: true,
-          alerts: generateMockAlerts(),
+          alerts: [],
+          source: 'no_data_available',
+          mode: 'requires_configuration',
+          message: 'No hay alertas de cumplimiento configuradas. Configure regulaciones aplicables para recibir alertas automáticas.',
           timestamp: new Date().toISOString()
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
       case 'run_check':
-        const report = generateMockReport(requestBody.regulation || 'GDPR');
-        return new Response(JSON.stringify({
-          success: true,
-          report,
-          timestamp: new Date().toISOString()
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        // Route to AI analysis instead of returning mock report
+        break;
 
       case 'update_check':
         return new Response(JSON.stringify({
           success: true,
           checkId: requestBody.checkId,
           status: requestBody.status,
+          source: 'stub',
+          mode: 'requires_configuration',
+          message: 'Actualización registrada. La persistencia real requiere configuración del módulo de compliance.',
           updated_at: new Date().toISOString()
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -116,16 +99,10 @@ serve(async (req) => {
       case 'generate_remediation':
         return new Response(JSON.stringify({
           success: true,
-          plan: {
-            steps: [
-              { order: 1, action: 'Auditar procesos actuales', responsible: 'Compliance Officer', deadline: '2025-02-15' },
-              { order: 2, action: 'Documentar gaps identificados', responsible: 'Legal Team', deadline: '2025-02-28' },
-              { order: 3, action: 'Implementar controles', responsible: 'IT Security', deadline: '2025-03-15' },
-              { order: 4, action: 'Validar implementación', responsible: 'Auditor Interno', deadline: '2025-03-30' }
-            ],
-            estimated_time: '6 semanas',
-            resources_needed: ['Compliance Officer', 'Legal Team', 'IT Security', 'Auditor Externo']
-          },
+          plan: null,
+          source: 'estimated',
+          mode: 'requires_configuration',
+          message: 'La generación de planes de remediación requiere datos reales de controles y hallazgos configurados.',
           timestamp: new Date().toISOString()
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -143,6 +120,31 @@ serve(async (req) => {
     const { context, entityId, entityType, documentContent, regulation } = requestBody;
 
     switch (action) {
+      case 'run_check':
+        systemPrompt = `Eres un experto en cumplimiento normativo empresarial.
+
+EVALÚA el cumplimiento contra la regulación especificada.
+IMPORTANTE: Tus resultados son estimaciones basadas en IA, no datos verificados del sistema.
+
+RESPONDE EN JSON ESTRICTO:
+{
+  "report": {
+    "id": "report_generated",
+    "regulation": "${regulation || 'General'}",
+    "overall_score": 0-100,
+    "source": "ai_estimated",
+    "checks": [
+      { "id": "chk-1", "regulation": "string", "requirement": "string", "status": "compliant|partial|non_compliant", "evidence": "Requiere verificación manual", "last_checked": "ISO date", "next_review": "ISO date", "risk_level": "high|medium|low" }
+    ],
+    "gaps": [
+      { "requirement": "string", "recommendation": "string" }
+    ],
+    "generated_at": "ISO date"
+  }
+}`;
+        userPrompt = `Evalúa cumplimiento para regulación: ${regulation || 'General'}. Contexto de empresa: ${company_id}`;
+        break;
+
       case 'analyze_document':
         systemPrompt = `Eres un experto en análisis de cumplimiento normativo.
 
@@ -151,9 +153,9 @@ ANALIZA el documento contra la regulación especificada.
 RESPONDE EN JSON ESTRICTO:
 {
   "findings": [
-    { "issue": string, "severity": "critical" | "high" | "medium" | "low", "recommendation": string }
+    { "issue": "string", "severity": "critical" | "high" | "medium" | "low", "recommendation": "string" }
   ],
-  "score": number (0-100)
+  "score": 0-100
 }`;
         userPrompt = `Analiza este documento para cumplimiento de ${regulation}:
 ${documentContent?.substring(0, 2000)}`;
@@ -167,18 +169,18 @@ EVALÚA el cumplimiento contra las regulaciones especificadas.
 RESPONDE EN JSON ESTRICTO:
 {
   "overallStatus": "compliant" | "partial" | "non_compliant",
-  "score": number,
+  "score": 0-100,
   "checkResults": [
     {
-      "regulation": string,
-      "requirement": string,
+      "regulation": "string",
+      "requirement": "string",
       "status": "pass" | "fail" | "warning",
-      "details": string,
-      "remediation": string
+      "details": "string",
+      "remediation": "string"
     }
   ],
-  "criticalIssues": string[],
-  "upcomingDeadlines": [{ "date": string, "requirement": string }]
+  "criticalIssues": [],
+  "upcomingDeadlines": [{ "date": "string", "requirement": "string" }]
 }`;
         userPrompt = `Verifica cumplimiento para:
 Regulaciones: ${context?.regulations?.join(', ')}
@@ -194,15 +196,15 @@ GENERA un informe completo de cumplimiento.
 
 RESPONDE EN JSON ESTRICTO:
 {
-  "reportSummary": string,
-  "executiveSummary": string,
+  "reportSummary": "string",
+  "executiveSummary": "string",
   "complianceMetrics": {
-    "overallScore": number,
-    "byRegulation": [{ "name": string, "score": number, "trend": string }]
+    "overallScore": 0-100,
+    "byRegulation": [{ "name": "string", "score": 0-100, "trend": "string" }]
   },
-  "findings": [{ "severity": string, "finding": string, "recommendation": string }],
-  "actionItems": [{ "priority": number, "item": string, "deadline": string, "owner": string }],
-  "historicalTrend": string
+  "findings": [{ "severity": "string", "finding": "string", "recommendation": "string" }],
+  "actionItems": [{ "priority": 1, "item": "string", "deadline": "string", "owner": "string" }],
+  "historicalTrend": "string"
 }`;
         userPrompt = `Genera informe de cumplimiento para entidad ${entityType}: ${entityId}`;
         break;
@@ -210,18 +212,14 @@ RESPONDE EN JSON ESTRICTO:
       case 'assess_risk':
         systemPrompt = `Eres un evaluador de riesgos de cumplimiento.
 
-EVALÚA los riesgos de incumplimiento normativo.
-
 RESPONDE EN JSON ESTRICTO:
 {
   "riskLevel": "critical" | "high" | "medium" | "low",
-  "riskScore": number,
-  "riskFactors": [
-    { "factor": string, "impact": string, "likelihood": string, "mitigation": string }
-  ],
-  "potentialPenalties": string[],
-  "mitigationPlan": string[],
-  "monitoringRecommendations": string[]
+  "riskScore": 0-100,
+  "riskFactors": [{ "factor": "string", "impact": "string", "likelihood": "string", "mitigation": "string" }],
+  "potentialPenalties": [],
+  "mitigationPlan": [],
+  "monitoringRecommendations": []
 }`;
         userPrompt = `Evalúa riesgos de cumplimiento para: ${context?.processDescription}
 Regulaciones aplicables: ${context?.regulations?.join(', ')}`;
@@ -230,17 +228,13 @@ Regulaciones aplicables: ${context?.regulations?.join(', ')}`;
       case 'get_recommendations':
         systemPrompt = `Eres un asesor de mejoras en cumplimiento normativo.
 
-PROPORCIONA recomendaciones para mejorar el cumplimiento.
-
 RESPONDE EN JSON ESTRICTO:
 {
-  "priorityRecommendations": [
-    { "title": string, "description": string, "impact": string, "effort": string, "deadline": string }
-  ],
-  "quickWins": string[],
-  "longTermInitiatives": string[],
-  "trainingNeeds": string[],
-  "toolsRequired": string[]
+  "priorityRecommendations": [{ "title": "string", "description": "string", "impact": "string", "effort": "string", "deadline": "string" }],
+  "quickWins": [],
+  "longTermInitiatives": [],
+  "trainingNeeds": [],
+  "toolsRequired": []
 }`;
         userPrompt = `Recomienda mejoras de cumplimiento para industria ${context?.industry}`;
         break;
@@ -248,18 +242,12 @@ RESPONDE EN JSON ESTRICTO:
       case 'monitor_changes':
         systemPrompt = `Eres un monitor de cambios regulatorios.
 
-IDENTIFICA cambios regulatorios relevantes y su impacto.
-
 RESPONDE EN JSON ESTRICTO:
 {
-  "recentChanges": [
-    { "regulation": string, "change": string, "effectiveDate": string, "impact": string }
-  ],
-  "upcomingChanges": [
-    { "regulation": string, "expectedChange": string, "timeline": string }
-  ],
-  "actionRequired": string[],
-  "impactAssessment": string
+  "recentChanges": [{ "regulation": "string", "change": "string", "effectiveDate": "string", "impact": "string" }],
+  "upcomingChanges": [{ "regulation": "string", "expectedChange": "string", "timeline": "string" }],
+  "actionRequired": [],
+  "impactAssessment": "string"
 }`;
         userPrompt = `Monitorea cambios regulatorios para: ${context?.regulations?.join(', ')} en ${context?.jurisdiction}`;
         break;
@@ -288,8 +276,7 @@ RESPONDE EN JSON ESTRICTO:
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       throw new Error(`AI API error: ${response.status}`);
@@ -310,11 +297,13 @@ RESPONDE EN JSON ESTRICTO:
 
     console.log(`[compliance-ia] Success: ${action}`);
 
-    // Format response based on action
     const responseData: Record<string, unknown> = { success: true, action, timestamp: new Date().toISOString() };
     
     if (action === 'analyze_document') {
       responseData.analysis = result;
+    } else if (action === 'run_check') {
+      responseData.report = result?.report || result;
+      responseData.source = 'ai_estimated';
     } else {
       responseData.data = result;
     }

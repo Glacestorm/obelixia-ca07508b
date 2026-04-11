@@ -1,4 +1,11 @@
+/**
+ * Logistics AI Agent
+ * G1.1: Auth hardened with validateAuth
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +32,11 @@ serve(async (req) => {
   }
 
   try {
+    // --- G1.1: AUTH GATE ---
+    const authResult = await validateAuth(req);
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
+    // --- END AUTH GATE ---
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
@@ -32,7 +44,6 @@ serve(async (req) => {
 
     const { action, context, message, conversationHistory } = await req.json() as LogisticsAgentRequest;
 
-    // Build system prompt based on action
     let systemPrompt = '';
     let userPrompt = '';
 
@@ -233,7 +244,6 @@ Siempre basa tus respuestas en los datos del contexto proporcionado.`;
         break;
     }
 
-    // Build messages
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []),
@@ -287,7 +297,6 @@ Siempre basa tus respuestas en los datos del contexto proporcionado.`;
 
     if (!content) throw new Error('No content in AI response');
 
-    // Parse JSON for structured actions
     let result;
     if (action !== 'chat') {
       try {
