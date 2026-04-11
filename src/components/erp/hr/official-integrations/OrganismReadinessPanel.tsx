@@ -41,7 +41,7 @@ interface Props {
   companyId: string;
 }
 
-const STATUS_ICONS: Record<string, JSX.Element> = {
+const STATUS_ICONS: Record<string, React.ReactNode> = {
   configured: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
   validated: <CheckCircle className="h-3.5 w-3.5 text-green-600" />,
   not_configured: <XCircle className="h-3.5 w-3.5 text-destructive" />,
