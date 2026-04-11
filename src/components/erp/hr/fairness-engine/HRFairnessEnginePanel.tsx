@@ -195,6 +195,58 @@ export function HRFairnessEnginePanel({ companyId }: Props) {
                   </Card>
                 )}
 
+                {/* S9.5 — VPT Context Card (descriptive, read-only) */}
+                {vptSummary && vptSummary.available && (
+                  <Card className="md:col-span-2 border-blue-500/20 bg-blue-500/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-blue-600" /> Contexto VPT — Información Complementaria
+                        </span>
+                        <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-600">internal_ready</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Cobertura VPT</p>
+                          <p className="text-lg font-bold text-foreground">{(vptSummary.coverageRatio * 100).toFixed(0)}%</p>
+                          <p className="text-[10px] text-muted-foreground">{vptSummary.positionsValued}/{vptSummary.totalPositions} puestos</p>
+                        </div>
+                        {vptSummary.avgScoreMale != null && (
+                          <div>
+                            <p className="text-xs text-muted-foreground">Score Medio H</p>
+                            <p className="text-lg font-bold text-foreground">{vptSummary.avgScoreMale.toFixed(1)}</p>
+                          </div>
+                        )}
+                        {vptSummary.avgScoreFemale != null && (
+                          <div>
+                            <p className="text-xs text-muted-foreground">Score Medio M</p>
+                            <p className="text-lg font-bold text-foreground">{vptSummary.avgScoreFemale.toFixed(1)}</p>
+                          </div>
+                        )}
+                        {vptSummary.scoreDifference != null && (
+                          <div>
+                            <p className="text-xs text-muted-foreground">Diferencia Score</p>
+                            <p className={`text-lg font-bold ${vptSummary.scoreDifference >= 15 ? 'text-amber-600' : 'text-foreground'}`}>
+                              {vptSummary.scoreDifference.toFixed(1)} pts
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {vptSummary.divergenceAlert && (
+                        <div className={`p-2 rounded-md text-xs mb-2 ${vptSummary.divergenceAlert.level === 'warning' ? 'bg-amber-500/10 text-amber-700' : 'bg-blue-500/10 text-blue-700'}`}>
+                          <AlertTriangle className="h-3 w-3 inline mr-1" />
+                          {vptSummary.divergenceAlert.message}
+                        </div>
+                      )}
+                      <p className="text-[10px] text-muted-foreground italic border-t border-border/30 pt-2">
+                        {vptSummary.disclaimer}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Recent analyses */}
                 <Card>
                   <CardHeader className="pb-2">
