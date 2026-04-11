@@ -460,7 +460,7 @@ serve(async (req) => {
         try {
           const resp = await fetch(`${fnUrl}/hr-multiagent-supervisor`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+            headers: { 'Authorization': userAuthHeader, 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'route_query', company_id, query, context, session_id }),
           });
           const hrResult = await resp.json();
@@ -495,7 +495,7 @@ serve(async (req) => {
         try {
           const resp = await fetch(`${fnUrl}/legal-multiagent-supervisor`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+            headers: { 'Authorization': userAuthHeader, 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'route_query', company_id, query, context }),
           });
           const legalResult = await resp.json();
@@ -537,7 +537,7 @@ serve(async (req) => {
       const [hrResp, legalResp] = await Promise.allSettled([
         fetch(`${fnUrl}/hr-multiagent-supervisor`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': userAuthHeader, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'route_query', company_id, query,
             context: { ...context, source: 'obelixia-supervisor', cross_domain: true },
@@ -546,7 +546,7 @@ serve(async (req) => {
         }).then(r => r.json()),
         fetch(`${fnUrl}/legal-multiagent-supervisor`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': userAuthHeader, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'validate_hr_action', company_id, query,
             context: { ...context, source: 'obelixia-supervisor', cross_domain: true },
@@ -695,7 +695,7 @@ serve(async (req) => {
       const [hrResp2, legalResp2] = await Promise.allSettled([
         fetch(`${fnUrl}/hr-multiagent-supervisor`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': userAuthHeader, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'route_query', company_id, query: regulatoryQuery,
             context: { source: 'regulatory_cross_domain', document_id: doc.id, impact_domains: doc.impact_domains },
@@ -704,7 +704,7 @@ serve(async (req) => {
         }).then(r => r.json()).catch(() => null),
         fetch(`${fnUrl}/legal-multiagent-supervisor`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          headers: { 'Authorization': userAuthHeader, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'validate_hr_action', company_id, query: regulatoryQuery,
             context: { source: 'regulatory_cross_domain', document_id: doc.id, impact_domains: doc.impact_domains },
