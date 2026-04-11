@@ -91,6 +91,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Partial<ContractProcessData>>({});
   const [showRecommended, setShowRecommended] = useState(false);
+  const [prefilledFields, setPrefilledFields] = useState<PrefilledFieldSet>(new Set());
+
+  // H2.1: Master data prefill
+  const { masterData: contractMasterData, getContractPrefill, mergeAdditive } = useEmployeeMasterPrefill(employeeId);
 
   const { holidaySet } = useHRHolidayCalendar();
 

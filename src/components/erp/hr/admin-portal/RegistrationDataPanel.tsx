@@ -186,12 +186,18 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
   }, [formData, requestId, employeeId, upsertRegistrationData, persistDeadlineAndPayload, holidaySet]);
 
   const handleInitialize = useCallback(async () => {
-    await upsertRegistrationData(requestId, employeeId, {
+    const initialData: Partial<RegistrationData> = {
       registration_status: 'pending_data' as any,
       regime: 'general',
-    });
+    };
+    // H2.1: Additive prefill from master data
+    const prefill = getRegistrationPrefill();
+    const { merged, prefilledKeys } = mergeAdditive(initialData, prefill);
+    setPrefilledFields(prefilledKeys);
+    
+    await upsertRegistrationData(requestId, employeeId, merged);
     setEditMode(true);
-  }, [requestId, employeeId, upsertRegistrationData]);
+  }, [requestId, employeeId, upsertRegistrationData, getRegistrationPrefill, mergeAdditive]);
 
   const handleAdvanceStatus = useCallback(async (newStatus: RegistrationStatus) => {
     await updateRegistrationStatus(requestId, newStatus);
