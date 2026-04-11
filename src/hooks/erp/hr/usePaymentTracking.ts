@@ -1,10 +1,10 @@
 /**
- * usePaymentTracking — P1.3
+ * usePaymentTracking — P1.3 + P2.3
  * Hook for managing payroll payment lifecycle.
  * Supports period-level (batch) and individual record payment marking.
  * Creates ledger events and evidence for audit trail.
- * 
- * SEPA CT generation: NOT YET IMPLEMENTED (documented gap).
+ *
+ * SEPA CT generation: IMPLEMENTED via sepaCtEngine (P2.3).
  */
 
 import { useCallback } from 'react';
@@ -221,7 +221,7 @@ export function usePaymentTracking(companyId: string) {
         totalNet,
         unpaidCount: unpaid.length,
         unpaidTotal: unpaid.reduce((s: number, r: any) => s + (r.net_salary ?? 0), 0),
-        sepaReady: false, // GAP: SEPA CT generation not yet implemented
+        sepaReady: true, // P2.3: SEPA CT generator available via sepaCtEngine
       };
     } catch (err) {
       console.error('[usePaymentTracking] generatePaymentSummary error:', err);
