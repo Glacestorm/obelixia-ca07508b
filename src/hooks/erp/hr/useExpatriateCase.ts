@@ -16,6 +16,7 @@ import {
   type InternationalTaxImpact,
   type TaxImpactInput,
 } from '@/engines/erp/hr/internationalTaxEngine';
+import { evaluateExpatriateSupervisor, type SupervisorResult } from '@/engines/erp/hr/expatriateSupervisor';
 import type { MobilityAssignment, MobilityDocument } from '@/hooks/erp/hr/useGlobalMobility';
 
 // ── Types ──
@@ -33,6 +34,8 @@ export interface ExpatriateCase {
     missing: string[];
     percentage: number;
   };
+  /** G2.1: Supervisor result with corridor intelligence */
+  supervisor: SupervisorResult | null;
 }
 
 // ── Support Level Labels ──
@@ -118,19 +121,30 @@ export function useExpatriateCase(
     const presentDocTypes = new Set(documents.map(d => d.document_type));
     const missing = requiredDocs.filter(d => !presentDocTypes.has(d.documentType as any)).map(d => d.label);
 
+    // 7. G2.1: Supervisor evaluation
+    let supervisor: SupervisorResult | null = null;
+    try {
+      supervisor = evaluateExpatriateSupervisor(assignment);
+    } catch {
+      // Supervisor is additive — don't break existing flow
+    }
+
     return {
       mobilityClassification,
       taxImpact,
-      overallSupportLevel,
-      overallSupportLevelLabel: SUPPORT_LABELS[overallSupportLevel],
-      consolidatedRiskScore,
-      allReviewTriggers,
+      overallSupportLevel: supervisor?.overallSupportLevel ?? overallSupportLevel,
+      overallSupportLevelLabel: SUPPORT_LABELS[supervisor?.overallSupportLevel ?? overallSupportLevel],
+      consolidatedRiskScore: supervisor?.consolidatedRiskScore ?? consolidatedRiskScore,
+      allReviewTriggers: supervisor
+        ? supervisor.reviewTriggers.map(t => t.reason)
+        : allReviewTriggers,
       documentCompleteness: {
         required: requiredDocs.length,
         present: requiredDocs.length - missing.length,
         missing,
         percentage: requiredDocs.length > 0 ? Math.round(((requiredDocs.length - missing.length) / requiredDocs.length) * 100) : 100,
       },
+      supervisor,
     };
   }, [assignment, documents]);
 }

@@ -15,6 +15,7 @@ import { MobilityCostProjectionPanel } from './MobilityCostProjectionPanel';
 import { MobilityCompliancePanel } from './MobilityCompliancePanel';
 import { MobilityClassificationPanel } from './MobilityClassificationPanel';
 import { MobilityTaxImpactPanel } from './MobilityTaxImpactPanel';
+import { MobilityCorridorPanel } from './MobilityCorridorPanel';
 import { useExpatriateCase } from '@/hooks/erp/hr/useExpatriateCase';
 import type {
   MobilityAssignment, MobilityDocument, MobilityCostProjection, MobilityAuditEntry,
@@ -142,8 +143,9 @@ export function MobilityAssignmentDetail({
 
       {/* Tabs */}
       <Tabs defaultValue="summary">
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-8 w-full">
           <TabsTrigger value="summary" className="text-xs">Resumen</TabsTrigger>
+          <TabsTrigger value="corridor" className="text-xs">Corredor</TabsTrigger>
           <TabsTrigger value="classification" className="text-xs">Clasificación</TabsTrigger>
           <TabsTrigger value="tax" className="text-xs">Impacto Fiscal</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs">Documentos</TabsTrigger>
@@ -214,6 +216,15 @@ export function MobilityAssignmentDetail({
                 {a.notes && <p className="text-xs text-muted-foreground mt-1">{a.notes}</p>}
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* Corridor — G2.1 */}
+        <TabsContent value="corridor">
+          {expatCase?.supervisor ? (
+            <MobilityCorridorPanel supervisor={expatCase.supervisor} />
+          ) : (
+            <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">Cargando inteligencia de corredor…</CardContent></Card>
           )}
         </TabsContent>
 

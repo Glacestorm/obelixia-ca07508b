@@ -43,11 +43,38 @@ const SEVERITY_ICONS: Record<string, typeof AlertTriangle> = {
 };
 
 export function MobilityClassificationPanel({ expatCase, documents }: Props) {
-  const { mobilityClassification: mc, documentCompleteness } = expatCase;
+  const { mobilityClassification: mc, documentCompleteness, supervisor } = expatCase;
   const presentDocTypes = new Set(documents.map(d => d.document_type));
+  const corridorPack = supervisor?.corridorPack;
 
   return (
     <div className="space-y-3">
+      {/* G2.1: Corridor Badge + Pack Freshness */}
+      {supervisor && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="text-[10px]">
+            🌐 {supervisor.corridorLabel}
+          </Badge>
+          {corridorPack && (
+            <>
+              <Badge variant="outline" className="text-[10px]">
+                v{corridorPack.version}
+              </Badge>
+              <Badge className={`text-[10px] ${corridorPack.status === 'current' ? 'bg-success/12 text-success border-success/30' : 'bg-warning/12 text-warning border-warning/30'}`}>
+                {corridorPack.status === 'current' ? '✅ Vigente' : '⚠️ Obsoleto'}
+              </Badge>
+              <Badge variant="outline" className="text-[10px]">
+                Confianza: {corridorPack.confidenceScore}%
+              </Badge>
+            </>
+          )}
+          {!corridorPack && (
+            <Badge className="text-[10px] bg-muted/40 text-muted-foreground border-border">
+              Sin knowledge pack
+            </Badge>
+          )}
+        </div>
+      )}
       {/* Support Level Banner */}
       {mc.supportLevel !== 'supported_production' && (
         <Card className="border-warning/50 bg-warning/5">
