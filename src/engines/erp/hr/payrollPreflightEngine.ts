@@ -437,6 +437,38 @@ export function buildPreflightResult(input: PreflightInput): PreflightResult {
     };
   });
 
+  // P1.7B-RA: Inject conditional mobility substep between incidents and calculation
+  if (input.activeMobility && input.activeMobility.activeAssignmentCount > 0) {
+    const mob = input.activeMobility;
+    const mobStatus: PreflightStepStatus = mob.reviewRequired && mob.worstSupportLevel === 'out_of_scope'
+      ? 'blocked'
+      : mob.reviewRequired
+        ? 'in_progress'
+        : 'completed';
+    const mobSemaphore = mobStatus === 'blocked' ? 'red' as Semaphore : mobStatus === 'in_progress' ? 'amber' as Semaphore : 'green' as Semaphore;
+
+    const mobilityStep: PreflightStep = {
+      id: 'mobility_international',
+      index: 1, // inject after incidents (index 0)
+      label: 'Movilidad Internacional',
+      description: mob.summary || `${mob.activeAssignmentCount} asignación(es) internacional(es) activa(s)`,
+      status: mobStatus,
+      semaphore: mobSemaphore,
+      targetModule: 'mobility-international',
+      targetContext: periodId ? { periodId } : undefined,
+      targetAction: 'review_mobility',
+      icon: 'Globe',
+      blockReason: mobStatus === 'blocked' ? 'Asignación fuera de alcance requiere derivación externa' : undefined,
+      blockDomain: mobStatus !== 'completed' ? 'mobility' : undefined,
+      suggestedFix: mob.reviewRequired ? 'Revisar clasificación de asignaciones internacionales activas' : undefined,
+      isInstitutional: false,
+    };
+
+    // Insert after index 0 (incidents) and re-index
+    steps.splice(1, 0, mobilityStep);
+    steps.forEach((s, i) => { s.index = i; });
+  }
+
   // Build offboarding steps
   const offboardingSteps: PreflightStep[] = input.hasTerminations
     ? OFFBOARDING_STEPS.map((def, idx) => {
