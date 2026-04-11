@@ -74,9 +74,9 @@ export function HRDepartmentsPanel({ companyId }: HRDepartmentsPanelProps) {
         }
 
         // Get employee counts per department
-        const { data: empCounts } = await supabase
+        const { data: empCounts } = await (supabase
           .from('erp_hr_employees')
-          .select('department_id')
+          .select('department_id') as any)
           .eq('company_id', companyId)
           .eq('is_active', true);
         
