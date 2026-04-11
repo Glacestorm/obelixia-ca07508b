@@ -1,12 +1,14 @@
 /**
  * MobilityAssignmentsList — Filterable list of mobility assignments
+ * H1.0: Show employee names instead of truncated UUIDs
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plane, Plus, ChevronRight } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
+import { supabase } from '@/integrations/supabase/client';
 import type { MobilityAssignment, AssignmentFilters, AssignmentStatus, AssignmentType } from '@/hooks/erp/hr/useGlobalMobility';
 
 interface Props {
@@ -43,6 +45,28 @@ const RISK_COLORS: Record<string, string> = {
 export function MobilityAssignmentsList({ assignments, loading, onSelect, onCreate, onFilter }: Props) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [employeeNames, setEmployeeNames] = useState<Record<string, string>>({});
+
+  // Load employee names for all assignments
+  useEffect(() => {
+    const employeeIds = [...new Set(assignments.map(a => a.employee_id))];
+    if (employeeIds.length === 0) return;
+
+    const loadNames = async () => {
+      try {
+        const { data } = await supabase
+          .from('erp_hr_employees' as any)
+          .select('id, first_name, last_name')
+          .in('id', employeeIds);
+        if (data) {
+          const map: Record<string, string> = {};
+          (data as any[]).forEach(e => { map[e.id] = `${e.first_name} ${e.last_name}`; });
+          setEmployeeNames(map);
+        }
+      } catch { /* ignore */ }
+    };
+    loadNames();
+  }, [assignments]);
 
   const handleStatusChange = (val: string) => {
     setStatusFilter(val);
@@ -119,7 +143,9 @@ export function MobilityAssignmentsList({ assignments, loading, onSelect, onCrea
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate">{a.employee_id.slice(0, 8)}...</p>
+                    <p className="text-sm font-medium truncate">
+                      {employeeNames[a.employee_id] || a.employee_id.slice(0, 8) + '...'}
+                    </p>
                     <span className={`text-[10px] px-1.5 py-0 rounded border ${RISK_COLORS[a.risk_level]}`}>
                       {a.risk_level}
                     </span>
