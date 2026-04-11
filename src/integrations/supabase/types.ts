@@ -34175,6 +34175,7 @@ export type Database = {
           country_code: string | null
           created_at: string | null
           department_id: string | null
+          disability_percentage: number | null
           email: string | null
           employee_code: string | null
           employee_number: string | null
@@ -34222,6 +34223,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           department_id?: string | null
+          disability_percentage?: number | null
           email?: string | null
           employee_code?: string | null
           employee_number?: string | null
@@ -34269,6 +34271,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           department_id?: string | null
+          disability_percentage?: number | null
           email?: string | null
           employee_code?: string | null
           employee_number?: string | null
