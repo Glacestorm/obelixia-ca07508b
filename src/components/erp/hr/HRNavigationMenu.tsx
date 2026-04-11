@@ -93,7 +93,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'admin-requests', 'hr-tasks', 'approval-inbox',
     // Global
     'country-registry', 'es-localization',
-    'mobility-international',
+    'mobility-international', 'stock-options',
     'official-submissions', 'compliance-evidence',
   ]);
 
