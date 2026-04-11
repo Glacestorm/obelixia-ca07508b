@@ -93,29 +93,73 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
     setSelectedContract(null);
   };
 
-  // Demo data - Finiquitos
-  const settlements = [
+  // H1.1: Settlements from real DB
+  const [settlements, setSettlements] = useState<any[]>([]);
+  const [settlementsLoading, setSettlementsLoading] = useState(false);
+  const [settlementsIsDemo, setSettlementsIsDemo] = useState(false);
+
+  const fetchSettlements = useCallback(async () => {
+    setSettlementsLoading(true);
+    try {
+      const { data, error } = await (supabase
+        .from('erp_hr_settlements')
+        .select('id, employee_id, termination_type, termination_date, pending_vacation_days, extra_pays_proportional, indemnization_gross, gross_total, status') as any)
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setSettlementsIsDemo(true);
+        setSettlements(DEMO_SETTLEMENTS);
+      } else {
+        // Resolve employee names
+        const empIds = (data as any[]).map((s: any) => s.employee_id).filter(Boolean);
+        let empMap: Record<string, string> = {};
+        if (empIds.length > 0) {
+          const { data: emps } = await (supabase
+            .from('erp_hr_employees')
+            .select('id, first_name, last_name') as any)
+            .in('id', empIds);
+          (emps as any[])?.forEach((e: any) => {
+            empMap[e.id] = `${e.first_name} ${e.last_name}`.trim();
+          });
+        }
+        setSettlementsIsDemo(false);
+        setSettlements((data as any[]).map((s: any) => ({
+          id: s.id,
+          employee: empMap[s.employee_id] || s.employee_id?.slice(0, 8) + '…',
+          reason: s.termination_type || '—',
+          terminationDate: s.termination_date,
+          vacationDays: Number(s.pending_vacation_days) || 0,
+          extraPays: Number(s.extra_pays_proportional) || 0,
+          compensation: Number(s.indemnization_gross) || 0,
+          total: Number(s.gross_total) || 0,
+          status: s.status,
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching settlements:', err);
+      setSettlementsIsDemo(true);
+      setSettlements(DEMO_SETTLEMENTS);
+    } finally {
+      setSettlementsLoading(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => { fetchSettlements(); }, [fetchSettlements]);
+
+  const DEMO_SETTLEMENTS = [
     {
-      id: '1',
-      employee: 'Roberto Gómez Vila',
-      reason: 'Baja voluntaria',
-      terminationDate: '2026-01-15',
-      vacationDays: 5,
-      extraPays: 876.50,
-      compensation: 0,
-      total: 2356.80,
-      status: 'calculated'
+      id: 'demo-1', employee: 'Roberto Gómez Vila', reason: 'Baja voluntaria',
+      terminationDate: '2026-01-15', vacationDays: 5, extraPays: 876.50,
+      compensation: 0, total: 2356.80, status: 'calculated'
     },
     {
-      id: '2',
-      employee: 'Laura Díaz Martín',
-      reason: 'Fin contrato temporal',
-      terminationDate: '2025-12-31',
-      vacationDays: 3,
-      extraPays: 520.00,
-      compensation: 1250.00,
-      total: 3890.40,
-      status: 'paid'
+      id: 'demo-2', employee: 'Laura Díaz Martín', reason: 'Fin contrato temporal',
+      terminationDate: '2025-12-31', vacationDays: 3, extraPays: 520.00,
+      compensation: 1250.00, total: 3890.40, status: 'paid'
     },
   ];
 
@@ -293,7 +337,12 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Finiquitos y Liquidaciones</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">Finiquitos y Liquidaciones</CardTitle>
+                    {settlementsIsDemo && (
+                      <Badge variant="outline" className="text-xs border-warning/30 text-warning">Datos de ejemplo</Badge>
+                    )}
+                  </div>
                   <CardDescription>Cálculo y gestión de finiquitos</CardDescription>
                 </div>
                 <Button size="sm" onClick={() => setShowSettlementDialog(true)}>
