@@ -208,6 +208,7 @@ export function useHRFairnessEngine() {
   // === DATA BRIDGE: Real pay equity data from ERP base ===
   const [realPayEquityData, setRealPayEquityData] = useState<Record<string, unknown> | null>(null);
   const [realDataLoading, setRealDataLoading] = useState(false);
+  const [vptSummary, setVptSummary] = useState<import('@/types/s9-compliance').FairnessVPTSummary | null>(null);
 
   const fetchRealPayEquityData = useCallback(async (companyId: string) => {
     setRealDataLoading(true);
@@ -218,6 +219,39 @@ export function useHRFairnessEngine() {
       if (error) throw error;
       if (data?.success) {
         setRealPayEquityData(data.data);
+
+        // S9.5 — VPT context for fairness (non-blocking, descriptive only)
+        try {
+          const [empRes, vptRes] = await Promise.all([
+            (supabase as any).from('erp_hr_employees')
+              .select('id, gender, position_id')
+              .eq('company_id', companyId)
+              .eq('status', 'active'),
+            (supabase as any).from('erp_hr_job_valuations')
+              .select('position_id, total_score')
+              .eq('company_id', companyId)
+              .eq('status', 'approved'),
+          ]);
+          if (vptRes.data && vptRes.data.length > 0 && empRes.data) {
+            const { computeFairnessVPTSummary } = await import('@/engines/erp/hr/s9ComplianceEngine');
+            const vptMap: Record<string, number> = {};
+            for (const v of vptRes.data) vptMap[v.position_id] = Number(v.total_score);
+            const empInputs = empRes.data.map((e: any) => ({
+              employeeId: e.id,
+              gender: e.gender === 'female' ? 'F' : e.gender === 'male' ? 'M' : (e.gender || 'M'),
+              positionId: e.position_id ?? null,
+            }));
+            const currentGap = (data.data as any)?.gender_gap?.gap_percentage;
+            const summary = computeFairnessVPTSummary(empInputs, vptMap, currentGap);
+            setVptSummary(summary);
+          } else {
+            setVptSummary(null);
+          }
+        } catch (vptErr) {
+          console.error('[useHRFairnessEngine] VPT context (non-blocking):', vptErr);
+          setVptSummary(null);
+        }
+
         return data.data;
       }
     } catch (err) {
@@ -259,7 +293,7 @@ export function useHRFairnessEngine() {
 
   return {
     analyses, metrics, cases, plans, stats, aiAnalysis, loading, aiLoading,
-    realPayEquityData, realDataLoading,
+    realPayEquityData, realDataLoading, vptSummary,
     fetchAll, fetchStats, runFairnessAnalysis, runPayEquityAI, seedDemo,
     fetchRealPayEquityData,
   };

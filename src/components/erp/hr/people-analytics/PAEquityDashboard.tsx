@@ -1,15 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Scale, TrendingDown, TrendingUp } from 'lucide-react';
+import { Scale, TrendingDown, TrendingUp, Info, Briefcase } from 'lucide-react';
 import { type PAEquityMetrics } from '@/hooks/erp/hr/usePeopleAnalytics';
+import type { EquityVPTContext } from '@/types/s9-compliance';
 
 interface Props {
   data: PAEquityMetrics | null;
   isLoading: boolean;
+  vptContext?: EquityVPTContext | null;
 }
 
-export function PAEquityDashboard({ data, isLoading }: Props) {
+export function PAEquityDashboard({ data, isLoading, vptContext }: Props) {
   if (isLoading && !data) {
     return <div className="grid grid-cols-2 gap-3">{Array.from({ length: 2 }).map((_, i) => <Card key={i}><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>)}</div>;
   }
@@ -88,6 +90,61 @@ export function PAEquityDashboard({ data, isLoading }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* S9.5 — VPT Context Section (conditional, descriptive only) */}
+      {vptContext && vptContext.vptContextAvailable && (
+        <Card className="border-blue-500/20 bg-blue-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-blue-600" />
+                Contexto VPT — Información Complementaria
+              </span>
+              <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-600">internal_ready</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Cobertura VPT</p>
+                <p className="text-lg font-bold text-foreground">{(vptContext.vptCoverage * 100).toFixed(0)}%</p>
+                <p className="text-[10px] text-muted-foreground">{vptContext.positionsValued}/{vptContext.totalPositions} puestos</p>
+              </div>
+              {vptContext.avgScoreMale != null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Score Medio H</p>
+                  <p className="text-lg font-bold text-foreground">{vptContext.avgScoreMale.toFixed(1)}</p>
+                </div>
+              )}
+              {vptContext.avgScoreFemale != null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Score Medio M</p>
+                  <p className="text-lg font-bold text-foreground">{vptContext.avgScoreFemale.toFixed(1)}</p>
+                </div>
+              )}
+              {vptContext.scoreDifference != null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Diferencia Score</p>
+                  <p className={`text-lg font-bold ${vptContext.divergenceRelevant ? 'text-amber-600' : 'text-foreground'}`}>
+                    {vptContext.scoreDifference.toFixed(1)} pts
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {vptContext.insight && (
+              <div className="p-2.5 rounded-md bg-blue-500/10 text-xs text-muted-foreground">
+                <Info className="h-3 w-3 inline mr-1 text-blue-500" />
+                {vptContext.insight}
+              </div>
+            )}
+
+            <p className="text-[10px] text-muted-foreground italic border-t border-border/30 pt-2">
+              {vptContext.disclaimer}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

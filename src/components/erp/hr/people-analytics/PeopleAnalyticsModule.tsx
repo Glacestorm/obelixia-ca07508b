@@ -152,6 +152,7 @@ export function PeopleAnalyticsModule({ companyId }: PeopleAnalyticsModuleProps)
           <PAEquityDashboard
             data={analytics.equityMetrics}
             isLoading={analytics.isLoading}
+            vptContext={analytics.vptContext}
           />
         </TabsContent>
 
