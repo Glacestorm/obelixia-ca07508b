@@ -279,7 +279,7 @@ FORMATO JSON estricto:
       return json({ success: true, data: { data_source: 'real', total_employees: (employees || []).length, with_payroll_data: Object.keys(payrollMap).length, gender_gap: genderGap, department_gaps: deptGaps, role_gaps: roleGaps, raw_gender_summary: byGender, timestamp: new Date().toISOString() } });
 
     } else if (action === 'ai_fairness_analysis') {
-      const { data: realEmps } = await userClient.from('erp_hr_employees').select('gender, base_salary, department_id, job_title').eq('company_id', company_id).eq('status', 'active');
+      const { data: realEmps } = await userClient.from('erp_hr_employees').select('gender, base_salary, department_id, job_title, position_id').eq('company_id', company_id).eq('status', 'active');
       const genderStats: Record<string, { count: number; total: number }> = {};
       (realEmps || []).forEach((e: any) => { const g = e.gender || 'unknown'; if (!genderStats[g]) genderStats[g] = { count: 0, total: 0 }; genderStats[g].count++; genderStats[g].total += Number(e.base_salary || 0); });
       const realContext = { total_active_employees: (realEmps || []).length, gender_distribution: Object.entries(genderStats).map(([g, s]) => ({ gender: g, count: s.count, avg_salary: Math.round(s.total / s.count) })), data_source: 'real_erp_data' };
@@ -287,14 +287,20 @@ FORMATO JSON estricto:
       // --- S9.7: VPT context injection (informative, non-justificative) ---
       let vptContextBlock = '';
       try {
-        const { data: vptData } = await userClient.from('erp_hr_job_valuations').select('position_title, total_score, gender_lessor').eq('company_id', company_id).eq('status', 'approved');
+        const { data: vptData } = await userClient.from('erp_hr_job_valuations').select('position_id, total_score').eq('company_id', company_id).eq('status', 'approved');
         if (vptData && vptData.length > 0) {
-          const maleScores = vptData.filter((v: any) => v.gender_lessor === 'M').map((v: any) => Number(v.total_score || 0));
-          const femaleScores = vptData.filter((v: any) => v.gender_lessor === 'F').map((v: any) => Number(v.total_score || 0));
-          const avgM = maleScores.length > 0 ? Math.round(maleScores.reduce((a: number, b: number) => a + b, 0) / maleScores.length * 100) / 100 : null;
-          const avgF = femaleScores.length > 0 ? Math.round(femaleScores.reduce((a: number, b: number) => a + b, 0) / femaleScores.length * 100) / 100 : null;
+          const vptMap: Record<string, number> = {};
+          vptData.forEach((v: any) => { if (v.position_id && v.total_score != null) vptMap[v.position_id] = Number(v.total_score); });
+          const maleScores: number[] = [];
+          const femaleScores: number[] = [];
+          (realEmps || []).forEach((e: any) => { if (e.position_id && vptMap[e.position_id] !== undefined) { if (e.gender === 'M') maleScores.push(vptMap[e.position_id]); else if (e.gender === 'F') femaleScores.push(vptMap[e.position_id]); } });
+          const avgM = maleScores.length > 0 ? Math.round(maleScores.reduce((a, b) => a + b, 0) / maleScores.length * 100) / 100 : null;
+          const avgF = femaleScores.length > 0 ? Math.round(femaleScores.reduce((a, b) => a + b, 0) / femaleScores.length * 100) / 100 : null;
           const diff = (avgM !== null && avgF !== null) ? Math.round((avgM - avgF) * 100) / 100 : null;
-          vptContextBlock = `\n\n=== CONTEXTO VPT (INFORMATIVO — NO JUSTIFICATIVO) ===\nPosiciones valoradas: ${vptData.length}\n${avgM !== null ? `Score medio VPT posiciones H: ${avgM}` : 'Score medio VPT H: sin datos suficientes'}\n${avgF !== null ? `Score medio VPT posiciones M: ${avgF}` : 'Score medio VPT M: sin datos suficientes'}\n${diff !== null ? `Diferencia media VPT: ${diff}` : ''}\nEste contexto es descriptivo y no debe usarse para afirmar que una brecha está justificada o explicada por VPT.\n=== FIN CONTEXTO VPT ===`;
+          const matched = maleScores.length + femaleScores.length;
+          if (matched > 0) {
+            vptContextBlock = `\n\n=== CONTEXTO VPT (INFORMATIVO — NO JUSTIFICATIVO) ===\nPosiciones valoradas: ${vptData.length}\nEmpleados con VPT asignado: ${matched}\nScore medio VPT posiciones H: ${avgM !== null ? avgM : 'sin datos suficientes'}\nScore medio VPT posiciones M: ${avgF !== null ? avgF : 'sin datos suficientes'}\n${diff !== null ? `Diferencia media VPT: ${diff}` : ''}\nEste contexto es descriptivo y no debe usarse para afirmar que una brecha está justificada o explicada por VPT.\n=== FIN CONTEXTO VPT ===`;
+          }
         }
       } catch (vptErr) {
         console.log('[erp-hr-security-governance] VPT query failed (graceful degradation):', vptErr);
@@ -316,7 +322,7 @@ FORMATO JSON estricto:
 }`;
       userPrompt = `Analiza la equidad organizacional con DATOS REALES: ${JSON.stringify({ ...params, real_data: realContext })}${vptContextBlock}`;
     } else if (action === 'ai_pay_equity_analysis') {
-      const { data: realEmps } = await userClient.from('erp_hr_employees').select('gender, base_salary, department_id, job_title, category, hire_date').eq('company_id', company_id).eq('status', 'active');
+      const { data: realEmps } = await userClient.from('erp_hr_employees').select('gender, base_salary, department_id, job_title, category, hire_date, position_id').eq('company_id', company_id).eq('status', 'active');
       const { data: depts } = await userClient.from('erp_hr_departments').select('id, name').eq('company_id', company_id);
       const dm: Record<string, string> = {}; (depts || []).forEach((d: any) => { dm[d.id] = d.name; });
       const enrichedEmps = (realEmps || []).map((e: any) => ({ gender: e.gender, base_salary: e.base_salary, department: dm[e.department_id] || 'N/A', job_title: e.job_title, category: e.category }));
