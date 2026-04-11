@@ -9,6 +9,7 @@
  * - Manage registration-specific states
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useEmployeeMasterPrefill, type PrefilledFieldSet } from '@/hooks/erp/hr/useEmployeeMasterPrefill';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -106,6 +107,10 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<Partial<RegistrationData>>({});
   const [saving, setSaving] = useState(false);
+  const [prefilledFields, setPrefilledFields] = useState<PrefilledFieldSet>(new Set());
+
+  // H2.1: Master data prefill
+  const { masterData, getRegistrationPrefill, mergeAdditive } = useEmployeeMasterPrefill(employeeId);
 
   // Fetch on mount
   useEffect(() => {
@@ -181,12 +186,18 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
   }, [formData, requestId, employeeId, upsertRegistrationData, persistDeadlineAndPayload, holidaySet]);
 
   const handleInitialize = useCallback(async () => {
-    await upsertRegistrationData(requestId, employeeId, {
+    const initialData: Partial<RegistrationData> = {
       registration_status: 'pending_data' as any,
       regime: 'general',
-    });
+    };
+    // H2.1: Additive prefill from master data
+    const prefill = getRegistrationPrefill();
+    const { merged, prefilledKeys } = mergeAdditive(initialData, prefill);
+    setPrefilledFields(prefilledKeys);
+    
+    await upsertRegistrationData(requestId, employeeId, merged);
     setEditMode(true);
-  }, [requestId, employeeId, upsertRegistrationData]);
+  }, [requestId, employeeId, upsertRegistrationData, getRegistrationPrefill, mergeAdditive]);
 
   const handleAdvanceStatus = useCallback(async (newStatus: RegistrationStatus) => {
     await updateRegistrationStatus(requestId, newStatus);
@@ -322,11 +333,17 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
             <p className="text-xs font-medium text-muted-foreground">Datos para Sistema RED / TGSS</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">DNI/NIE *</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  DNI/NIE *
+                  {prefilledFields.has('dni_nie') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Input placeholder="12345678Z" value={formData.dni_nie || ''} onChange={e => set('dni_nie', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">NAF *</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  NAF *
+                  {prefilledFields.has('naf') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Input placeholder="Nº Afiliación SS" value={formData.naf || ''} onChange={e => set('naf', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
@@ -334,11 +351,17 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                 <Input type="date" value={formData.registration_date || ''} onChange={e => set('registration_date', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">CCC *</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  CCC *
+                  {prefilledFields.has('ccc') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Input placeholder="Código Cuenta Cotización" value={formData.ccc || ''} onChange={e => set('ccc', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Tipo contrato *</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Tipo contrato *
+                  {prefilledFields.has('contract_type_code') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Select value={formData.contract_type_code || ''} onValueChange={v => set('contract_type_code', v)}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent>
@@ -349,7 +372,10 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Grupo cotización *</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Grupo cotización *
+                  {prefilledFields.has('contribution_group') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Select value={formData.contribution_group || ''} onValueChange={v => set('contribution_group', v)}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent>
@@ -383,11 +409,17 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                 <Input placeholder="Razón social" value={formData.legal_entity || ''} onChange={e => set('legal_entity', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Código CNO</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Código CNO
+                  {prefilledFields.has('occupation_code') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Input placeholder="Clasificación ocupación" value={formData.occupation_code || ''} onChange={e => set('occupation_code', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Convenio colectivo</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Convenio colectivo
+                  {prefilledFields.has('collective_agreement') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Input placeholder="Convenio aplicable" value={formData.collective_agreement || ''} onChange={e => set('collective_agreement', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>

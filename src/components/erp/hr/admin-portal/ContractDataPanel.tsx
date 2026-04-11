@@ -5,6 +5,7 @@
  * Mirrors RegistrationDataPanel pattern (alta/afiliación).
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEmployeeMasterPrefill, type PrefilledFieldSet } from '@/hooks/erp/hr/useEmployeeMasterPrefill';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +91,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Partial<ContractProcessData>>({});
   const [showRecommended, setShowRecommended] = useState(false);
+  const [prefilledFields, setPrefilledFields] = useState<PrefilledFieldSet>(new Set());
+
+  // H2.1: Master data prefill
+  const { masterData: contractMasterData, getContractPrefill, mergeAdditive } = useEmployeeMasterPrefill(employeeId);
 
   const { holidaySet } = useHRHolidayCalendar();
 
@@ -161,7 +166,7 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
 
 
   const startEdit = useCallback(() => {
-    setDraft({
+    const baseDraft: Partial<ContractProcessData> = {
       contract_type_code: contractData?.contract_type_code ?? '',
       contract_subtype: contractData?.contract_subtype ?? '',
       contract_start_date: contractData?.contract_start_date ?? '',
@@ -185,9 +190,14 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
       is_conversion: contractData?.is_conversion ?? false,
       conversion_from_type: contractData?.conversion_from_type ?? '',
       validation_notes: contractData?.validation_notes ?? '',
-    });
+    };
+    // H2.1: Additive prefill from master data (only fills empty fields)
+    const prefill = getContractPrefill();
+    const { merged, prefilledKeys } = mergeAdditive(baseDraft, prefill);
+    setPrefilledFields(prefilledKeys);
+    setDraft(merged);
     setEditing(true);
-  }, [contractData]);
+  }, [contractData, getContractPrefill, mergeAdditive]);
 
   // Save
   const handleSave = useCallback(async () => {
@@ -349,7 +359,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Código CNO *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    Código CNO *
+                    {prefilledFields.has('occupation_code') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.occupation_code || ''}
@@ -359,7 +372,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">DNI/NIE *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    DNI/NIE *
+                    {prefilledFields.has('dni_nie') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.dni_nie || ''}
@@ -368,7 +384,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">NAF *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    NAF *
+                    {prefilledFields.has('naf') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.naf || ''}
@@ -377,7 +396,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">CCC *</Label>
+                  <Label className="text-xs flex items-center gap-1">
+                    CCC *
+                    {prefilledFields.has('ccc') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                  </Label>
                   <Input
                     className="h-8 text-xs"
                     value={draft.ccc || ''}
@@ -411,7 +433,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Horas semanales</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      Horas semanales
+                      {prefilledFields.has('weekly_hours') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                    </Label>
                     <Input
                       type="number"
                       className="h-8 text-xs"
@@ -429,7 +454,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Convenio colectivo</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      Convenio colectivo
+                      {prefilledFields.has('collective_agreement') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                    </Label>
                     <Input
                       className="h-8 text-xs"
                       value={draft.collective_agreement || ''}
@@ -437,7 +465,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Puesto de trabajo</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      Puesto de trabajo
+                      {prefilledFields.has('job_title') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                    </Label>
                     <Input
                       className="h-8 text-xs"
                       value={draft.job_title || ''}
