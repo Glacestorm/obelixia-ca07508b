@@ -1,8 +1,8 @@
 /**
  * MobilityAssignmentForm — 5-section form for creating/editing mobility assignments
- * Sections: Basic, Jurisdictions (5 countries), Compensation, Benefits, Risk
+ * H1.0: Employee select from DB, country selects from KB, validation, pe_risk_flag, days_in_host
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, DollarSign, Shield, Briefcase, MapPin } from 'lucide-react';
+import { Globe, DollarSign, Shield, Briefcase, MapPin, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { getKnownCountries } from '@/engines/erp/hr/internationalMobilityEngine';
 import type { MobilityAssignment, AssignmentType, CompensationApproach, RiskLevel, AllowancePackage } from '@/hooks/erp/hr/useGlobalMobility';
 
 interface Props {
@@ -19,6 +21,13 @@ interface Props {
   onSubmit: (data: Partial<MobilityAssignment>) => void;
   onCancel: () => void;
   isEditing?: boolean;
+  companyId?: string;
+}
+
+interface EmployeeOption {
+  id: string;
+  first_name: string;
+  last_name: string;
 }
 
 const ASSIGNMENT_TYPES: { value: AssignmentType; label: string }[] = [
@@ -44,13 +53,19 @@ const RISK_LEVELS: { value: RiskLevel; label: string }[] = [
   { value: 'critical', label: 'Crítico' },
 ];
 
-export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEditing }: Props) {
+// Country options from knowledge base
+const COUNTRY_OPTIONS = getKnownCountries().map(c => ({ code: c.code, name: c.name }));
+
+export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEditing, companyId }: Props) {
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const [form, setForm] = useState({
     employee_id: initial.employee_id || '',
     assignment_type: initial.assignment_type || 'long_term',
     start_date: initial.start_date || '',
     end_date: initial.end_date || '',
-    // Jurisdictions
     home_country_code: initial.home_country_code || 'ES',
     host_country_code: initial.host_country_code || '',
     payroll_country_code: initial.payroll_country_code || 'ES',
@@ -60,25 +75,55 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
     host_legal_entity_id: initial.host_legal_entity_id || '',
     job_title_host: (initial as any).job_title_host || '',
     reporting_to: (initial as any).reporting_to || '',
-    // Compensation
     compensation_approach: initial.compensation_approach || 'tax_equalization',
     currency_code: initial.currency_code || 'EUR',
     split_payroll: initial.split_payroll || false,
     shadow_payroll: initial.shadow_payroll || false,
     hypothetical_tax: initial.hypothetical_tax || 0,
-    // Benefits
     allowance_housing: initial.allowance_package?.housing || 0,
     allowance_cola: initial.allowance_package?.cola || 0,
     allowance_hardship: initial.allowance_package?.hardship || 0,
     allowance_education: initial.allowance_package?.education || 0,
     allowance_relocation: initial.allowance_package?.relocation || 0,
     allowance_home_leave: initial.allowance_package?.home_leave || 0,
-    // Risk
     risk_level: initial.risk_level || 'low',
+    pe_risk_flag: initial.pe_risk_flag || false,
+    days_in_host: initial.days_in_host || 0,
     notes: initial.notes || '',
   });
 
+  // Load employees from DB
+  useEffect(() => {
+    if (!companyId) return;
+    setLoadingEmployees(true);
+    supabase
+      .from('erp_hr_employees')
+      .select('id, first_name, last_name')
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .order('last_name')
+      .then(({ data }) => {
+        setEmployees((data || []) as EmployeeOption[]);
+        setLoadingEmployees(false);
+      });
+  }, [companyId]);
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (!form.employee_id) newErrors.employee_id = 'Selecciona un empleado';
+    if (!form.start_date) newErrors.start_date = 'Fecha inicio obligatoria';
+    if (!form.host_country_code) newErrors.host_country_code = 'País destino obligatorio';
+    if (!form.home_country_code) newErrors.home_country_code = 'País origen obligatorio';
+    if (form.end_date && form.start_date && form.end_date < form.start_date) {
+      newErrors.end_date = 'Fecha fin no puede ser anterior al inicio';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = () => {
+    if (!validate()) return;
+
     const allowance_package: AllowancePackage = {
       housing: form.allowance_housing,
       cola: form.allowance_cola,
@@ -107,6 +152,8 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
       hypothetical_tax: form.hypothetical_tax || null,
       allowance_package,
       risk_level: form.risk_level as RiskLevel,
+      pe_risk_flag: form.pe_risk_flag,
+      days_in_host: form.days_in_host || null,
       notes: form.notes || null,
       status: initial.status || 'draft',
     } as any);
@@ -114,7 +161,27 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
 
   const updateField = (field: string, value: unknown) => {
     setForm(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
   };
+
+  const renderCountrySelect = (field: string, label: string, placeholder: string) => (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <Select value={(form as any)[field]} onValueChange={v => updateField(field, v)}>
+        <SelectTrigger className={`h-8 text-xs ${errors[field] ? 'border-destructive' : ''}`}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {COUNTRY_OPTIONS.map(c => (
+            <SelectItem key={c.code} value={c.code}>
+              {c.code} — {c.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {errors[field] && <p className="text-[10px] text-destructive mt-0.5">{errors[field]}</p>}
+    </div>
+  );
 
   return (
     <Card>
@@ -135,10 +202,34 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
 
           {/* Tab 1: Basic */}
           <TabsContent value="basic" className="space-y-3">
+            {Object.keys(errors).length > 0 && (
+              <div className="p-2 bg-destructive/10 rounded-lg border border-destructive/20 flex items-center gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                <p className="text-xs text-destructive">Corrige los campos obligatorios marcados en rojo</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Employee ID</Label>
-                <Input value={form.employee_id} onChange={e => updateField('employee_id', e.target.value)} placeholder="UUID del empleado" className="h-8 text-sm" />
+                <Label className="text-xs">Empleado *</Label>
+                <Select value={form.employee_id} onValueChange={v => updateField('employee_id', v)}>
+                  <SelectTrigger className={`h-8 text-xs ${errors.employee_id ? 'border-destructive' : ''}`}>
+                    <SelectValue placeholder={loadingEmployees ? 'Cargando...' : 'Seleccionar empleado'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.length === 0 ? (
+                      <SelectItem value="__none" disabled>
+                        {loadingEmployees ? 'Cargando empleados...' : 'No hay empleados activos'}
+                      </SelectItem>
+                    ) : (
+                      employees.map(emp => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.last_name}, {emp.first_name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.employee_id && <p className="text-[10px] text-destructive mt-0.5">{errors.employee_id}</p>}
               </div>
               <div>
                 <Label className="text-xs">Tipo de asignación</Label>
@@ -150,12 +241,14 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Fecha inicio</Label>
-                <Input type="date" value={form.start_date} onChange={e => updateField('start_date', e.target.value)} className="h-8 text-sm" />
+                <Label className="text-xs">Fecha inicio *</Label>
+                <Input type="date" value={form.start_date} onChange={e => updateField('start_date', e.target.value)} className={`h-8 text-sm ${errors.start_date ? 'border-destructive' : ''}`} />
+                {errors.start_date && <p className="text-[10px] text-destructive mt-0.5">{errors.start_date}</p>}
               </div>
               <div>
                 <Label className="text-xs">Fecha fin prevista</Label>
-                <Input type="date" value={form.end_date} onChange={e => updateField('end_date', e.target.value)} className="h-8 text-sm" />
+                <Input type="date" value={form.end_date} onChange={e => updateField('end_date', e.target.value)} className={`h-8 text-sm ${errors.end_date ? 'border-destructive' : ''}`} />
+                {errors.end_date && <p className="text-[10px] text-destructive mt-0.5">{errors.end_date}</p>}
               </div>
               <div>
                 <Label className="text-xs">Puesto en destino</Label>
@@ -177,25 +270,16 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              {renderCountrySelect('home_country_code', '🏠 País de origen *', 'Seleccionar país')}
+              {renderCountrySelect('host_country_code', '✈️ País de destino (trabajo) *', 'Seleccionar país')}
+              {renderCountrySelect('payroll_country_code', '💰 País de nómina principal', 'Seleccionar país')}
+              {renderCountrySelect('tax_residence_country', '🏦 País residencia fiscal', 'Seleccionar país')}
+              {renderCountrySelect('ss_regime_country', '🛡️ País régimen Seguridad Social', 'Seleccionar país')}
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
               <div>
-                <Label className="text-xs">🏠 País de origen</Label>
-                <Input value={form.home_country_code} onChange={e => updateField('home_country_code', e.target.value)} placeholder="ES" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">✈️ País de destino (trabajo)</Label>
-                <Input value={form.host_country_code} onChange={e => updateField('host_country_code', e.target.value)} placeholder="DE" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">💰 País de nómina principal</Label>
-                <Input value={form.payroll_country_code} onChange={e => updateField('payroll_country_code', e.target.value)} placeholder="ES" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">🏦 País residencia fiscal</Label>
-                <Input value={form.tax_residence_country} onChange={e => updateField('tax_residence_country', e.target.value)} placeholder="DE" className="h-8 text-sm" />
-              </div>
-              <div>
-                <Label className="text-xs">🛡️ País régimen Seguridad Social</Label>
-                <Input value={form.ss_regime_country} onChange={e => updateField('ss_regime_country', e.target.value)} placeholder="ES" className="h-8 text-sm" />
+                <Label className="text-xs">Días en país destino (estimados)</Label>
+                <Input type="number" value={form.days_in_host} onChange={e => updateField('days_in_host', Number(e.target.value))} className="h-8 text-sm" placeholder="0" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2 border-t">
@@ -285,6 +369,13 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
                   {RISK_LEVELS.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <Switch checked={form.pe_risk_flag} onCheckedChange={v => updateField('pe_risk_flag', v)} />
+              <div>
+                <Label className="text-xs">Riesgo de Establecimiento Permanente (PE)</Label>
+                <p className="text-[10px] text-muted-foreground">Activar si la asignación puede crear PE en país destino</p>
+              </div>
             </div>
             <div>
               <Label className="text-xs">Notas / observaciones</Label>

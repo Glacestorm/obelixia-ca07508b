@@ -1,5 +1,6 @@
 /**
- * MobilityDocumentsPanel — CRUD for mobility documents (visa, work permit, A1, etc.)
+ * MobilityDocumentsPanel — CRUD for mobility documents
+ * H1.0: Country select from KB, status update dropdown per document
  */
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FileText, Plus, AlertTriangle } from 'lucide-react';
+import { getKnownCountries } from '@/engines/erp/hr/internationalMobilityEngine';
 import type { MobilityDocument, DocumentType, DocumentStatus } from '@/hooks/erp/hr/useGlobalMobility';
 
 interface Props {
@@ -38,6 +40,19 @@ const STATUS_COLORS: Record<string, string> = {
   renewed: 'bg-blue-500/15 text-blue-700',
   rejected: 'bg-red-500/15 text-red-700',
 };
+
+const ALL_DOC_STATUSES: { value: DocumentStatus; label: string }[] = [
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'applied', label: 'Solicitado' },
+  { value: 'approved', label: 'Aprobado' },
+  { value: 'active', label: 'Activo' },
+  { value: 'expiring_soon', label: 'Próx. expiración' },
+  { value: 'expired', label: 'Expirado' },
+  { value: 'renewed', label: 'Renovado' },
+  { value: 'rejected', label: 'Rechazado' },
+];
+
+const COUNTRY_OPTIONS = getKnownCountries().map(c => ({ code: c.code, name: c.name }));
 
 export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd, onUpdate }: Props) {
   const [showForm, setShowForm] = useState(false);
@@ -92,7 +107,17 @@ export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd
                 </div>
                 <div><Label className="text-xs">Nombre</Label><Input value={form.document_name} onChange={e => setForm(p => ({ ...p, document_name: e.target.value }))} className="h-8 text-sm" /></div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div><Label className="text-xs">País emisor</Label><Input value={form.country_code} onChange={e => setForm(p => ({ ...p, country_code: e.target.value }))} className="h-8 text-sm" placeholder="ES" /></div>
+                  <div>
+                    <Label className="text-xs">País emisor</Label>
+                    <Select value={form.country_code} onValueChange={v => setForm(p => ({ ...p, country_code: v }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectContent>
+                        {COUNTRY_OPTIONS.map(c => (
+                          <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div><Label className="text-xs">Referencia</Label><Input value={form.reference_number} onChange={e => setForm(p => ({ ...p, reference_number: e.target.value }))} className="h-8 text-sm" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -122,9 +147,21 @@ export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[doc.status] || ''}`}>
-                  {doc.status}
-                </Badge>
+                <Select
+                  value={doc.status}
+                  onValueChange={(v) => onUpdate(doc.id, { status: v as DocumentStatus })}
+                >
+                  <SelectTrigger className="w-[130px] h-7 text-[10px] border-0 p-0 justify-end gap-1">
+                    <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[doc.status] || ''}`}>
+                      {ALL_DOC_STATUSES.find(s => s.value === doc.status)?.label || doc.status}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_DOC_STATUSES.map(s => (
+                      <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             ))}
           </div>

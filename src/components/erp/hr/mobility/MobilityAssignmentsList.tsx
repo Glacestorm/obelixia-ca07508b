@@ -1,5 +1,6 @@
 /**
  * MobilityAssignmentsList — Filterable list of mobility assignments
+ * H1.0: Shows employee name instead of truncated UUID
  */
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,7 @@ interface Props {
   onSelect: (assignment: MobilityAssignment) => void;
   onCreate: () => void;
   onFilter: (filters: AssignmentFilters) => void;
+  employeeMap?: Record<string, string>;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -40,7 +42,7 @@ const RISK_COLORS: Record<string, string> = {
   critical: 'bg-red-500/15 text-red-700',
 };
 
-export function MobilityAssignmentsList({ assignments, loading, onSelect, onCreate, onFilter }: Props) {
+export function MobilityAssignmentsList({ assignments, loading, onSelect, onCreate, onFilter, employeeMap = {} }: Props) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
@@ -59,6 +61,8 @@ export function MobilityAssignmentsList({ assignments, loading, onSelect, onCrea
       assignment_type: val === 'all' ? undefined : val as AssignmentType,
     });
   };
+
+  const getEmployeeName = (id: string) => employeeMap[id] || `Empleado ${id.slice(0, 8)}…`;
 
   return (
     <Card>
@@ -119,7 +123,7 @@ export function MobilityAssignmentsList({ assignments, loading, onSelect, onCrea
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate">{a.employee_id.slice(0, 8)}...</p>
+                    <p className="text-sm font-medium truncate">{getEmployeeName(a.employee_id)}</p>
                     <span className={`text-[10px] px-1.5 py-0 rounded border ${RISK_COLORS[a.risk_level]}`}>
                       {a.risk_level}
                     </span>
