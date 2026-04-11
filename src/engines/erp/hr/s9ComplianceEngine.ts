@@ -27,8 +27,11 @@ import type {
   RetributiveAuditEntry,
   RetributiveAuditAlert,
   RetributiveAuditReport,
+  EquityVPTContext,
+  FairnessVPTSummary,
+  FairnessVPTAlert,
 } from '@/types/s9-compliance';
-import { RETRIBUTIVE_AUDIT_DISCLAIMER } from '@/types/s9-compliance';
+import { RETRIBUTIVE_AUDIT_DISCLAIMER, VPT_CONTEXT_DISCLAIMER } from '@/types/s9-compliance';
 
 // ─── LISMI / LGD ─────────────────────────────────────────────
 
@@ -852,4 +855,171 @@ function avgVPT(scores: Array<number | null>): number | null {
   const valid = scores.filter((s): s is number => s != null);
   if (valid.length === 0) return null;
   return Math.round((valid.reduce((s, v) => s + v, 0) / valid.length) * 100) / 100;
+}
+
+// ─── Equity VPT Context (S9.5) ─────────────────────────────
+
+export interface EquityVPTInput {
+  employeeId: string;
+  gender: 'M' | 'F' | string;
+  positionId?: string | null;
+}
+
+/**
+ * Computes descriptive VPT context for equity analysis.
+ * This NEVER modifies the pay gap — it only provides complementary position valuation info.
+ * VPT is a contextual variable, not a justificative one.
+ */
+export function computeEquityVPTContext(
+  employees: EquityVPTInput[],
+  vptMap: VPTEnrichmentMap,
+): EquityVPTContext {
+  const uniquePositions = new Set(employees.map(e => e.positionId).filter(Boolean));
+  const totalPositions = uniquePositions.size;
+  const positionsValued = [...uniquePositions].filter(p => p != null && vptMap[p] != null).length;
+
+  if (totalPositions === 0 || positionsValued === 0) {
+    return {
+      vptContextAvailable: false,
+      vptCoverage: 0,
+      positionsValued: 0,
+      totalPositions,
+      avgScoreMale: null,
+      avgScoreFemale: null,
+      scoreDifference: null,
+      divergenceRelevant: false,
+      insight: null,
+      disclaimer: VPT_CONTEXT_DISCLAIMER,
+    };
+  }
+
+  const employeesWithVPT = employees.filter(e => e.positionId && vptMap[e.positionId] != null);
+  const vptCoverage = employees.length > 0 ? employeesWithVPT.length / employees.length : 0;
+
+  const maleScores = employeesWithVPT
+    .filter(e => e.gender === 'M' || e.gender === 'male')
+    .map(e => vptMap[e.positionId!]);
+  const femaleScores = employeesWithVPT
+    .filter(e => e.gender === 'F' || e.gender === 'female')
+    .map(e => vptMap[e.positionId!]);
+
+  const avgMale = maleScores.length > 0
+    ? Math.round((maleScores.reduce((s, v) => s + v, 0) / maleScores.length) * 100) / 100
+    : null;
+  const avgFemale = femaleScores.length > 0
+    ? Math.round((femaleScores.reduce((s, v) => s + v, 0) / femaleScores.length) * 100) / 100
+    : null;
+
+  const scoreDiff = avgMale != null && avgFemale != null
+    ? Math.round(Math.abs(avgMale - avgFemale) * 100) / 100
+    : null;
+  const divergenceRelevant = scoreDiff != null && scoreDiff >= VPT_SCORE_DIVERGENCE_THRESHOLD;
+
+  let insight: string | null = null;
+  if (avgMale != null && avgFemale != null) {
+    if (divergenceRelevant) {
+      const higher = avgMale > avgFemale ? 'masculino' : 'femenino';
+      insight = `Los puestos ocupados por el grupo ${higher} tienen un score VPT medio ${scoreDiff!.toFixed(1)} puntos superior. ` +
+        `Esta diferencia podría ser relevante como contexto complementario, pero no constituye explicación de brechas salariales.`;
+    } else {
+      insight = `Los scores VPT medios entre grupos de género son similares (diferencia de ${scoreDiff!.toFixed(1)} puntos). ` +
+        `Esto indica que las diferencias salariales observadas no están asociadas a diferencias en la valoración de puestos.`;
+    }
+  }
+
+  return {
+    vptContextAvailable: true,
+    vptCoverage: Math.round(vptCoverage * 10000) / 10000,
+    positionsValued,
+    totalPositions,
+    avgScoreMale: avgMale,
+    avgScoreFemale: avgFemale,
+    scoreDifference: scoreDiff,
+    divergenceRelevant,
+    insight,
+    disclaimer: VPT_CONTEXT_DISCLAIMER,
+  };
+}
+
+// ─── Fairness VPT Summary (S9.5) ───────────────────────────
+
+/**
+ * Computes a complementary VPT summary for the Fairness Engine.
+ * Purely informational — does not alter any fairness analysis or AI output.
+ */
+export function computeFairnessVPTSummary(
+  employees: EquityVPTInput[],
+  vptMap: VPTEnrichmentMap,
+  /** Optional: current gender pay gap percentage (for alert contextualization) */
+  currentGapPercent?: number,
+): FairnessVPTSummary {
+  const uniquePositions = new Set(employees.map(e => e.positionId).filter(Boolean));
+  const totalPositions = uniquePositions.size;
+  const positionsValued = [...uniquePositions].filter(p => p != null && vptMap[p] != null).length;
+
+  if (totalPositions === 0 || positionsValued === 0) {
+    return {
+      available: false,
+      coverageRatio: 0,
+      positionsValued: 0,
+      totalPositions,
+      avgScoreMale: null,
+      avgScoreFemale: null,
+      scoreDifference: null,
+      divergenceAlert: null,
+      disclaimer: VPT_CONTEXT_DISCLAIMER,
+    };
+  }
+
+  const employeesWithVPT = employees.filter(e => e.positionId && vptMap[e.positionId] != null);
+  const coverageRatio = employees.length > 0 ? employeesWithVPT.length / employees.length : 0;
+
+  const maleScores = employeesWithVPT
+    .filter(e => e.gender === 'M' || e.gender === 'male')
+    .map(e => vptMap[e.positionId!]);
+  const femaleScores = employeesWithVPT
+    .filter(e => e.gender === 'F' || e.gender === 'female')
+    .map(e => vptMap[e.positionId!]);
+
+  const avgMale = maleScores.length > 0
+    ? Math.round((maleScores.reduce((s, v) => s + v, 0) / maleScores.length) * 100) / 100
+    : null;
+  const avgFemale = femaleScores.length > 0
+    ? Math.round((femaleScores.reduce((s, v) => s + v, 0) / femaleScores.length) * 100) / 100
+    : null;
+
+  const scoreDiff = avgMale != null && avgFemale != null
+    ? Math.round(Math.abs(avgMale - avgFemale) * 100) / 100
+    : null;
+
+  let divergenceAlert: FairnessVPTAlert | null = null;
+  if (scoreDiff != null && scoreDiff >= VPT_SCORE_DIVERGENCE_THRESHOLD) {
+    const hasGap = currentGapPercent != null && Math.abs(currentGapPercent) > 5;
+    if (hasGap) {
+      divergenceAlert = {
+        level: 'warning',
+        message: `Divergencia relevante de ${scoreDiff.toFixed(1)} puntos en scores VPT entre grupos de género, ` +
+          `coincidente con una brecha salarial del ${Math.abs(currentGapPercent!).toFixed(1)}%. ` +
+          `Requiere análisis individualizado — la diferencia de VPT no constituye explicación automática.`,
+      };
+    } else {
+      divergenceAlert = {
+        level: 'info',
+        message: `Diferencia de ${scoreDiff.toFixed(1)} puntos en scores VPT entre grupos de género, ` +
+          `sin brecha salarial significativa asociada.`,
+      };
+    }
+  }
+
+  return {
+    available: true,
+    coverageRatio: Math.round(coverageRatio * 10000) / 10000,
+    positionsValued,
+    totalPositions,
+    avgScoreMale: avgMale,
+    avgScoreFemale: avgFemale,
+    scoreDifference: scoreDiff,
+    divergenceAlert,
+    disclaimer: VPT_CONTEXT_DISCLAIMER,
+  };
 }
