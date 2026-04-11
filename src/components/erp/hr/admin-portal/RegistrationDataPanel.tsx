@@ -107,6 +107,10 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<Partial<RegistrationData>>({});
   const [saving, setSaving] = useState(false);
+  const [prefilledFields, setPrefilledFields] = useState<PrefilledFieldSet>(new Set());
+
+  // H2.1: Master data prefill
+  const { masterData, getRegistrationPrefill, mergeAdditive } = useEmployeeMasterPrefill(employeeId);
 
   // Fetch on mount
   useEffect(() => {
