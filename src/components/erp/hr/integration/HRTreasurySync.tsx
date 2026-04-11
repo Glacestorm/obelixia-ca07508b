@@ -1,6 +1,6 @@
 /**
  * HRTreasurySync - Sincronización RRHH ↔ Tesorería
- * Gestiona la creación de vencimientos de pago desde nóminas y finiquitos
+ * H1.2: Connected to real erp_hr_payrolls data
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -9,23 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  ArrowUpCircle,
-  Building2,
-  Calendar,
-  CheckCircle,
-  Clock,
-  RefreshCw,
-  Landmark,
-  Users,
-  AlertTriangle,
-  TrendingUp,
-  FileText,
-  Link2,
-  Banknote
+  ArrowUpCircle, Building2, CheckCircle, Clock, RefreshCw,
+  Landmark, Users, FileText, Link2, Info, Loader2
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useHRTreasuryIntegration } from '@/hooks/admin/useHRTreasuryIntegration';
 import { useHRIntegrationLog } from '@/hooks/admin/hr';
 import { useERPContext } from '@/hooks/erp/useERPContext';
@@ -47,44 +37,10 @@ interface PayrollForSync {
   treasury_synced: boolean;
 }
 
-// Demo data para ilustrar funcionalidad
-const demoPayrolls: PayrollForSync[] = [
-  {
-    id: 'payroll-001',
-    employee_name: 'María García López',
-    period: '2026-01',
-    net_amount: 1850.45,
-    ss_employee: 127.30,
-    ss_employer: 485.20,
-    irpf_amount: 312.50,
-    status: 'approved',
-    calculated_at: '2026-01-28T10:00:00Z',
-    treasury_synced: false
-  },
-  {
-    id: 'payroll-002',
-    employee_name: 'Carlos Ruiz Martín',
-    period: '2026-01',
-    net_amount: 2150.80,
-    ss_employee: 148.60,
-    ss_employer: 567.40,
-    irpf_amount: 425.00,
-    status: 'approved',
-    calculated_at: '2026-01-28T10:05:00Z',
-    treasury_synced: true
-  },
-  {
-    id: 'payroll-003',
-    employee_name: 'Ana Fernández Díaz',
-    period: '2026-01',
-    net_amount: 1625.30,
-    ss_employee: 112.20,
-    ss_employer: 428.50,
-    irpf_amount: 275.00,
-    status: 'approved',
-    calculated_at: '2026-01-28T10:10:00Z',
-    treasury_synced: false
-  }
+// Demo fallback
+const DEMO_PAYROLLS: PayrollForSync[] = [
+  { id: 'demo-1', employee_name: 'María García López', period: '2026-01', net_amount: 1850.45, ss_employee: 127.30, ss_employer: 485.20, irpf_amount: 312.50, status: 'approved', calculated_at: '2026-01-28T10:00:00Z', treasury_synced: false },
+  { id: 'demo-2', employee_name: 'Carlos Ruiz Martín', period: '2026-01', net_amount: 2150.80, ss_employee: 148.60, ss_employer: 567.40, irpf_amount: 425.00, status: 'approved', calculated_at: '2026-01-28T10:05:00Z', treasury_synced: false },
 ];
 
 interface HRTreasurySyncProps {
@@ -95,33 +51,92 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
   const { currentCompany } = useERPContext();
   const effectiveCompanyId = companyId || currentCompany?.id;
   const [activeTab, setActiveTab] = useState('pending');
-  const [payrolls, setPayrolls] = useState<PayrollForSync[]>(demoPayrolls);
+  const [payrolls, setPayrolls] = useState<PayrollForSync[]>([]);
   const [selectedPayrolls, setSelectedPayrolls] = useState<string[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [hasRealData, setHasRealData] = useState(false);
 
   const {
-    createPayrollPayment,
-    createSSContributionPayment,
-    createIRPFRetentionPayment,
-    isLoading,
-    integrations,
-    fetchIntegrations
+    createPayrollPayment, createSSContributionPayment,
+    createIRPFRetentionPayment, isLoading, integrations, fetchIntegrations
   } = useHRTreasuryIntegration();
 
-  // Hook de logging para registrar sincronizaciones
   const { syncToTreasury: logToTreasury } = useHRIntegrationLog(effectiveCompanyId);
 
-  // Cargar integraciones existentes
-  useEffect(() => {
-    if (currentCompany?.id) {
-      fetchIntegrations(currentCompany.id);
+  // Load real payrolls
+  const loadPayrolls = useCallback(async () => {
+    if (!effectiveCompanyId) return;
+    setIsLoadingData(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_payrolls')
+        .select('id, employee_id, period_month, period_year, net_salary, ss_worker, ss_company, irpf_amount, status, created_at')
+        .eq('company_id', effectiveCompanyId)
+        .in('status', ['approved', 'paid'])
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const empIds = [...new Set(data.map(d => d.employee_id).filter(Boolean))];
+        const { data: employees } = await supabase
+          .from('erp_hr_employees')
+          .select('id, first_name, last_name')
+          .in('id', empIds);
+
+        const empMap = new Map(
+          (employees || []).map(e => [e.id, `${e.first_name} ${e.last_name}`])
+        );
+
+        // Check which are already synced via bridge logs
+        const { data: bridgeLogs } = await supabase
+          .from('erp_hr_bridge_logs')
+          .select('source_record_id, status')
+          .eq('company_id', effectiveCompanyId)
+          .eq('bridge_type', 'payroll_to_treasury');
+
+        const syncedSet = new Set(
+          (bridgeLogs || []).filter(l => l.status === 'completed').map(l => l.source_record_id)
+        );
+
+        const mapped: PayrollForSync[] = data.map(d => ({
+          id: d.id,
+          employee_name: empMap.get(d.employee_id) || `Empleado ${d.employee_id?.slice(0, 8) || '?'}`,
+          period: `${d.period_year}-${String(d.period_month).padStart(2, '0')}`,
+          net_amount: d.net_salary || 0,
+          ss_employee: d.ss_worker || 0,
+          ss_employer: d.ss_company || 0,
+          irpf_amount: d.irpf_amount || 0,
+          status: d.status || 'approved',
+          calculated_at: d.created_at || new Date().toISOString(),
+          treasury_synced: syncedSet.has(d.id),
+        }));
+
+        setPayrolls(mapped);
+        setHasRealData(true);
+      } else {
+        setPayrolls(DEMO_PAYROLLS);
+        setHasRealData(false);
+      }
+    } catch (err) {
+      console.error('[HRTreasurySync] Load error:', err);
+      setPayrolls(DEMO_PAYROLLS);
+      setHasRealData(false);
+    } finally {
+      setIsLoadingData(false);
     }
-  }, [currentCompany?.id]);
+  }, [effectiveCompanyId]);
+
+  useEffect(() => {
+    loadPayrolls();
+    if (currentCompany?.id) fetchIntegrations(currentCompany.id);
+  }, [loadPayrolls, currentCompany?.id]);
 
   const pendingPayrolls = payrolls.filter(p => !p.treasury_synced && p.status === 'approved');
   const syncedPayrolls = payrolls.filter(p => p.treasury_synced);
 
-  // Totales
   const totals = pendingPayrolls.reduce((acc, p) => ({
     net: acc.net + p.net_amount,
     ss: acc.ss + p.ss_employer,
@@ -129,19 +144,11 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
   }), { net: 0, ss: 0, irpf: 0 });
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedPayrolls(pendingPayrolls.map(p => p.id));
-    } else {
-      setSelectedPayrolls([]);
-    }
+    setSelectedPayrolls(checked ? pendingPayrolls.map(p => p.id) : []);
   };
 
   const handleSelectPayroll = (payrollId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedPayrolls(prev => [...prev, payrollId]);
-    } else {
-      setSelectedPayrolls(prev => prev.filter(id => id !== payrollId));
-    }
+    setSelectedPayrolls(prev => checked ? [...prev, payrollId] : prev.filter(id => id !== payrollId));
   };
 
   const handleSyncToTreasury = async () => {
@@ -150,10 +157,8 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
     setIsSyncing(true);
     try {
       const selectedData = pendingPayrolls.filter(p => selectedPayrolls.includes(p.id));
-      
       let successCount = 0;
 
-      // 1. Crear vencimientos de netos a empleados
       for (const payroll of selectedData) {
         const result = await createPayrollPayment(effectiveCompanyId, {
           payrollId: payroll.id,
@@ -167,14 +172,11 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
         if (result) successCount++;
       }
 
-      // 2. Crear vencimiento consolidado SS (TGSS)
       const totalSS = selectedData.reduce((sum, p) => sum + p.ss_employer + p.ss_employee, 0);
       if (totalSS > 0) {
-        // Calcular fecha de vencimiento (último día del mes siguiente)
         const dueDate = new Date();
         dueDate.setMonth(dueDate.getMonth() + 1);
-        dueDate.setDate(0); // Último día del mes
-        
+        dueDate.setDate(0);
         await createSSContributionPayment(effectiveCompanyId, {
           periodId: `ss-${format(new Date(), 'yyyy-MM')}`,
           periodReference: `SS-${format(new Date(), 'yyyy-MM')}`,
@@ -183,14 +185,12 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
         });
       }
 
-      // 3. Crear vencimiento IRPF (trimestral)
       const totalIRPF = selectedData.reduce((sum, p) => sum + p.irpf_amount, 0);
       if (totalIRPF > 0) {
         const quarter = Math.ceil((new Date().getMonth() + 1) / 3);
         const dueDate = new Date();
         dueDate.setMonth(dueDate.getMonth() + 1);
         dueDate.setDate(20);
-        
         await createIRPFRetentionPayment(effectiveCompanyId, {
           periodId: `irpf-${new Date().getFullYear()}-Q${quarter}`,
           periodReference: `IRPF-Q${quarter}-${new Date().getFullYear()}`,
@@ -199,13 +199,11 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
         });
       }
 
-      // Marcar como sincronizadas
       setPayrolls(prev => prev.map(p => 
         selectedPayrolls.includes(p.id) ? { ...p, treasury_synced: true } : p
       ));
       setSelectedPayrolls([]);
 
-      // Registrar en el log de integración
       await logToTreasury({
         payrollId: `batch-${selectedPayrolls.length}`,
         payrollRef: `BATCH-${format(new Date(), 'yyyy-MM')}`,
@@ -247,18 +245,23 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
             Genera vencimientos de pago automáticos desde nóminas
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fetchIntegrations(currentCompany.id)}
-          disabled={isLoading}
-        >
-          <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+        <Button variant="outline" size="sm" onClick={loadPayrolls} disabled={isLoadingData}>
+          <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingData && "animate-spin")} />
           Actualizar
         </Button>
       </div>
 
-      {/* Resumen de Vencimientos */}
+      {/* Demo data warning */}
+      {!hasRealData && !isLoadingData && (
+        <Alert className="bg-warning/5 border-warning/30">
+          <Info className="h-4 w-4 text-warning" />
+          <AlertDescription className="text-sm text-warning">
+            Datos de ejemplo — No hay nóminas aprobadas disponibles
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Resumen */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
           <CardContent className="p-4">
@@ -357,18 +360,18 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
             </CardHeader>
             <CardContent className="p-0">
               <ScrollArea className="h-[400px]">
+                {isLoadingData ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
                 <div className="divide-y">
                   {pendingPayrolls.map((payroll) => (
-                    <div 
-                      key={payroll.id} 
-                      className="p-4 hover:bg-muted/50 transition-colors"
-                    >
+                    <div key={payroll.id} className="p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <Checkbox
                           checked={selectedPayrolls.includes(payroll.id)}
-                          onCheckedChange={(checked) => 
-                            handleSelectPayroll(payroll.id, checked as boolean)
-                          }
+                          onCheckedChange={(checked) => handleSelectPayroll(payroll.id, checked as boolean)}
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
@@ -399,6 +402,7 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
                     </div>
                   )}
                 </div>
+                )}
               </ScrollArea>
             </CardContent>
           </Card>
@@ -410,10 +414,7 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
               <ScrollArea className="h-[400px]">
                 <div className="divide-y">
                   {syncedPayrolls.map((payroll) => (
-                    <div 
-                      key={payroll.id} 
-                      className="p-4 hover:bg-muted/50 transition-colors"
-                    >
+                    <div key={payroll.id} className="p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-lg bg-green-500/10">
@@ -421,18 +422,14 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
                           </div>
                           <div>
                             <p className="font-medium">{payroll.employee_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Período: {payroll.period}
-                            </p>
+                            <p className="text-xs text-muted-foreground">Período: {payroll.period}</p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-bold">
                             € {payroll.net_amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                           </p>
-                          <Badge variant="outline" className="text-green-600">
-                            Sincronizada
-                          </Badge>
+                          <Badge variant="outline" className="text-green-600">Sincronizada</Badge>
                         </div>
                       </div>
                     </div>
@@ -455,43 +452,37 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
               <ScrollArea className="h-[400px]">
                 <div className="divide-y">
                   {integrations.map((integration) => (
-                    <div 
-                      key={integration.id} 
-                      className="p-4 hover:bg-muted/50 transition-colors"
-                    >
+                    <div key={integration.id} className="p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                      <div className={cn(
+                          <div className={cn(
                             "p-2 rounded-lg",
                             integration.source_type === 'payroll' && "bg-primary/10",
                             integration.source_type === 'ss_contribution' && "bg-orange-500/10",
-                            integration.source_type === 'irpf_retention' && "bg-purple-500/10",
-                            integration.source_type === 'settlement' && "bg-blue-500/10"
+                            integration.source_type === 'irpf_retention' && "bg-purple-500/10"
                           )}>
                             {integration.source_type === 'payroll' && <Users className="h-4 w-4 text-primary" />}
                             {integration.source_type === 'ss_contribution' && <Landmark className="h-4 w-4 text-orange-600" />}
                             {integration.source_type === 'irpf_retention' && <FileText className="h-4 w-4 text-purple-600" />}
-                            {integration.source_type === 'settlement' && <Users className="h-4 w-4 text-blue-600" />}
                           </div>
                           <div>
-                            <p className="font-medium capitalize">
-                              {integration.source_type === 'payroll' && 'Nómina Empleado'}
-                              {integration.source_type === 'ss_contribution' && 'Cotización TGSS'}
+                            <p className="font-medium text-sm">{integration.source_reference}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {integration.source_type === 'payroll' && 'Nómina empleado'}
+                              {integration.source_type === 'ss_contribution' && 'Cotización SS'}
                               {integration.source_type === 'irpf_retention' && 'Retención IRPF'}
-                              {integration.source_type === 'settlement' && 'Finiquito'}
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              Vence: {format(new Date(integration.due_date), 'dd MMM yyyy', { locale: es })}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-bold">
-                            € {integration.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                            € {(integration.amount || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                           </p>
-                          <Badge variant={integration.status === 'paid' ? 'default' : 'outline'}>
-                            {integration.status === 'paid' ? 'Pagado' : 'Pendiente'}
+                          <Badge variant="outline" className={cn(
+                          (integration.status as string) === 'synced' && "text-green-600",
+                            integration.status === 'pending' && "text-amber-600"
+                          )}>
+                            (integration.status as string) === 'synced' ? 'Sincronizado' : 'Pendiente'
                           </Badge>
                         </div>
                       </div>
@@ -499,8 +490,8 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
                   ))}
                   {integrations.length === 0 && (
                     <div className="p-8 text-center">
-                      <Banknote className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                      <p className="text-muted-foreground">No hay vencimientos en tesorería</p>
+                      <ArrowUpCircle className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                      <p className="text-muted-foreground">No hay integraciones registradas</p>
                     </div>
                   )}
                 </div>
@@ -509,26 +500,6 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Info */}
-      <Card className="bg-muted/30 border-dashed">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium">Flujo de Sincronización</p>
-              <p className="text-muted-foreground mt-1">
-                Al sincronizar, se crean automáticamente:
-              </p>
-              <ul className="list-disc list-inside text-muted-foreground mt-1 space-y-1">
-                <li><strong>Vencimientos individuales</strong> por cada neto de empleado (pago en 5 días)</li>
-                <li><strong>Vencimiento consolidado TGSS</strong> por cotizaciones SS (último día del mes)</li>
-                <li><strong>Vencimiento trimestral AEAT</strong> por retenciones IRPF (20 días post-trimestre)</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

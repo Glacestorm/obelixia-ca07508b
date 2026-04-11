@@ -248,6 +248,10 @@ export function HRNewsPanel({ companyId, onAddToKnowledge }: HRNewsPanelProps) {
               <CardTitle className="text-base flex items-center gap-2">
                 <Newspaper className="h-4 w-4" />
                 Noticias Laborales
+                <Badge variant="outline" className="text-[10px] border-warning/30 text-warning gap-1 ml-2">
+                  <AlertTriangle className="h-3 w-3" />
+                  Datos de ejemplo
+                </Badge>
               </CardTitle>
               <CardDescription>
                 Actualizaciones normativas y legislativas relevantes para RRHH
