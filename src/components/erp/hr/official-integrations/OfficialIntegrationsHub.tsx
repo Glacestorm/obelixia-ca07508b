@@ -54,6 +54,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
     instSubmissions.filter(s => !['reconciled', 'cancelled'].includes(s.institutional_status)).length,
     [instSubmissions]
   );
+  const { goLiveReadyCount } = useCredentialOnboarding(companyId);
 
   // Data sources for proactive alerts at hub level
   const { summary: readinessSummary } = useOfficialReadiness(companyId);
