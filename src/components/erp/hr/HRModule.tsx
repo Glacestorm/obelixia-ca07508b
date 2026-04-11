@@ -536,6 +536,12 @@ function HRModuleInner() {
         {activeModule === 'people-analytics' && <LazyPeopleAnalyticsModule companyId={companyId} />}
         {activeModule === 'contract-expiry-report' && <LazyHRContractExpiryReport companyId={companyId} />}
 
+        {/* S9 Compliance & Quality */}
+        {activeModule === 's9-lismi' && <LazyS9LISMIDashboard companyId={companyId} />}
+        {activeModule === 's9-salary-register' && <LazyS9SalaryRegisterPanel companyId={companyId} />}
+        {activeModule === 's9-disconnection' && <LazyS9DisconnectionPanel companyId={companyId} />}
+        {activeModule === 's9-remote-work' && <LazyS9RemoteWorkPanel companyId={companyId} />}
+
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
         {activeModule === 'irpf-motor' && <LazyIRPFMotorPanel companyId={companyId} />}
