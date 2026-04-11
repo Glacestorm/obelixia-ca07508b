@@ -1,6 +1,7 @@
 /**
  * MobilityAssignmentDetail — Full view of a single assignment
- * Header + Tabs: Summary, Documents, Costs, Audit
+ * Header + Tabs: Summary, Classification, Tax Impact, Documents, Costs, Compliance, Audit
+ * P1.7B-RA: Added Classification and Tax Impact tabs
  */
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +13,9 @@ import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { MobilityDocumentsPanel } from './MobilityDocumentsPanel';
 import { MobilityCostProjectionPanel } from './MobilityCostProjectionPanel';
 import { MobilityCompliancePanel } from './MobilityCompliancePanel';
+import { MobilityClassificationPanel } from './MobilityClassificationPanel';
+import { MobilityTaxImpactPanel } from './MobilityTaxImpactPanel';
+import { useExpatriateCase } from '@/hooks/erp/hr/useExpatriateCase';
 import type {
   MobilityAssignment, MobilityDocument, MobilityCostProjection, MobilityAuditEntry,
   AssignmentStatus,
@@ -44,6 +48,12 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'Completada', cancelled: 'Cancelada',
 };
 
+const SUPPORT_BADGE_COLORS: Record<string, string> = {
+  supported_production: 'bg-success/12 text-success border-success/30',
+  supported_with_review: 'bg-warning/12 text-warning border-warning/30',
+  out_of_scope: 'bg-destructive/12 text-destructive border-destructive/30',
+};
+
 export function MobilityAssignmentDetail({
   assignment, onBack, onStatusChange,
   fetchDocuments, addDocument, updateDocument,
@@ -70,6 +80,9 @@ export function MobilityAssignmentDetail({
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // P1.7B-RA: Expatriate case classification
+  const expatCase = useExpatriateCase(assignment, documents);
+
   const a = assignment;
   const nextStatuses = validTransitions[a.status] || [];
   const pkg = a.allowance_package || {};
@@ -88,6 +101,14 @@ export function MobilityAssignmentDetail({
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold">{a.home_country_code} → {a.host_country_code}</p>
                   <HRStatusBadge entity="mobility" status={a.status} />
+                  {/* P1.7B-RA: Support level badge */}
+                  {expatCase && (
+                    <Badge className={`text-[9px] ${SUPPORT_BADGE_COLORS[expatCase.overallSupportLevel]}`}>
+                      {expatCase.overallSupportLevel === 'supported_production' ? '✅ Producción'
+                        : expatCase.overallSupportLevel === 'supported_with_review' ? '⚠️ Revisión'
+                        : '🚫 Fuera alcance'}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {a.start_date}{a.end_date ? ` → ${a.end_date}` : ' → indefinido'} · {a.assignment_type.replace(/_/g, ' ')}
@@ -107,8 +128,10 @@ export function MobilityAssignmentDetail({
 
       {/* Tabs */}
       <Tabs defaultValue="summary">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="summary" className="text-xs">Resumen</TabsTrigger>
+          <TabsTrigger value="classification" className="text-xs">Clasificación</TabsTrigger>
+          <TabsTrigger value="tax" className="text-xs">Impacto Fiscal</TabsTrigger>
           <TabsTrigger value="documents" className="text-xs">Documentos</TabsTrigger>
           <TabsTrigger value="costs" className="text-xs">Costes</TabsTrigger>
           <TabsTrigger value="compliance" className="text-xs">Compliance</TabsTrigger>
@@ -177,6 +200,24 @@ export function MobilityAssignmentDetail({
                 {a.notes && <p className="text-xs text-muted-foreground mt-1">{a.notes}</p>}
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* Classification — P1.7B-RA */}
+        <TabsContent value="classification">
+          {expatCase ? (
+            <MobilityClassificationPanel expatCase={expatCase} documents={documents} />
+          ) : (
+            <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">Cargando clasificación…</CardContent></Card>
+          )}
+        </TabsContent>
+
+        {/* Tax Impact — P1.7B-RA */}
+        <TabsContent value="tax">
+          {expatCase ? (
+            <MobilityTaxImpactPanel expatCase={expatCase} />
+          ) : (
+            <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">Cargando impacto fiscal…</CardContent></Card>
           )}
         </TabsContent>
 

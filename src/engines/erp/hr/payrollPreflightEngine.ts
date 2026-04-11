@@ -101,6 +101,14 @@ export interface PreflightResult {
 
 // ── Input (aggregated from existing engines/hooks) ──
 
+export interface MobilityPreflightData {
+  activeAssignmentCount: number;
+  worstSupportLevel: 'supported_production' | 'supported_with_review' | 'out_of_scope';
+  highestRiskScore: number;
+  reviewRequired: boolean;
+  summary: string;
+}
+
 export interface PreflightInput {
   // From payrollCycleStatusEngine
   periodStatus: string;
