@@ -1029,3 +1029,180 @@ export function computeFairnessVPTSummary(
     disclaimer: VPT_CONTEXT_DISCLAIMER,
   };
 }
+
+// ─── Retributive Executive Summary (S9.6) ──────────────────
+
+/**
+ * Generates a deterministic executive summary from a retributive audit report.
+ * NO AI involved — pure template-based text generation.
+ * Language is strictly observational, never conclusive or justificative.
+ */
+export function generateRetributiveExecutiveSummary(
+  report: RetributiveAuditReport,
+): RetributiveExecutiveSummary {
+  const sentences: string[] = [];
+
+  // 1. Period and scope
+  sentences.push(
+    `En el período ${report.period}, se observa una brecha retributiva global del ${(report.globalGapPercent * 100).toFixed(1)}% ` +
+    `sobre ${report.entries.length} grupo(s) profesional(es) analizados.`
+  );
+
+  // 2. VPT contextualization
+  if (report.globalGapPercent > 0 && report.globalContextualizedPercent > 0) {
+    const ctxPct = (report.globalContextualizedPercent / report.globalGapPercent * 100).toFixed(0);
+    sentences.push(
+      `Un ${ctxPct}% de esta brecha está parcialmente contextualizada por diferencias en la valoración de puestos de trabajo.`
+    );
+  } else if (report.globalGapPercent > 0) {
+    sentences.push(
+      `No se dispone de datos de valoración de puestos suficientes para contextualizar la brecha observada.`
+    );
+  }
+
+  // 3. Unexplained portion
+  if (report.globalUnexplainedPercent > 0) {
+    sentences.push(
+      `El ${(report.globalUnexplainedPercent * 100).toFixed(1)}% de brecha no contextualizada requiere análisis individualizado conforme al RD 902/2020.`
+    );
+  }
+
+  // 4. Alert groups
+  if (report.groupsWithAlert > 0) {
+    sentences.push(
+      `Se identifican ${report.groupsWithAlert} grupo(s) con brechas superiores al 25%, que requieren atención prioritaria.`
+    );
+  } else if (report.entries.length > 0) {
+    sentences.push(
+      `Ningún grupo profesional presenta brechas superiores al umbral de alerta del 25%.`
+    );
+  }
+
+  return {
+    sentences,
+    disclaimer: EXECUTIVE_SUMMARY_DISCLAIMER,
+    period: report.period,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+// ─── CSV Export (S9.6) ─────────────────────────────────────
+
+function escapeCSV(value: string | number | null | undefined): string {
+  if (value == null) return '';
+  const str = String(value);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+/**
+ * Exports a retributive audit report to CSV string.
+ * Faithful serialization — no interpretation or recomputation.
+ */
+export function exportRetributiveAuditCSV(
+  report: RetributiveAuditReport,
+): string {
+  const lines: string[] = [];
+
+  // Disclaimer header
+  lines.push(escapeCSV(`# ${EXECUTIVE_SUMMARY_DISCLAIMER}`));
+  lines.push(escapeCSV(`# Período: ${report.period} | Generado: ${report.generatedAt}`));
+  lines.push('');
+
+  // Column headers
+  lines.push([
+    'Grupo', 'H', 'M', 'Media H (€)', 'Media M (€)', 'Brecha (%)',
+    'VPT H', 'VPT M', 'Contextualizada (%)', 'No explicada (%)',
+  ].map(escapeCSV).join(','));
+
+  // Data rows
+  for (const e of report.entries) {
+    lines.push([
+      e.groupLabel,
+      e.maleCount,
+      e.femaleCount,
+      e.maleMeanSalary.toFixed(2),
+      e.femaleMeanSalary.toFixed(2),
+      (e.totalGapPercent * 100).toFixed(1),
+      e.maleAvgVPT != null ? e.maleAvgVPT.toFixed(1) : '',
+      e.femaleAvgVPT != null ? e.femaleAvgVPT.toFixed(1) : '',
+      (e.gapContextualizedByVPT * 100).toFixed(1),
+      (e.gapUnexplained * 100).toFixed(1),
+    ].map(escapeCSV).join(','));
+  }
+
+  // Global totals
+  lines.push('');
+  lines.push([
+    'TOTAL',
+    '',
+    '',
+    '',
+    '',
+    (report.globalGapPercent * 100).toFixed(1),
+    '',
+    '',
+    (report.globalContextualizedPercent * 100).toFixed(1),
+    (report.globalUnexplainedPercent * 100).toFixed(1),
+  ].map(escapeCSV).join(','));
+
+  return lines.join('\n');
+}
+
+/**
+ * Exports VPT-enriched salary register to CSV string.
+ */
+export function exportSalaryRegisterVPTCSV(
+  report: VPTEnrichedSalaryReport,
+): string {
+  const lines: string[] = [];
+
+  // Disclaimer
+  lines.push(escapeCSV(`# ${EXECUTIVE_SUMMARY_DISCLAIMER}`));
+  lines.push(escapeCSV(`# Período: ${report.period} | Generado: ${report.generatedAt}`));
+  lines.push('');
+
+  // Headers
+  lines.push([
+    'Grupo', 'Concepto', 'H', 'M', 'Media H (€)', 'Media M (€)',
+    'Mediana H (€)', 'Mediana M (€)', 'Brecha (%)', 'VPT Score', 'Banda VPT',
+  ].map(escapeCSV).join(','));
+
+  // Data
+  for (const e of report.entries) {
+    lines.push([
+      e.groupOrCategory,
+      e.concept,
+      e.maleCount,
+      e.femaleCount,
+      e.maleMean.toFixed(2),
+      e.femaleMean.toFixed(2),
+      e.maleMedian.toFixed(2),
+      e.femaleMedian.toFixed(2),
+      (e.gapPercent * 100).toFixed(1),
+      e.vptScore != null ? e.vptScore.toFixed(1) : '',
+      e.vptBandLabel ?? '',
+    ].map(escapeCSV).join(','));
+  }
+
+  // Band summary
+  if (report.byVPTBand.length > 0) {
+    lines.push('');
+    lines.push('# Resumen por Banda VPT');
+    lines.push(['Banda', 'H', 'M', 'Media H (€)', 'Media M (€)', 'Brecha (%)'].map(escapeCSV).join(','));
+    for (const b of report.byVPTBand) {
+      lines.push([
+        b.band,
+        b.maleCount,
+        b.femaleCount,
+        b.maleMeanSalary.toFixed(2),
+        b.femaleMeanSalary.toFixed(2),
+        (b.gapPercent * 100).toFixed(1),
+      ].map(escapeCSV).join(','));
+    }
+  }
+
+  return lines.join('\n');
+}
