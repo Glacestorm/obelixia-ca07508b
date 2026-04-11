@@ -179,6 +179,7 @@ Si detectas un problema, sugiere crear una tarea de seguimiento.` + vptGuardrail
           messages: [
             { role: 'system', content: systemPrompt },
             ...(context ? [{ role: 'system', content: `Contexto de métricas actuales:\n${JSON.stringify(context)}` }] : []),
+            ...(vptContextBlock ? [{ role: 'system', content: vptContextBlock }] : []),
             ...messages,
           ],
           stream: true,
