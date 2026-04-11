@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Globe, MapPin, DollarSign, Shield, Clock, FileText, History } from 'lucide-react';
+import { ArrowLeft, Globe, MapPin, DollarSign, Shield, Clock, FileText, History, Pencil, Trash2 } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { MobilityDocumentsPanel } from './MobilityDocumentsPanel';
 import { MobilityCostProjectionPanel } from './MobilityCostProjectionPanel';
@@ -100,25 +100,36 @@ export function MobilityAssignmentDetail({
               <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold">{a.home_country_code} → {a.host_country_code}</p>
-                  <HRStatusBadge entity="mobility" status={a.status} />
-                  {/* P1.7B-RA: Support level badge */}
-                  {expatCase && (
-                    <Badge className={`text-[9px] ${SUPPORT_BADGE_COLORS[expatCase.overallSupportLevel]}`}>
-                      {expatCase.overallSupportLevel === 'supported_production' ? '✅ Producción'
-                        : expatCase.overallSupportLevel === 'supported_with_review' ? '⚠️ Revisión'
-                        : '🚫 Fuera alcance'}
-                    </Badge>
-                  )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold">
+                      {employeeName || a.employee_id.slice(0, 8)} — {a.home_country_code} → {a.host_country_code}
+                    </p>
+                    <HRStatusBadge entity="mobility" status={a.status} />
+                    {expatCase && (
+                      <Badge className={`text-[9px] ${SUPPORT_BADGE_COLORS[expatCase.overallSupportLevel]}`}>
+                        {expatCase.overallSupportLevel === 'supported_production' ? '✅ Producción'
+                          : expatCase.overallSupportLevel === 'supported_with_review' ? '⚠️ Revisión'
+                          : '🚫 Fuera alcance'}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {a.start_date}{a.end_date ? ` → ${a.end_date}` : ' → indefinido'} · {a.assignment_type.replace(/_/g, ' ')}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {a.start_date}{a.end_date ? ` → ${a.end_date}` : ' → indefinido'} · {a.assignment_type.replace(/_/g, ' ')}
-                </p>
-              </div>
             </div>
             <div className="flex gap-1">
+              {onEdit && (
+                <Button variant="outline" size="sm" className="text-xs" onClick={onEdit}>
+                  <Pencil className="h-3 w-3 mr-1" /> Editar
+                </Button>
+              )}
+              {onDelete && ['draft', 'cancelled'].includes(a.status) && (
+                <Button variant="outline" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={() => onDelete(a.id)}>
+                  <Trash2 className="h-3 w-3 mr-1" /> Eliminar
+                </Button>
+              )}
               {nextStatuses.map(ns => (
                 <Button key={ns} variant="outline" size="sm" className="text-xs" onClick={() => onStatusChange(a.id, ns)}>
                   → {STATUS_LABELS[ns]}
