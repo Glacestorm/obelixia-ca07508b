@@ -96,6 +96,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'country-registry', 'es-localization',
     'mobility-international', 'stock-options',
     'official-submissions', 'compliance-evidence',
+    // S9 Compliance
+    's9-lismi', 's9-salary-register', 's9-disconnection', 's9-remote-work',
   ]);
 
   // Tier 2: visible_advanced — shown only to admin/advanced profiles in MVP mode

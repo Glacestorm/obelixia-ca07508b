@@ -143,6 +143,11 @@ import {
   LazyGarnishmentSimulator,
   LazyPayrollPreflightCockpit,
   LazyStockOptionsPanel,
+  // S9 Compliance
+  LazyS9LISMIDashboard,
+  LazyS9SalaryRegisterPanel,
+  LazyS9DisconnectionPanel,
+  LazyS9RemoteWorkPanel,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
