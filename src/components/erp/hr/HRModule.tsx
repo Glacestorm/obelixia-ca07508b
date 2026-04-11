@@ -184,6 +184,12 @@ function PremiumReseedPanel({ companyId }: { companyId?: string }) {
 function HRModuleInner() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [navigationContext, setNavigationContext] = useState<Record<string, any> | null>(null);
+
+  const handleNavigateWithContext = useCallback((module: string, context?: Record<string, any>) => {
+    setNavigationContext(context || null);
+    setActiveModule(module);
+  }, []);
   const { currentCompany } = useERPContext();
   const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
@@ -530,7 +536,7 @@ function HRModuleInner() {
         {activeModule === 'governance-cockpit' && <LazyGovernanceCockpit companyId={companyId} />}
         {activeModule === 'predictive-audit' && <LazyPredictiveAuditPanel companyId={companyId} />}
         {activeModule === 'garnishment-simulator' && <LazyGarnishmentSimulator />}
-        {activeModule === 'preflight' && <LazyPayrollPreflightCockpit companyId={companyId} onNavigateToModule={setActiveModule} />}
+        {activeModule === 'preflight' && <LazyPayrollPreflightCockpit companyId={companyId} onNavigateToModule={handleNavigateWithContext} />}
 
         {/* Employee Expedient */}
         {activeModule === 'employee-expedient' && selectedEmployeeId && (
