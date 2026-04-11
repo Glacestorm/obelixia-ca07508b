@@ -409,6 +409,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
             <TabsContent value="cotizaciones" className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="text-sm font-medium">Liquidaciones mensuales</h4>
+                <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">Datos de ejemplo</Badge>
                 <div className="flex gap-2 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={exportContributionsPDF} title="Exportar PDF">
                     <FileDown className="h-4 w-4 mr-1" />
@@ -510,6 +511,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
             <TabsContent value="red" className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="text-sm font-medium">Movimientos Sistema RED</h4>
+                <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">Datos de ejemplo</Badge>
                 <div className="flex gap-2 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={exportFilingsPDF} title="Exportar PDF">
                     <FileDown className="h-4 w-4 mr-1" />
@@ -566,6 +568,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
             <TabsContent value="certificados" className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="text-sm font-medium">Solicitud de certificados</h4>
+                <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">Datos de ejemplo</Badge>
                 <Button size="sm" onClick={handleRequestCertificate}>
                   <FileText className="h-4 w-4 mr-1" />
                   Solicitar certificado
