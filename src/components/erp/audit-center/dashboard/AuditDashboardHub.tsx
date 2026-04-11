@@ -25,10 +25,10 @@ export function AuditDashboardHub() {
 
   // Compute real agent hierarchy counts from agents array
   const internalAgentCount = agents.filter(a => 
-    a.agent_code?.startsWith('AUDIT-AGT') || a.module_domain === 'audit'
+    a.code?.startsWith('AUDIT-AGT') || a.module_domain === 'audit'
   ).length;
   const externalAgentCount = agents.filter(a => 
-    a.agent_code?.startsWith('AUDIT-EXT') || a.module_domain === 'audit_external'
+    a.code?.startsWith('AUDIT-EXT') || a.module_domain === 'audit_external'
   ).length;
 
   const kpiCards = [
