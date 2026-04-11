@@ -37530,6 +37530,7 @@ export type Database = {
           factor_scores: Json
           id: string
           methodology_snapshot: Json
+          methodology_version: string
           notes: string | null
           position_id: string
           reviewed_by: string | null
@@ -37550,6 +37551,7 @@ export type Database = {
           factor_scores?: Json
           id?: string
           methodology_snapshot?: Json
+          methodology_version?: string
           notes?: string | null
           position_id: string
           reviewed_by?: string | null
@@ -37570,6 +37572,7 @@ export type Database = {
           factor_scores?: Json
           id?: string
           methodology_snapshot?: Json
+          methodology_version?: string
           notes?: string | null
           position_id?: string
           reviewed_by?: string | null
