@@ -506,7 +506,7 @@ describe('computeRetributiveAudit', () => {
     const report = computeRetributiveAudit(employees, {}, '2026-01');
     expect(report.disclaimer).toBe(RETRIBUTIVE_AUDIT_DISCLAIMER);
     expect(report.disclaimer).toContain('soporte analítico');
-    expect(report.disclaimer).not.toContain('justifica');
+    expect(report.disclaimer).toContain('no constituyen justificación');
   });
 
   it('should handle single-gender groups gracefully', () => {
