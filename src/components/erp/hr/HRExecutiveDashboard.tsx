@@ -593,7 +593,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                 </div>
                 <div className="mt-4 pt-4 border-t flex justify-between items-center">
                   <span className="font-medium">Total Coste Mensual</span>
-                  <span className="text-xl font-bold">€186,500</span>
+                  <span className="text-xl font-bold">€{Math.round(laborCosts.totalMonthly).toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>
@@ -606,10 +606,10 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                     <Euro className="h-5 w-5 text-success" />
                     <Badge variant="outline" className="text-success border-success">Mensual</Badge>
                   </div>
-                  <p className="text-2xl font-bold">€186.5K</p>
+                  <p className="text-2xl font-bold">€{(laborCosts.totalMonthly / 1000).toFixed(1)}K</p>
                   <p className="text-xs text-muted-foreground">Coste laboral total</p>
-                  <div className="mt-2 text-xs text-success flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" /> +2.1% vs mes anterior
+                  <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                    Derivado de contratos activos
                   </div>
                 </CardContent>
               </Card>
@@ -620,11 +620,8 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                     <Users className="h-5 w-5 text-primary" />
                     <Badge variant="outline" className="text-primary border-primary">Por empleado</Badge>
                   </div>
-                  <p className="text-2xl font-bold">€3,968</p>
+                  <p className="text-2xl font-bold">€{laborCosts.costPerEmployee.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">Coste medio/empleado</p>
-                  <div className="mt-2 text-xs text-primary flex items-center gap-1">
-                    <TrendingDown className="h-3 w-3" /> -0.8% eficiencia
-                  </div>
                 </CardContent>
               </Card>
 
@@ -634,11 +631,8 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                     <Target className="h-5 w-5 text-accent-foreground" />
                     <Badge variant="outline" className="text-accent-foreground border-accent">Anual</Badge>
                   </div>
-                  <p className="text-2xl font-bold">€2.24M</p>
-                  <p className="text-xs text-muted-foreground">Proyección anual</p>
-                  <div className="mt-2 text-xs text-success flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3" /> En presupuesto
-                  </div>
+                  <p className="text-2xl font-bold">€{(laborCosts.annualProjection / 1000000).toFixed(2)}M</p>
+                  <p className="text-xs text-muted-foreground">Proyección anual (×14 pagas)</p>
                 </CardContent>
               </Card>
             </div>
