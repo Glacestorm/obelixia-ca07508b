@@ -34,6 +34,7 @@ import { InstitutionalSubmissionPanel } from '@/components/erp/hr/official/Insti
 import { Modelo190PipelinePanel } from '@/components/erp/hr/official/Modelo190PipelinePanel';
 import { useInstitutionalSubmission } from '@/hooks/erp/hr/useInstitutionalSubmission';
 import { HRFilingsPanel, HRFileGeneratorPanel } from '@/components/hr/filings';
+import { LastMileOperationsDashboard } from './LastMileOperationsDashboard';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
