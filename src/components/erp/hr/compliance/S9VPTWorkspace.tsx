@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useS9VPT, type VPTRow } from '@/hooks/erp/hr/useS9VPT';
-import { S9ReadinessBadge } from './S9ReadinessBadge';
+import { S9ReadinessBadge } from '../shared/S9ReadinessBadge';
 import {
   computeVPTScore,
   DEFAULT_VPT_METHODOLOGY,
