@@ -166,7 +166,7 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
 
 
   const startEdit = useCallback(() => {
-    setDraft({
+    const baseDraft: Partial<ContractProcessData> = {
       contract_type_code: contractData?.contract_type_code ?? '',
       contract_subtype: contractData?.contract_subtype ?? '',
       contract_start_date: contractData?.contract_start_date ?? '',
@@ -190,9 +190,14 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
       is_conversion: contractData?.is_conversion ?? false,
       conversion_from_type: contractData?.conversion_from_type ?? '',
       validation_notes: contractData?.validation_notes ?? '',
-    });
+    };
+    // H2.1: Additive prefill from master data (only fills empty fields)
+    const prefill = getContractPrefill();
+    const { merged, prefilledKeys } = mergeAdditive(baseDraft, prefill);
+    setPrefilledFields(prefilledKeys);
+    setDraft(merged);
     setEditing(true);
-  }, [contractData]);
+  }, [contractData, getContractPrefill, mergeAdditive]);
 
   // Save
   const handleSave = useCallback(async () => {
