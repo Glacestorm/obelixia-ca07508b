@@ -365,3 +365,35 @@ export interface FairnessVPTAlert {
   level: 'info' | 'warning';
   message: string;
 }
+
+// ─── Retributive Executive Summary (S9.6) ───────────────────
+
+export const EXECUTIVE_SUMMARY_DISCLAIMER =
+  'DOCUMENTO INTERNO PREPARATORIO — No constituye informe oficial ni certificación. ' +
+  'Los datos son orientativos y requieren validación profesional conforme al RD 902/2020.';
+
+export interface RetributiveExecutiveSummary {
+  /** Deterministic descriptive sentences (3-5) */
+  sentences: string[];
+  /** Disclaimer always present */
+  disclaimer: string;
+  /** Period of the report */
+  period: string;
+  /** Generation timestamp */
+  generatedAt: string;
+}
+
+export interface RetributiveSourceMetadata {
+  /** Period of latest payroll data used */
+  latestPayrollPeriod: string;
+  /** Timestamp of latest approved VPT (ISO string or null) */
+  latestVPTApproval: string | null;
+  /** Employee count in dataset */
+  employeeCount: number;
+  /** Payroll count in dataset */
+  payrollCount: number;
+  /** VPT valuations count */
+  vptCount: number;
+  /** VPT coverage ratio (0-1) */
+  vptCoverage: number;
+}
