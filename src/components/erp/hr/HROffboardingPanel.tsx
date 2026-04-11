@@ -1,6 +1,9 @@
 /**
  * HROffboardingPanel - Panel de Gestión de Salidas (Offboarding)
- * Fase 5 - Sistema de desvinculación optimizado con análisis IA
+ * Fase 5 + P1.6 - Sistema de desvinculación con orquestación real
+ * 
+ * AI analysis is assistive only.
+ * Source of truth for lifecycle is the offboarding orchestrator.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -49,7 +52,8 @@ import {
   ClipboardList,
   TrendingUp,
   AlertCircle,
-  Building2
+  Building2,
+  Calculator
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -57,6 +61,11 @@ import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { HRTerminationAnalysisDialog } from './dialogs';
+import { OffboardingTrackingCard } from './payroll-engine/OffboardingTrackingCard';
+import { CertificaResponseDialog } from './payroll-engine/CertificaResponseDialog';
+import { useOffboardingOrchestration } from '@/hooks/erp/hr/useOffboardingOrchestration';
+import { useCertificaResponse } from '@/hooks/erp/hr/useCertificaResponse';
+import { computeOffboardingReadiness, type InternalTerminationType } from '@/engines/erp/hr/offboardingOrchestrationEngine';
 
 interface HROffboardingPanelProps {
   companyId: string;
