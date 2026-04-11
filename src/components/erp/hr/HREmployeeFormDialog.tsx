@@ -234,7 +234,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   });
 
   // H2.0: DNI/NIE validation state
-  const [dniValidation, setDniValidation] = useState<{ valid: boolean; error: string | null } | null>(null);
+  const [dniValidation, setDniValidation] = useState<{ valid: boolean; type: 'DNI' | 'NIE'; error: string | null } | null>(null);
   const [ibanValidation, setIbanValidation] = useState<{ valid: boolean; error: string | null } | null>(null);
 
   // Prórroga / active contract state
