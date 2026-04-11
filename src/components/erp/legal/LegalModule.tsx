@@ -46,6 +46,7 @@ export function LegalModule() {
   const companyId = currentCompany?.id;
 
   // Stats dinámicas
+  const [usingFallback, setUsingFallback] = useState(false);
   const [stats, setStats] = useState({
     complianceScore: 0,
     pendingReviews: 0,
@@ -77,7 +78,7 @@ export function LegalModule() {
             knowledgeItems: data.data.knowledgeItems || 0,
             agentQueries: data.data.agentQueries || 0
           });
-        } else {
+      } else {
           // Fallback demo data
           setStats({
             complianceScore: 87,
@@ -87,6 +88,7 @@ export function LegalModule() {
             knowledgeItems: 156,
             agentQueries: 42
           });
+          setUsingFallback(true);
         }
       } catch (error) {
         console.error('Error fetching legal stats:', error);
@@ -99,6 +101,7 @@ export function LegalModule() {
           knowledgeItems: 156,
           agentQueries: 42
         });
+        setUsingFallback(true);
       }
     };
 
@@ -122,6 +125,12 @@ export function LegalModule() {
   return (
     <div className="space-y-4">
       {/* Header con estadísticas rápidas */}
+      {usingFallback && (
+        <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="h-3 w-3" />
+          <span>Estadísticas de ejemplo — no se pudo conectar al servicio de IA</span>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border-indigo-500/20">
           <CardContent className="p-3">

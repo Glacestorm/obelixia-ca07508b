@@ -40,6 +40,12 @@ interface ComplianceItem {
 
 const JURISDICTIONS = ['AD', 'ES', 'EU', 'INT'];
 
+const DemoBadge = () => (
+  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700">
+    Datos de ejemplo
+  </Badge>
+);
+
 export function LegalCompliancePanel({ companyId }: LegalCompliancePanelProps) {
   const [activeJurisdiction, setActiveJurisdiction] = useState('ES');
   const [isChecking, setIsChecking] = useState(false);
@@ -196,6 +202,7 @@ export function LegalCompliancePanel({ companyId }: LegalCompliancePanelProps) {
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Shield className="h-5 w-5" />
             Matriz de Cumplimiento
+            <DemoBadge />
           </h2>
           <p className="text-sm text-muted-foreground">
             Estado de cumplimiento normativo multi-jurisdiccional
