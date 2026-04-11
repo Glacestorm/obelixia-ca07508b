@@ -234,6 +234,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 'vacations', label: 'Vacaciones', icon: Calendar, description: 'Solicitudes y saldos', badge: stats.pendingVacations, badgeVariant: 'secondary' },
             { id: 'time-clock', label: 'Control Horario', icon: Clock, description: 'Registro de jornada' },
             { id: 'leave-incidents', label: 'Incidencias', icon: AlertTriangle, description: 'IT, maternidad, permisos' },
+            { id: 's9-disconnection', label: 'Desconexión Digital', icon: Wifi, description: 'Protocolo Art. 88 LOPDGDD' },
+            { id: 's9-remote-work', label: 'Teletrabajo', icon: Home, description: 'Acuerdos Ley 10/2021' },
           ]
         },
         {
@@ -287,6 +289,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'official-submissions', label: 'Envíos Oficiales', icon: Send, description: 'SILTRA, Contrat@, AEAT' },
             { id: 'compliance-evidence', label: 'Evidencias', icon: Shield, description: 'Cumplimiento documental' },
+            { id: 's9-lismi', label: 'LISMI / LGD', icon: Users, description: 'Cuota discapacidad 2%' },
+            { id: 's9-salary-register', label: 'Registro Retributivo', icon: Scale, description: 'RD 902/2020' },
           ]
         },
       ]
