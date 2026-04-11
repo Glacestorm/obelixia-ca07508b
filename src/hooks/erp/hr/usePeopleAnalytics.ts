@@ -597,7 +597,7 @@ export function usePeopleAnalytics() {
   return {
     // State
     isLoading, error, lastRefresh,
-    hrOverview, payrollAnalytics, absenteeism, complianceRisks, equityMetrics,
+    hrOverview, payrollAnalytics, absenteeism, complianceRisks, equityMetrics, vptContext,
     alerts, aiInsights,
     // Data fetchers
     fetchAll, fetchHROverview, fetchPayrollAnalytics, fetchAbsenteeismAnalytics, fetchComplianceRisks, fetchEquityMetrics,
