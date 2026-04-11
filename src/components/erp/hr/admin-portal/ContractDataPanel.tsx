@@ -433,7 +433,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Horas semanales</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      Horas semanales
+                      {prefilledFields.has('weekly_hours') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                    </Label>
                     <Input
                       type="number"
                       className="h-8 text-xs"
@@ -451,7 +454,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Convenio colectivo</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      Convenio colectivo
+                      {prefilledFields.has('collective_agreement') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                    </Label>
                     <Input
                       className="h-8 text-xs"
                       value={draft.collective_agreement || ''}
@@ -459,7 +465,10 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Puesto de trabajo</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      Puesto de trabajo
+                      {prefilledFields.has('job_title') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                    </Label>
                     <Input
                       className="h-8 text-xs"
                       value={draft.job_title || ''}
