@@ -109,6 +109,14 @@ export interface MobilityPreflightData {
   summary: string;
 }
 
+export interface EquityPreflightData {
+  hasActiveGrants: boolean;
+  pendingExerciseCount: number;
+  worstSupportLevel: 'supported_production' | 'supported_with_review' | 'out_of_scope';
+  reviewRequired: boolean;
+  summary: string;
+}
+
 export interface PreflightInput {
   // From payrollCycleStatusEngine
   periodStatus: string;
@@ -159,6 +167,9 @@ export interface PreflightInput {
 
   // P1.7B-RA: Active international mobility data
   activeMobility?: MobilityPreflightData;
+
+  // P1.7B-RB: Active equity compensation data
+  activeEquity?: EquityPreflightData;
 
   // Current date for semaphore calculation
   now: Date;
