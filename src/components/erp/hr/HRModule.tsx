@@ -543,6 +543,7 @@ function HRModuleInner() {
         {activeModule === 's9-disconnection' && <LazyS9DisconnectionPanel companyId={companyId} />}
         {activeModule === 's9-remote-work' && <LazyS9RemoteWorkPanel companyId={companyId} />}
         {activeModule === 's9-vpt' && <LazyS9VPTWorkspace companyId={companyId} />}
+        {activeModule === 's9-retributive-audit' && <LazyS9RetributiveAuditPanel companyId={companyId} />}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
