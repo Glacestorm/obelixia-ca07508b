@@ -337,7 +337,12 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">Finiquitos y Liquidaciones</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">Finiquitos y Liquidaciones</CardTitle>
+                    {settlementsIsDemo && (
+                      <Badge variant="outline" className="text-xs border-warning/30 text-warning">Datos de ejemplo</Badge>
+                    )}
+                  </div>
                   <CardDescription>Cálculo y gestión de finiquitos</CardDescription>
                 </div>
                 <Button size="sm" onClick={() => setShowSettlementDialog(true)}>

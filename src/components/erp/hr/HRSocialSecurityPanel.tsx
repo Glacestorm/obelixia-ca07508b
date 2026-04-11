@@ -65,7 +65,8 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
   const [showCertificateDialog, setShowCertificateDialog] = useState(false);
   const [showSILTRADialog, setShowSILTRADialog] = useState(false);
   const [showSiltraResponseDialog, setShowSiltraResponseDialog] = useState(false);
-  // Demo data - Cotizaciones mensuales
+  // Demo data - Cotizaciones mensuales (H1.1: explicitly labeled)
+  const DEMO_DATA_LABEL = true; // All SS data below is demo — flagged for H1.2 real connection
   const contributions = [
     {
       id: '1',
