@@ -358,7 +358,10 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                 <Input placeholder="Código Cuenta Cotización" value={formData.ccc || ''} onChange={e => set('ccc', e.target.value)} className="h-8 text-sm" />
               </div>
               <div>
-                <Label className="text-xs">Tipo contrato *</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Tipo contrato *
+                  {prefilledFields.has('contract_type_code') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Select value={formData.contract_type_code || ''} onValueChange={v => set('contract_type_code', v)}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent>
@@ -369,7 +372,10 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Grupo cotización *</Label>
+                <Label className="text-xs flex items-center gap-1">
+                  Grupo cotización *
+                  {prefilledFields.has('contribution_group') && <span className="text-[9px] px-1 py-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Pre-cargado</span>}
+                </Label>
                 <Select value={formData.contribution_group || ''} onValueChange={v => set('contribution_group', v)}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent>
