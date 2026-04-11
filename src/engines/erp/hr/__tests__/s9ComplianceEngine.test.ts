@@ -675,4 +675,134 @@ describe('computeFairnessVPTSummary', () => {
     expect(summary.disclaimer).toBe(VPT_CONTEXT_DISCLAIMER);
   });
 });
+
+// ─── S9.6: EXECUTIVE SUMMARY ─────────────────────────────────
+
+describe('generateRetributiveExecutiveSummary', () => {
+  const baseReport = computeRetributiveAudit(
+    [
+      { employeeId: 'e1', gender: 'M', groupOrCategory: 'Dirección', salary: 5000, positionId: 'p1' },
+      { employeeId: 'e2', gender: 'F', groupOrCategory: 'Dirección', salary: 3500, positionId: 'p2' },
+      { employeeId: 'e3', gender: 'M', groupOrCategory: 'Técnico', salary: 3000, positionId: 'p3' },
+      { employeeId: 'e4', gender: 'F', groupOrCategory: 'Técnico', salary: 2800, positionId: 'p4' },
+    ],
+    { p1: 80, p2: 40, p3: 55, p4: 50 },
+    '2026-04',
+  );
+
+  it('should generate 3-5 sentences from a complete report', () => {
+    const summary = generateRetributiveExecutiveSummary(baseReport);
+    expect(summary.sentences.length).toBeGreaterThanOrEqual(3);
+    expect(summary.sentences.length).toBeLessThanOrEqual(5);
+    expect(summary.period).toBe('2026-04');
+  });
+
+  it('should include disclaimer', () => {
+    const summary = generateRetributiveExecutiveSummary(baseReport);
+    expect(summary.disclaimer).toBe(EXECUTIVE_SUMMARY_DISCLAIMER);
+  });
+
+  it('should use observational language, not justificative', () => {
+    const summary = generateRetributiveExecutiveSummary(baseReport);
+    const text = summary.sentences.join(' ');
+    expect(text).not.toMatch(/justificad/i);
+    expect(text).not.toMatch(/explicada completamente/i);
+    expect(text).not.toMatch(/concluimos/i);
+    expect(text).not.toMatch(/certificamos/i);
+    expect(text).toContain('se observa');
+  });
+
+  it('should handle report with no alerts', () => {
+    const noAlertReport = computeRetributiveAudit(
+      [
+        { employeeId: 'e1', gender: 'M', groupOrCategory: 'Admin', salary: 3000, positionId: 'p1' },
+        { employeeId: 'e2', gender: 'F', groupOrCategory: 'Admin', salary: 2900, positionId: 'p2' },
+      ],
+      { p1: 50, p2: 48 },
+      '2026-04',
+    );
+    const summary = generateRetributiveExecutiveSummary(noAlertReport);
+    const text = summary.sentences.join(' ');
+    expect(text).toContain('Ningún grupo');
+    expect(text).not.toContain('requieren atención prioritaria');
+  });
+
+  it('should handle report without VPT contextualization', () => {
+    const noVPTReport = computeRetributiveAudit(
+      [
+        { employeeId: 'e1', gender: 'M', groupOrCategory: 'Dir', salary: 5000 },
+        { employeeId: 'e2', gender: 'F', groupOrCategory: 'Dir', salary: 3000 },
+      ],
+      {},
+      '2026-04',
+    );
+    const summary = generateRetributiveExecutiveSummary(noVPTReport);
+    const text = summary.sentences.join(' ');
+    expect(text).toContain('No se dispone de datos de valoración');
+  });
+});
+
+// ─── S9.6: CSV EXPORT ────────────────────────────────────────
+
+describe('exportRetributiveAuditCSV', () => {
+  const report = computeRetributiveAudit(
+    [
+      { employeeId: 'e1', gender: 'M', groupOrCategory: 'Técnico', salary: 3000, positionId: 'p1' },
+      { employeeId: 'e2', gender: 'F', groupOrCategory: 'Técnico', salary: 2500, positionId: 'p2' },
+    ],
+    { p1: 70, p2: 35 },
+    '2026-04',
+  );
+
+  it('should generate valid CSV with headers', () => {
+    const csv = exportRetributiveAuditCSV(report);
+    expect(csv).toContain('Grupo,H,M');
+    expect(csv).toContain('Media H');
+    expect(csv).toContain('Brecha (%)');
+  });
+
+  it('should include disclaimer in first line', () => {
+    const csv = exportRetributiveAuditCSV(report);
+    const firstLine = csv.split('\n')[0];
+    expect(firstLine).toContain('DOCUMENTO INTERNO PREPARATORIO');
+  });
+
+  it('should include period metadata', () => {
+    const csv = exportRetributiveAuditCSV(report);
+    expect(csv).toContain('2026-04');
+  });
+
+  it('should preserve data integrity from report', () => {
+    const csv = exportRetributiveAuditCSV(report);
+    expect(csv).toContain('Técnico');
+    expect(csv).toContain('TOTAL');
+  });
+});
+
+describe('exportSalaryRegisterVPTCSV', () => {
+  const vptReport = generateVPTEnrichedRegister(
+    [
+      { employeeId: 'e1', gender: 'M', groupOrCategory: 'Admin', concept: 'Salario bruto', amount: 3000, positionId: 'p1' },
+      { employeeId: 'e2', gender: 'F', groupOrCategory: 'Admin', concept: 'Salario bruto', amount: 2800, positionId: 'p2' },
+    ],
+    '2026-04',
+    { p1: 60, p2: 55 },
+  );
+
+  it('should generate valid CSV with VPT columns', () => {
+    const csv = exportSalaryRegisterVPTCSV(vptReport);
+    expect(csv).toContain('VPT Score');
+    expect(csv).toContain('Banda VPT');
+  });
+
+  it('should include disclaimer', () => {
+    const csv = exportSalaryRegisterVPTCSV(vptReport);
+    expect(csv).toContain('DOCUMENTO INTERNO PREPARATORIO');
+  });
+
+  it('should include band summary section', () => {
+    const csv = exportSalaryRegisterVPTCSV(vptReport);
+    expect(csv).toContain('Resumen por Banda VPT');
+  });
+});
 });
