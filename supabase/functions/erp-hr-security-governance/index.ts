@@ -330,14 +330,20 @@ FORMATO JSON estricto:
       // --- S9.7: VPT context injection (informative, non-justificative) ---
       let vptContextBlock = '';
       try {
-        const { data: vptData } = await userClient.from('erp_hr_job_valuations').select('position_title, total_score, gender_lessor').eq('company_id', company_id).eq('status', 'approved');
+        const { data: vptData } = await userClient.from('erp_hr_job_valuations').select('position_id, total_score').eq('company_id', company_id).eq('status', 'approved');
         if (vptData && vptData.length > 0) {
-          const maleScores = vptData.filter((v: any) => v.gender_lessor === 'M').map((v: any) => Number(v.total_score || 0));
-          const femaleScores = vptData.filter((v: any) => v.gender_lessor === 'F').map((v: any) => Number(v.total_score || 0));
-          const avgM = maleScores.length > 0 ? Math.round(maleScores.reduce((a: number, b: number) => a + b, 0) / maleScores.length * 100) / 100 : null;
-          const avgF = femaleScores.length > 0 ? Math.round(femaleScores.reduce((a: number, b: number) => a + b, 0) / femaleScores.length * 100) / 100 : null;
+          const vptMap: Record<string, number> = {};
+          vptData.forEach((v: any) => { if (v.position_id && v.total_score != null) vptMap[v.position_id] = Number(v.total_score); });
+          const maleScores: number[] = [];
+          const femaleScores: number[] = [];
+          (realEmps || []).forEach((e: any) => { if (e.position_id && vptMap[e.position_id] !== undefined) { if (e.gender === 'M') maleScores.push(vptMap[e.position_id]); else if (e.gender === 'F') femaleScores.push(vptMap[e.position_id]); } });
+          const avgM = maleScores.length > 0 ? Math.round(maleScores.reduce((a, b) => a + b, 0) / maleScores.length * 100) / 100 : null;
+          const avgF = femaleScores.length > 0 ? Math.round(femaleScores.reduce((a, b) => a + b, 0) / femaleScores.length * 100) / 100 : null;
           const diff = (avgM !== null && avgF !== null) ? Math.round((avgM - avgF) * 100) / 100 : null;
-          vptContextBlock = `\n\n=== CONTEXTO VPT (INFORMATIVO — NO JUSTIFICATIVO) ===\nPosiciones valoradas: ${vptData.length}\n${avgM !== null ? `Score medio VPT posiciones H: ${avgM}` : 'Score medio VPT H: sin datos suficientes'}\n${avgF !== null ? `Score medio VPT posiciones M: ${avgF}` : 'Score medio VPT M: sin datos suficientes'}\n${diff !== null ? `Diferencia media VPT: ${diff}` : ''}\nEste contexto es descriptivo y no debe usarse para afirmar que una brecha está justificada o explicada por VPT.\n=== FIN CONTEXTO VPT ===`;
+          const matched = maleScores.length + femaleScores.length;
+          if (matched > 0) {
+            vptContextBlock = `\n\n=== CONTEXTO VPT (INFORMATIVO — NO JUSTIFICATIVO) ===\nPosiciones valoradas: ${vptData.length}\nEmpleados con VPT asignado: ${matched}\nScore medio VPT posiciones H: ${avgM !== null ? avgM : 'sin datos suficientes'}\nScore medio VPT posiciones M: ${avgF !== null ? avgF : 'sin datos suficientes'}\n${diff !== null ? `Diferencia media VPT: ${diff}` : ''}\nEste contexto es descriptivo y no debe usarse para afirmar que una brecha está justificada o explicada por VPT.\n=== FIN CONTEXTO VPT ===`;
+          }
         }
       } catch (vptErr) {
         console.log('[erp-hr-security-governance] VPT query failed (graceful degradation):', vptErr);
