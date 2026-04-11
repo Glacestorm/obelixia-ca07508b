@@ -14,7 +14,10 @@ import {
   suggestEquivalentBand,
   compareVPTValuations,
   DEFAULT_VPT_METHODOLOGY,
+  generateVPTEnrichedRegister,
+  computeRetributiveAudit,
 } from '../s9ComplianceEngine';
+import { RETRIBUTIVE_AUDIT_DISCLAIMER } from '@/types/s9-compliance';
 
 // ─── LISMI ───────────────────────────────────────────────────
 
