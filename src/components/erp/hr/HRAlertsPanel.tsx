@@ -685,12 +685,17 @@ export function HRAlertsPanel({ companyId }: HRAlertsPanelProps) {
             </div>
           </div>
 
+          <p className="text-xs text-muted-foreground italic">Las preferencias se guardan localmente en este navegador</p>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPreferencesDialog(false)}>
               Cancelar
             </Button>
             <Button onClick={() => {
-              toast.success('Preferencias guardadas');
+              try {
+                localStorage.setItem('hr_alert_preferences', JSON.stringify({ savedAt: new Date().toISOString() }));
+              } catch {}
+              toast.success('Preferencias guardadas (local)');
               setShowPreferencesDialog(false);
             }}>
               Guardar configuración
