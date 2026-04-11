@@ -37518,6 +37518,77 @@ export type Database = {
           },
         ]
       }
+      erp_hr_job_valuations: {
+        Row: {
+          ai_suggestions: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string
+          equivalent_band_max: number | null
+          equivalent_band_min: number | null
+          factor_scores: Json
+          id: string
+          methodology_snapshot: Json
+          notes: string | null
+          position_id: string
+          reviewed_by: string | null
+          scored_by: string | null
+          status: string
+          total_score: number
+          updated_at: string
+          version_id: string | null
+        }
+        Insert: {
+          ai_suggestions?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string
+          equivalent_band_max?: number | null
+          equivalent_band_min?: number | null
+          factor_scores?: Json
+          id?: string
+          methodology_snapshot?: Json
+          notes?: string | null
+          position_id: string
+          reviewed_by?: string | null
+          scored_by?: string | null
+          status?: string
+          total_score?: number
+          updated_at?: string
+          version_id?: string | null
+        }
+        Update: {
+          ai_suggestions?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string
+          equivalent_band_max?: number | null
+          equivalent_band_min?: number | null
+          factor_scores?: Json
+          id?: string
+          methodology_snapshot?: Json
+          notes?: string | null
+          position_id?: string
+          reviewed_by?: string | null
+          scored_by?: string | null
+          status?: string
+          total_score?: number
+          updated_at?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_job_valuations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_journal_entries: {
         Row: {
           auto_generated: boolean | null
