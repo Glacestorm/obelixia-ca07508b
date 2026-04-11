@@ -20,7 +20,6 @@ import type {
   VPTFactor,
   VPTScoreBreakdown,
   VPTIncoherence,
-  VPTValuation,
 } from '@/types/s9-compliance';
 
 // ─── LISMI / LGD ─────────────────────────────────────────────
