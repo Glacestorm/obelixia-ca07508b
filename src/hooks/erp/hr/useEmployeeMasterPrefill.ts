@@ -115,7 +115,7 @@ export function useEmployeeMasterPrefill(employeeId: string | null) {
       const result: MasterPrefillData = {
         national_id: emp.national_id,
         ss_number: emp.ss_number,
-        position: emp.position,
+        position: emp.job_title,
         hire_date: emp.hire_date,
         base_salary: emp.base_salary ? Number(emp.base_salary) : null,
         weekly_hours: emp.weekly_hours ? Number(emp.weekly_hours) : null,
