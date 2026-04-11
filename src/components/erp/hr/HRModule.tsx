@@ -141,6 +141,7 @@ import {
   LazyGovernanceCockpit,
   LazyPredictiveAuditPanel,
   LazyGarnishmentSimulator,
+  LazyPayrollPreflightCockpit,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -529,6 +530,7 @@ function HRModuleInner() {
         {activeModule === 'governance-cockpit' && <LazyGovernanceCockpit companyId={companyId} />}
         {activeModule === 'predictive-audit' && <LazyPredictiveAuditPanel companyId={companyId} />}
         {activeModule === 'garnishment-simulator' && <LazyGarnishmentSimulator />}
+        {activeModule === 'preflight' && <LazyPayrollPreflightCockpit companyId={companyId} onNavigateToModule={setActiveModule} />}
 
         {/* Employee Expedient */}
         {activeModule === 'employee-expedient' && selectedEmployeeId && (
