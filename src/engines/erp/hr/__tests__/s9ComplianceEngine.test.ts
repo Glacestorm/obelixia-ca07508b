@@ -9,6 +9,9 @@ import {
   evaluateDisconnectionCompliance,
   validateRemoteWorkAgreement,
   computePresenciality,
+  computeVPTScore,
+  detectVPTIncoherences,
+  DEFAULT_VPT_METHODOLOGY,
 } from '../s9ComplianceEngine';
 
 // ─── LISMI ───────────────────────────────────────────────────
@@ -189,5 +192,144 @@ describe('computePresenciality', () => {
   it('should classify < 30% as occasional', () => {
     const result = computePresenciality(20);
     expect(result.label).toContain('puntual');
+});
+
+// ─── VPT SCORING ───────────────────────────────────────────
+
+describe('computeVPTScore', () => {
+  const allMax: import('@/types/s9-compliance').VPTFactorScores = {
+    qualifications: { formal_education: 5, experience: 5, certifications: 5 },
+    responsibility: { people_decisions: 5, economic_decisions: 5, organizational_impact: 5 },
+    effort: { intellectual_complexity: 5, physical_effort: 5, emotional_load: 5 },
+    conditions: { hardship_danger: 5, atypical_schedules: 5, availability_travel: 5 },
+  };
+
+  const allMin: import('@/types/s9-compliance').VPTFactorScores = {
+    qualifications: { formal_education: 1, experience: 1, certifications: 1 },
+    responsibility: { people_decisions: 1, economic_decisions: 1, organizational_impact: 1 },
+    effort: { intellectual_complexity: 1, physical_effort: 1, emotional_load: 1 },
+    conditions: { hardship_danger: 1, atypical_schedules: 1, availability_travel: 1 },
+  };
+
+  it('should produce score 100 with all subfactors at max', () => {
+    const result = computeVPTScore(allMax);
+    expect(result.totalScore).toBe(100);
   });
+
+  it('should produce score 0 with all subfactors at min', () => {
+    const result = computeVPTScore(allMin);
+    expect(result.totalScore).toBe(0);
+  });
+
+  it('should produce deterministic results for same inputs', () => {
+    const a = computeVPTScore(allMax);
+    const b = computeVPTScore(allMax);
+    expect(a.totalScore).toBe(b.totalScore);
+    expect(a.factorScores).toEqual(b.factorScores);
+  });
+
+  it('should respect factor weights — responsibility (30%) weighs more than effort (20%)', () => {
+    const highResp: import('@/types/s9-compliance').VPTFactorScores = {
+      qualifications: { formal_education: 1, experience: 1, certifications: 1 },
+      responsibility: { people_decisions: 5, economic_decisions: 5, organizational_impact: 5 },
+      effort: { intellectual_complexity: 1, physical_effort: 1, emotional_load: 1 },
+      conditions: { hardship_danger: 1, atypical_schedules: 1, availability_travel: 1 },
+    };
+    const highEffort: import('@/types/s9-compliance').VPTFactorScores = {
+      qualifications: { formal_education: 1, experience: 1, certifications: 1 },
+      responsibility: { people_decisions: 1, economic_decisions: 1, organizational_impact: 1 },
+      effort: { intellectual_complexity: 5, physical_effort: 5, emotional_load: 5 },
+      conditions: { hardship_danger: 1, atypical_schedules: 1, availability_travel: 1 },
+    };
+    const rScore = computeVPTScore(highResp).totalScore;
+    const eScore = computeVPTScore(highEffort).totalScore;
+    expect(rScore).toBeGreaterThan(eScore);
+  });
+
+  it('should not bias physical_effort over emotional_load with default weights', () => {
+    const physicalHigh: import('@/types/s9-compliance').VPTFactorScores = {
+      qualifications: { formal_education: 3, experience: 3, certifications: 3 },
+      responsibility: { people_decisions: 3, economic_decisions: 3, organizational_impact: 3 },
+      effort: { intellectual_complexity: 3, physical_effort: 5, emotional_load: 1 },
+      conditions: { hardship_danger: 3, atypical_schedules: 3, availability_travel: 3 },
+    };
+    const emotionalHigh: import('@/types/s9-compliance').VPTFactorScores = {
+      qualifications: { formal_education: 3, experience: 3, certifications: 3 },
+      responsibility: { people_decisions: 3, economic_decisions: 3, organizational_impact: 3 },
+      effort: { intellectual_complexity: 3, physical_effort: 1, emotional_load: 5 },
+      conditions: { hardship_danger: 3, atypical_schedules: 3, availability_travel: 3 },
+    };
+    const pScore = computeVPTScore(physicalHigh).totalScore;
+    const eScore = computeVPTScore(emotionalHigh).totalScore;
+    // Same weight (0.30 each) so scores should be equal
+    expect(pScore).toBe(eScore);
+  });
+
+  it('should produce per-factor scores between 0 and 100', () => {
+    const mid: import('@/types/s9-compliance').VPTFactorScores = {
+      qualifications: { formal_education: 3, experience: 3, certifications: 3 },
+      responsibility: { people_decisions: 3, economic_decisions: 3, organizational_impact: 3 },
+      effort: { intellectual_complexity: 3, physical_effort: 3, emotional_load: 3 },
+      conditions: { hardship_danger: 3, atypical_schedules: 3, availability_travel: 3 },
+    };
+    const result = computeVPTScore(mid);
+    for (const factorScore of Object.values(result.factorScores)) {
+      expect(factorScore).toBeGreaterThanOrEqual(0);
+      expect(factorScore).toBeLessThanOrEqual(100);
+    }
+    expect(result.totalScore).toBe(50);
+  });
+
+  it('should accept custom methodology with different weights', () => {
+    const custom: import('@/types/s9-compliance').VPTMethodology = [
+      { factor: 'qualifications', weight: 1.0, subfactors: [{ subfactor: 'formal_education', weight: 1.0 }] },
+      { factor: 'responsibility', weight: 0, subfactors: [{ subfactor: 'people_decisions', weight: 1.0 }] },
+      { factor: 'effort', weight: 0, subfactors: [{ subfactor: 'intellectual_complexity', weight: 1.0 }] },
+      { factor: 'conditions', weight: 0, subfactors: [{ subfactor: 'hardship_danger', weight: 1.0 }] },
+    ];
+    const scores: import('@/types/s9-compliance').VPTFactorScores = {
+      qualifications: { formal_education: 5 },
+      responsibility: { people_decisions: 1 },
+      effort: { intellectual_complexity: 1 },
+      conditions: { hardship_danger: 1 },
+    };
+    const result = computeVPTScore(scores, custom);
+    expect(result.totalScore).toBe(100);
+  });
+});
+
+// ─── VPT INCOHERENCES ──────────────────────────────────────
+
+describe('detectVPTIncoherences', () => {
+  it('should detect score vs band incoherence', () => {
+    const vals = [
+      { id: '1', positionId: 'p1', positionName: 'Director', totalScore: 90, salaryBandMax: 20000, jobLevel: 'A' },
+      { id: '2', positionId: 'p2', positionName: 'Junior', totalScore: 20, salaryBandMax: 60000, jobLevel: 'B' },
+      { id: '3', positionId: 'p3', positionName: 'Mid', totalScore: 50, salaryBandMax: 40000, jobLevel: 'C' },
+      { id: '4', positionId: 'p4', positionName: 'Senior', totalScore: 80, salaryBandMax: 55000, jobLevel: 'D' },
+    ];
+    const incs = detectVPTIncoherences(vals);
+    const scoreBand = incs.filter(i => i.type === 'score_vs_band');
+    expect(scoreBand.length).toBeGreaterThan(0);
+    expect(scoreBand[0].level).toBe('critical');
+  });
+
+  it('should detect level divergence when same level has >30pt difference', () => {
+    const vals = [
+      { id: '1', positionId: 'p1', totalScore: 80, jobLevel: 'A' },
+      { id: '2', positionId: 'p2', totalScore: 40, jobLevel: 'A' },
+    ];
+    const incs = detectVPTIncoherences(vals);
+    expect(incs.some(i => i.type === 'level_divergence')).toBe(true);
+  });
+
+  it('should not flag when same level has similar scores', () => {
+    const vals = [
+      { id: '1', positionId: 'p1', totalScore: 60, jobLevel: 'A' },
+      { id: '2', positionId: 'p2', totalScore: 65, jobLevel: 'A' },
+    ];
+    const incs = detectVPTIncoherences(vals);
+    expect(incs.filter(i => i.type === 'level_divergence').length).toBe(0);
+  });
+});
 });

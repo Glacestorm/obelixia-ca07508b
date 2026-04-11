@@ -148,6 +148,7 @@ import {
   LazyS9SalaryRegisterPanel,
   LazyS9DisconnectionPanel,
   LazyS9RemoteWorkPanel,
+  LazyS9VPTWorkspace,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -541,6 +542,7 @@ function HRModuleInner() {
         {activeModule === 's9-salary-register' && <LazyS9SalaryRegisterPanel companyId={companyId} />}
         {activeModule === 's9-disconnection' && <LazyS9DisconnectionPanel companyId={companyId} />}
         {activeModule === 's9-remote-work' && <LazyS9RemoteWorkPanel companyId={companyId} />}
+        {activeModule === 's9-vpt' && <LazyS9VPTWorkspace companyId={companyId} />}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
