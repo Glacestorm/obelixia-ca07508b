@@ -40,6 +40,8 @@ interface Props {
   onClosePeriod?: (periodId: string) => Promise<{ success: boolean; snapshot?: PeriodClosureSnapshot }>;
   onLockPeriod?: (periodId: string) => Promise<boolean>;
   onReopenPeriod?: (periodId: string, reason: string) => Promise<boolean>;
+  // P1.7 — Preflight navigation
+  onNavigateToPreflight?: () => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -59,7 +61,7 @@ export function HRPayrollPeriodManager({
   companyId, periods, isLoading, onOpenPeriod, onUpdateStatus,
   onValidatePreClose, onSelectPeriod, onRefresh,
   onBatchCalculateES, onBatchDiff, onStartApprovalWorkflow,
-  onClosePeriod, onLockPeriod, onReopenPeriod,
+  onClosePeriod, onLockPeriod, onReopenPeriod, onNavigateToPreflight,
 }: Props) {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newYear, setNewYear] = useState(new Date().getFullYear());
@@ -184,6 +186,18 @@ export function HRPayrollPeriodManager({
           </Button>
         </div>
       </div>
+
+      {/* P1.7 — Mini preflight banner */}
+      {onNavigateToPreflight && periods.length > 0 && (
+        <button
+          onClick={onNavigateToPreflight}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+        >
+          <Gauge className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm font-medium text-foreground">Preflight Nómina</span>
+          <span className="text-xs text-muted-foreground ml-auto">Ver cockpit completo del ciclo →</span>
+        </button>
+      )}
 
       {periods.length === 0 && !isLoading && (
         <Card className="border-dashed">
