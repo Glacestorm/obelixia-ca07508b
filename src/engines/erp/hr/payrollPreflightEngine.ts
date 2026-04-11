@@ -205,6 +205,12 @@ export interface PreflightInput {
   // P2.2: Active IT processes
   activeIT?: ITPreflightData;
 
+  // P2.3: SEPA CT batch status
+  activeSEPACT?: SEPACTPreflightData;
+
+  // P2.1: Active offboarding cases
+  activeOffboarding?: OffboardingPreflightData;
+
   // Current date for semaphore calculation
   now: Date;
 }
