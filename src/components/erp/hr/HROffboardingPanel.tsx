@@ -776,6 +776,30 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
           }
         }}
       />
+
+      {/* Certific@2 Response Dialog */}
+      {selectedTermination && (
+        <CertificaResponseDialog
+          open={showCertificaDialog}
+          onOpenChange={setShowCertificaDialog}
+          artifactId=""
+          employeeId={selectedTermination.employee_id}
+          terminationId={selectedTermination.id}
+          onSubmit={async (data) => {
+            await registerCertificaResponse({
+              artifactId: '', // TODO: wire to real artifact ID from erp_hr_official_artifacts
+              employeeId: selectedTermination.employee_id,
+              terminationId: selectedTermination.id,
+              responseType: data.responseType,
+              sepeReference: data.sepeReference,
+              receptionDate: data.receptionDate,
+              rejectionReason: data.rejectionReason,
+              notes: data.notes,
+            });
+            setShowCertificaDialog(false);
+          }}
+        />
+      )}
     </div>
   );
 }
