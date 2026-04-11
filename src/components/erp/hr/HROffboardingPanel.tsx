@@ -559,6 +559,44 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
         </Card>
       </div>
 
+      {/* Offboarding Tracking Card — shown when a termination is selected */}
+      {selectedTermination && selectedReadiness && (
+        <OffboardingTrackingCard
+          terminationType={selectedTermination.termination_type}
+          terminationDate={selectedTermination.proposed_termination_date ?? null}
+          terminationStatus={selectedTermination.status}
+          afiBajaStatus={null}
+          finiquitoComputed={!!settlementSnapshot}
+          finiquitoTotal={settlementSnapshot ? (settlementSnapshot as any).totalBruto ?? null : null}
+          finiquitoSubtotal={settlementSnapshot ? (settlementSnapshot as any).finiquito?.subtotal ?? null : null}
+          indemnizacionApplicable={!['voluntary', 'probation'].includes(selectedTermination.termination_type)}
+          indemnizacionAmount={settlementSnapshot ? (settlementSnapshot as any).indemnizacion?.amount ?? null : null}
+          indemnizacionLegalBasis={settlementSnapshot ? (settlementSnapshot as any).indemnizacion?.legalBasis ?? null : null}
+          certificaStatus={null}
+          isClosed={selectedTermination.status === 'executed'}
+          readinessScore={selectedReadiness.readinessScore}
+          onRegisterSEPEResponse={() => setShowCertificaDialog(true)}
+        />
+      )}
+
+      {/* Calculate settlement button when termination selected but not yet computed */}
+      {selectedTermination && !settlementSnapshot && (
+        <Card className="border-dashed">
+          <CardContent className="py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calculator className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Finiquito no calculado para {selectedTermination.employee?.first_name} {selectedTermination.employee?.last_name}
+              </span>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleCalculateSettlement}>
+              <Calculator className="h-3 w-3 mr-1" />
+              Calcular Finiquito
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
