@@ -1,5 +1,6 @@
 /**
- * MobilityDocumentsPanel — CRUD for mobility documents (visa, work permit, A1, etc.)
+ * MobilityDocumentsPanel — CRUD for mobility documents
+ * H1.0: Country select, status change dropdown
  */
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,12 +40,35 @@ const STATUS_COLORS: Record<string, string> = {
   rejected: 'bg-red-500/15 text-red-700',
 };
 
+const STATUS_OPTIONS: { value: DocumentStatus; label: string }[] = [
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'applied', label: 'Solicitado' },
+  { value: 'approved', label: 'Aprobado' },
+  { value: 'active', label: 'Activo' },
+  { value: 'expiring_soon', label: 'Próximo a expirar' },
+  { value: 'expired', label: 'Expirado' },
+  { value: 'renewed', label: 'Renovado' },
+  { value: 'rejected', label: 'Rechazado' },
+];
+
+const COUNTRY_OPTIONS = [
+  { code: 'ES', name: 'España' }, { code: 'DE', name: 'Alemania' }, { code: 'FR', name: 'Francia' },
+  { code: 'IT', name: 'Italia' }, { code: 'PT', name: 'Portugal' }, { code: 'GB', name: 'Reino Unido' },
+  { code: 'NL', name: 'Países Bajos' }, { code: 'BE', name: 'Bélgica' }, { code: 'CH', name: 'Suiza' },
+  { code: 'AT', name: 'Austria' }, { code: 'PL', name: 'Polonia' }, { code: 'SE', name: 'Suecia' },
+  { code: 'NO', name: 'Noruega' }, { code: 'DK', name: 'Dinamarca' }, { code: 'IE', name: 'Irlanda' },
+  { code: 'US', name: 'Estados Unidos' }, { code: 'CA', name: 'Canadá' }, { code: 'MX', name: 'México' },
+  { code: 'BR', name: 'Brasil' }, { code: 'AR', name: 'Argentina' }, { code: 'CL', name: 'Chile' },
+  { code: 'CO', name: 'Colombia' }, { code: 'JP', name: 'Japón' }, { code: 'CN', name: 'China' },
+  { code: 'IN', name: 'India' }, { code: 'AU', name: 'Australia' }, { code: 'AD', name: 'Andorra' },
+].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
 export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd, onUpdate }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     document_type: 'visa' as DocumentType,
     document_name: '',
-    country_code: '',
+    country_code: 'ES',
     issue_date: '',
     expiry_date: '',
     reference_number: '',
@@ -52,6 +76,7 @@ export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd
   });
 
   const handleAdd = () => {
+    if (!form.document_name.trim()) return;
     onAdd({
       assignment_id: assignmentId,
       ...form,
@@ -60,7 +85,11 @@ export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd
       status: 'pending',
     } as any);
     setShowForm(false);
-    setForm({ document_type: 'visa', document_name: '', country_code: '', issue_date: '', expiry_date: '', reference_number: '', alert_days_before: 60 });
+    setForm({ document_type: 'visa', document_name: '', country_code: 'ES', issue_date: '', expiry_date: '', reference_number: '', alert_days_before: 60 });
+  };
+
+  const handleStatusChange = (docId: string, newStatus: DocumentStatus) => {
+    onUpdate(docId, { status: newStatus });
   };
 
   const isExpiring = (doc: MobilityDocument) => {
@@ -92,14 +121,22 @@ export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd
                 </div>
                 <div><Label className="text-xs">Nombre</Label><Input value={form.document_name} onChange={e => setForm(p => ({ ...p, document_name: e.target.value }))} className="h-8 text-sm" /></div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div><Label className="text-xs">País emisor</Label><Input value={form.country_code} onChange={e => setForm(p => ({ ...p, country_code: e.target.value }))} className="h-8 text-sm" placeholder="ES" /></div>
+                  <div>
+                    <Label className="text-xs">País emisor</Label>
+                    <Select value={form.country_code} onValueChange={v => setForm(p => ({ ...p, country_code: v }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {COUNTRY_OPTIONS.map(c => <SelectItem key={c.code} value={c.code}>{c.name} ({c.code})</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div><Label className="text-xs">Referencia</Label><Input value={form.reference_number} onChange={e => setForm(p => ({ ...p, reference_number: e.target.value }))} className="h-8 text-sm" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs">Fecha emisión</Label><Input type="date" value={form.issue_date} onChange={e => setForm(p => ({ ...p, issue_date: e.target.value }))} className="h-8 text-sm" /></div>
                   <div><Label className="text-xs">Fecha expiración</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(p => ({ ...p, expiry_date: e.target.value }))} className="h-8 text-sm" /></div>
                 </div>
-                <Button size="sm" onClick={handleAdd} className="w-full">Guardar documento</Button>
+                <Button size="sm" onClick={handleAdd} className="w-full" disabled={!form.document_name.trim()}>Guardar documento</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -122,9 +159,18 @@ export function MobilityDocumentsPanel({ assignmentId, documents, loading, onAdd
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[doc.status] || ''}`}>
-                  {doc.status}
-                </Badge>
+                <Select value={doc.status} onValueChange={(v) => handleStatusChange(doc.id, v as DocumentStatus)}>
+                  <SelectTrigger className="w-[130px] h-7 text-[10px] border-0">
+                    <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[doc.status] || ''}`}>
+                      {STATUS_OPTIONS.find(s => s.value === doc.status)?.label || doc.status}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(s => (
+                      <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             ))}
           </div>
