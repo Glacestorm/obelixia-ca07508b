@@ -332,3 +332,174 @@ export function computePresenciality(
       : 'Presencial con teletrabajo puntual',
   };
 }
+
+// ─── VPT (Valoración de Puestos de Trabajo) ────────────────
+
+export const DEFAULT_VPT_METHODOLOGY: VPTMethodology = [
+  {
+    factor: 'qualifications',
+    weight: 0.25,
+    subfactors: [
+      { subfactor: 'formal_education', weight: 0.4 },
+      { subfactor: 'experience', weight: 0.4 },
+      { subfactor: 'certifications', weight: 0.2 },
+    ],
+  },
+  {
+    factor: 'responsibility',
+    weight: 0.30,
+    subfactors: [
+      { subfactor: 'people_decisions', weight: 0.35 },
+      { subfactor: 'economic_decisions', weight: 0.35 },
+      { subfactor: 'organizational_impact', weight: 0.30 },
+    ],
+  },
+  {
+    factor: 'effort',
+    weight: 0.20,
+    subfactors: [
+      { subfactor: 'intellectual_complexity', weight: 0.40 },
+      { subfactor: 'physical_effort', weight: 0.30 },
+      { subfactor: 'emotional_load', weight: 0.30 },
+    ],
+  },
+  {
+    factor: 'conditions',
+    weight: 0.25,
+    subfactors: [
+      { subfactor: 'hardship_danger', weight: 0.40 },
+      { subfactor: 'atypical_schedules', weight: 0.30 },
+      { subfactor: 'availability_travel', weight: 0.30 },
+    ],
+  },
+];
+
+export const VPT_SUBFACTOR_LABELS: Record<string, string> = {
+  formal_education: 'Formación reglada',
+  experience: 'Experiencia profesional',
+  certifications: 'Certificaciones obligatorias',
+  people_decisions: 'Decisiones sobre personas',
+  economic_decisions: 'Decisiones económicas',
+  organizational_impact: 'Impacto organizativo',
+  intellectual_complexity: 'Complejidad intelectual',
+  physical_effort: 'Esfuerzo físico',
+  emotional_load: 'Carga emocional/psicosocial',
+  hardship_danger: 'Penosidad/peligrosidad',
+  atypical_schedules: 'Horarios atípicos',
+  availability_travel: 'Disponibilidad/desplazamientos',
+};
+
+export const VPT_FACTOR_LABELS: Record<VPTFactor, string> = {
+  qualifications: 'Cualificaciones',
+  responsibility: 'Responsabilidad',
+  effort: 'Esfuerzo',
+  conditions: 'Condiciones de trabajo',
+};
+
+/**
+ * Compute VPT score from factor scores and methodology.
+ * Each subfactor is scored 1-5. Score is normalized to 0-100.
+ */
+export function computeVPTScore(
+  factorScores: VPTFactorScores,
+  methodology: VPTMethodology = DEFAULT_VPT_METHODOLOGY,
+): VPTScoreBreakdown {
+  const MAX_SUBFACTOR = 5;
+  const MIN_SUBFACTOR = 1;
+  const range = MAX_SUBFACTOR - MIN_SUBFACTOR;
+
+  const perFactor: Record<string, number> = {};
+  let totalScore = 0;
+
+  for (const fc of methodology) {
+    const scores = factorScores[fc.factor] ?? {};
+    let factorWeightedSum = 0;
+    let factorTotalWeight = 0;
+
+    for (const sf of fc.subfactors) {
+      const raw = scores[sf.subfactor] ?? MIN_SUBFACTOR;
+      const clamped = Math.max(MIN_SUBFACTOR, Math.min(MAX_SUBFACTOR, raw));
+      const normalized = (clamped - MIN_SUBFACTOR) / range; // 0-1
+      factorWeightedSum += normalized * sf.weight;
+      factorTotalWeight += sf.weight;
+    }
+
+    const factorScore = factorTotalWeight > 0
+      ? (factorWeightedSum / factorTotalWeight) * 100
+      : 0;
+    perFactor[fc.factor] = Math.round(factorScore * 100) / 100;
+    totalScore += factorScore * fc.weight;
+  }
+
+  return {
+    factorScores: perFactor as Record<VPTFactor, number>,
+    totalScore: Math.round(totalScore * 100) / 100,
+  };
+}
+
+/**
+ * Detect incoherences between VPT valuations and salary bands / levels.
+ */
+export function detectVPTIncoherences(
+  valuations: Array<{
+    id: string;
+    positionId: string;
+    positionName?: string;
+    totalScore: number;
+    salaryBandMin?: number;
+    salaryBandMax?: number;
+    jobLevel?: string;
+  }>,
+): VPTIncoherence[] {
+  const incoherences: VPTIncoherence[] = [];
+
+  // 1. Score vs salary band
+  for (const v of valuations) {
+    if (v.salaryBandMax != null && v.salaryBandMax > 0) {
+      const scorePct = v.totalScore / 100;
+      // If score is top quartile (>75) but band is bottom quartile of all bands
+      const allMaxBands = valuations
+        .map(x => x.salaryBandMax)
+        .filter((x): x is number => x != null && x > 0);
+      if (allMaxBands.length > 1) {
+        const sorted = [...allMaxBands].sort((a, b) => a - b);
+        const q25 = sorted[Math.floor(sorted.length * 0.25)];
+        if (v.totalScore > 75 && v.salaryBandMax <= q25) {
+          incoherences.push({
+            type: 'score_vs_band',
+            level: 'critical',
+            message: `${v.positionName ?? v.positionId}: Score alto (${v.totalScore}) pero banda salarial baja (${v.salaryBandMax}€)`,
+            positionIds: [v.positionId],
+            details: { score: v.totalScore, bandMax: v.salaryBandMax },
+          });
+        }
+      }
+    }
+  }
+
+  // 2. Same level, divergent scores
+  const byLevel = new Map<string, typeof valuations>();
+  for (const v of valuations) {
+    if (!v.jobLevel) continue;
+    if (!byLevel.has(v.jobLevel)) byLevel.set(v.jobLevel, []);
+    byLevel.get(v.jobLevel)!.push(v);
+  }
+
+  for (const [level, group] of byLevel) {
+    if (group.length < 2) continue;
+    const scores = group.map(g => g.totalScore);
+    const maxS = Math.max(...scores);
+    const minS = Math.min(...scores);
+    if (maxS - minS > 30) {
+      incoherences.push({
+        type: 'level_divergence',
+        level: 'warning',
+        message: `Nivel ${level}: diferencia de ${(maxS - minS).toFixed(0)} puntos entre puestos del mismo nivel`,
+        positionIds: group.map(g => g.positionId),
+        details: { level, maxScore: maxS, minScore: minS },
+      });
+    }
+  }
+
+  return incoherences;
+}
