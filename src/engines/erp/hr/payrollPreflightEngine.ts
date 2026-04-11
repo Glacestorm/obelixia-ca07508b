@@ -131,6 +131,23 @@ export interface ITPreflightData {
   summary: string;
 }
 
+export interface SEPACTPreflightData {
+  hasPendingBatch: boolean;
+  batchStatus: 'draft' | 'validated' | 'generated' | 'exported' | 'paid' | 'cancelled' | 'none';
+  totalAmount: number;
+  lineCount: number;
+  hasErrors: boolean;
+  summary: string;
+}
+
+export interface OffboardingPreflightData {
+  activeCases: number;
+  pendingSettlements: number;
+  pendingCertificates: number;
+  pendingPayments: number;
+  summary: string;
+}
+
 export interface PreflightInput {
   // From payrollCycleStatusEngine
   periodStatus: string;
