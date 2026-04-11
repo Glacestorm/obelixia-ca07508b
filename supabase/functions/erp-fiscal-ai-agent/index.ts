@@ -1,11 +1,11 @@
 /**
  * erp-fiscal-ai-agent - Agente IA Fiscal ultraespecializado
- * Coordina con agente supervisor, genera asientos, verifica cumplimiento,
- * consulta normativa y emite alertas
+ * G1.1: Auth hardened with validateTenantAccess + prompt refresh (SII, Intrastat, modelos)
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, errorResponse } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,18 +37,26 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
     const body = await req.json() as AgentRequest;
     const { action, company_id, session_id, message, context, history, jurisdiction_id, jurisdiction_ids, description, amount, question } = body;
 
+    if (!company_id) {
+      return validationError('company_id is required', corsHeaders);
+    }
+
+    // --- AUTH + TENANT VALIDATION (G1.1) ---
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return mapAuthError(authResult, corsHeaders);
+    }
+    const { userClient, adminClient } = authResult;
+    // --- END AUTH ---
+
     console.log(`[erp-fiscal-ai-agent] Processing action: ${action}`);
 
-    // Fetch relevant knowledge base content
+    // Fetch relevant knowledge base content — uses userClient for RLS
     const fetchKnowledge = async (jurisdictionId?: string, limit = 10) => {
-      let query = supabase
+      let query = userClient
         .from('erp_fiscal_knowledge_base')
         .select('title, content, knowledge_type, tags')
         .eq('is_active', true)
@@ -62,9 +70,9 @@ serve(async (req) => {
       return data || [];
     };
 
-    // Fetch form templates
+    // Fetch form templates — uses userClient for RLS
     const fetchForms = async (jurisdictionId?: string) => {
-      let query = supabase
+      let query = userClient
         .from('erp_fiscal_form_templates')
         .select('form_code, form_name, form_type, filing_frequency, due_day_rule, template_fields')
         .eq('is_active', true);
@@ -77,29 +85,29 @@ serve(async (req) => {
       return data || [];
     };
 
-    // Create compliance alert
+    // Create compliance alert — uses adminClient (legitimate: cross-user alerting)
     const createAlert = async (
       companyId: string,
       alertType: string,
       severity: string,
       title: string,
-      description: string,
+      alertDescription: string,
       recommendedAction?: string,
       jurisdictionId?: string
     ) => {
-      await supabase.from('erp_fiscal_compliance_alerts').insert([{
+      await adminClient.from('erp_fiscal_compliance_alerts').insert([{
         company_id: companyId,
         jurisdiction_id: jurisdictionId,
         alert_type: alertType,
         severity,
         title,
-        description,
+        description: alertDescription,
         recommended_action: recommendedAction,
         auto_generated: true
       }]);
     };
 
-    // Log agent action
+    // Log agent action — uses adminClient (legitimate: audit logging)
     const logAction = async (
       sessionId: string,
       companyId: string,
@@ -109,7 +117,7 @@ serve(async (req) => {
       outputData: unknown,
       confidenceScore?: number
     ) => {
-      await supabase.from('erp_fiscal_agent_actions').insert([{
+      await adminClient.from('erp_fiscal_agent_actions').insert([{
         session_id: sessionId,
         company_id: companyId,
         action_type: actionType,
@@ -129,14 +137,30 @@ serve(async (req) => {
         const knowledgeBase = await fetchKnowledge(jurisdiction_id, 15);
         const forms = await fetchForms(jurisdiction_id);
 
-        systemPrompt = `Eres un Agente IA Fiscal ultraespecializado con expertise en normativa fiscal internacional.
+        systemPrompt = `Eres un Agente IA Fiscal ultraespecializado con expertise en normativa fiscal española e internacional.
 
 TU ROL:
 - Asesor fiscal experto para empresas multinacionales
-- Especialista en IVA/VAT, SII, Intrastat, LLCs estadounidenses, Free Zones de UAE, IGI andorrano
-- Generador de asientos contables conformes a normativa
+- Especialista en IVA/VAT, SII (Suministro Inmediato de Información), Intrastat, declaraciones informativas
+- Generador de asientos contables conformes a PGC y normativa fiscal
 - Auditor de cumplimiento fiscal en tiempo real
 - Monitor de cambios regulatorios
+
+MODELOS FISCALES QUE DOMINAS:
+- Modelo 303 (IVA trimestral/mensual)
+- Modelo 390 (resumen anual IVA)
+- Modelo 111/190 (retenciones IRPF)
+- Modelo 200/202 (Impuesto de Sociedades)
+- Modelo 349 (operaciones intracomunitarias)
+- Modelo 347 (declaración anual con terceros)
+- SII: Libros registro de facturas emitidas/recibidas en tiempo real
+- Intrastat: declaración estadística de comercio intracomunitario
+- Modelos informativos 180, 193, 296
+
+JURISDICCIONES:
+- España (régimen general, RECC, REBU, régimen especial grupos IVA)
+- UE (directivas IVA, DAC7, Pilar I/II OCDE)
+- Internacional (LLCs EEUU, Free Zones UAE, IGI Andorra)
 
 NORMATIVAS QUE DOMINAS:
 ${knowledgeBase.map(k => `- ${k.title}: ${k.content.substring(0, 200)}...`).join('\n')}
@@ -150,6 +174,8 @@ CAPACIDADES:
 3. Responder consultas sobre normativa fiscal con citas precisas
 4. Sugerir optimizaciones fiscales legales
 5. Alertar sobre próximos vencimientos y cambios regulatorios
+6. Validar registros SII y operaciones Intrastat
+7. Calcular bases imponibles y cuotas por modelo
 
 REGLAS ESTRICTAS:
 - SIEMPRE citar la normativa específica aplicable
@@ -157,6 +183,7 @@ REGLAS ESTRICTAS:
 - Priorizar cumplimiento sobre optimización
 - Alertar inmediatamente sobre riesgos de incumplimiento
 - Usar terminología técnica fiscal precisa
+- Para presentación oficial de modelos: indicar que requiere firma electrónica y envío por sede electrónica de la AEAT (funcionalidad pendiente de integración directa)
 
 CONTEXTO ACTUAL:
 ${context ? JSON.stringify(context) : 'Sin contexto adicional'}
@@ -190,12 +217,12 @@ FORMULARIOS Y PLAZOS:
 ${forms.map(f => `${f.form_code}: ${f.form_name} - ${f.filing_frequency} - Regla: ${JSON.stringify(f.due_day_rule)}`).join('\n')}
 
 VERIFICACIONES A REALIZAR:
-1. Plazos de presentación de declaraciones
+1. Plazos de presentación de declaraciones (303, 111, 200, 349, etc.)
 2. Registros SII pendientes o rechazados
-3. Operaciones intracomunitarias sin declarar
+3. Operaciones intracomunitarias sin declarar (Intrastat)
 4. Inconsistencias en tipos impositivos aplicados
 5. Obligaciones formales pendientes
-6. Retenciones no practicadas
+6. Retenciones no practicadas (111/190)
 7. Requisitos de facturación incumplidos
 
 FORMATO DE RESPUESTA (JSON estricto):
@@ -374,22 +401,10 @@ RESPONDE de forma clara, estructurada y útil para el usuario.`;
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Rate limit exceeded' 
-        }), {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('RATE_LIMITED', 'Demasiadas solicitudes. Intenta más tarde.', 429, corsHeaders);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Payment required' 
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return errorResponse('PAYMENT_REQUIRED', 'Créditos de IA insuficientes.', 402, corsHeaders);
       }
       throw new Error(`AI API error: ${response.status}`);
     }
@@ -440,7 +455,7 @@ RESPONDE de forma clara, estructurada y útil para el usuario.`;
       result.issues_found = issues.length;
     }
 
-    // Log action if session exists
+    // Log action if session exists — uses adminClient (audit log)
     if (session_id && company_id) {
       await logAction(
         session_id,
