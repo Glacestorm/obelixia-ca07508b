@@ -238,3 +238,4 @@ export const LazyS9SalaryRegisterPanel = lazyPanel(() => import('./compliance/S9
 export const LazyS9DisconnectionPanel = lazyPanel(() => import('./compliance/S9DisconnectionPanel'), 'S9DisconnectionPanel');
 export const LazyS9RemoteWorkPanel = lazyPanel(() => import('./compliance/S9RemoteWorkPanel'), 'S9RemoteWorkPanel');
 export const LazyS9VPTWorkspace = lazyPanel(() => import('./compliance/S9VPTWorkspace'), 'S9VPTWorkspace');
+export const LazyS9RetributiveAuditPanel = lazyPanel(() => import('./compliance/S9RetributiveAuditPanel'), 'S9RetributiveAuditPanel');

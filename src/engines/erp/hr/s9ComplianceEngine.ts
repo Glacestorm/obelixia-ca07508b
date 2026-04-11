@@ -20,7 +20,15 @@ import type {
   VPTFactor,
   VPTScoreBreakdown,
   VPTIncoherence,
+  VPTBandLabel,
+  VPTEnrichedSalaryEntry,
+  VPTEnrichedSalaryReport,
+  VPTBandGroupSummary,
+  RetributiveAuditEntry,
+  RetributiveAuditAlert,
+  RetributiveAuditReport,
 } from '@/types/s9-compliance';
+import { RETRIBUTIVE_AUDIT_DISCLAIMER } from '@/types/s9-compliance';
 
 // ─── LISMI / LGD ─────────────────────────────────────────────
 
@@ -567,4 +575,281 @@ export function compareVPTValuations(
       jobLevel: v.jobLevel,
     };
   });
+}
+
+// ─── VPT-Enriched Salary Register (S9.4) ───────────────────
+
+export interface VPTEnrichmentMap {
+  /** positionId → approved VPT totalScore */
+  [positionId: string]: number;
+}
+
+function scoreToVPTBand(score: number): VPTBandLabel {
+  if (score < 25) return 'Q1 (0-25)';
+  if (score < 50) return 'Q2 (25-50)';
+  if (score < 75) return 'Q3 (50-75)';
+  return 'Q4 (75-100)';
+}
+
+export interface EnrichedPayrollRecord {
+  employeeId: string;
+  gender: 'M' | 'F' | string;
+  groupOrCategory: string;
+  concept: string;
+  amount: number;
+  positionId?: string | null;
+}
+
+/**
+ * Enriches a standard salary register report with VPT scores per employee position.
+ * Graceful fallback: employees without approved VPT get null scores.
+ */
+export function generateVPTEnrichedRegister(
+  records: EnrichedPayrollRecord[],
+  period: string,
+  vptMap: VPTEnrichmentMap,
+  existingVersion = 0,
+): VPTEnrichedSalaryReport {
+  // Build base register first
+  const baseReport = generateSalaryRegisterData(
+    records.map(r => ({
+      employeeId: r.employeeId,
+      gender: r.gender,
+      groupOrCategory: r.groupOrCategory,
+      concept: r.concept,
+      amount: r.amount,
+    })),
+    period,
+    existingVersion,
+  );
+
+  // Build employee → positionId map
+  const empPositionMap = new Map<string, string>();
+  for (const r of records) {
+    if (r.positionId) empPositionMap.set(r.employeeId, r.positionId);
+  }
+
+  // Build group → employees map for VPT score lookup
+  const groupEmployees = new Map<string, Set<string>>();
+  for (const r of records) {
+    const key = `${r.groupOrCategory}|||${r.concept}`;
+    if (!groupEmployees.has(key)) groupEmployees.set(key, new Set());
+    groupEmployees.get(key)!.add(r.employeeId);
+  }
+
+  // Enrich entries with average VPT score for the group
+  const enrichedEntries: VPTEnrichedSalaryEntry[] = baseReport.entries.map(entry => {
+    const key = `${entry.groupOrCategory}|||${entry.concept}`;
+    const employees = groupEmployees.get(key);
+    const scores: number[] = [];
+    if (employees) {
+      for (const empId of employees) {
+        const posId = empPositionMap.get(empId);
+        if (posId && vptMap[posId] != null) {
+          scores.push(vptMap[posId]);
+        }
+      }
+    }
+    const avgScore = scores.length > 0
+      ? scores.reduce((s, v) => s + v, 0) / scores.length
+      : null;
+
+    return {
+      ...entry,
+      vptScore: avgScore != null ? Math.round(avgScore * 100) / 100 : null,
+      vptBandLabel: avgScore != null ? scoreToVPTBand(avgScore) : null,
+    };
+  });
+
+  // Aggregate by VPT band
+  const bandAgg = new Map<VPTBandLabel, { maleAmounts: number[]; femaleAmounts: number[] }>();
+  for (const r of records) {
+    const posId = r.positionId ? r.positionId : undefined;
+    if (!posId || vptMap[posId] == null) continue;
+    const band = scoreToVPTBand(vptMap[posId]);
+    if (!bandAgg.has(band)) bandAgg.set(band, { maleAmounts: [], femaleAmounts: [] });
+    const agg = bandAgg.get(band)!;
+    if (r.gender === 'M') agg.maleAmounts.push(r.amount);
+    else if (r.gender === 'F') agg.femaleAmounts.push(r.amount);
+  }
+
+  const byVPTBand: VPTBandGroupSummary[] = (['Q1 (0-25)', 'Q2 (25-50)', 'Q3 (50-75)', 'Q4 (75-100)'] as VPTBandLabel[])
+    .map(band => {
+      const agg = bandAgg.get(band);
+      const maleMean = agg && agg.maleAmounts.length > 0
+        ? agg.maleAmounts.reduce((s, v) => s + v, 0) / agg.maleAmounts.length : 0;
+      const femaleMean = agg && agg.femaleAmounts.length > 0
+        ? agg.femaleAmounts.reduce((s, v) => s + v, 0) / agg.femaleAmounts.length : 0;
+      const ref = Math.max(maleMean, femaleMean);
+      return {
+        band,
+        maleCount: agg?.maleAmounts.length ?? 0,
+        femaleCount: agg?.femaleAmounts.length ?? 0,
+        maleMeanSalary: maleMean,
+        femaleMeanSalary: femaleMean,
+        gapPercent: ref > 0 ? Math.abs(maleMean - femaleMean) / ref : 0,
+      };
+    })
+    .filter(b => b.maleCount > 0 || b.femaleCount > 0);
+
+  return {
+    ...baseReport,
+    entries: enrichedEntries,
+    byVPTBand,
+  };
+}
+
+// ─── Retributive Audit (S9.4) ──────────────────────────────
+
+/** Maximum portion of a gap that can be "contextualized" by VPT. Prevents false objectivity. */
+const VPT_CONTEXT_CAP = 0.80;
+
+/** Threshold for VPT score difference to be considered "significant" */
+const VPT_SCORE_DIVERGENCE_THRESHOLD = 15;
+
+export interface AuditEmployeeRecord {
+  employeeId: string;
+  gender: 'M' | 'F' | string;
+  groupOrCategory: string;
+  salary: number;
+  positionId?: string | null;
+}
+
+/**
+ * Computes a retributive audit report that contextualizes salary gaps using VPT scores.
+ * 
+ * Methodology:
+ * - Groups employees by professional category
+ * - For each group, computes M/F salary gap
+ * - If VPT scores differ significantly between M/F average positions,
+ *   a portion of the gap is marked as "partially contextualized"
+ * - The contextualized portion NEVER exceeds 80% (VPT_CONTEXT_CAP)
+ * - VPT contextualizes, it never justifies
+ */
+export function computeRetributiveAudit(
+  employees: AuditEmployeeRecord[],
+  vptMap: VPTEnrichmentMap,
+  period: string,
+  existingVersion = 0,
+): RetributiveAuditReport {
+  // Group by category
+  const groups = new Map<string, { males: Array<{ salary: number; vpt: number | null }>; females: Array<{ salary: number; vpt: number | null }> }>();
+
+  for (const emp of employees) {
+    const gender = emp.gender === 'F' ? 'F' : 'M';
+    const vpt = emp.positionId && vptMap[emp.positionId] != null ? vptMap[emp.positionId] : null;
+    if (!groups.has(emp.groupOrCategory)) groups.set(emp.groupOrCategory, { males: [], females: [] });
+    const g = groups.get(emp.groupOrCategory)!;
+    const entry = { salary: emp.salary, vpt };
+    if (gender === 'M') g.males.push(entry);
+    else g.females.push(entry);
+  }
+
+  const entries: RetributiveAuditEntry[] = [];
+  let totalWeightedGap = 0;
+  let totalWeightedContextualized = 0;
+  let totalWeightedUnexplained = 0;
+  let totalEmployees = 0;
+  let groupsWithAlert = 0;
+
+  for (const [groupKey, g] of groups) {
+    if (g.males.length === 0 || g.females.length === 0) {
+      // Single-gender group: no gap calculable
+      entries.push({
+        groupKey,
+        groupLabel: groupKey,
+        maleCount: g.males.length,
+        femaleCount: g.females.length,
+        maleMeanSalary: g.males.length > 0 ? g.males.reduce((s, e) => s + e.salary, 0) / g.males.length : 0,
+        femaleMeanSalary: g.females.length > 0 ? g.females.reduce((s, e) => s + e.salary, 0) / g.females.length : 0,
+        totalGapPercent: 0,
+        maleAvgVPT: avgVPT(g.males.map(e => e.vpt)),
+        femaleAvgVPT: avgVPT(g.females.map(e => e.vpt)),
+        gapContextualizedByVPT: 0,
+        gapUnexplained: 0,
+        alerts: [],
+      });
+      continue;
+    }
+
+    const maleMean = g.males.reduce((s, e) => s + e.salary, 0) / g.males.length;
+    const femaleMean = g.females.reduce((s, e) => s + e.salary, 0) / g.females.length;
+    const ref = Math.max(maleMean, femaleMean);
+    const totalGap = ref > 0 ? Math.abs(maleMean - femaleMean) / ref : 0;
+
+    const maleVPT = avgVPT(g.males.map(e => e.vpt));
+    const femaleVPT = avgVPT(g.females.map(e => e.vpt));
+
+    // Compute contextualization
+    let contextualized = 0;
+    if (maleVPT != null && femaleVPT != null && totalGap > 0) {
+      const vptDiff = Math.abs(maleVPT - femaleVPT);
+      if (vptDiff >= VPT_SCORE_DIVERGENCE_THRESHOLD) {
+        // VPT scores diverge significantly — partial contextualization proportional to divergence
+        // Scale: 15pts diff → ~30% contextualization, 50pts → ~80% (capped)
+        const rawContextPortion = Math.min(vptDiff / 60, VPT_CONTEXT_CAP);
+        contextualized = totalGap * rawContextPortion;
+      }
+      // If VPT scores are similar (< threshold), the gap is NOT explained by position differences
+    }
+
+    // Enforce cap
+    contextualized = Math.min(contextualized, totalGap * VPT_CONTEXT_CAP);
+    const unexplained = totalGap - contextualized;
+
+    const alerts: RetributiveAuditAlert[] = [];
+    if (totalGap >= 0.25) {
+      groupsWithAlert++;
+      alerts.push({
+        level: totalGap >= 0.40 ? 'critical' : 'warning',
+        message: `Brecha del ${(totalGap * 100).toFixed(1)}% en ${groupKey}` +
+          (contextualized > 0
+            ? ` (${(contextualized / totalGap * 100).toFixed(0)}% parcialmente contextualizada por VPT)`
+            : ' (sin contextualización VPT disponible)'),
+      });
+    }
+
+    const groupSize = g.males.length + g.females.length;
+    totalWeightedGap += totalGap * groupSize;
+    totalWeightedContextualized += contextualized * groupSize;
+    totalWeightedUnexplained += unexplained * groupSize;
+    totalEmployees += groupSize;
+
+    entries.push({
+      groupKey,
+      groupLabel: groupKey,
+      maleCount: g.males.length,
+      femaleCount: g.females.length,
+      maleMeanSalary: maleMean,
+      femaleMeanSalary: femaleMean,
+      totalGapPercent: totalGap,
+      maleAvgVPT: maleVPT,
+      femaleAvgVPT: femaleVPT,
+      gapContextualizedByVPT: contextualized,
+      gapUnexplained: unexplained,
+      alerts,
+    });
+  }
+
+  const globalGap = totalEmployees > 0 ? totalWeightedGap / totalEmployees : 0;
+  const globalContextualized = totalEmployees > 0 ? totalWeightedContextualized / totalEmployees : 0;
+  const globalUnexplained = totalEmployees > 0 ? totalWeightedUnexplained / totalEmployees : 0;
+
+  return {
+    period,
+    generatedAt: new Date().toISOString(),
+    entries,
+    globalGapPercent: globalGap,
+    globalContextualizedPercent: globalContextualized,
+    globalUnexplainedPercent: globalUnexplained,
+    groupsWithAlert,
+    disclaimer: RETRIBUTIVE_AUDIT_DISCLAIMER,
+    version: existingVersion + 1,
+  };
+}
+
+function avgVPT(scores: Array<number | null>): number | null {
+  const valid = scores.filter((s): s is number => s != null);
+  if (valid.length === 0) return null;
+  return Math.round((valid.reduce((s, v) => s + v, 0) / valid.length) * 100) / 100;
 }

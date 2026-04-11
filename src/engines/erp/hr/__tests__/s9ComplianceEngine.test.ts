@@ -14,7 +14,10 @@ import {
   suggestEquivalentBand,
   compareVPTValuations,
   DEFAULT_VPT_METHODOLOGY,
+  generateVPTEnrichedRegister,
+  computeRetributiveAudit,
 } from '../s9ComplianceEngine';
+import { RETRIBUTIVE_AUDIT_DISCLAIMER } from '@/types/s9-compliance';
 
 // ─── LISMI ───────────────────────────────────────────────────
 
@@ -395,5 +398,147 @@ describe('compareVPTValuations', () => {
     expect(result[0].totalScore).toBe(100);
     expect(result[1].totalScore).toBe(0);
   });
+  });
 });
+
+// ─── VPT-ENRICHED SALARY REGISTER (S9.4) ──────────────────
+
+describe('generateVPTEnrichedRegister', () => {
+  const records = [
+    { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', concept: 'base', amount: 3000, positionId: 'p1' },
+    { employeeId: '2', gender: 'M' as const, groupOrCategory: 'A1', concept: 'base', amount: 3200, positionId: 'p1' },
+    { employeeId: '3', gender: 'F' as const, groupOrCategory: 'A1', concept: 'base', amount: 2000, positionId: 'p2' },
+    { employeeId: '4', gender: 'F' as const, groupOrCategory: 'A1', concept: 'base', amount: 2200, positionId: 'p2' },
+  ];
+  const vptMap = { p1: 70, p2: 45 };
+
+  it('should preserve base register entries', () => {
+    const enriched = generateVPTEnrichedRegister(records, '2026-01', vptMap);
+    expect(enriched.entries.length).toBe(1);
+    expect(enriched.entries[0].maleMean).toBe(3100);
+    expect(enriched.entries[0].femaleMean).toBe(2100);
+    expect(enriched.entries[0].hasSignificantGap).toBe(true);
+  });
+
+  it('should add vptScore and vptBandLabel when VPT exists', () => {
+    const enriched = generateVPTEnrichedRegister(records, '2026-01', vptMap);
+    expect(enriched.entries[0].vptScore).not.toBeNull();
+    expect(enriched.entries[0].vptBandLabel).not.toBeNull();
+  });
+
+  it('should gracefully handle employees without VPT', () => {
+    const enriched = generateVPTEnrichedRegister(records, '2026-01', {});
+    expect(enriched.entries[0].vptScore).toBeNull();
+    expect(enriched.entries[0].vptBandLabel).toBeNull();
+    // Base data still works
+    expect(enriched.entries[0].maleMean).toBe(3100);
+  });
+
+  it('should produce byVPTBand aggregation', () => {
+    const enriched = generateVPTEnrichedRegister(records, '2026-01', vptMap);
+    expect(enriched.byVPTBand.length).toBeGreaterThan(0);
+    const bands = enriched.byVPTBand.map(b => b.band);
+    // p1=70 → Q3, p2=45 → Q2
+    expect(bands).toContain('Q3 (50-75)');
+    expect(bands).toContain('Q2 (25-50)');
+  });
+
+  it('should produce empty byVPTBand when no VPT data', () => {
+    const enriched = generateVPTEnrichedRegister(records, '2026-01', {});
+    expect(enriched.byVPTBand.length).toBe(0);
+  });
+});
+
+// ─── RETRIBUTIVE AUDIT (S9.4) ──────────────────────────────
+
+describe('computeRetributiveAudit', () => {
+  it('should calculate total gap correctly', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 3000, positionId: 'p1' },
+      { employeeId: '2', gender: 'F' as const, groupOrCategory: 'A1', salary: 2000, positionId: 'p2' },
+    ];
+    const report = computeRetributiveAudit(employees, {}, '2026-01');
+    expect(report.entries[0].totalGapPercent).toBeCloseTo(1/3, 2); // (3000-2000)/3000
+  });
+
+  it('should not contextualize when VPT scores are similar', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 3000, positionId: 'p1' },
+      { employeeId: '2', gender: 'F' as const, groupOrCategory: 'A1', salary: 2000, positionId: 'p2' },
+    ];
+    // Similar VPT scores (diff < 15)
+    const vptMap = { p1: 60, p2: 55 };
+    const report = computeRetributiveAudit(employees, vptMap, '2026-01');
+    expect(report.entries[0].gapContextualizedByVPT).toBe(0);
+    expect(report.entries[0].gapUnexplained).toBeGreaterThan(0);
+  });
+
+  it('should partially contextualize when VPT scores diverge significantly', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 3000, positionId: 'p1' },
+      { employeeId: '2', gender: 'F' as const, groupOrCategory: 'A1', salary: 2000, positionId: 'p2' },
+    ];
+    // Divergent VPT scores (diff > 15)
+    const vptMap = { p1: 80, p2: 40 };
+    const report = computeRetributiveAudit(employees, vptMap, '2026-01');
+    expect(report.entries[0].gapContextualizedByVPT).toBeGreaterThan(0);
+    expect(report.entries[0].gapUnexplained).toBeGreaterThan(0);
+  });
+
+  it('should never allow gapExplainedByVPT to exceed 80% of total gap', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 5000, positionId: 'p1' },
+      { employeeId: '2', gender: 'F' as const, groupOrCategory: 'A1', salary: 1000, positionId: 'p2' },
+    ];
+    // Maximum divergence
+    const vptMap = { p1: 100, p2: 0 };
+    const report = computeRetributiveAudit(employees, vptMap, '2026-01');
+    const entry = report.entries[0];
+    const totalGap = entry.totalGapPercent;
+    expect(entry.gapContextualizedByVPT).toBeLessThanOrEqual(totalGap * 0.80 + 0.001);
+    expect(entry.gapUnexplained).toBeGreaterThan(0);
+  });
+
+  it('should include disclaimer in report', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 3000, positionId: null },
+    ];
+    const report = computeRetributiveAudit(employees, {}, '2026-01');
+    expect(report.disclaimer).toBe(RETRIBUTIVE_AUDIT_DISCLAIMER);
+    expect(report.disclaimer).toContain('soporte analítico');
+    expect(report.disclaimer).toContain('no constituyen justificación');
+  });
+
+  it('should handle single-gender groups gracefully', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 3000, positionId: 'p1' },
+      { employeeId: '2', gender: 'M' as const, groupOrCategory: 'A1', salary: 3200, positionId: 'p1' },
+    ];
+    const report = computeRetributiveAudit(employees, { p1: 60 }, '2026-01');
+    expect(report.entries[0].totalGapPercent).toBe(0);
+    expect(report.entries[0].gapContextualizedByVPT).toBe(0);
+  });
+
+  it('should gracefully handle employees without VPT', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 3000, positionId: null },
+      { employeeId: '2', gender: 'F' as const, groupOrCategory: 'A1', salary: 2000, positionId: null },
+    ];
+    const report = computeRetributiveAudit(employees, {}, '2026-01');
+    expect(report.entries[0].maleAvgVPT).toBeNull();
+    expect(report.entries[0].femaleAvgVPT).toBeNull();
+    expect(report.entries[0].gapContextualizedByVPT).toBe(0);
+    // Gap still calculated
+    expect(report.entries[0].totalGapPercent).toBeGreaterThan(0);
+  });
+
+  it('should generate alerts for gaps >= 25%', () => {
+    const employees = [
+      { employeeId: '1', gender: 'M' as const, groupOrCategory: 'A1', salary: 4000, positionId: 'p1' },
+      { employeeId: '2', gender: 'F' as const, groupOrCategory: 'A1', salary: 2000, positionId: 'p2' },
+    ];
+    const report = computeRetributiveAudit(employees, { p1: 80, p2: 30 }, '2026-01');
+    expect(report.groupsWithAlert).toBe(1);
+    expect(report.entries[0].alerts.length).toBeGreaterThan(0);
+  });
 });
