@@ -12,3 +12,4 @@ export { MobilityCostProjectionPanel } from './MobilityCostProjectionPanel';
 export { MobilityCompliancePanel } from './MobilityCompliancePanel';
 export { MobilityClassificationPanel } from './MobilityClassificationPanel';
 export { MobilityTaxImpactPanel } from './MobilityTaxImpactPanel';
+export { MobilityCorridorPanel } from './MobilityCorridorPanel';
