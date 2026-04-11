@@ -64,11 +64,11 @@ export function HRDepartmentsPanel({ companyId }: HRDepartmentsPanelProps) {
         const managerIds = data.map(d => d.manager_id).filter(Boolean) as string[];
         let managerMap: Record<string, string> = {};
         if (managerIds.length > 0) {
-          const { data: employees } = await supabase
+          const { data: employees } = await (supabase
             .from('erp_hr_employees')
-            .select('id, first_name, last_name')
+            .select('id, first_name, last_name') as any)
             .in('id', managerIds);
-          employees?.forEach(e => {
+          (employees as any[])?.forEach((e: any) => {
             managerMap[e.id] = `${e.first_name} ${e.last_name}`.trim();
           });
         }
