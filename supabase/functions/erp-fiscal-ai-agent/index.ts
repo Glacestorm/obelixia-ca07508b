@@ -5,46 +5,14 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError, errorResponse } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface AgentRequest {
-  action: 'chat' | 'check_compliance' | 'suggest_entry' | 'query_regulation' | 'monitor_updates' | 'help_query';
-  company_id?: string;
-  session_id?: string;
-  message?: string;
-  context?: Record<string, unknown>;
-  history?: Array<{ role: string; content: string }>;
-  jurisdiction_id?: string;
-  jurisdiction_ids?: string[];
-  description?: string;
-  amount?: number;
-  question?: string;
-}
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
-
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    const body = await req.json() as AgentRequest;
-    const { action, company_id, session_id, message, context, history, jurisdiction_id, jurisdiction_ids, description, amount, question } = body;
-
-    console.log(`[erp-fiscal-ai-agent] Processing action: ${action}`);
 
     // Fetch relevant knowledge base content
     const fetchKnowledge = async (jurisdictionId?: string, limit = 10) => {
