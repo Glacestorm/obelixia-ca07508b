@@ -107,6 +107,11 @@ export interface MobilityPreflightData {
   highestRiskScore: number;
   reviewRequired: boolean;
   summary: string;
+  /** G2.1: Corridor intelligence */
+  corridorLabel?: string;
+  corridorPackVersion?: string;
+  corridorPackStatus?: 'current' | 'stale' | 'review_required' | 'no_pack';
+  corridorConfidence?: number;
 }
 
 export interface EquityPreflightData {
@@ -458,11 +463,15 @@ export function buildPreflightResult(input: PreflightInput): PreflightResult {
         : 'completed';
     const mobSemaphore = mobStatus === 'blocked' ? 'red' as Semaphore : mobStatus === 'in_progress' ? 'amber' as Semaphore : 'green' as Semaphore;
 
+    const corridorInfo = mob.corridorLabel ? ` [${mob.corridorLabel}]` : '';
+    const staleNote = mob.corridorPackStatus === 'stale' ? ' ⚠️ Pack obsoleto' : mob.corridorPackStatus === 'review_required' ? ' 🔴 Pack requiere revisión' : '';
+    const confidenceNote = mob.corridorConfidence ? ` · Confianza: ${mob.corridorConfidence}%` : '';
+
     const mobilityStep: PreflightStep = {
       id: 'mobility_international',
       index: 1, // inject after incidents (index 0)
-      label: 'Movilidad Internacional',
-      description: mob.summary || `${mob.activeAssignmentCount} asignación(es) internacional(es) activa(s)`,
+      label: `Movilidad Internacional${corridorInfo}`,
+      description: (mob.summary || `${mob.activeAssignmentCount} asignación(es) internacional(es) activa(s)`) + staleNote + confidenceNote,
       status: mobStatus,
       semaphore: mobSemaphore,
       targetModule: 'mobility-international',
@@ -471,7 +480,7 @@ export function buildPreflightResult(input: PreflightInput): PreflightResult {
       icon: 'Globe',
       blockReason: mobStatus === 'blocked' ? 'Asignación fuera de alcance requiere derivación externa' : undefined,
       blockDomain: mobStatus !== 'completed' ? 'mobility' : undefined,
-      suggestedFix: mob.reviewRequired ? 'Revisar clasificación de asignaciones internacionales activas' : undefined,
+      suggestedFix: mob.reviewRequired ? 'Revisar clasificación de asignaciones internacionales activas — ver tab Corredor en expediente' : undefined,
       isInstitutional: false,
     };
 
