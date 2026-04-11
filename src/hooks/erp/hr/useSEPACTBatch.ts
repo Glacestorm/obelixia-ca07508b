@@ -72,8 +72,8 @@ export function useSEPACTBatch(companyId: string) {
 
       // Fetch employee IBANs
       const employeeIds = records.map((r: any) => r.employee_id);
-      const { data: employees } = await supabase
-        .from('hr_employees')
+      const { data: employees } = await (supabase as any)
+        .from('erp_hr_employees')
         .select('id, first_name, last_name, iban')
         .in('id', employeeIds);
 
