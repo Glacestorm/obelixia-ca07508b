@@ -138,8 +138,14 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [showCertificaDialog, setShowCertificaDialog] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(null);
+  const [settlementSnapshot, setSettlementSnapshot] = useState<Record<string, unknown> | null>(null);
+
+  // Orchestration hooks
+  const { calculateSettlement, getOffboardingChecklist } = useOffboardingOrchestration(companyId);
+  const { registerCertificaResponse } = useCertificaResponse(companyId);
 
   // Form state
   const [newTermination, setNewTermination] = useState({
