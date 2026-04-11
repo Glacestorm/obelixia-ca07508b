@@ -15,7 +15,6 @@ import type {
   DisconnectionMetrics,
   RemoteWorkValidation,
   RemoteWorkMandatoryPoint,
-  REMOTE_WORK_MANDATORY_POINTS,
 } from '@/types/s9-compliance';
 
 // ─── LISMI / LGD ─────────────────────────────────────────────
