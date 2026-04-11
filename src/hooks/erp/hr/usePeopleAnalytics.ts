@@ -142,6 +142,7 @@ export function usePeopleAnalytics() {
   const [absenteeism, setAbsenteeism] = useState<PAAbsenteeismAnalytics | null>(null);
   const [complianceRisks, setComplianceRisks] = useState<PAComplianceRisks | null>(null);
   const [equityMetrics, setEquityMetrics] = useState<PAEquityMetrics | null>(null);
+  const [vptContext, setVptContext] = useState<import('@/types/s9-compliance').EquityVPTContext | null>(null);
   const [alerts, setAlerts] = useState<PAAlert[]>([]);
   const [aiInsights, setAiInsights] = useState<PAInsight[]>([]);
   const [error, setError] = useState<string | null>(null);
