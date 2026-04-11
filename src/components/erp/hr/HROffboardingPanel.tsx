@@ -1,6 +1,9 @@
 /**
  * HROffboardingPanel - Panel de Gestión de Salidas (Offboarding)
- * Fase 5 - Sistema de desvinculación optimizado con análisis IA
+ * Fase 5 + P1.6 - Sistema de desvinculación con orquestación real
+ * 
+ * AI analysis is assistive only.
+ * Source of truth for lifecycle is the offboarding orchestrator.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -49,7 +52,8 @@ import {
   ClipboardList,
   TrendingUp,
   AlertCircle,
-  Building2
+  Building2,
+  Calculator
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -57,6 +61,11 @@ import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { HRTerminationAnalysisDialog } from './dialogs';
+import { OffboardingTrackingCard } from './payroll-engine/OffboardingTrackingCard';
+import { CertificaResponseDialog } from './payroll-engine/CertificaResponseDialog';
+import { useOffboardingOrchestration } from '@/hooks/erp/hr/useOffboardingOrchestration';
+import { useCertificaResponse } from '@/hooks/erp/hr/useCertificaResponse';
+import { computeOffboardingReadiness, type InternalTerminationType } from '@/engines/erp/hr/offboardingOrchestrationEngine';
 
 interface HROffboardingPanelProps {
   companyId: string;
@@ -129,8 +138,14 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+  const [showCertificaDialog, setShowCertificaDialog] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(null);
+  const [settlementSnapshot, setSettlementSnapshot] = useState<Record<string, unknown> | null>(null);
+
+  // Orchestration hooks
+  const { calculateSettlement, getOffboardingChecklist } = useOffboardingOrchestration(companyId);
+  const { registerCertificaResponse } = useCertificaResponse(companyId);
 
   // Form state
   const [newTermination, setNewTermination] = useState({
@@ -325,6 +340,44 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
 
   const getTypeConfig = (type: string) => TERMINATION_TYPES.find(t => t.value === type) || TERMINATION_TYPES[0];
 
+  // Compute readiness for selected termination
+  const selectedReadiness = selectedTermination ? computeOffboardingReadiness({
+    terminationType: (selectedTermination.termination_type as InternalTerminationType) ?? null,
+    terminationDate: selectedTermination.proposed_termination_date ?? null,
+    claveBajaSet: !!selectedTermination.termination_type,
+    employeeDataValid: !!selectedTermination.employee,
+    afiBajaGenerated: false, // TODO: check artifact table
+    afiBajaStatus: null,
+    finiquitoComputed: !!settlementSnapshot,
+    finiquitoAmount: settlementSnapshot ? (settlementSnapshot as any).totalBruto ?? null : null,
+    indemnizacionComputed: !!settlementSnapshot,
+    certificaGenerated: false,
+    certificaStatus: null,
+    evidencesCreated: !!settlementSnapshot,
+    sepeResponseRegistered: false,
+  }) : null;
+
+  // Handle real settlement calculation
+  const handleCalculateSettlement = async () => {
+    if (!selectedTermination?.employee) return;
+    const emp = selectedTermination.employee;
+    const result = await calculateSettlement({
+      terminationId: selectedTermination.id,
+      employeeId: emp.id,
+      employeeName: `${emp.first_name} ${emp.last_name}`,
+      hireDate: emp.hire_date || new Date().toISOString(),
+      terminationDate: selectedTermination.proposed_termination_date || new Date().toISOString(),
+      terminationType: selectedTermination.termination_type as InternalTerminationType,
+      annualSalary: 30000, // TODO: get from employee contract data
+      vacationDaysEntitled: 30,
+      vacationDaysTaken: 15,
+      extraPayments: 14,
+    });
+    if (result) {
+      setSettlementSnapshot(result as unknown as Record<string, unknown>);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -506,6 +559,44 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
         </Card>
       </div>
 
+      {/* Offboarding Tracking Card — shown when a termination is selected */}
+      {selectedTermination && selectedReadiness && (
+        <OffboardingTrackingCard
+          terminationType={selectedTermination.termination_type}
+          terminationDate={selectedTermination.proposed_termination_date ?? null}
+          terminationStatus={selectedTermination.status}
+          afiBajaStatus={null}
+          finiquitoComputed={!!settlementSnapshot}
+          finiquitoTotal={settlementSnapshot ? (settlementSnapshot as any).totalBruto ?? null : null}
+          finiquitoSubtotal={settlementSnapshot ? (settlementSnapshot as any).finiquito?.subtotal ?? null : null}
+          indemnizacionApplicable={!['voluntary', 'probation'].includes(selectedTermination.termination_type)}
+          indemnizacionAmount={settlementSnapshot ? (settlementSnapshot as any).indemnizacion?.amount ?? null : null}
+          indemnizacionLegalBasis={settlementSnapshot ? (settlementSnapshot as any).indemnizacion?.legalBasis ?? null : null}
+          certificaStatus={null}
+          isClosed={selectedTermination.status === 'executed'}
+          readinessScore={selectedReadiness.readinessScore}
+          onRegisterSEPEResponse={() => setShowCertificaDialog(true)}
+        />
+      )}
+
+      {/* Calculate settlement button when termination selected but not yet computed */}
+      {selectedTermination && !settlementSnapshot && (
+        <Card className="border-dashed">
+          <CardContent className="py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calculator className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Finiquito no calculado para {selectedTermination.employee?.first_name} {selectedTermination.employee?.last_name}
+              </span>
+            </div>
+            <Button size="sm" variant="outline" onClick={handleCalculateSettlement}>
+              <Calculator className="h-3 w-3 mr-1" />
+              Calcular Finiquito
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -685,6 +776,30 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
           }
         }}
       />
+
+      {/* Certific@2 Response Dialog */}
+      {selectedTermination && (
+        <CertificaResponseDialog
+          open={showCertificaDialog}
+          onOpenChange={setShowCertificaDialog}
+          artifactId=""
+          employeeId={selectedTermination.employee_id}
+          terminationId={selectedTermination.id}
+          onSubmit={async (data) => {
+            await registerCertificaResponse({
+              artifactId: '', // TODO: wire to real artifact ID from erp_hr_official_artifacts
+              employeeId: selectedTermination.employee_id,
+              terminationId: selectedTermination.id,
+              responseType: data.responseType,
+              sepeReference: data.sepeReference,
+              receptionDate: data.receptionDate,
+              rejectionReason: data.rejectionReason,
+              notes: data.notes,
+            });
+            setShowCertificaDialog(false);
+          }}
+        />
+      )}
     </div>
   );
 }
