@@ -191,7 +191,12 @@ export type VPTMethodology = VPTFactorConfig[];
 
 export type VPTFactorScores = Record<VPTFactor, Record<string, number>>; // subfactor → 1-5
 
-export type VPTValuationStatus = 'draft' | 'under_review' | 'approved' | 'active' | 'archived';
+/**
+ * Status aligned with useHRVersionRegistry semantics:
+ * draft → review → approved → closed → superseded
+ * 'approved' = the single active/vigente valuation (enforced by unique partial index)
+ */
+export type VPTValuationStatus = 'draft' | 'review' | 'approved' | 'closed' | 'superseded';
 
 export interface VPTValuation {
   id: string;
@@ -200,6 +205,7 @@ export interface VPTValuation {
   positionName?: string;
   versionId?: string;
   status: VPTValuationStatus;
+  methodologyVersion: string;
   methodologySnapshot: VPTMethodology;
   factorScores: VPTFactorScores;
   totalScore: number;
@@ -226,4 +232,19 @@ export interface VPTIncoherence {
 export interface VPTScoreBreakdown {
   factorScores: Record<VPTFactor, number>; // 0-100 per factor
   totalScore: number; // 0-100
+}
+
+export interface VPTComparison {
+  positionId: string;
+  positionName: string;
+  totalScore: number;
+  factorScores: Record<VPTFactor, number>;
+  salaryBandMax?: number;
+  jobLevel?: string;
+}
+
+export interface VPTBandSuggestion {
+  suggestedMin: number;
+  suggestedMax: number;
+  basis: string;
 }
