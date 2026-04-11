@@ -31,12 +31,14 @@ import { FiscalKnowledgeUploader } from './FiscalKnowledgeUploader';
 import { FiscalVoiceButton } from './FiscalVoiceButton';
 import { useERPSII } from '@/hooks/erp/useERPSII';
 import { useERPIntrastat } from '@/hooks/erp/useERPIntrastat';
+import { useOptionalERPContext } from '@/hooks/erp/useERPContext';
 
 export function FiscalModule() {
   const [activeModule, setActiveModule] = useState('sii');
   
-  // Demo company ID for testing
-  const demoCompanyId = 'demo-company-001';
+  // Use real company ID from ERP context, fallback to demo
+  const erpContext = useOptionalERPContext();
+  const companyId = erpContext?.currentCompany?.id || 'demo-company-001';
   
   const { stats: siiStats } = useERPSII();
   const { stats: intrastatStats } = useERPIntrastat();

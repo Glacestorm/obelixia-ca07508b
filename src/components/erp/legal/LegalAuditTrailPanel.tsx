@@ -58,6 +58,12 @@ interface AuditEntry {
   expanded?: boolean;
 }
 
+const DemoBadge = () => (
+  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700">
+    Datos de ejemplo
+  </Badge>
+);
+
 export function LegalAuditTrailPanel({ companyId }: LegalAuditTrailPanelProps) {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -258,24 +264,27 @@ export function LegalAuditTrailPanel({ companyId }: LegalAuditTrailPanelProps) {
             <History className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold">Audit Trail Legal</h2>
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              Audit Trail Legal
+              <DemoBadge />
+            </h2>
             <p className="text-sm text-muted-foreground">
               Historial inmutable de validaciones y acciones legales
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleExportAudit('pdf')}>
+          <Button variant="outline" size="sm" disabled title="Exportación no disponible aún">
             <Download className="h-4 w-4 mr-1" />
-            PDF
+            PDF (próx.)
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleExportAudit('xlsx')}>
+          <Button variant="outline" size="sm" disabled title="Exportación no disponible aún">
             <Download className="h-4 w-4 mr-1" />
-            Excel
+            Excel (próx.)
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleExportAudit('xml')}>
+          <Button variant="outline" size="sm" disabled title="Exportación no disponible aún">
             <Download className="h-4 w-4 mr-1" />
-            XML
+            XML (próx.)
           </Button>
         </div>
       </div>

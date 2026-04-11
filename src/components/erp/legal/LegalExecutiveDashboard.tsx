@@ -50,6 +50,12 @@ interface RecentActivity {
   status: 'completed' | 'pending' | 'warning';
 }
 
+const DemoBadge = () => (
+  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700">
+    Datos de ejemplo
+  </Badge>
+);
+
 export function LegalExecutiveDashboard({ companyId }: LegalExecutiveDashboardProps) {
   const [jurisdictions, setJurisdictions] = useState<JurisdictionCompliance[]>([
     { code: 'AD', name: 'Andorra', score: 92, trend: 'up', regulations: 15, alerts: 0 },
@@ -142,6 +148,10 @@ export function LegalExecutiveDashboard({ companyId }: LegalExecutiveDashboardPr
   return (
     <div className="space-y-6">
       {/* KPIs principales */}
+      <div className="flex items-center gap-2 mb-1">
+        <h3 className="text-sm font-medium text-muted-foreground">KPIs Ejecutivos</h3>
+        <DemoBadge />
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -224,6 +234,7 @@ export function LegalExecutiveDashboard({ companyId }: LegalExecutiveDashboardPr
             <CardTitle className="flex items-center gap-2">
               <Globe className="h-5 w-5" />
               Compliance por Jurisdicción
+              <DemoBadge />
             </CardTitle>
             <CardDescription>
               Estado de cumplimiento normativo en cada jurisdicción
@@ -262,6 +273,7 @@ export function LegalExecutiveDashboard({ companyId }: LegalExecutiveDashboardPr
             <CardTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5" />
               Actividad Reciente
+              <DemoBadge />
             </CardTitle>
             <CardDescription>
               Últimas acciones del módulo jurídico
@@ -320,20 +332,21 @@ export function LegalExecutiveDashboard({ companyId }: LegalExecutiveDashboardPr
                 <p className="text-sm text-muted-foreground">
                   Nueva directiva sobre transparencia en costes de inversión. Revisar procedimientos actuales.
                 </p>
-                <Button size="sm" variant="outline" className="mt-2">
-                  Revisar ahora
+                <Button size="sm" variant="outline" className="mt-2" disabled>
+                  Revisar ahora (próximamente)
                 </Button>
               </div>
               <div className="p-3 rounded-lg border border-amber-500/30 bg-background">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="destructive">DORA</Badge>
                   <span className="text-sm font-medium">Plazo cumplimiento</span>
+                  <DemoBadge />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Vencimiento de adaptación en 45 días. Verificar plan de implementación.
                 </p>
-                <Button size="sm" variant="outline" className="mt-2">
-                  Ver plan
+                <Button size="sm" variant="outline" className="mt-2" disabled>
+                  Ver plan (próximamente)
                 </Button>
               </div>
             </div>
