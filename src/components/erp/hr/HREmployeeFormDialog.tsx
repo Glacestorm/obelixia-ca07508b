@@ -692,7 +692,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         ? { street: formData.address_street, city: formData.address_city, postal_code: formData.address_postal_code, province: formData.address_province, country: formData.address_country }
         : null;
 
-      const dbData: Record<string, any> = {
+      const dbData = {
         company_id: companyId,
         first_name: formData.first_name,
         last_name: formData.last_name,
