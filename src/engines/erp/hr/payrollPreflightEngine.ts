@@ -131,6 +131,23 @@ export interface ITPreflightData {
   summary: string;
 }
 
+export interface SEPACTPreflightData {
+  hasPendingBatch: boolean;
+  batchStatus: 'draft' | 'validated' | 'generated' | 'exported' | 'paid' | 'cancelled' | 'none';
+  totalAmount: number;
+  lineCount: number;
+  hasErrors: boolean;
+  summary: string;
+}
+
+export interface OffboardingPreflightData {
+  activeCases: number;
+  pendingSettlements: number;
+  pendingCertificates: number;
+  pendingPayments: number;
+  summary: string;
+}
+
 export interface PreflightInput {
   // From payrollCycleStatusEngine
   periodStatus: string;
@@ -187,6 +204,12 @@ export interface PreflightInput {
 
   // P2.2: Active IT processes
   activeIT?: ITPreflightData;
+
+  // P2.3: SEPA CT batch status
+  activeSEPACT?: SEPACTPreflightData;
+
+  // P2.1: Active offboarding cases
+  activeOffboarding?: OffboardingPreflightData;
 
   // Current date for semaphore calculation
   now: Date;
@@ -562,6 +585,72 @@ export function buildPreflightResult(input: PreflightInput): PreflightResult {
     // Insert after equity (or after mobility, or after incidents)
     const insertIdx = steps.findIndex(s => s.id === 'equity_compensation') ?? steps.findIndex(s => s.id === 'mobility_international');
     steps.splice(insertIdx >= 0 ? insertIdx + 1 : 1, 0, itStep);
+    steps.forEach((s, i) => { s.index = i; });
+  }
+
+  // P2.3: Inject conditional SEPA CT substep
+  if (input.activeSEPACT && input.activeSEPACT.batchStatus !== 'none') {
+    const sepa = input.activeSEPACT;
+    const sepaStatus: PreflightStepStatus = sepa.hasErrors
+      ? 'blocked'
+      : ['paid'].includes(sepa.batchStatus) ? 'completed'
+      : ['exported'].includes(sepa.batchStatus) ? 'in_progress'
+      : 'pending';
+    const sepaSemaphore = sepa.hasErrors ? 'red' as Semaphore : sepaStatus === 'in_progress' ? 'amber' as Semaphore : sepaStatus === 'completed' ? 'green' as Semaphore : 'green' as Semaphore;
+
+    const sepaStep: PreflightStep = {
+      id: 'sepa_ct_batch',
+      index: steps.length,
+      label: 'SEPA CT',
+      description: sepa.summary || `Lote: ${sepa.lineCount} transferencias por ${sepa.totalAmount.toFixed(2)} €`,
+      status: sepaStatus,
+      semaphore: sepaSemaphore,
+      targetModule: 'sepa-ct',
+      targetContext: periodId ? { periodId } : undefined,
+      targetAction: 'manage_batch',
+      icon: 'CreditCard',
+      blockReason: sepa.hasErrors ? 'Lote SEPA con errores de validación' : undefined,
+      blockDomain: sepaStatus === 'blocked' ? 'sepa_ct' : undefined,
+      suggestedFix: sepa.hasErrors ? 'Corregir errores de validación en el lote SEPA' : sepaStatus === 'in_progress' ? 'Confirmar pago en portal bancario' : undefined,
+      isInstitutional: false,
+    };
+
+    // Insert before archive step
+    const archiveIdx = steps.findIndex(s => s.id === 'archive');
+    steps.splice(archiveIdx >= 0 ? archiveIdx : steps.length, 0, sepaStep);
+    steps.forEach((s, i) => { s.index = i; });
+  }
+
+  // P2.1: Inject conditional offboarding summary substep
+  if (input.activeOffboarding && input.activeOffboarding.activeCases > 0) {
+    const off = input.activeOffboarding;
+    const offStatus: PreflightStepStatus = off.pendingPayments > 0
+      ? 'in_progress'
+      : off.pendingSettlements > 0 ? 'in_progress'
+      : off.activeCases > 0 ? 'completed'
+      : 'completed';
+    const offSemaphore = off.pendingPayments > 0 ? 'amber' as Semaphore : 'green' as Semaphore;
+
+    const offStep: PreflightStep = {
+      id: 'offboarding_pipeline',
+      index: steps.length,
+      label: 'Pipeline de baja',
+      description: off.summary || `${off.activeCases} caso(s) de baja activo(s)`,
+      status: offStatus,
+      semaphore: offSemaphore,
+      targetModule: 'offboarding-workspace',
+      targetContext: periodId ? { periodId } : undefined,
+      targetAction: 'review_offboarding',
+      icon: 'UserMinus',
+      blockReason: undefined,
+      blockDomain: offStatus !== 'completed' ? 'offboarding' : undefined,
+      suggestedFix: off.pendingPayments > 0 ? 'Registrar pagos de finiquitos pendientes' : off.pendingSettlements > 0 ? 'Calcular finiquitos pendientes' : undefined,
+      isInstitutional: false,
+    };
+
+    // Insert before archive
+    const archiveIdx = steps.findIndex(s => s.id === 'archive');
+    steps.splice(archiveIdx >= 0 ? archiveIdx : steps.length, 0, offStep);
     steps.forEach((s, i) => { s.index = i; });
   }
 
