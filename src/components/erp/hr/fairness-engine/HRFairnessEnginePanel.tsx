@@ -30,7 +30,7 @@ export function HRFairnessEnginePanel({ companyId }: Props) {
   const {
     analyses, metrics, cases, plans, stats, aiAnalysis,
     loading, aiLoading, fetchAll, runFairnessAnalysis, runPayEquityAI, seedDemo,
-    realPayEquityData, realDataLoading, fetchRealPayEquityData,
+    realPayEquityData, realDataLoading, fetchRealPayEquityData, vptSummary,
   } = useHRFairnessEngine();
 
   const hasRealData = !!(realPayEquityData && Object.keys(realPayEquityData).length > 0);
