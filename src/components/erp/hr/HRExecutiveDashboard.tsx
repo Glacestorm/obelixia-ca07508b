@@ -464,6 +464,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                 <CardTitle className="text-base flex items-center gap-2">
                   <Activity className="h-4 w-4" />
                   Evolución Mensual
+                  <Badge variant="outline" className="text-[10px] font-normal ml-1">Estimado</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -488,6 +489,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                 <CardTitle className="text-base flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   Distribución por Departamento
+                  {!hasRealDepartments && <Badge variant="outline" className="text-[10px] font-normal ml-1">Sin datos</Badge>}
                 </CardTitle>
               </CardHeader>
               <CardContent>
