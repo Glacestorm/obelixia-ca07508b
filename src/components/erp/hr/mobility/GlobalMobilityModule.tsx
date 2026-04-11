@@ -1,6 +1,6 @@
 /**
- * GlobalMobilityModule — Main entry point replacing HRMobilityDashboard
- * Tabs: Dashboard | Asignaciones | (detail/form views)
+ * GlobalMobilityModule — Main entry point
+ * H1.0: Added edit view, delete/cancel drafts, employee name lookup
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,7 @@ import { MobilityDashboard } from './MobilityDashboard';
 import { MobilityAssignmentsList } from './MobilityAssignmentsList';
 import { MobilityAssignmentForm } from './MobilityAssignmentForm';
 import { MobilityAssignmentDetail } from './MobilityAssignmentDetail';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
   companyId: string;
@@ -18,12 +19,31 @@ interface Props {
 
 type View = 'list' | 'create' | 'detail' | 'edit';
 
+interface EmployeeMap {
+  [id: string]: string;
+}
+
 export function GlobalMobilityModule({ companyId }: Props) {
   const mobility = useGlobalMobility(companyId);
   const [view, setView] = useState<View>('list');
   const [selected, setSelected] = useState<MobilityAssignment | null>(null);
   const [expiringDocs, setExpiringDocs] = useState<MobilityDocument[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [employeeMap, setEmployeeMap] = useState<EmployeeMap>({});
+
+  // Load employee names for display
+  useEffect(() => {
+    supabase
+      .from('erp_hr_employees')
+      .select('id, first_name, last_name')
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .then(({ data }) => {
+        const map: EmployeeMap = {};
+        (data || []).forEach((e: any) => { map[e.id] = `${e.last_name}, ${e.first_name}`; });
+        setEmployeeMap(map);
+      });
+  }, [companyId]);
 
   useEffect(() => {
     mobility.getStats();
@@ -39,16 +59,31 @@ export function GlobalMobilityModule({ companyId }: Props) {
     if (result) setView('list');
   }, [mobility.createAssignment]);
 
+  const handleUpdate = useCallback(async (data: Partial<MobilityAssignment>) => {
+    if (!selected) return;
+    const result = await mobility.updateAssignment(selected.id, data);
+    if (result) {
+      setSelected(result);
+      setView('detail');
+    }
+  }, [selected, mobility.updateAssignment]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    const result = await mobility.deleteAssignment(id);
+    if (result) {
+      setSelected(null);
+      setView('list');
+    }
+  }, [mobility.deleteAssignment]);
+
   const handleStatusChange = useCallback(async (id: string, status: AssignmentStatus) => {
     await mobility.updateStatus(id, status);
-    // Refresh selected
     if (selected?.id === id) {
       const updated = mobility.assignments.find(a => a.id === id);
       if (updated) setSelected(updated);
     }
   }, [mobility.updateStatus, selected, mobility.assignments]);
 
-  // Render view within assignments tab
   const renderAssignmentView = () => {
     switch (view) {
       case 'create':
@@ -56,14 +91,27 @@ export function GlobalMobilityModule({ companyId }: Props) {
           <MobilityAssignmentForm
             onSubmit={handleCreate}
             onCancel={() => setView('list')}
+            companyId={companyId}
           />
         );
+      case 'edit':
+        return selected ? (
+          <MobilityAssignmentForm
+            initial={selected}
+            onSubmit={handleUpdate}
+            onCancel={() => setView('detail')}
+            isEditing
+            companyId={companyId}
+          />
+        ) : null;
       case 'detail':
         return selected ? (
           <MobilityAssignmentDetail
             assignment={selected}
             onBack={() => { setView('list'); setSelected(null); }}
             onStatusChange={handleStatusChange}
+            onEdit={() => setView('edit')}
+            onDelete={handleDelete}
             fetchDocuments={mobility.fetchDocuments}
             addDocument={mobility.addDocument}
             updateDocument={mobility.updateDocument}
@@ -71,6 +119,7 @@ export function GlobalMobilityModule({ companyId }: Props) {
             upsertCostProjection={mobility.upsertCostProjection}
             fetchAuditLog={mobility.fetchAuditLog}
             validTransitions={mobility.VALID_TRANSITIONS}
+            employeeName={employeeMap[selected.employee_id]}
           />
         ) : null;
       default:
@@ -81,6 +130,7 @@ export function GlobalMobilityModule({ companyId }: Props) {
             onSelect={(a) => { setSelected(a); setView('detail'); }}
             onCreate={() => setView('create')}
             onFilter={handleFilter}
+            employeeMap={employeeMap}
           />
         );
     }
