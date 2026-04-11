@@ -51,11 +51,12 @@ export function useS9RetributiveAudit(companyId: string, period?: string) {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('erp_hr_job_valuations')
-        .select('position_id, total_score')
+        .select('position_id, total_score, updated_at')
         .eq('company_id', companyId)
-        .eq('status', 'approved');
+        .eq('status', 'approved')
+        .order('updated_at', { ascending: false });
       if (error) { console.error('[useS9RetributiveAudit] vpt', error); return []; }
-      return (data ?? []) as Array<{ position_id: string; total_score: number }>;
+      return (data ?? []) as Array<{ position_id: string; total_score: number; updated_at: string }>;
     },
     enabled: !!companyId,
   });
@@ -90,6 +91,19 @@ export function useS9RetributiveAudit(companyId: string, period?: string) {
 
   const hasVPTData = (vptValuations?.length ?? 0) > 0;
 
+  // Source metadata for reporting (S9.6)
+  const latestVPTApproval = useMemo(() => {
+    if (!vptValuations?.length) return null;
+    return vptValuations[0].updated_at ?? null;
+  }, [vptValuations]);
+
+  const vptCoverage = useMemo(() => {
+    if (!employees?.length || !vptValuations?.length) return 0;
+    const vptPositionIds = new Set(vptValuations.map(v => v.position_id));
+    const covered = employees.filter(e => e.position_id && vptPositionIds.has(e.position_id)).length;
+    return employees.length > 0 ? covered / employees.length : 0;
+  }, [employees, vptValuations]);
+
   return {
     report,
     isLoading: loadingEmps || loadingPay || loadingVPT,
@@ -98,5 +112,7 @@ export function useS9RetributiveAudit(companyId: string, period?: string) {
     employeeCount: employees?.length ?? 0,
     payrollCount: payrolls?.length ?? 0,
     vptCount: vptValuations?.length ?? 0,
+    latestVPTApproval,
+    vptCoverage,
   };
 }

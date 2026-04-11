@@ -1,16 +1,20 @@
 /**
- * S9RetributiveAuditPanel — Auditoría Retributiva Integrada (S9.4)
+ * S9RetributiveAuditPanel — Auditoría Retributiva Integrada (S9.4 + S9.6)
  * Contextualiza brechas salariales con VPT sin justificarlas automáticamente.
+ * S9.6: adds executive summary, CSV export, and source metadata.
  */
 
-import { memo, useState } from 'react';
+import { memo, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, Info, Scale, TrendingDown, FileText } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AlertTriangle, Info, TrendingDown, FileText, Download, ChevronDown } from 'lucide-react';
 import { S9ReadinessBadge } from '../shared/S9ReadinessBadge';
 import { useS9RetributiveAudit } from '@/hooks/erp/hr/useS9RetributiveAudit';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Props {
   companyId: string;
@@ -19,13 +23,42 @@ interface Props {
 export const S9RetributiveAuditPanel = memo(function S9RetributiveAuditPanel({ companyId }: Props) {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [period, setPeriod] = useState(currentMonth);
-  const { report, isLoading, hasVPTData, employeeCount, payrollCount, vptCount } = useS9RetributiveAudit(companyId, period);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const { report, isLoading, hasVPTData, employeeCount, payrollCount, vptCount, latestVPTApproval, vptCoverage } = useS9RetributiveAudit(companyId, period);
 
   const periods = Array.from({ length: 6 }, (_, i) => {
     const d = new Date();
     d.setMonth(d.getMonth() - i);
     return d.toISOString().slice(0, 7);
   });
+
+  // Executive summary (deterministic, no AI)
+  const executiveSummary = useMemo(() => {
+    if (!report) return null;
+    // Lazy import to keep bundle small
+    const { generateRetributiveExecutiveSummary } = require('@/engines/erp/hr/s9ComplianceEngine');
+    return generateRetributiveExecutiveSummary(report);
+  }, [report]);
+
+  // CSV export handler
+  const handleExportCSV = useCallback(() => {
+    if (!report) return;
+    try {
+      const { exportRetributiveAuditCSV } = require('@/engines/erp/hr/s9ComplianceEngine');
+      const csv = exportRetributiveAuditCSV(report);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `auditoria_retributiva_${report.period}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('CSV descargado');
+    } catch (err) {
+      console.error('[S9RetributiveAuditPanel] export error:', err);
+      toast.error('Error al exportar CSV');
+    }
+  }, [report]);
 
   if (isLoading) {
     return (
@@ -48,16 +81,24 @@ export const S9RetributiveAuditPanel = memo(function S9RetributiveAuditPanel({ c
             Análisis de brechas salariales con contextualización VPT
           </p>
         </div>
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {periods.map(p => (
-              <SelectItem key={p} value={p}>{p}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {report && (
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-1.5">
+              <Download className="h-3.5 w-3.5" />
+              CSV
+            </Button>
+          )}
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {periods.map(p => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Disclaimer — always visible */}
@@ -120,6 +161,38 @@ export const S9RetributiveAuditPanel = memo(function S9RetributiveAuditPanel({ c
               </CardContent>
             </Card>
           </div>
+
+          {/* Executive Summary (S9.6) — collapsible */}
+          {executiveSummary && (
+            <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
+              <Card className="border-primary/20">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="pb-2 cursor-pointer hover:bg-muted/30 transition-colors">
+                    <CardTitle className="text-sm flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Resumen Ejecutivo
+                        <S9ReadinessBadge readiness="internal_ready" />
+                      </span>
+                      <ChevronDown className={cn("h-4 w-4 transition-transform", summaryOpen && "rotate-180")} />
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-2 pt-0">
+                    {executiveSummary.sentences.map((sentence: string, i: number) => (
+                      <p key={i} className="text-sm text-foreground/80">{sentence}</p>
+                    ))}
+                    <div className="mt-3 p-2 rounded bg-amber-500/5 border border-amber-500/20">
+                      <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                        {executiveSummary.disclaimer}
+                      </p>
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          )}
 
           {/* VPT coverage notice */}
           {!hasVPTData && (
@@ -229,11 +302,15 @@ export const S9RetributiveAuditPanel = memo(function S9RetributiveAuditPanel({ c
             </CardContent>
           </Card>
 
-          {/* Data summary */}
+          {/* Source metadata (S9.6) */}
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground px-1">
             <span>{employeeCount} empleados</span>
             <span>{payrollCount} nóminas</span>
             <span>{vptCount} valoraciones VPT</span>
+            {latestVPTApproval && (
+              <span>Última VPT: {new Date(latestVPTApproval).toLocaleDateString('es-ES')}</span>
+            )}
+            <span>Cobertura VPT: {(vptCoverage * 100).toFixed(0)}%</span>
           </div>
         </>
       ) : (
