@@ -86,7 +86,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'departments', 'work-centers', 'legal-entities',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values', 'garnishment-simulator',
+    'preflight', 'payroll', 'payroll-engine', 'irpf-motor', 'symbolic-values', 'garnishment-simulator',
     'ss', 'integration', 'compensation-suite',
     // Workforce
     'vacations', 'time-clock', 'leave-incidents',
@@ -189,6 +189,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           icon: DollarSign,
           color: 'text-emerald-500',
           items: [
+            { id: 'preflight', label: 'Preflight Nómina', icon: Gauge, description: 'Cockpit operativo del ciclo completo' },
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
             { id: 'payroll-engine', label: 'Motor de Nómina', icon: Calculator, description: 'Períodos · Runs · Conceptos' },
             { id: 'irpf-motor', label: 'Motor IRPF', icon: Calculator, description: 'Mod. 111/190 · Certificados' },

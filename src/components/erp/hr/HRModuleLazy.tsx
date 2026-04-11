@@ -225,3 +225,6 @@ export const LazyPredictiveAuditPanel = lazyPanel(() => import('./domains/analyt
 
 // ─── S8.5b Exclusive simulators ────────────────────────────
 export const LazyGarnishmentSimulator = lazyPanel(() => import('@/components/hr/garnishments/GarnishmentSimulator'), 'GarnishmentSimulator');
+
+// ─── P1.7 Preflight Cockpit ───────────────────────────────
+export const LazyPayrollPreflightCockpit = lazyPanel(() => import('./payroll-engine/PayrollPreflightCockpit'), 'PayrollPreflightCockpit');
