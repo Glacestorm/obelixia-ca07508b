@@ -1,14 +1,14 @@
 /**
  * MobilityAssignmentDetail — Full view of a single assignment
- * H1.0: Added edit/delete buttons, employee name lookup
+ * Header + Tabs: Summary, Classification, Tax Impact, Documents, Costs, Compliance, Audit
+ * P1.7B-RA: Added Classification and Tax Impact tabs
  */
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Globe, MapPin, DollarSign, Shield, Clock, FileText, History, Pencil, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ArrowLeft, Globe, MapPin, DollarSign, Shield, Clock, FileText, History } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { MobilityDocumentsPanel } from './MobilityDocumentsPanel';
 import { MobilityCostProjectionPanel } from './MobilityCostProjectionPanel';
@@ -16,7 +16,6 @@ import { MobilityCompliancePanel } from './MobilityCompliancePanel';
 import { MobilityClassificationPanel } from './MobilityClassificationPanel';
 import { MobilityTaxImpactPanel } from './MobilityTaxImpactPanel';
 import { useExpatriateCase } from '@/hooks/erp/hr/useExpatriateCase';
-import { supabase } from '@/integrations/supabase/client';
 import type {
   MobilityAssignment, MobilityDocument, MobilityCostProjection, MobilityAuditEntry,
   AssignmentStatus,
@@ -26,8 +25,6 @@ interface Props {
   assignment: MobilityAssignment;
   onBack: () => void;
   onStatusChange: (id: string, status: AssignmentStatus) => void;
-  onEdit: () => void;
-  onDelete: (id: string) => void;
   fetchDocuments: (id: string) => Promise<MobilityDocument[]>;
   addDocument: (doc: Partial<MobilityDocument>) => Promise<MobilityDocument | null>;
   updateDocument: (id: string, updates: Partial<MobilityDocument>) => Promise<boolean>;
@@ -58,7 +55,7 @@ const SUPPORT_BADGE_COLORS: Record<string, string> = {
 };
 
 export function MobilityAssignmentDetail({
-  assignment, onBack, onStatusChange, onEdit, onDelete,
+  assignment, onBack, onStatusChange,
   fetchDocuments, addDocument, updateDocument,
   fetchCostProjection, upsertCostProjection,
   fetchAuditLog, validTransitions,
@@ -67,8 +64,6 @@ export function MobilityAssignmentDetail({
   const [costs, setCosts] = useState<MobilityCostProjection[]>([]);
   const [audit, setAudit] = useState<MobilityAuditEntry[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
-  const [employeeName, setEmployeeName] = useState<string>('');
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoadingDocs(true);
@@ -85,27 +80,12 @@ export function MobilityAssignmentDetail({
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Load employee name
-  useEffect(() => {
-    const loadEmployee = async () => {
-      try {
-        const { data } = await supabase
-          .from('erp_hr_employees' as any)
-          .select('first_name, last_name')
-          .eq('id', assignment.employee_id)
-          .single();
-        if (data) setEmployeeName(`${(data as any).first_name} ${(data as any).last_name}`);
-      } catch { /* ignore */ }
-    };
-    loadEmployee();
-  }, [assignment.employee_id]);
-
+  // P1.7B-RA: Expatriate case classification
   const expatCase = useExpatriateCase(assignment, documents);
 
   const a = assignment;
   const nextStatuses = validTransitions[a.status] || [];
   const pkg = a.allowance_package || {};
-  const canDelete = a.status === 'draft' || a.status === 'cancelled';
 
   return (
     <div className="space-y-4">
@@ -119,11 +99,9 @@ export function MobilityAssignmentDetail({
               </Button>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold">
-                    {employeeName || a.employee_id.slice(0, 8)}
-                  </p>
-                  <span className="text-xs text-muted-foreground">{a.home_country_code} → {a.host_country_code}</span>
+                  <p className="text-sm font-semibold">{a.home_country_code} → {a.host_country_code}</p>
                   <HRStatusBadge entity="mobility" status={a.status} />
+                  {/* P1.7B-RA: Support level badge */}
                   {expatCase && (
                     <Badge className={`text-[9px] ${SUPPORT_BADGE_COLORS[expatCase.overallSupportLevel]}`}>
                       {expatCase.overallSupportLevel === 'supported_production' ? '✅ Producción'
@@ -138,14 +116,6 @@ export function MobilityAssignmentDetail({
               </div>
             </div>
             <div className="flex gap-1">
-              <Button variant="outline" size="sm" className="text-xs" onClick={onEdit}>
-                <Pencil className="h-3 w-3 mr-1" /> Editar
-              </Button>
-              {canDelete && (
-                <Button variant="outline" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={() => setShowDeleteDialog(true)}>
-                  <Trash2 className="h-3 w-3 mr-1" /> Eliminar
-                </Button>
-              )}
               {nextStatuses.map(ns => (
                 <Button key={ns} variant="outline" size="sm" className="text-xs" onClick={() => onStatusChange(a.id, ns)}>
                   → {STATUS_LABELS[ns]}
@@ -155,22 +125,6 @@ export function MobilityAssignmentDetail({
           </div>
         </CardContent>
       </Card>
-
-      {/* Delete confirmation dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar asignación?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Esta acción eliminará permanentemente la asignación borrador y todos sus documentos y proyecciones asociadas.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={() => { setShowDeleteDialog(false); onDelete(a.id); }}>Eliminar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Tabs */}
       <Tabs defaultValue="summary">
@@ -186,6 +140,7 @@ export function MobilityAssignmentDetail({
 
         {/* Summary */}
         <TabsContent value="summary" className="space-y-3">
+          {/* 5 Jurisdictions */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-xs text-muted-foreground">Modelo de 5 jurisdicciones</CardTitle>
@@ -202,6 +157,7 @@ export function MobilityAssignmentDetail({
             </CardContent>
           </Card>
 
+          {/* Compensation */}
           <div className="grid grid-cols-2 gap-3">
             <Card>
               <CardContent className="py-3">
@@ -233,13 +189,13 @@ export function MobilityAssignmentDetail({
             </Card>
           </div>
 
-          {(a.notes || a.risk_level !== 'low' || a.pe_risk_flag) && (
+          {/* Risk + notes */}
+          {(a.notes || a.risk_level !== 'low') && (
             <Card>
               <CardContent className="py-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Shield className="h-3.5 w-3.5 text-muted-foreground" />
                   <Badge variant="outline" className="text-[10px]">Riesgo: {a.risk_level}</Badge>
-                  {a.pe_risk_flag && <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-700">⚠️ PE Risk</Badge>}
                 </div>
                 {a.notes && <p className="text-xs text-muted-foreground mt-1">{a.notes}</p>}
               </CardContent>
@@ -247,6 +203,7 @@ export function MobilityAssignmentDetail({
           )}
         </TabsContent>
 
+        {/* Classification — P1.7B-RA */}
         <TabsContent value="classification">
           {expatCase ? (
             <MobilityClassificationPanel expatCase={expatCase} documents={documents} />
@@ -255,6 +212,7 @@ export function MobilityAssignmentDetail({
           )}
         </TabsContent>
 
+        {/* Tax Impact — P1.7B-RA */}
         <TabsContent value="tax">
           {expatCase ? (
             <MobilityTaxImpactPanel expatCase={expatCase} />
@@ -263,6 +221,7 @@ export function MobilityAssignmentDetail({
           )}
         </TabsContent>
 
+        {/* Documents */}
         <TabsContent value="documents">
           <MobilityDocumentsPanel
             assignmentId={assignment.id}
@@ -273,6 +232,7 @@ export function MobilityAssignmentDetail({
           />
         </TabsContent>
 
+        {/* Costs */}
         <TabsContent value="costs">
           <MobilityCostProjectionPanel
             assignmentId={assignment.id}
@@ -282,6 +242,7 @@ export function MobilityAssignmentDetail({
           />
         </TabsContent>
 
+        {/* Compliance */}
         <TabsContent value="compliance">
           <MobilityCompliancePanel
             assignment={assignment}
@@ -289,6 +250,7 @@ export function MobilityAssignmentDetail({
           />
         </TabsContent>
 
+        {/* Audit */}
         <TabsContent value="audit">
           <Card>
             <CardHeader className="pb-2">

@@ -1,6 +1,6 @@
 /**
- * GlobalMobilityModule — Main entry point
- * H1.0: Added edit flow, delete for drafts
+ * GlobalMobilityModule — Main entry point replacing HRMobilityDashboard
+ * Tabs: Dashboard | Asignaciones | (detail/form views)
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,35 +39,16 @@ export function GlobalMobilityModule({ companyId }: Props) {
     if (result) setView('list');
   }, [mobility.createAssignment]);
 
-  const handleUpdate = useCallback(async (data: Partial<MobilityAssignment>) => {
-    if (!selected) return;
-    const result = await mobility.updateAssignment(selected.id, data);
-    if (result) {
-      setSelected(result);
-      setView('detail');
-    }
-  }, [mobility.updateAssignment, selected]);
-
   const handleStatusChange = useCallback(async (id: string, status: AssignmentStatus) => {
     await mobility.updateStatus(id, status);
+    // Refresh selected
     if (selected?.id === id) {
       const updated = mobility.assignments.find(a => a.id === id);
       if (updated) setSelected(updated);
     }
   }, [mobility.updateStatus, selected, mobility.assignments]);
 
-  const handleDelete = useCallback(async (id: string) => {
-    const result = await mobility.deleteAssignment(id);
-    if (result) {
-      setView('list');
-      setSelected(null);
-    }
-  }, [mobility.deleteAssignment]);
-
-  const handleEdit = useCallback(() => {
-    if (selected) setView('edit');
-  }, [selected]);
-
+  // Render view within assignments tab
   const renderAssignmentView = () => {
     switch (view) {
       case 'create':
@@ -77,23 +58,12 @@ export function GlobalMobilityModule({ companyId }: Props) {
             onCancel={() => setView('list')}
           />
         );
-      case 'edit':
-        return selected ? (
-          <MobilityAssignmentForm
-            initial={selected}
-            isEditing
-            onSubmit={handleUpdate}
-            onCancel={() => setView('detail')}
-          />
-        ) : null;
       case 'detail':
         return selected ? (
           <MobilityAssignmentDetail
             assignment={selected}
             onBack={() => { setView('list'); setSelected(null); }}
             onStatusChange={handleStatusChange}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
             fetchDocuments={mobility.fetchDocuments}
             addDocument={mobility.addDocument}
             updateDocument={mobility.updateDocument}
