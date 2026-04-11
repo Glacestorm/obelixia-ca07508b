@@ -142,6 +142,7 @@ import {
   LazyPredictiveAuditPanel,
   LazyGarnishmentSimulator,
   LazyPayrollPreflightCockpit,
+  LazyStockOptionsPanel,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -521,6 +522,7 @@ function HRModuleInner() {
         {activeModule === 'mobility-assignments' && <LazyGlobalMobilityModule companyId={companyId} />}
         {activeModule === 'mobility-dashboard' && <LazyGlobalMobilityModule companyId={companyId} />}
         {activeModule === 'mobility-international' && <LazyGlobalMobilityModule companyId={companyId} />}
+        {activeModule === 'stock-options' && <LazyStockOptionsPanel companyId={companyId} />}
         {activeModule === 'payroll-periods' && <LazyHRPayrollPeriodsPanel companyId={companyId} />}
         {activeModule === 'payroll-engine' && <LazyHRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <LazyHRComplianceEvidencePanel companyId={companyId} />}

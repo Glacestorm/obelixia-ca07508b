@@ -228,3 +228,6 @@ export const LazyGarnishmentSimulator = lazyPanel(() => import('@/components/hr/
 
 // ─── P1.7 Preflight Cockpit ───────────────────────────────
 export const LazyPayrollPreflightCockpit = lazyPanel(() => import('./payroll-engine/PayrollPreflightCockpit'), 'PayrollPreflightCockpit');
+
+// ─── P1.7B-RB Equity / Stock Options ─────────────────────
+export const LazyStockOptionsPanel = lazyPanel(() => import('./equity'), 'StockOptionsPanel');
