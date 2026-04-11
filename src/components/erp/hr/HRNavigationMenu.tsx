@@ -19,7 +19,8 @@ import {
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
-  Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane, CreditCard
+  Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane, CreditCard,
+  Wifi, Home
 } from 'lucide-react';
 
 // ─── Types ───
@@ -95,6 +96,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'country-registry', 'es-localization',
     'mobility-international', 'stock-options',
     'official-submissions', 'compliance-evidence',
+    // S9 Compliance
+    's9-lismi', 's9-salary-register', 's9-disconnection', 's9-remote-work',
   ]);
 
   // Tier 2: visible_advanced — shown only to admin/advanced profiles in MVP mode
@@ -234,6 +237,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 'vacations', label: 'Vacaciones', icon: Calendar, description: 'Solicitudes y saldos', badge: stats.pendingVacations, badgeVariant: 'secondary' },
             { id: 'time-clock', label: 'Control Horario', icon: Clock, description: 'Registro de jornada' },
             { id: 'leave-incidents', label: 'Incidencias', icon: AlertTriangle, description: 'IT, maternidad, permisos' },
+            { id: 's9-disconnection', label: 'Desconexión Digital', icon: Wifi, description: 'Protocolo Art. 88 LOPDGDD' },
+            { id: 's9-remote-work', label: 'Teletrabajo', icon: Home, description: 'Acuerdos Ley 10/2021' },
           ]
         },
         {
@@ -287,6 +292,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'official-submissions', label: 'Envíos Oficiales', icon: Send, description: 'SILTRA, Contrat@, AEAT' },
             { id: 'compliance-evidence', label: 'Evidencias', icon: Shield, description: 'Cumplimiento documental' },
+            { id: 's9-lismi', label: 'LISMI / LGD', icon: Users, description: 'Cuota discapacidad 2%' },
+            { id: 's9-salary-register', label: 'Registro Retributivo', icon: Scale, description: 'RD 902/2020' },
           ]
         },
       ]

@@ -143,6 +143,11 @@ import {
   LazyGarnishmentSimulator,
   LazyPayrollPreflightCockpit,
   LazyStockOptionsPanel,
+  // S9 Compliance
+  LazyS9LISMIDashboard,
+  LazyS9SalaryRegisterPanel,
+  LazyS9DisconnectionPanel,
+  LazyS9RemoteWorkPanel,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -530,6 +535,12 @@ function HRModuleInner() {
         {activeModule === 'es-localization' && <LazyESLocalizationPlugin companyId={companyId} />}
         {activeModule === 'people-analytics' && <LazyPeopleAnalyticsModule companyId={companyId} />}
         {activeModule === 'contract-expiry-report' && <LazyHRContractExpiryReport companyId={companyId} />}
+
+        {/* S9 Compliance & Quality */}
+        {activeModule === 's9-lismi' && <LazyS9LISMIDashboard companyId={companyId} />}
+        {activeModule === 's9-salary-register' && <LazyS9SalaryRegisterPanel companyId={companyId} />}
+        {activeModule === 's9-disconnection' && <LazyS9DisconnectionPanel companyId={companyId} />}
+        {activeModule === 's9-remote-work' && <LazyS9RemoteWorkPanel companyId={companyId} />}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
