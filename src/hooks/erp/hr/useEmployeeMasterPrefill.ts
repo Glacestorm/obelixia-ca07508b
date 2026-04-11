@@ -75,7 +75,7 @@ export function useEmployeeMasterPrefill(employeeId: string | null) {
       // Fetch core employee data
       const { data: emp, error: empError } = await supabase
         .from('erp_hr_employees')
-        .select('national_id, ss_number, position, hire_date, base_salary, weekly_hours, country_code')
+        .select('national_id, ss_number, job_title, hire_date, base_salary, weekly_hours, country_code')
         .eq('id', employeeId)
         .maybeSingle();
 
