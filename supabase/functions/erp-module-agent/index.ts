@@ -1,4 +1,10 @@
+/**
+ * ERP Module Agent
+ * G1.1: Auth hardened with validateAuth
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -135,6 +141,11 @@ serve(async (req) => {
   }
 
   try {
+    // --- G1.1: AUTH GATE ---
+    const authResult = await validateAuth(req);
+    if (isAuthError(authResult)) return mapAuthError(authResult, corsHeaders);
+    // --- END AUTH GATE ---
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
