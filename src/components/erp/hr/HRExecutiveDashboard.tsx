@@ -693,16 +693,17 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
               <CardTitle className="text-base flex items-center gap-2">
                 <Sparkles className="h-4 w-4" />
                 Benchmark vs Sector
+                <Badge variant="outline" className="text-[10px] font-normal ml-1">Referencia estimada</Badge>
               </CardTitle>
-              <CardDescription>Comparativa con empresas similares del sector</CardDescription>
+              <CardDescription>Comparativa con medias sectoriales de referencia</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Rotación', value: '8.5%', benchmark: '12%', status: 'better' },
-                  { label: 'Absentismo', value: '3.2%', benchmark: '4%', status: 'better' },
-                  { label: 'Coste/emp', value: '€3,968', benchmark: '€4,200', status: 'better' },
-                  { label: 'Formación h/emp', value: '24h', benchmark: '30h', status: 'worse' }
+                  { label: 'Rotación', value: `${metrics?.turnoverRate || 0}%`, benchmark: '12%', status: (metrics?.turnoverRate || 0) < 12 ? 'better' : 'worse' },
+                  { label: 'Absentismo', value: `${metrics?.absenteeismRate || 0}%`, benchmark: '4%', status: (metrics?.absenteeismRate || 0) < 4 ? 'better' : 'worse' },
+                  { label: 'Coste/emp', value: `€${laborCosts.costPerEmployee.toLocaleString()}`, benchmark: '€4,200', status: laborCosts.costPerEmployee < 4200 ? 'better' : 'worse' },
+                  { label: 'Formación h/emp', value: `${metrics?.trainingHours || 24}h`, benchmark: '30h', status: (metrics?.trainingHours || 24) >= 30 ? 'better' : 'worse' }
                 ].map((item, index) => (
                   <div key={index} className="text-center p-3 rounded-lg bg-muted/50">
                     <p className="text-xs text-muted-foreground mb-1">{item.label}</p>
