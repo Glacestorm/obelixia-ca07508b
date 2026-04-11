@@ -36,7 +36,10 @@ export function ImprovementsTracker() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Plan de Mejoras de Auditoría</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold">Plan de Mejoras de Auditoría</h3>
+            <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600 bg-amber-500/10">Datos de ejemplo</Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
             Hallazgos, acciones correctoras y seguimiento generados por AUDIT-AGT-005
           </p>

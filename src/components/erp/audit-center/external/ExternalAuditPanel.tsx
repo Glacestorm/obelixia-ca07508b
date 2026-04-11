@@ -37,8 +37,8 @@ export function ExternalAuditPanel() {
             Gestión de requerimientos regulatorios, evidencias y envíos a BdE, BCE, AEPD
           </p>
         </div>
-        <Button size="sm" className="gap-1.5">
-          <Upload className="h-4 w-4" /> Nuevo Envío
+        <Button size="sm" className="gap-1.5" disabled title="Próximamente">
+          <Upload className="h-4 w-4" /> Nuevo Envío (próximamente)
         </Button>
       </div>
 
