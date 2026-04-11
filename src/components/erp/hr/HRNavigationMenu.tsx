@@ -19,7 +19,8 @@ import {
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
-  Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane, CreditCard
+  Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane, CreditCard,
+  Wifi, Home
 } from 'lucide-react';
 
 // ─── Types ───
