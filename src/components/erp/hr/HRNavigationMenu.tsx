@@ -93,7 +93,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'admin-requests', 'hr-tasks', 'approval-inbox',
     // Global
     'country-registry', 'es-localization',
-    'mobility-international',
+    'mobility-international', 'stock-options',
     'official-submissions', 'compliance-evidence',
   ]);
 
@@ -272,11 +272,12 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           ]
         },
         {
-          title: 'Movilidad',
+          title: 'Movilidad & Equity',
           icon: Plane,
           color: 'text-emerald-500',
           items: [
             { id: 'mobility-international', label: 'Movilidad Internacional', icon: Plane, description: 'Asignaciones y KPIs globales' },
+            { id: 'stock-options', label: 'Stock Options / Equity', icon: TrendingUp, description: 'Planes de equity, vesting y simulador fiscal' },
           ]
         },
         {

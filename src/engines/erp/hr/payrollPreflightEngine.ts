@@ -109,6 +109,14 @@ export interface MobilityPreflightData {
   summary: string;
 }
 
+export interface EquityPreflightData {
+  hasActiveGrants: boolean;
+  pendingExerciseCount: number;
+  worstSupportLevel: 'supported_production' | 'supported_with_review' | 'out_of_scope';
+  reviewRequired: boolean;
+  summary: string;
+}
+
 export interface PreflightInput {
   // From payrollCycleStatusEngine
   periodStatus: string;
@@ -159,6 +167,9 @@ export interface PreflightInput {
 
   // P1.7B-RA: Active international mobility data
   activeMobility?: MobilityPreflightData;
+
+  // P1.7B-RB: Active equity compensation data
+  activeEquity?: EquityPreflightData;
 
   // Current date for semaphore calculation
   now: Date;
@@ -466,6 +477,37 @@ export function buildPreflightResult(input: PreflightInput): PreflightResult {
 
     // Insert after index 0 (incidents) and re-index
     steps.splice(1, 0, mobilityStep);
+    steps.forEach((s, i) => { s.index = i; });
+  }
+
+  // P1.7B-RB: Inject conditional equity compensation substep
+  if (input.activeEquity && input.activeEquity.hasActiveGrants) {
+    const eq = input.activeEquity;
+    const eqStatus: PreflightStepStatus = eq.worstSupportLevel === 'out_of_scope'
+      ? 'blocked'
+      : eq.reviewRequired ? 'in_progress' : 'completed';
+    const eqSemaphore = eqStatus === 'blocked' ? 'red' as Semaphore : eqStatus === 'in_progress' ? 'amber' as Semaphore : 'green' as Semaphore;
+
+    const equityStep: PreflightStep = {
+      id: 'equity_compensation',
+      index: steps.length,
+      label: 'Stock Options / Equity',
+      description: eq.summary || `${eq.pendingExerciseCount} ejercicio(s) pendiente(s)`,
+      status: eqStatus,
+      semaphore: eqSemaphore,
+      targetModule: 'stock-options',
+      targetContext: periodId ? { periodId } : undefined,
+      targetAction: 'review_equity',
+      icon: 'TrendingUp',
+      blockReason: eqStatus === 'blocked' ? 'Plan de equity fuera de alcance requiere asesoría especializada' : undefined,
+      blockDomain: eqStatus !== 'completed' ? 'equity' : undefined,
+      suggestedFix: eq.reviewRequired ? 'Revisar clasificación de grants de equity activos' : undefined,
+      isInstitutional: false,
+    };
+
+    // Insert after mobility (or after incidents if no mobility)
+    const insertIdx = steps.findIndex(s => s.id === 'mobility_international');
+    steps.splice(insertIdx >= 0 ? insertIdx + 1 : 1, 0, equityStep);
     steps.forEach((s, i) => { s.index = i; });
   }
 
