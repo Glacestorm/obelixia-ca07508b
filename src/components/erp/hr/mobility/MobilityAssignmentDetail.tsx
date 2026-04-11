@@ -58,10 +58,10 @@ const SUPPORT_BADGE_COLORS: Record<string, string> = {
 };
 
 export function MobilityAssignmentDetail({
-  assignment, onBack, onStatusChange,
+  assignment, onBack, onStatusChange, onEdit, onDelete,
   fetchDocuments, addDocument, updateDocument,
   fetchCostProjection, upsertCostProjection,
-  fetchAuditLog, validTransitions,
+  fetchAuditLog, validTransitions, employeeName,
 }: Props) {
   const [documents, setDocuments] = useState<MobilityDocument[]>([]);
   const [costs, setCosts] = useState<MobilityCostProjection[]>([]);
