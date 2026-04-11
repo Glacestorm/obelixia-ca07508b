@@ -497,10 +497,10 @@ serve(async (req) => {
         
         const period = (context as any)?.period || new Date().toISOString().slice(0, 7);
         
-        // Get active employees for the period
+        // Get active employees for the period (H2.0: expanded master fields)
         const { data: employees } = await userClient
           .from('erp_hr_employees')
-          .select('id, first_name, last_name, social_security_number')
+          .select('id, first_name, last_name, social_security_number, national_id, birth_date, position, weekly_hours, category, country_code')
           .eq('status', 'active');
         
         // Get payrolls for the period

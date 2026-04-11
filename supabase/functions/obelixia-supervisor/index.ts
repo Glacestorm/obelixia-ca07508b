@@ -6,6 +6,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
+import { mapAuthError, validationError } from '../_shared/error-contract.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -330,25 +332,25 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Auth
-    const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
-    }
 
     const input: SuperSupervisorRequest = await req.json();
     const { action, company_id, query, context, session_id } = input;
 
     if (!company_id) {
-      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return validationError('company_id is required', corsHeaders);
     }
+
+    // --- AUTH + TENANT VALIDATION (G1.1) ---
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return mapAuthError(authResult, corsHeaders);
+    }
+    const { userId } = authResult;
+    // adminClient for invocation logging (legitimate exception)
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Capture user's auth header for JWT forwarding to downstream supervisors
+    const userAuthHeader = req.headers.get('Authorization') || '';
+    // --- END AUTH ---
 
     const fnUrl = `${supabaseUrl}/functions/v1`;
 
