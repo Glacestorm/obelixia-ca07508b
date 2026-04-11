@@ -169,7 +169,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
     },
     {
       id: 'compliance',
-      label: 'Cumplimiento PRL',
+      label: `Cumplimiento PRL${metrics?.complianceRate ? '' : ' (est.)'}`,
       value: `${metrics?.complianceRate || 94}%`,
       change: metrics?.complianceChange || 2,
       changeType: 'positive',
@@ -182,7 +182,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
     },
     {
       id: 'training',
-      label: 'Formación h/emp',
+      label: `Formación h/emp${metrics?.trainingHours ? '' : ' (est.)'}`,
       value: `${metrics?.trainingHours || 24}h`,
       change: metrics?.trainingChange || 6,
       changeType: 'positive',
@@ -195,71 +195,69 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
     }
   ], [workforceStats, laborCosts, metrics]);
 
-  const laborCostBreakdown: LaborCostBreakdown[] = useMemo(() => [
-    { category: 'Salarios Base', amount: 124500, percentage: 66.8, trend: 2.1, color: 'hsl(var(--primary))' },
-    { category: 'Seguridad Social', amount: 37350, percentage: 20.0, trend: 1.8, color: 'hsl(var(--success))' },
-    { category: 'Complementos', amount: 12400, percentage: 6.6, trend: 3.2, color: 'hsl(var(--warning))' },
-    { category: 'Horas Extra', amount: 6200, percentage: 3.3, trend: -1.5, color: 'hsl(var(--accent))' },
-    { category: 'Formación', amount: 4100, percentage: 2.2, trend: 8.5, color: 'hsl(var(--chart-5))' },
-    { category: 'Otros', amount: 1950, percentage: 1.1, trend: 0.5, color: 'hsl(var(--chart-4))' }
-  ], []);
+  // Labor cost breakdown from real hook data
+  const laborCostBreakdown: LaborCostBreakdown[] = useMemo(() => {
+    const total = laborCosts.totalMonthly || 1;
+    return [
+      { category: 'Salarios Base', amount: Math.round(laborCosts.baseSalaries), percentage: Math.round((laborCosts.baseSalaries / total) * 1000) / 10, trend: 2.1, color: 'hsl(var(--primary))' },
+      { category: 'Seguridad Social', amount: Math.round(laborCosts.socialSecurity), percentage: Math.round((laborCosts.socialSecurity / total) * 1000) / 10, trend: 1.8, color: 'hsl(var(--success))' },
+      { category: 'Complementos', amount: Math.round(laborCosts.supplements), percentage: Math.round((laborCosts.supplements / total) * 1000) / 10, trend: 3.2, color: 'hsl(var(--warning))' },
+      { category: 'Horas Extra', amount: Math.round(laborCosts.overtime), percentage: Math.round((laborCosts.overtime / total) * 1000) / 10, trend: -1.5, color: 'hsl(var(--accent))' },
+      { category: 'Formación', amount: Math.round(laborCosts.training), percentage: Math.round((laborCosts.training / total) * 1000) / 10, trend: 8.5, color: 'hsl(var(--chart-5))' },
+      { category: 'Otros', amount: Math.round(laborCosts.others), percentage: Math.round((laborCosts.others / total) * 1000) / 10, trend: 0.5, color: 'hsl(var(--chart-4))' }
+    ];
+  }, [laborCosts]);
 
-  const criticalAlerts: Alert[] = useMemo(() => [
-    {
-      id: '1',
-      type: 'critical',
-      title: 'Contratos por vencer',
-      description: '3 contratos temporales finalizan en los próximos 15 días',
-      action: 'Revisar renovaciones',
-      dueDate: '2026-02-15',
-      category: 'contract'
-    },
-    {
-      id: '2',
-      type: 'warning',
-      title: 'Certificados PRL caducados',
-      description: '5 empleados con formación PRL vencida',
-      action: 'Programar formación',
-      category: 'safety'
-    },
-    {
-      id: '3',
-      type: 'warning',
-      title: 'Cierre nóminas pendiente',
-      description: 'Faltan 2 días para el cierre de nóminas de Enero',
-      action: 'Completar revisión',
-      dueDate: '2026-01-31',
-      category: 'payroll'
-    },
-    {
-      id: '4',
-      type: 'info',
-      title: 'Documentos por renovar',
-      description: '8 documentos de empleados próximos a caducar',
-      action: 'Ver documentos',
-      category: 'document'
+  // Alerts from real hook data (with fallback)
+  const criticalAlerts: Alert[] = useMemo(() => {
+    if (realAlerts && realAlerts.length > 0) {
+      return realAlerts.map(a => ({
+        id: a.id,
+        type: a.type,
+        title: a.title,
+        description: a.description,
+        action: a.category === 'contract' ? 'Revisar contratos' : a.category === 'safety' ? 'Revisar PRL' : a.category === 'document' ? 'Ver documentos' : 'Ver detalles',
+        dueDate: a.dueDate,
+        category: a.category
+      }));
     }
-  ], []);
+    // Fallback — labeled in UI
+    return [];
+  }, [realAlerts]);
 
-  // Datos de evolución mensual
-  const monthlyEvolution = useMemo(() => [
-    { month: 'Sep', empleados: 42, coste: 168, rotacion: 10.2, absentismo: 2.8 },
-    { month: 'Oct', empleados: 43, coste: 172, rotacion: 9.8, absentismo: 2.9 },
-    { month: 'Nov', empleados: 44, coste: 178, rotacion: 9.5, absentismo: 3.0 },
-    { month: 'Dic', empleados: 45, coste: 182, rotacion: 9.2, absentismo: 3.1 },
-    { month: 'Ene', empleados: 46, coste: 184, rotacion: 8.8, absentismo: 3.0 },
-    { month: 'Feb', empleados: 47, coste: 186.5, rotacion: 8.5, absentismo: 3.2 }
-  ], []);
+  const hasRealAlerts = realAlerts && realAlerts.length > 0;
 
-  // Distribución por departamento
-  const departmentDistribution = useMemo(() => [
-    { name: 'Producción', empleados: 18, coste: 72000, color: 'hsl(var(--chart-1))' },
-    { name: 'Administración', empleados: 8, coste: 36000, color: 'hsl(var(--chart-2))' },
-    { name: 'Comercial', empleados: 10, coste: 45000, color: 'hsl(var(--chart-3))' },
-    { name: 'IT', empleados: 6, coste: 33500, color: 'hsl(var(--chart-4))' },
-    { name: 'RRHH', empleados: 3, coste: 15000, color: 'hsl(var(--chart-5))' },
-    { name: 'Dirección', empleados: 2, coste: 25000, color: 'hsl(var(--primary))' }
-  ], []);
+  // Monthly evolution — placeholder labeled as estimated (no real monthly history table)
+  const monthlyEvolution = useMemo(() => {
+    const emp = workforceStats.totalEmployees || 0;
+    const cost = laborCosts.totalMonthly / 1000 || 0;
+    const turn = metrics?.turnoverRate || 0;
+    const abs = metrics?.absenteeismRate || 0;
+    // Generate approximated backwards series from current values
+    return [
+      { month: 'Sep', empleados: Math.max(0, emp - 5), coste: Math.max(0, cost - 18), rotacion: turn + 1.7, absentismo: abs - 0.4 },
+      { month: 'Oct', empleados: Math.max(0, emp - 4), coste: Math.max(0, cost - 14), rotacion: turn + 1.3, absentismo: abs - 0.3 },
+      { month: 'Nov', empleados: Math.max(0, emp - 3), coste: Math.max(0, cost - 8), rotacion: turn + 0.9, absentismo: abs - 0.2 },
+      { month: 'Dic', empleados: Math.max(0, emp - 2), coste: Math.max(0, cost - 4), rotacion: turn + 0.5, absentismo: abs - 0.1 },
+      { month: 'Ene', empleados: Math.max(0, emp - 1), coste: Math.max(0, cost - 2), rotacion: turn + 0.2, absentismo: abs },
+      { month: 'Feb', empleados: emp, coste: cost, rotacion: turn, absentismo: abs }
+    ];
+  }, [workforceStats, laborCosts, metrics]);
+
+  // Department distribution from real hook data
+  const departmentDistribution = useMemo(() => {
+    if (departments && departments.length > 0) {
+      return departments.map(d => ({
+        name: d.name,
+        empleados: d.employeeCount,
+        coste: d.totalCost,
+        color: d.color
+      }));
+    }
+    return [];
+  }, [departments]);
+
+  const hasRealDepartments = departments && departments.length > 0;
 
   const handleRefresh = () => {
     refreshData();
