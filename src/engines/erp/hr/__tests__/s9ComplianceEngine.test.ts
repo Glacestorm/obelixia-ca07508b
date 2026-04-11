@@ -9,6 +9,9 @@ import {
   evaluateDisconnectionCompliance,
   validateRemoteWorkAgreement,
   computePresenciality,
+  computeVPTScore,
+  detectVPTIncoherences,
+  DEFAULT_VPT_METHODOLOGY,
 } from '../s9ComplianceEngine';
 
 // ─── LISMI ───────────────────────────────────────────────────
