@@ -340,6 +340,44 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
 
   const getTypeConfig = (type: string) => TERMINATION_TYPES.find(t => t.value === type) || TERMINATION_TYPES[0];
 
+  // Compute readiness for selected termination
+  const selectedReadiness = selectedTermination ? computeOffboardingReadiness({
+    terminationType: (selectedTermination.termination_type as InternalTerminationType) ?? null,
+    terminationDate: selectedTermination.proposed_termination_date ?? null,
+    claveBajaSet: !!selectedTermination.termination_type,
+    employeeDataValid: !!selectedTermination.employee,
+    afiBajaGenerated: false, // TODO: check artifact table
+    afiBajaStatus: null,
+    finiquitoComputed: !!settlementSnapshot,
+    finiquitoAmount: settlementSnapshot ? (settlementSnapshot as any).totalBruto ?? null : null,
+    indemnizacionComputed: !!settlementSnapshot,
+    certificaGenerated: false,
+    certificaStatus: null,
+    evidencesCreated: !!settlementSnapshot,
+    sepeResponseRegistered: false,
+  }) : null;
+
+  // Handle real settlement calculation
+  const handleCalculateSettlement = async () => {
+    if (!selectedTermination?.employee) return;
+    const emp = selectedTermination.employee;
+    const result = await calculateSettlement({
+      terminationId: selectedTermination.id,
+      employeeId: emp.id,
+      employeeName: `${emp.first_name} ${emp.last_name}`,
+      hireDate: emp.hire_date || new Date().toISOString(),
+      terminationDate: selectedTermination.proposed_termination_date || new Date().toISOString(),
+      terminationType: selectedTermination.termination_type as InternalTerminationType,
+      annualSalary: 30000, // TODO: get from employee contract data
+      vacationDaysEntitled: 30,
+      vacationDaysTaken: 15,
+      extraPayments: 14,
+    });
+    if (result) {
+      setSettlementSnapshot(result as unknown as Record<string, unknown>);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
