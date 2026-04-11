@@ -149,6 +149,7 @@ import {
   LazyS9DisconnectionPanel,
   LazyS9RemoteWorkPanel,
   LazyS9VPTWorkspace,
+  LazyS9RetributiveAuditPanel,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
