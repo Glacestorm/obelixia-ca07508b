@@ -1,7 +1,9 @@
 /**
- * PayrollPreflightCockpit — P1.7
+ * PayrollPreflightCockpit — P1.7C
  * Transversal cockpit showing the full payroll cycle status at a glance.
  * Reads from existing engines — NO business logic duplication.
+ *
+ * P1.7C: context navigation, cross-domain blockers, last-mile badges, demo/operational mode.
  */
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,14 +16,20 @@ import {
   CheckCircle, Circle, AlertTriangle, XCircle, Clock, ArrowRight,
   RefreshCw, ShieldAlert, Loader2, ChevronDown, ChevronRight,
   ClipboardList, Calculator, ShieldCheck, Lock, Landmark, FileCheck,
-  FileText, Archive, UserMinus, Send, Euro, Gauge
+  FileText, Archive, UserMinus, Send, Euro, Gauge, Link2, Wrench,
+  Info
 } from 'lucide-react';
 import { usePayrollPreflight } from '@/hooks/erp/hr/usePayrollPreflight';
-import type { PreflightStep, Semaphore, OverallStatus, LegalDeadlineAlert } from '@/engines/erp/hr/payrollPreflightEngine';
+import { useHREnvironment } from '@/contexts/HREnvironmentContext';
+import type {
+  PreflightStep, Semaphore, OverallStatus, LegalDeadlineAlert,
+  CrossDomainBlocker, StepTargetContext, LastMileStepStatus
+} from '@/engines/erp/hr/payrollPreflightEngine';
 
 interface Props {
   companyId: string;
-  onNavigateToModule: (module: string) => void;
+  onNavigateToModule: (module: string, context?: StepTargetContext) => void;
+  mode?: 'operational' | 'demo';
 }
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -50,13 +58,28 @@ const OVERALL_STYLES: Record<OverallStatus, { label: string; variant: 'default' 
   overdue: { label: 'Vencido', variant: 'destructive' },
 };
 
-export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props) {
+const LM_STATUS_LABELS: Record<string, string> = {
+  ready: '✓',
+  not_started: '—',
+  in_progress: '…',
+  blocked: '✗',
+  unknown: '?',
+};
+
+export function PayrollPreflightCockpit({ companyId, onNavigateToModule, mode: modeProp }: Props) {
   const { preflight, isLoading, evaluate } = usePayrollPreflight(companyId);
   const [showOffboarding, setShowOffboarding] = useState(false);
+  const env = useHREnvironment();
+  const effectiveMode = modeProp ?? (env.mode === 'demo' ? 'demo' : 'operational');
+  const isDemo = effectiveMode === 'demo';
 
   useEffect(() => {
     evaluate();
   }, [evaluate]);
+
+  const handleNavigate = (module: string, context?: StepTargetContext) => {
+    onNavigateToModule(module, context);
+  };
 
   if (isLoading && !preflight) {
     return (
@@ -79,6 +102,7 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 border border-border rounded-lg px-3 py-2">
         <ShieldAlert className="h-3.5 w-3.5" />
         <span>Los pasos institucionales están en modo preparatorio. Envíos oficiales bloqueados.</span>
+        {isDemo && <Badge variant="outline" className="ml-auto text-[10px]">DEMO</Badge>}
       </div>
 
       {/* Header */}
@@ -90,7 +114,9 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
                 <Gauge className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-lg">Preflight Ciclo de Nómina</CardTitle>
+                <CardTitle className="text-lg">
+                  {isDemo ? 'Estado del Ciclo de Nómina' : 'Preflight Ciclo de Nómina'}
+                </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {preflight.completedCount}/{preflight.totalCount} pasos completados
                 </p>
@@ -119,7 +145,13 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
               <ScrollArea className="max-h-[560px]">
                 <div className="space-y-1">
                   {preflight.steps.map((step, idx) => (
-                    <StepRow key={step.id} step={step} isLast={idx === preflight.steps.length - 1} onNavigate={onNavigateToModule} />
+                    <StepRow
+                      key={step.id}
+                      step={step}
+                      isLast={idx === preflight.steps.length - 1}
+                      onNavigate={handleNavigate}
+                      isDemo={isDemo}
+                    />
                   ))}
                 </div>
 
@@ -137,7 +169,13 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
                     {showOffboarding && (
                       <div className="mt-2 space-y-1 pl-2">
                         {preflight.offboardingSteps.map((step, idx) => (
-                          <StepRow key={step.id} step={step} isLast={idx === preflight.offboardingSteps.length - 1} onNavigate={onNavigateToModule} />
+                          <StepRow
+                            key={step.id}
+                            step={step}
+                            isLast={idx === preflight.offboardingSteps.length - 1}
+                            onNavigate={handleNavigate}
+                            isDemo={isDemo}
+                          />
                         ))}
                       </div>
                     )}
@@ -164,12 +202,34 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
               <Button
                 size="sm"
                 className="mt-3 w-full"
-                onClick={() => onNavigateToModule(preflight.nextRecommendedAction.targetModule)}
+                onClick={() => handleNavigate(
+                  preflight.nextRecommendedAction.targetModule,
+                  preflight.nextRecommendedAction.targetContext,
+                )}
               >
                 Ir al módulo <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             </CardContent>
           </Card>
+
+          {/* Cross-domain blockers (operational mode only) */}
+          {!isDemo && preflight.crossDomainBlockers.length > 0 && (
+            <Card className="border-amber-500/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-amber-600">
+                  <Link2 className="h-4 w-4" />
+                  Bloqueos cruzados ({preflight.crossDomainBlockers.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {preflight.crossDomainBlockers.map(b => (
+                    <CrossBlockerRow key={b.id} blocker={b} onNavigate={handleNavigate} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Legal alerts */}
           {preflight.legalAlerts.length > 0 && (
@@ -183,7 +243,7 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
               <CardContent>
                 <div className="space-y-2">
                   {preflight.legalAlerts.map(alert => (
-                    <AlertRow key={alert.id} alert={alert} />
+                    <AlertRow key={alert.id} alert={alert} isDemo={isDemo} />
                   ))}
                 </div>
               </CardContent>
@@ -201,12 +261,21 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
               </CardHeader>
               <CardContent>
                 <p className="text-sm font-medium">{preflight.firstBlockedStep.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">{preflight.firstBlockedStep.blockReason}</p>
+                <p className="text-xs text-destructive mt-0.5">{preflight.firstBlockedStep.blockReason}</p>
+                {preflight.firstBlockedStep.suggestedFix && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Wrench className="h-3 w-3" />
+                    {preflight.firstBlockedStep.suggestedFix}
+                  </p>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
                   className="mt-2 w-full"
-                  onClick={() => onNavigateToModule(preflight.firstBlockedStep!.targetModule)}
+                  onClick={() => handleNavigate(
+                    preflight.firstBlockedStep!.targetModule,
+                    preflight.firstBlockedStep!.targetContext,
+                  )}
                 >
                   Resolver
                 </Button>
@@ -221,7 +290,12 @@ export function PayrollPreflightCockpit({ companyId, onNavigateToModule }: Props
 
 // ── Step row component ──
 
-function StepRow({ step, isLast, onNavigate }: { step: PreflightStep; isLast: boolean; onNavigate: (m: string) => void }) {
+function StepRow({ step, isLast, onNavigate, isDemo }: {
+  step: PreflightStep;
+  isLast: boolean;
+  onNavigate: (m: string, ctx?: StepTargetContext) => void;
+  isDemo: boolean;
+}) {
   const statusStyle = STATUS_STYLES[step.status] || STATUS_STYLES.pending;
   const StatusIcon = statusStyle.icon;
   const StepIcon = ICON_MAP[step.icon] || Circle;
@@ -235,8 +309,8 @@ function StepRow({ step, isLast, onNavigate }: { step: PreflightStep; isLast: bo
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-center gap-3 pb-3 min-w-0">
-        <StepIcon className={cn("h-4 w-4 shrink-0", statusStyle.color)} />
+      <div className="flex-1 flex items-start gap-3 pb-3 min-w-0">
+        <StepIcon className={cn("h-4 w-4 shrink-0 mt-0.5", statusStyle.color)} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className={cn("text-sm font-medium", step.status === 'completed' && 'text-muted-foreground line-through')}>{step.label}</span>
@@ -247,18 +321,28 @@ function StepRow({ step, isLast, onNavigate }: { step: PreflightStep; isLast: bo
           {step.blockReason && (
             <p className="text-xs text-destructive mt-0.5">{step.blockReason}</p>
           )}
+          {!isDemo && step.suggestedFix && step.status !== 'completed' && (
+            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+              <Wrench className="h-3 w-3 shrink-0" />
+              {step.suggestedFix}
+            </p>
+          )}
           {step.deadline && (
             <p className="text-xs text-muted-foreground mt-0.5">Plazo: {step.deadline}</p>
           )}
+          {/* Last-mile status badges (operational only) */}
+          {!isDemo && step.lastMileStatus && step.isInstitutional && (
+            <LastMileBadges status={step.lastMileStatus} />
+          )}
         </div>
 
-        <StatusIcon className={cn("h-4 w-4 shrink-0", statusStyle.color)} />
+        <StatusIcon className={cn("h-4 w-4 shrink-0 mt-0.5", statusStyle.color)} />
 
         <Button
           variant="ghost"
           size="sm"
           className="h-7 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={() => onNavigate(step.targetModule)}
+          onClick={() => onNavigate(step.targetModule, step.targetContext)}
         >
           Ir <ArrowRight className="h-3 w-3 ml-1" />
         </Button>
@@ -267,9 +351,74 @@ function StepRow({ step, isLast, onNavigate }: { step: PreflightStep; isLast: bo
   );
 }
 
+// ── Last-mile badges ──
+
+function LastMileBadges({ status }: { status: LastMileStepStatus }) {
+  const items = [
+    { key: 'handoff', label: 'H' },
+    { key: 'format', label: 'F' },
+    { key: 'credential', label: 'C' },
+    { key: 'sandbox', label: 'S' },
+  ] as const;
+
+  return (
+    <div className="flex items-center gap-1 mt-1">
+      <span className="text-[10px] text-muted-foreground mr-1">LM:</span>
+      {items.map(item => {
+        const val = status[item.key];
+        const isOk = val === 'ready' || val === 'completed';
+        const isBlocked = val === 'blocked';
+        return (
+          <span
+            key={item.key}
+            className={cn(
+              "text-[9px] px-1 py-0 rounded font-mono",
+              isOk ? "bg-emerald-500/15 text-emerald-600" :
+              isBlocked ? "bg-destructive/15 text-destructive" :
+              "bg-muted text-muted-foreground"
+            )}
+            title={`${item.key}: ${val}`}
+          >
+            {item.label}{LM_STATUS_LABELS[val] || '?'}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Cross-domain blocker row ──
+
+function CrossBlockerRow({ blocker, onNavigate }: {
+  blocker: CrossDomainBlocker;
+  onNavigate: (m: string, ctx?: StepTargetContext) => void;
+}) {
+  return (
+    <div className="p-2 rounded-lg border border-amber-500/20 bg-amber-500/5 space-y-1">
+      <div className="flex items-center gap-1.5">
+        <Badge variant="outline" className="text-[9px] px-1 py-0">{blocker.blockDomain}</Badge>
+        <span className="text-xs font-medium">{blocker.affectedStepLabel}</span>
+      </div>
+      <p className="text-[11px] text-muted-foreground">{blocker.reason}</p>
+      <div className="flex items-center gap-1.5">
+        <Wrench className="h-3 w-3 text-muted-foreground shrink-0" />
+        <span className="text-[11px] text-foreground">{blocker.suggestedFix}</span>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 text-[11px] px-2 mt-1"
+        onClick={() => onNavigate(blocker.suggestedTarget, blocker.suggestedTargetContext)}
+      >
+        Ir a {blocker.dependsOnStepLabel} <ArrowRight className="h-3 w-3 ml-1" />
+      </Button>
+    </div>
+  );
+}
+
 // ── Alert row component ──
 
-function AlertRow({ alert }: { alert: LegalDeadlineAlert }) {
+function AlertRow({ alert, isDemo }: { alert: LegalDeadlineAlert; isDemo: boolean }) {
   return (
     <div className="flex items-start gap-2">
       <div className={cn("w-2 h-2 rounded-full mt-1.5 shrink-0", SEMAPHORE_STYLES[alert.semaphore])} />
@@ -278,6 +427,12 @@ function AlertRow({ alert }: { alert: LegalDeadlineAlert }) {
         <p className={cn("text-xs", alert.semaphore === 'red' ? 'text-destructive' : 'text-muted-foreground')}>
           {alert.description}
         </p>
+        {!isDemo && alert.regulatoryBasis && (
+          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+            <Info className="h-2.5 w-2.5 shrink-0" />
+            {alert.regulatoryBasis}
+          </p>
+        )}
       </div>
     </div>
   );

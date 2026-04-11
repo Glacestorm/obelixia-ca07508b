@@ -1,7 +1,8 @@
 /**
  * HRPayrollPeriodManager — V2-ES.7 Paso 3: cierre formal + resumen ejecutivo
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { usePayrollPreflight } from '@/hooks/erp/hr/usePayrollPreflight';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import {
   Calendar, Plus, Lock, Unlock, RefreshCw, CheckCircle,
   AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2, Send,
-  ShieldCheck, RotateCcw, Euro, Users, FileText, Info, Gauge
+  ShieldCheck, RotateCcw, Euro, Users, FileText, Info, Gauge, ArrowRight
 } from 'lucide-react';
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
 import type { PeriodClosureSnapshot } from '@/engines/erp/hr/payrollRunEngine';
@@ -187,16 +188,9 @@ export function HRPayrollPeriodManager({
         </div>
       </div>
 
-      {/* P1.7 — Mini preflight banner */}
+      {/* P1.7C — Enriched mini preflight card */}
       {onNavigateToPreflight && periods.length > 0 && (
-        <button
-          onClick={onNavigateToPreflight}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
-        >
-          <Gauge className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-sm font-medium text-foreground">Preflight Nómina</span>
-          <span className="text-xs text-muted-foreground ml-auto">Ver cockpit completo del ciclo →</span>
-        </button>
+        <MiniPreflightCard companyId={companyId} onNavigateToPreflight={onNavigateToPreflight} />
       )}
 
       {periods.length === 0 && !isLoading && (
@@ -550,6 +544,79 @@ export function HRPayrollPeriodManager({
           onSuccess={onRefresh}
         />
       )}
+    </div>
+  );
+}
+
+// ── Mini Preflight Card for Period Manager ──
+
+function MiniPreflightCard({ companyId, onNavigateToPreflight }: { companyId: string; onNavigateToPreflight: () => void }) {
+  const { preflight, evaluate } = usePayrollPreflight(companyId);
+
+  useEffect(() => {
+    evaluate();
+  }, [evaluate]);
+
+  if (!preflight) {
+    return (
+      <button
+        onClick={onNavigateToPreflight}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+      >
+        <Gauge className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm font-medium text-foreground">Preflight Nómina</span>
+        <span className="text-xs text-muted-foreground ml-auto">Ver cockpit completo →</span>
+      </button>
+    );
+  }
+
+  const semColor = preflight.overallStatus === 'on_track' ? 'bg-emerald-500' :
+    preflight.overallStatus === 'at_risk' ? 'bg-amber-500' : 'bg-destructive';
+
+  return (
+    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 space-y-2">
+      <div className="flex items-center gap-2">
+        <Gauge className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm font-medium text-foreground">Preflight Nómina</span>
+        <div className={`w-2 h-2 rounded-full ${semColor} ml-auto`} />
+        <span className="text-xs text-muted-foreground">
+          {preflight.completedCount}/{preflight.totalCount}
+        </span>
+      </div>
+
+      {/* Mini progress bar */}
+      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+        <div
+          className="h-full bg-primary rounded-full transition-all"
+          style={{ width: `${preflight.completionScore}%` }}
+        />
+      </div>
+
+      {/* First blocker or next action */}
+      <div className="flex items-center gap-2 text-xs">
+        {preflight.firstBlockedStep ? (
+          <>
+            <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
+            <span className="text-destructive truncate">{preflight.firstBlockedStep.blockReason || preflight.firstBlockedStep.label}</span>
+          </>
+        ) : (
+          <>
+            <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+            <span className="text-muted-foreground truncate">{preflight.nextRecommendedAction.label}</span>
+          </>
+        )}
+      </div>
+
+      {/* CTA */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full text-xs h-7"
+        onClick={onNavigateToPreflight}
+      >
+        {preflight.firstPendingStep ? 'Reanudar ciclo' : 'Ver cockpit completo'}
+        <ArrowRight className="h-3 w-3 ml-1" />
+      </Button>
     </div>
   );
 }

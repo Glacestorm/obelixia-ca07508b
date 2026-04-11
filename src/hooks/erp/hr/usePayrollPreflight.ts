@@ -1,11 +1,23 @@
 /**
- * usePayrollPreflight — P1.7
+ * usePayrollPreflight — P1.7C
  * Aggregates data from existing hooks/engines to feed payrollPreflightEngine.
  * Zero new business logic — pure aggregation layer.
+ *
+ * P1.7C: dynamic deadlines via regulatoryCalendarEngine, last-mile readiness, periodId context.
  */
-import { useMemo, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { buildPreflightResult, type PreflightInput, type PreflightResult } from '@/engines/erp/hr/payrollPreflightEngine';
+import {
+  buildPreflightResult,
+  type PreflightInput,
+  type PreflightResult,
+  type LastMileStepStatus,
+} from '@/engines/erp/hr/payrollPreflightEngine';
+import {
+  computeRegulatoryCalendar,
+  type RegulatoryCalendarContext,
+} from '@/components/erp/hr/shared/regulatoryCalendarEngine';
+import { EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
 
 export interface UsePayrollPreflightReturn {
   preflight: PreflightResult | null;
@@ -23,10 +35,9 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
 
     try {
       const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-      // Fetch period + incidents + run status in parallel
-      const [periodRes, incidentRes, runsRes, terminationRes] = await Promise.all([
+      // Fetch period + incidents + run status + terminations + active employees in parallel
+      const [periodRes, incidentRes, runsRes, terminationRes, activeEmpRes, contractsRes] = await Promise.all([
         supabase
           .from('erp_hr_payroll_periods' as any)
           .select('id, status, metadata')
@@ -52,12 +63,25 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
           .select('id', { count: 'exact', head: true })
           .eq('company_id', companyId)
           .eq('status', 'terminated'),
+        supabase
+          .from('erp_hr_employees' as any)
+          .select('id', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('status', 'active'),
+        supabase
+          .from('erp_hr_contracts' as any)
+          .select('id, status, start_date, end_date')
+          .eq('company_id', companyId)
+          .eq('status', 'active'),
       ]);
 
       const period = periodRes.data as any;
+      const resolvedPeriodId = periodId || period?.id;
       const incidents = (incidentRes.data || []) as any[];
       const latestRun = runsRes.data as any;
       const hasTerminations = (terminationRes.count ?? 0) > 0;
+      const hasActiveEmployees = (activeEmpRes.count ?? 0) > 0;
+      const contracts = (contractsRes.data || []) as any[];
 
       // Derive incident counts
       const incidentCounts = {
@@ -67,18 +91,84 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
         applied: incidents.filter((i: any) => i.status === 'applied').length,
       };
 
-      // Check artifacts from metadata or defaults
+      // Check artifacts from metadata
       const meta = (period?.metadata || {}) as any;
+
+      // ── Dynamic deadlines via regulatoryCalendarEngine ──
+      const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      // Contracts expiring within 30 days
+      const thirtyDaysLater = new Date();
+      thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+      const expiring = contracts.filter((c: any) => {
+        if (!c.end_date) return false;
+        const end = new Date(c.end_date);
+        return end >= now && end <= thirtyDaysLater;
+      });
+
+      // Recent contracts for pending communications
+      const fifteenDaysAgo = new Date();
+      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+      const recentContracts = contracts.filter((c: any) => {
+        if (!c.start_date) return false;
+        const start = new Date(c.start_date);
+        return start >= fifteenDaysAgo && start <= now;
+      });
+
+      const calendarCtx: RegulatoryCalendarContext = {
+        now,
+        holidays: EMPTY_CALENDAR,
+        hasActiveEmployees,
+        currentPeriod,
+        pendingContractCommunications: recentContracts.length,
+        earliestPendingContractDate: recentContracts.length > 0
+          ? recentContracts.sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())[0].start_date
+          : undefined,
+        contractsExpiringSoon: expiring.length,
+        earliestExpirationDate: expiring.length > 0
+          ? expiring.sort((a: any, b: any) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime())[0].end_date
+          : undefined,
+        fiscalYear: now.getFullYear(),
+        closedPayrollPeriodsCount: 0,
+      };
+
+      const calendarResult = computeRegulatoryCalendar(calendarCtx);
+
+      // Map regulatory deadlines to preflight format
+      const regulatoryDeadlines = calendarResult.deadlines.map(d => ({
+        id: d.id,
+        label: d.label,
+        deadline: d.deadlineDate.toISOString().split('T')[0],
+        domain: mapRegDomainToStepDomain(d.domain),
+        regulatoryBasis: d.regulatoryBasis,
+      }));
+
+      // ── Last-mile readiness (best-effort from metadata) ──
+      const lastMileReadiness: Record<string, LastMileStepStatus> = {};
+      const lmMeta = meta.last_mile_readiness as Record<string, any> | undefined;
+      if (lmMeta) {
+        for (const [key, val] of Object.entries(lmMeta)) {
+          if (val && typeof val === 'object') {
+            lastMileReadiness[key] = {
+              handoff: val.handoff || 'unknown',
+              format: val.format || 'unknown',
+              credential: val.credential || 'unknown',
+              sandbox: val.sandbox || 'unknown',
+            };
+          }
+        }
+      }
 
       const input: PreflightInput = {
         periodStatus: period?.status || 'draft',
+        periodId: resolvedPeriodId,
         incidentCounts,
         latestRunStatus: latestRun?.status || null,
         preCloseBlockers: meta.pre_close_blockers ?? 0,
         preCloseWarnings: meta.pre_close_warnings ?? 0,
         paymentPhase: meta.payment_phase || 'not_applicable',
 
-        // SS — derive from metadata flags
+        // SS
         fanGenerated: !!meta.fan_generated,
         fanSubmitted: !!meta.fan_submitted,
         rlcConfirmed: !!meta.rlc_confirmed,
@@ -104,8 +194,9 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
         terminationFiniquitoCompleted: !!meta.termination_finiquito_completed,
         terminationCertificadoCompleted: !!meta.termination_certificado_completed,
 
-        // Regulatory deadlines (simplified — real data from regulatory calendar)
-        regulatoryDeadlines: buildDefaultDeadlines(now),
+        // Dynamic deadlines
+        regulatoryDeadlines,
+        lastMileReadiness: Object.keys(lastMileReadiness).length > 0 ? lastMileReadiness : undefined,
         now,
       };
 
@@ -113,7 +204,6 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       setPreflight(result);
     } catch (err) {
       console.error('[usePayrollPreflight] error:', err);
-      // Return minimal result on error
       const fallbackInput: PreflightInput = {
         periodStatus: 'draft',
         incidentCounts: { total: 0, pending: 0, validated: 0, applied: 0 },
@@ -139,24 +229,12 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
   return { preflight, isLoading, evaluate };
 }
 
-/** Default regulatory deadlines based on Spanish normative calendar */
-function buildDefaultDeadlines(now: Date): PreflightInput['regulatoryDeadlines'] {
-  const year = now.getFullYear();
-  const month = now.getMonth(); // 0-indexed = previous month's deadlines
-  const nextMonth = month + 1; // current period deadlines
-
-  return [
-    {
-      id: 'tgss_cotizacion',
-      label: 'Cotización TGSS (último día hábil)',
-      deadline: new Date(year, nextMonth, 0).toISOString().split('T')[0], // last day of current month
-      domain: 'ss_bases',
-    },
-    {
-      id: 'modelo_111',
-      label: 'Modelo 111 (día 20)',
-      deadline: `${year}-${String(nextMonth + 1).padStart(2, '0')}-20`,
-      domain: 'irpf_111',
-    },
-  ];
+/** Map regulatory calendar domains to preflight step domains */
+function mapRegDomainToStepDomain(domain: string): string {
+  switch (domain) {
+    case 'tgss_siltra': return 'ss_bases';
+    case 'contrata_sepe': return 'ss_confirmation';
+    case 'aeat': return 'irpf_111';
+    default: return domain;
+  }
 }
