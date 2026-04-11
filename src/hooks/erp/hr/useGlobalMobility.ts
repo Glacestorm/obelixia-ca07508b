@@ -474,6 +474,29 @@ export function useGlobalMobility(companyId: string) {
     fetchAssignments();
   }, [fetchAssignments]);
 
+  // --- Delete assignment (draft/cancelled only) ---
+  const deleteAssignment = useCallback(async (id: string) => {
+    const current = assignments.find(a => a.id === id);
+    if (!current || !['draft', 'cancelled'].includes(current.status)) {
+      toast.error('Solo se pueden eliminar asignaciones en borrador o canceladas');
+      return false;
+    }
+    try {
+      const { error } = await supabase
+        .from('hr_mobility_assignments' as any)
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('Asignación eliminada');
+      await fetchAssignments();
+      return true;
+    } catch (err) {
+      console.error('[useGlobalMobility] deleteAssignment:', err);
+      toast.error('Error eliminando asignación');
+      return false;
+    }
+  }, [assignments, fetchAssignments]);
+
   return {
     assignments,
     loading,
@@ -483,6 +506,7 @@ export function useGlobalMobility(companyId: string) {
     createAssignment,
     updateAssignment,
     updateStatus,
+    deleteAssignment,
     fetchDocuments,
     addDocument,
     updateDocument,

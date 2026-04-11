@@ -25,6 +25,8 @@ interface Props {
   assignment: MobilityAssignment;
   onBack: () => void;
   onStatusChange: (id: string, status: AssignmentStatus) => void;
+  onEdit?: () => void;
+  onDelete?: (id: string) => void;
   fetchDocuments: (id: string) => Promise<MobilityDocument[]>;
   addDocument: (doc: Partial<MobilityDocument>) => Promise<MobilityDocument | null>;
   updateDocument: (id: string, updates: Partial<MobilityDocument>) => Promise<boolean>;
@@ -32,6 +34,7 @@ interface Props {
   upsertCostProjection: (p: Partial<MobilityCostProjection>) => Promise<MobilityCostProjection | null>;
   fetchAuditLog: (id: string) => Promise<MobilityAuditEntry[]>;
   validTransitions: Record<AssignmentStatus, AssignmentStatus[]>;
+  employeeName?: string;
 }
 
 const JURISDICTION_LABELS = [
