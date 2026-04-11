@@ -217,6 +217,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         <TabsContent value="export">
           <ExportHubPanel companyId={companyId} adapters={hub.adapters} />
         </TabsContent>
+        <TabsContent value="ultima-milla">
+          <LastMileOperationsDashboard companyId={companyId} />
+        </TabsContent>
         <TabsContent value="ficheros-tgss">
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <HRFileGeneratorPanel
