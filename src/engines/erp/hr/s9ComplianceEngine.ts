@@ -15,6 +15,12 @@ import type {
   DisconnectionMetrics,
   RemoteWorkValidation,
   RemoteWorkMandatoryPoint,
+  VPTMethodology,
+  VPTFactorScores,
+  VPTFactor,
+  VPTScoreBreakdown,
+  VPTIncoherence,
+  VPTValuation,
 } from '@/types/s9-compliance';
 
 // ─── LISMI / LGD ─────────────────────────────────────────────
