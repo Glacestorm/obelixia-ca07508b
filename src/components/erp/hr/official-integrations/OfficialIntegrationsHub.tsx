@@ -36,6 +36,7 @@ import { useInstitutionalSubmission } from '@/hooks/erp/hr/useInstitutionalSubmi
 import { HRFilingsPanel, HRFileGeneratorPanel } from '@/components/hr/filings';
 import { LastMileOperationsDashboard } from './LastMileOperationsDashboard';
 import { OrganismReadinessPanel } from './OrganismReadinessPanel';
+import { useCredentialOnboarding } from '@/hooks/erp/hr/useCredentialOnboarding';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
@@ -53,6 +54,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
     instSubmissions.filter(s => !['reconciled', 'cancelled'].includes(s.institutional_status)).length,
     [instSubmissions]
   );
+  const { goLiveReadyCount } = useCredentialOnboarding(companyId);
 
   // Data sources for proactive alerts at hub level
   const { summary: readinessSummary } = useOfficialReadiness(companyId);
@@ -157,7 +159,12 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
           <TabsTrigger value="ficheros-tgss" className="text-xs">Ficheros TGSS</TabsTrigger>
           <TabsTrigger value="ultima-milla" className="text-xs">Última Milla</TabsTrigger>
-          <TabsTrigger value="go-live" className="text-xs">Go-Live</TabsTrigger>
+          <TabsTrigger value="go-live" className="text-xs relative">
+            Go-Live
+            <Badge variant={goLiveReadyCount > 0 ? 'default' : 'outline'} className={`absolute -top-1.5 -right-1.5 h-4 min-w-4 text-[8px] px-1 flex items-center justify-center ${goLiveReadyCount > 0 ? 'bg-green-600' : ''}`}>
+              {goLiveReadyCount}/5
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="export" className="text-xs">Exportación</TabsTrigger>
         </TabsList>
 

@@ -1,9 +1,10 @@
 /**
- * officialFormatValidatorEngine.ts — LM3: Official Format Validators
+ * officialFormatValidatorEngine.ts — LM4: Official Format Validators
  *
- * Basic structural validators for official file formats.
- * Honest status: `spec_aligned` only if basic structure passes.
- * Does NOT claim production readiness.
+ * Structural validators for official file formats with deeper checks.
+ * Honest status: `spec_aligned` only if deeper structure passes.
+ * `uat_confirmed` requires real organism response evidence.
+ * Does NOT claim production readiness without real evidence.
  */
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ export type FormatValidationStatus =
   | 'partially_aligned'
   | 'spec_aligned'
   | 'sandbox_validated'
+  | 'uat_confirmed'
   | 'rejected';
 
 export interface FormatValidationResult {
@@ -27,6 +29,22 @@ export interface FormatValidationResult {
 function result(status: FormatValidationStatus, errors: string[], warnings: string[], checked: number, passed: number): FormatValidationResult {
   return { status, errors, warnings, fieldsChecked: checked, fieldsPassed: passed, validatedAt: new Date().toISOString() };
 }
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function isValidNIF(nif: unknown): boolean {
+  if (typeof nif !== 'string') return false;
+  return /^[0-9XYZKLM][0-9]{7}[A-Z]$/i.test(nif.trim()) || /^[A-Z][0-9]{7}[A-Z0-9]$/i.test(nif.trim());
+}
+
+function isValidNAF(naf: unknown): boolean {
+  if (typeof naf !== 'string') return false;
+  return /^[0-9]{12}$/.test(naf.replace(/\s/g, ''));
+}
+
+const VALID_CONTRATA_CODES = ['100', '109', '130', '150', '189', '200', '209', '230', '250', '289', '300', '309', '401', '402', '410', '420', '421', '430', '431', '441', '450', '451', '452', '500', '501', '502', '510', '520', '540'];
+const VALID_CERTIFICA_CAUSAS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '69', '77', '78', '91', '92', '93', '94'];
+const VALID_190_CLAVES = ['A', 'B', 'B01', 'B02', 'B03', 'C', 'D', 'E', 'F', 'G', 'G01', 'G02', 'G03', 'H', 'I', 'J', 'K', 'L'];
 
 // ── FAN / TGSS Validator ────────────────────────────────────────────────────
 
@@ -64,8 +82,16 @@ export function validateFANStructure(payload: Record<string, unknown> | null): F
 
   // Company NIF
   checked++;
-  if (payload.nifEmpresa || payload.companyNif) {
+  const nifEmpresa = payload.nifEmpresa || payload.companyNif;
+  if (nifEmpresa) {
     passed++;
+    // Deep: NIF format
+    checked++;
+    if (isValidNIF(nifEmpresa)) {
+      passed++;
+    } else {
+      warnings.push('NIF empresa no tiene formato válido (esperado: 8 dígitos + letra o CIF)');
+    }
   } else {
     errors.push('NIF empresa no presente');
   }
@@ -76,6 +102,38 @@ export function validateFANStructure(payload: Record<string, unknown> | null): F
     passed++;
   } else {
     warnings.push('Periodo no especificado');
+  }
+
+  // Deep: NAF format per worker
+  if (Array.isArray(workers) && workers.length > 0) {
+    checked++;
+    const workersWithNAF = (workers as Record<string, unknown>[]).filter(w => isValidNAF(w.naf || w.NAF || w.nss));
+    if (workersWithNAF.length === workers.length) {
+      passed++;
+    } else {
+      warnings.push(`${workers.length - workersWithNAF.length}/${workers.length} trabajadores sin NAF válido (12 dígitos)`);
+    }
+
+    // Deep: IPF per worker
+    checked++;
+    const workersWithIPF = (workers as Record<string, unknown>[]).filter(w => w.ipf || w.IPF || w.nifTrabajador);
+    if (workersWithIPF.length === workers.length) {
+      passed++;
+    } else {
+      warnings.push(`${workers.length - workersWithIPF.length}/${workers.length} trabajadores sin IPF`);
+    }
+
+    // Deep: Action code (A/B/V)
+    checked++;
+    const validActions = ['A', 'B', 'V', 'a', 'b', 'v'];
+    const workersWithAction = (workers as Record<string, unknown>[]).filter(w =>
+      validActions.includes(String(w.accion || w.action || w.tipoAccion || ''))
+    );
+    if (workersWithAction.length === workers.length) {
+      passed++;
+    } else {
+      warnings.push(`${workers.length - workersWithAction.length}/${workers.length} trabajadores sin código acción válido (A/B/V)`);
+    }
   }
 
   const status: FormatValidationStatus = errors.length === 0
@@ -96,29 +154,44 @@ export function validateContratXMLStructure(payload: Record<string, unknown> | n
 
   // Required: NIF empresa
   checked++;
-  if (payload.nifEmpresa || payload.cifEmpresa || payload.empresaNif) {
+  const nifEmp = payload.nifEmpresa || payload.cifEmpresa || payload.empresaNif;
+  if (nifEmp) {
     passed++;
+    checked++;
+    if (isValidNIF(nifEmp)) { passed++; }
+    else { warnings.push('NIF/CIF empresa no tiene formato estándar'); }
   } else {
     errors.push('Campo obligatorio: NIF/CIF empresa');
   }
 
   // Required: NIF trabajador
   checked++;
-  if (payload.nifTrabajador || payload.trabajadorNif || payload.workerNif) {
+  const nifTrab = payload.nifTrabajador || payload.trabajadorNif || payload.workerNif;
+  if (nifTrab) {
     passed++;
+    checked++;
+    if (isValidNIF(nifTrab)) { passed++; }
+    else { warnings.push('NIF trabajador no tiene formato estándar'); }
   } else {
     errors.push('Campo obligatorio: NIF trabajador');
   }
 
-  // Required: Código contrato
+  // Required: Código contrato — validate against official catalog
   checked++;
-  if (payload.codigoContrato || payload.contractCode || payload.tipoContrato) {
+  const contractCode = String(payload.codigoContrato || payload.contractCode || payload.tipoContrato || '');
+  if (contractCode) {
     passed++;
+    checked++;
+    if (VALID_CONTRATA_CODES.includes(contractCode)) {
+      passed++;
+    } else {
+      warnings.push(`Código contrato '${contractCode}' no encontrado en catálogo oficial SEPE (${VALID_CONTRATA_CODES.length} códigos)`);
+    }
   } else {
     errors.push('Campo obligatorio: código de contrato');
   }
 
-  // Required: CNO (Clasificación Nacional de Ocupaciones)
+  // Required: CNO
   checked++;
   if (payload.cno || payload.ocupacion) {
     passed++;
@@ -126,10 +199,17 @@ export function validateContratXMLStructure(payload: Record<string, unknown> | n
     errors.push('Campo obligatorio: CNO');
   }
 
-  // Required: Fecha inicio
+  // Required: Fecha inicio — date format
   checked++;
-  if (payload.fechaInicio || payload.startDate) {
+  const fechaInicio = String(payload.fechaInicio || payload.startDate || '');
+  if (fechaInicio) {
     passed++;
+    checked++;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fechaInicio)) {
+      passed++;
+    } else {
+      warnings.push(`Fecha inicio '${fechaInicio}' no cumple formato YYYY-MM-DD`);
+    }
   } else {
     errors.push('Campo obligatorio: fecha de inicio');
   }
@@ -160,8 +240,14 @@ export function validateBOE111Structure(payload: Record<string, unknown> | null)
 
   // Declarante (type 1 record)
   checked++;
-  if (payload.declarante || payload.nifDeclarante) {
+  const declarante = payload.declarante || payload.nifDeclarante;
+  if (declarante) {
     passed++;
+    // Deep: NIF format
+    checked++;
+    const nifDec = typeof declarante === 'object' ? (declarante as Record<string, unknown>).nif : declarante;
+    if (isValidNIF(nifDec)) { passed++; }
+    else { warnings.push('NIF declarante no tiene formato válido'); }
   } else {
     errors.push('Falta registro tipo 1 (declarante)');
   }
@@ -175,10 +261,17 @@ export function validateBOE111Structure(payload: Record<string, unknown> | null)
     errors.push('Sin registros tipo 2 (perceptores)');
   }
 
-  // Ejercicio
+  // Ejercicio — must be 4-digit year
   checked++;
-  if (payload.ejercicio || payload.fiscalYear) {
+  const ejercicio = String(payload.ejercicio || payload.fiscalYear || '');
+  if (ejercicio) {
     passed++;
+    checked++;
+    if (/^\d{4}$/.test(ejercicio) && Number(ejercicio) >= 2000 && Number(ejercicio) <= 2099) {
+      passed++;
+    } else {
+      warnings.push(`Ejercicio '${ejercicio}' no es un año válido (4 dígitos, 2000-2099)`);
+    }
   } else {
     errors.push('Ejercicio fiscal no especificado');
   }
@@ -205,6 +298,20 @@ export function validateBOE111Structure(payload: Record<string, unknown> | null)
     warnings.push('Totales de retenciones/bases no disponibles para validar');
   }
 
+  // Deep: Record length hint (BOE 111 = 250 chars fixed per record)
+  checked++;
+  const rawRecords = payload.rawRecords || payload.registrosBrutos;
+  if (Array.isArray(rawRecords)) {
+    const invalidLength = (rawRecords as string[]).filter(r => typeof r === 'string' && r.length !== 250);
+    if (invalidLength.length === 0) {
+      passed++;
+    } else {
+      warnings.push(`${invalidLength.length} registros no tienen longitud fija 250 chars (spec BOE)`);
+    }
+  } else {
+    // Not available — informational only
+  }
+
   const status: FormatValidationStatus = errors.length === 0
     ? (warnings.length === 0 ? 'spec_aligned' : 'partially_aligned')
     : (passed >= 2 ? 'partially_aligned' : 'rejected');
@@ -223,8 +330,13 @@ export function validateBOE190Structure(payload: Record<string, unknown> | null)
 
   // Declarante
   checked++;
-  if (payload.declarante || payload.nifDeclarante) {
+  const declarante = payload.declarante || payload.nifDeclarante;
+  if (declarante) {
     passed++;
+    checked++;
+    const nifDec = typeof declarante === 'object' ? (declarante as Record<string, unknown>).nif : declarante;
+    if (isValidNIF(nifDec)) { passed++; }
+    else { warnings.push('NIF declarante no tiene formato válido'); }
   } else {
     errors.push('Falta registro tipo 1 (declarante)');
   }
@@ -244,14 +356,44 @@ export function validateBOE190Structure(payload: Record<string, unknown> | null)
     } else {
       warnings.push(`${perceptores.length - withClaves.length} perceptores sin clave/subclave`);
     }
+
+    // Deep: Validate clave values against official catalog
+    checked++;
+    const validClaves = withClaves.filter(p => {
+      const clave = String(p.clave || p.clavePercepcion || '').toUpperCase();
+      return VALID_190_CLAVES.includes(clave);
+    });
+    if (validClaves.length === withClaves.length) {
+      passed++;
+    } else {
+      warnings.push(`${withClaves.length - validClaves.length} perceptores con clave no válida (catálogo: ${VALID_190_CLAVES.slice(0, 5).join(',')}...)`);
+    }
+
+    // Deep: Subclave format
+    checked++;
+    const withSubclave = (perceptores as Record<string, unknown>[]).filter(p => p.subclave);
+    if (withSubclave.length > 0) {
+      const validSubclaves = withSubclave.filter(p => /^[0-9]{2}$/.test(String(p.subclave)));
+      if (validSubclaves.length === withSubclave.length) {
+        passed++;
+      } else {
+        warnings.push(`${withSubclave.length - validSubclaves.length} subclaves no tienen formato 2 dígitos`);
+      }
+    } else {
+      passed++; // subclave is optional
+    }
   } else {
     errors.push('Sin registros tipo 2 (perceptores con clave/subclave)');
   }
 
   // Ejercicio anual
   checked++;
-  if (payload.ejercicio || payload.fiscalYear) {
+  const ejercicio = String(payload.ejercicio || payload.fiscalYear || '');
+  if (ejercicio) {
     passed++;
+    checked++;
+    if (/^\d{4}$/.test(ejercicio) && Number(ejercicio) >= 2000) { passed++; }
+    else { warnings.push(`Ejercicio '${ejercicio}' no es un año válido`); }
   } else {
     errors.push('Ejercicio fiscal no especificado');
   }
@@ -280,18 +422,37 @@ export function validateCertificaPayload(payload: Record<string, unknown> | null
   const warnings: string[] = [];
   let checked = 0, passed = 0;
 
-  // Causa baja SEPE
+  // Causa baja SEPE — validate against official codes
   checked++;
-  if (payload.causaBaja || payload.terminationReason) {
+  const causaBaja = String(payload.causaBaja || payload.terminationReason || '');
+  if (causaBaja) {
     passed++;
+    checked++;
+    if (VALID_CERTIFICA_CAUSAS.includes(causaBaja)) {
+      passed++;
+    } else {
+      warnings.push(`Causa baja '${causaBaja}' no encontrada en las ${VALID_CERTIFICA_CAUSAS.length} causas oficiales SEPE`);
+    }
   } else {
     errors.push('Causa de baja SEPE no especificada');
   }
 
-  // Bases cotización últimos 180 días
+  // Bases cotización últimos 180 días — require ≥6 months
   checked++;
   const bases = payload.basesCotizacion || payload.contributionBases;
-  if (bases && (Array.isArray(bases) ? bases.length > 0 : true)) {
+  if (bases && Array.isArray(bases)) {
+    if (bases.length > 0) {
+      passed++;
+      checked++;
+      if (bases.length >= 6) {
+        passed++;
+      } else {
+        warnings.push(`Solo ${bases.length} meses de bases cotización (se requieren ≥6 meses / 180 días)`);
+      }
+    } else {
+      errors.push('Array de bases de cotización vacío');
+    }
+  } else if (bases) {
     passed++;
   } else {
     errors.push('Bases de cotización últimos 180 días no incluidas');
@@ -299,30 +460,42 @@ export function validateCertificaPayload(payload: Record<string, unknown> | null
 
   // Datos trabajador
   checked++;
-  if (payload.nifTrabajador || payload.workerNif) {
+  const nifTrab = payload.nifTrabajador || payload.workerNif;
+  if (nifTrab) {
     passed++;
+    checked++;
+    if (isValidNIF(nifTrab)) { passed++; }
+    else { warnings.push('NIF trabajador no tiene formato estándar'); }
   } else {
     errors.push('NIF trabajador no presente');
   }
 
   // Datos empresa
   checked++;
-  if (payload.nifEmpresa || payload.companyNif) {
+  const nifEmp = payload.nifEmpresa || payload.companyNif;
+  if (nifEmp) {
     passed++;
+    checked++;
+    if (isValidNIF(nifEmp)) { passed++; }
+    else { warnings.push('NIF empresa no tiene formato estándar'); }
   } else {
     errors.push('NIF empresa no presente');
   }
 
   // Fecha baja
   checked++;
-  if (payload.fechaBaja || payload.terminationDate) {
+  const fechaBaja = String(payload.fechaBaja || payload.terminationDate || '');
+  if (fechaBaja) {
     passed++;
+    checked++;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(fechaBaja)) { passed++; }
+    else { warnings.push(`Fecha baja '${fechaBaja}' no cumple formato YYYY-MM-DD`); }
   } else {
     errors.push('Fecha de baja no especificada');
   }
 
   const status: FormatValidationStatus = errors.length === 0
-    ? 'spec_aligned'
+    ? (warnings.length === 0 ? 'spec_aligned' : 'partially_aligned')
     : (passed >= 3 ? 'partially_aligned' : 'rejected');
 
   return result(status, errors, warnings, checked, passed);
