@@ -157,6 +157,9 @@ export interface PreflightInput {
   // Last-mile readiness by organism (from LM3)
   lastMileReadiness?: Record<string, LastMileStepStatus>;
 
+  // P1.7B-RA: Active international mobility data
+  activeMobility?: MobilityPreflightData;
+
   // Current date for semaphore calculation
   now: Date;
 }
