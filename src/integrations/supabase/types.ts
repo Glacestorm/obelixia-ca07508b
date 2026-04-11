@@ -42229,6 +42229,77 @@ export type Database = {
           },
         ]
       }
+      erp_hr_remote_work_agreements: {
+        Row: {
+          agreement_content: Json | null
+          agreement_date: string
+          company_id: string
+          created_at: string | null
+          disconnection_policy_id: string | null
+          employee_id: string
+          end_date: string | null
+          equipment_inventory: Json | null
+          expense_compensation: Json | null
+          id: string
+          remote_percentage: number
+          schedule_details: Json | null
+          signed_at: string | null
+          signed_by: string | null
+          start_date: string
+          status: string
+          updated_at: string | null
+          work_location: Json | null
+        }
+        Insert: {
+          agreement_content?: Json | null
+          agreement_date: string
+          company_id: string
+          created_at?: string | null
+          disconnection_policy_id?: string | null
+          employee_id: string
+          end_date?: string | null
+          equipment_inventory?: Json | null
+          expense_compensation?: Json | null
+          id?: string
+          remote_percentage?: number
+          schedule_details?: Json | null
+          signed_at?: string | null
+          signed_by?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+          work_location?: Json | null
+        }
+        Update: {
+          agreement_content?: Json | null
+          agreement_date?: string
+          company_id?: string
+          created_at?: string | null
+          disconnection_policy_id?: string | null
+          employee_id?: string
+          end_date?: string | null
+          equipment_inventory?: Json | null
+          expense_compensation?: Json | null
+          id?: string
+          remote_percentage?: number
+          schedule_details?: Json | null
+          signed_at?: string | null
+          signed_by?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          work_location?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_remote_work_agreements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_report_schedules: {
         Row: {
           company_id: string
