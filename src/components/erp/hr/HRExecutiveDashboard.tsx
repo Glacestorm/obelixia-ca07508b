@@ -423,8 +423,8 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
             onClick={() => {
               if (link.module === '_portal') {
                 window.open('/mi-portal', '_blank');
-              } else {
-                onNavigate?.(link.module);
+              } else if (onNavigate) {
+                onNavigate(link.module);
               }
             }}
           >
