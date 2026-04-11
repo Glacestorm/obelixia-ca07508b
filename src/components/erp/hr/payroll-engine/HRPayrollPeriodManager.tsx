@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import {
   Calendar, Plus, Lock, Unlock, RefreshCw, CheckCircle,
   AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2, Send,
-  ShieldCheck, RotateCcw, Euro, Users, FileText, Info
+  ShieldCheck, RotateCcw, Euro, Users, FileText, Info, Gauge
 } from 'lucide-react';
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
 import type { PeriodClosureSnapshot } from '@/engines/erp/hr/payrollRunEngine';
