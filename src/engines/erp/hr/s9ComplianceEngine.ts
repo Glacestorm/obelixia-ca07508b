@@ -31,7 +31,6 @@ import type {
   FairnessVPTSummary,
   FairnessVPTAlert,
   RetributiveExecutiveSummary,
-  VPTEnrichedSalaryReport as VPTEnrichedSalaryReportType,
 } from '@/types/s9-compliance';
 import {
   RETRIBUTIVE_AUDIT_DISCLAIMER,
