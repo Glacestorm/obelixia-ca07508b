@@ -1,17 +1,20 @@
 /**
  * S9SalaryRegisterPanel — Registro Retributivo Formal (RD 902/2020)
  * Extended in S9.4 with optional VPT analysis tab
+ * Extended in S9.6 with CSV export on VPT tab
  */
 
-import { memo, useState } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, FileText, TrendingDown, BarChart3 } from 'lucide-react';
+import { AlertTriangle, FileText, TrendingDown, BarChart3, Download } from 'lucide-react';
 import { S9ReadinessBadge } from '../shared/S9ReadinessBadge';
 import { useS9SalaryRegister } from '@/hooks/erp/hr/useS9SalaryRegister';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Props {
   companyId: string;
@@ -29,6 +32,26 @@ export const S9SalaryRegisterPanel = memo(function S9SalaryRegisterPanel({ compa
     d.setMonth(d.getMonth() - i);
     return d.toISOString().slice(0, 7);
   });
+
+  // CSV export for VPT tab (S9.6)
+  const handleExportVPTCSV = useCallback(() => {
+    if (!vptReport) return;
+    try {
+      const { exportSalaryRegisterVPTCSV } = require('@/engines/erp/hr/s9ComplianceEngine');
+      const csv = exportSalaryRegisterVPTCSV(vptReport);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `registro_retributivo_vpt_${vptReport.period}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('CSV descargado');
+    } catch (err) {
+      console.error('[S9SalaryRegisterPanel] export error:', err);
+      toast.error('Error al exportar CSV');
+    }
+  }, [vptReport]);
 
   if (isLoading) {
     return (
@@ -209,6 +232,14 @@ export const S9SalaryRegisterPanel = memo(function S9SalaryRegisterPanel({ compa
             </Card>
           ) : vptReport && vptReport.byVPTBand.length > 0 ? (
             <>
+              {/* Export button for VPT tab (S9.6) */}
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={handleExportVPTCSV} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" />
+                  Exportar CSV
+                </Button>
+              </div>
+
               {/* VPT Band summary */}
               <Card>
                 <CardHeader className="pb-2">
