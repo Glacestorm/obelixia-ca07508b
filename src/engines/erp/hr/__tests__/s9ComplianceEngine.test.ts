@@ -18,8 +18,11 @@ import {
   computeRetributiveAudit,
   computeEquityVPTContext,
   computeFairnessVPTSummary,
+  generateRetributiveExecutiveSummary,
+  exportRetributiveAuditCSV,
+  exportSalaryRegisterVPTCSV,
 } from '../s9ComplianceEngine';
-import { RETRIBUTIVE_AUDIT_DISCLAIMER, VPT_CONTEXT_DISCLAIMER } from '@/types/s9-compliance';
+import { RETRIBUTIVE_AUDIT_DISCLAIMER, VPT_CONTEXT_DISCLAIMER, EXECUTIVE_SUMMARY_DISCLAIMER } from '@/types/s9-compliance';
 
 // ─── LISMI ───────────────────────────────────────────────────
 
