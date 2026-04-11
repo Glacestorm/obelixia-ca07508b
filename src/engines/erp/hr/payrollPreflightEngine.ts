@@ -122,6 +122,15 @@ export interface EquityPreflightData {
   summary: string;
 }
 
+export interface ITPreflightData {
+  activeProcessCount: number;
+  fdiPending: boolean;
+  milestoneAlerts: number;
+  overdueConfirmations: boolean;
+  reviewRequired: boolean;
+  summary: string;
+}
+
 export interface PreflightInput {
   // From payrollCycleStatusEngine
   periodStatus: string;
@@ -175,6 +184,9 @@ export interface PreflightInput {
 
   // P1.7B-RB: Active equity compensation data
   activeEquity?: EquityPreflightData;
+
+  // P2.2: Active IT processes
+  activeIT?: ITPreflightData;
 
   // Current date for semaphore calculation
   now: Date;
@@ -517,6 +529,39 @@ export function buildPreflightResult(input: PreflightInput): PreflightResult {
     // Insert after mobility (or after incidents if no mobility)
     const insertIdx = steps.findIndex(s => s.id === 'mobility_international');
     steps.splice(insertIdx >= 0 ? insertIdx + 1 : 1, 0, equityStep);
+    steps.forEach((s, i) => { s.index = i; });
+  }
+
+  // P2.2: Inject conditional IT workflow substep
+  if (input.activeIT && input.activeIT.activeProcessCount > 0) {
+    const it = input.activeIT;
+    const itStatus: PreflightStepStatus = it.overdueConfirmations || it.milestoneAlerts > 0
+      ? 'in_progress'
+      : it.fdiPending
+        ? 'in_progress'
+        : 'completed';
+    const itSemaphore = it.milestoneAlerts > 0 ? 'red' as Semaphore : it.fdiPending || it.overdueConfirmations ? 'amber' as Semaphore : 'green' as Semaphore;
+
+    const itStep: PreflightStep = {
+      id: 'it_workflow',
+      index: steps.length,
+      label: 'Incapacidad Temporal',
+      description: it.summary || `${it.activeProcessCount} proceso(s) IT activo(s)`,
+      status: itStatus,
+      semaphore: itSemaphore,
+      targetModule: 'it-processes',
+      targetContext: periodId ? { periodId } : undefined,
+      targetAction: 'review_it',
+      icon: 'Stethoscope',
+      blockReason: it.milestoneAlerts > 0 ? 'Hitos LGSS requieren acción inmediata' : undefined,
+      blockDomain: itStatus !== 'completed' ? 'it' : undefined,
+      suggestedFix: it.fdiPending ? 'Generar FDI pendientes antes de cierre' : it.overdueConfirmations ? 'Registrar partes de confirmación vencidos' : undefined,
+      isInstitutional: false,
+    };
+
+    // Insert after equity (or after mobility, or after incidents)
+    const insertIdx = steps.findIndex(s => s.id === 'equity_compensation') ?? steps.findIndex(s => s.id === 'mobility_international');
+    steps.splice(insertIdx >= 0 ? insertIdx + 1 : 1, 0, itStep);
     steps.forEach((s, i) => { s.index = i; });
   }
 

@@ -233,6 +233,127 @@ serve(async (req) => {
       return successResponse({ alerts, total: alerts.length }, cors);
     }
 
+    // ─── RESOLVE PROCESS ───────────────────────────────────
+    if (action === 'resolve_process') {
+      if (!process_id) return validationError('process_id required', cors);
+
+      const { data: proc } = await userClient
+        .from('erp_hr_it_processes')
+        .select('status, employee_id')
+        .eq('id', process_id)
+        .single();
+
+      if (!proc) return notFoundError('Process', cors);
+      if (proc.status === 'closed') return validationError('Process already closed', cors);
+
+      const endDate = data?.end_date ?? new Date().toISOString().split('T')[0];
+      const { error: upErr } = await userClient
+        .from('erp_hr_it_processes')
+        .update({
+          status: 'closed',
+          end_date: endDate,
+          metadata: { pipeline_state: 'closed', resolved_at: new Date().toISOString() },
+        })
+        .eq('id', process_id);
+
+      if (upErr) throw upErr;
+
+      await userClient.from('erp_audit_events').insert({
+        company_id,
+        entity_type: 'erp_hr_it_processes',
+        entity_id: process_id,
+        action: 'RESOLVE',
+        new_value: { end_date: endDate, status: 'closed' },
+        legal_basis: 'RD 625/2014 Art. 4',
+        performed_by: employee_id ?? process_id,
+      });
+
+      return successResponse({ resolved: true, end_date: endDate }, cors);
+    }
+
+    // ─── GENERATE FDI ────────────────────────────────────────
+    if (action === 'generate_fdi') {
+      if (!process_id || !data?.fdi_type) return validationError('process_id and data.fdi_type required', cors);
+
+      const { data: proc } = await userClient
+        .from('erp_hr_it_processes')
+        .select('process_type, employee_id, start_date, end_date')
+        .eq('id', process_id)
+        .single();
+
+      if (!proc) return notFoundError('Process', cors);
+
+      const fdiId = `fdi_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 8);
+      const fileName = `${timestamp}${Math.floor(Math.random() * 100).toString().padStart(2, '0')}.FDI`;
+
+      // Store as official artifact
+      const { error: artErr } = await userClient.from('erp_hr_official_artifacts').insert({
+        company_id,
+        artifact_type: 'fdi',
+        artifact_subtype: data.fdi_type,
+        reference_entity: 'erp_hr_it_processes',
+        reference_id: process_id,
+        file_name: fileName,
+        file_extension: '.FDI',
+        status: 'draft',
+        circuit: 'SILTRA_INSS',
+        metadata: {
+          fdi_type: data.fdi_type,
+          process_type: proc.process_type,
+          start_date: proc.start_date,
+          end_date: proc.end_date,
+          generated_at: new Date().toISOString(),
+        },
+      });
+
+      if (artErr) throw artErr;
+
+      await userClient.from('erp_audit_events').insert({
+        company_id,
+        entity_type: 'erp_hr_official_artifacts',
+        entity_id: fdiId,
+        action: 'GENERATE_FDI',
+        new_value: { fdi_type: data.fdi_type, file_name: fileName },
+        legal_basis: 'Orden ESS/1187/2015',
+        performed_by: employee_id ?? process_id,
+      });
+
+      return successResponse({ fdi_id: fdiId, file_name: fileName, status: 'draft' }, cors);
+    }
+
+    // ─── REPORTING KPIs ──────────────────────────────────────
+    if (action === 'reporting_kpis') {
+      const { data: processes } = await userClient
+        .from('erp_hr_it_processes')
+        .select('id, process_type, status, start_date, end_date, has_relapse')
+        .eq('company_id', company_id);
+
+      const active = (processes ?? []).filter((p: any) => p.status === 'active');
+      const closed = (processes ?? []).filter((p: any) => p.status === 'closed');
+      const relapsed = (processes ?? []).filter((p: any) => p.has_relapse);
+
+      const durations = active.map((p: any) => {
+        const start = new Date(p.start_date);
+        return Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+      });
+      const avgDuration = durations.length > 0 ? Math.round(durations.reduce((s: number, d: number) => s + d, 0) / durations.length) : 0;
+
+      const byType: Record<string, number> = {};
+      for (const p of (processes ?? [])) {
+        byType[(p as any).process_type] = (byType[(p as any).process_type] ?? 0) + 1;
+      }
+
+      return successResponse({
+        total_active: active.length,
+        total_closed: closed.length,
+        total_relapsed: relapsed.length,
+        average_duration_days: avgDuration,
+        by_type: byType,
+        total_processes: (processes ?? []).length,
+      }, cors);
+    }
+
     return validationError(`Unknown action: ${action}`, cors);
   } catch (error) {
     console.error('[payroll-it-engine] Error:', error);
