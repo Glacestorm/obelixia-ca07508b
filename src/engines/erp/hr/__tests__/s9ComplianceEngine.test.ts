@@ -334,4 +334,66 @@ describe('detectVPTIncoherences', () => {
     expect(incs.filter(i => i.type === 'level_divergence').length).toBe(0);
   });
 });
+
+// ─── VPT BAND SUGGESTION ───────────────────────────────────
+
+describe('suggestEquivalentBand', () => {
+  it('should return null with fewer than 2 references', () => {
+    expect(suggestEquivalentBand(50, [{ score: 50, bandMin: 20000, bandMax: 30000 }])).toBeNull();
+  });
+
+  it('should interpolate between two reference points', () => {
+    const refs = [
+      { score: 0, bandMin: 15000, bandMax: 20000 },
+      { score: 100, bandMin: 50000, bandMax: 70000 },
+    ];
+    const result = suggestEquivalentBand(50, refs)!;
+    expect(result.suggestedMin).toBe(32500);
+    expect(result.suggestedMax).toBe(45000);
+    expect(result.basis).toBe('interpolación lineal');
+  });
+
+  it('should keep band separate from score calculation', () => {
+    const scores: import('@/types/s9-compliance').VPTFactorScores = {
+      qualifications: { formal_education: 3, experience: 3, certifications: 3 },
+      responsibility: { people_decisions: 3, economic_decisions: 3, organizational_impact: 3 },
+      effort: { intellectual_complexity: 3, physical_effort: 3, emotional_load: 3 },
+      conditions: { hardship_danger: 3, atypical_schedules: 3, availability_travel: 3 },
+    };
+    const scoreResult = computeVPTScore(scores);
+    const bandResult = suggestEquivalentBand(scoreResult.totalScore, [
+      { score: 0, bandMin: 15000, bandMax: 20000 },
+      { score: 100, bandMin: 50000, bandMax: 70000 },
+    ]);
+    // Score and band are independent calculations
+    expect(scoreResult.totalScore).toBe(50);
+    expect(bandResult).not.toBeNull();
+    expect(bandResult!.suggestedMin).not.toBe(scoreResult.totalScore);
+  });
+});
+
+// ─── VPT COMPARISON ────────────────────────────────────────
+
+describe('compareVPTValuations', () => {
+  it('should return breakdown for each valuation', () => {
+    const vals = [
+      { positionId: 'p1', positionName: 'Dir', factorScores: {
+        qualifications: { formal_education: 5, experience: 5, certifications: 5 },
+        responsibility: { people_decisions: 5, economic_decisions: 5, organizational_impact: 5 },
+        effort: { intellectual_complexity: 5, physical_effort: 5, emotional_load: 5 },
+        conditions: { hardship_danger: 5, atypical_schedules: 5, availability_travel: 5 },
+      } as import('@/types/s9-compliance').VPTFactorScores, methodology: DEFAULT_VPT_METHODOLOGY, totalScore: 100 },
+      { positionId: 'p2', positionName: 'Jr', factorScores: {
+        qualifications: { formal_education: 1, experience: 1, certifications: 1 },
+        responsibility: { people_decisions: 1, economic_decisions: 1, organizational_impact: 1 },
+        effort: { intellectual_complexity: 1, physical_effort: 1, emotional_load: 1 },
+        conditions: { hardship_danger: 1, atypical_schedules: 1, availability_travel: 1 },
+      } as import('@/types/s9-compliance').VPTFactorScores, methodology: DEFAULT_VPT_METHODOLOGY, totalScore: 0 },
+    ];
+    const result = compareVPTValuations(vals);
+    expect(result.length).toBe(2);
+    expect(result[0].totalScore).toBe(100);
+    expect(result[1].totalScore).toBe(0);
+  });
+});
 });
