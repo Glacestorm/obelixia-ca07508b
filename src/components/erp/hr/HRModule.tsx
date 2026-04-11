@@ -426,7 +426,7 @@ function HRModuleInner() {
 
       {/* Contenido de los módulos — ALL LAZY LOADED */}
       <div className="mt-4">
-        {activeModule === 'dashboard' && <LazyHRExecutiveDashboard companyId={companyId} />}
+        {activeModule === 'dashboard' && <LazyHRExecutiveDashboard companyId={companyId} onNavigate={setActiveModule} />}
         {activeModule === 'employees' && <LazyHREmployeesPanel companyId={companyId} onOpenExpedient={(id: string) => { setSelectedEmployeeId(id); setActiveModule('employee-expedient'); }} />}
         {activeModule === 'recruitment' && <LazyHRRecruitmentPanel companyId={companyId} />}
         {activeModule === 'onboarding' && <LazyHROnboardingPanel companyId={companyId} />}
