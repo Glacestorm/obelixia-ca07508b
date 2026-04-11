@@ -23,15 +23,23 @@ export function AuditDashboardHub() {
     fetchAuditAgents();
   }, []);
 
+  // Compute real agent hierarchy counts from agents array
+  const internalAgentCount = agents.filter(a => 
+    a.code?.startsWith('AUDIT-AGT') || a.module_domain === 'audit'
+  ).length;
+  const externalAgentCount = agents.filter(a => 
+    a.code?.startsWith('AUDIT-EXT') || a.module_domain === 'audit_external'
+  ).length;
+
   const kpiCards = [
     { label: 'Eventos totales', value: kpis.totalEvents, icon: Activity, color: 'text-blue-500' },
     { label: 'Alertas críticas', value: kpis.criticalAlerts, icon: AlertTriangle, color: 'text-destructive' },
-    { label: 'Revisiones pendientes', value: kpis.pendingReviews, icon: Eye, color: 'text-amber-500' },
+    { label: 'Revisiones pendientes (est.)', value: kpis.pendingReviews, icon: Eye, color: 'text-amber-500' },
     { label: 'Resueltos hoy', value: kpis.resolvedToday, icon: ShieldCheck, color: 'text-emerald-500' },
-    { label: 'Score compliance', value: `${kpis.complianceScore}%`, icon: FileText, color: 'text-primary' },
-    { label: 'Agentes activos', value: stats.activeAgents, icon: Bot, color: 'text-violet-500' },
-    { label: 'Score riesgo', value: kpis.riskScore, icon: kpis.riskScore > 50 ? TrendingUp : TrendingDown, color: kpis.riskScore > 50 ? 'text-destructive' : 'text-emerald-500' },
-    { label: 'Blockchain entries', value: kpis.blockchainEntries, icon: Link2, color: 'text-cyan-500' },
+    { label: 'Score compliance (est.)', value: `${kpis.complianceScore}%`, icon: FileText, color: 'text-primary' },
+    { label: 'Agentes activos', value: kpis.activeAgents, icon: Bot, color: 'text-violet-500' },
+    { label: 'Score riesgo (est.)', value: kpis.riskScore, icon: kpis.riskScore > 50 ? TrendingUp : TrendingDown, color: kpis.riskScore > 50 ? 'text-destructive' : 'text-emerald-500' },
+    { label: 'Blockchain entries (est.)', value: kpis.blockchainEntries, icon: Link2, color: 'text-cyan-500' },
   ];
 
   return (
@@ -155,11 +163,11 @@ export function AuditDashboardHub() {
             <div className="space-y-2">
               <div className="p-2 rounded-lg border border-blue-500/30 bg-blue-500/5 text-center">
                 <p className="text-xs font-medium">Supervisor Interno</p>
-                <p className="text-[10px] text-muted-foreground">5 agentes · AUDIT-SUP-INT-001</p>
+                <p className="text-[10px] text-muted-foreground">{internalAgentCount > 0 ? `${internalAgentCount} agentes` : 'Sin datos (est.)'} · AUDIT-SUP-INT-001</p>
               </div>
               <div className="p-2 rounded-lg border border-green-500/30 bg-green-500/5 text-center">
                 <p className="text-xs font-medium">Supervisor Externo</p>
-                <p className="text-[10px] text-muted-foreground">3 agentes · AUDIT-SUP-EXT-001</p>
+                <p className="text-[10px] text-muted-foreground">{externalAgentCount > 0 ? `${externalAgentCount} agentes` : 'Sin datos (est.)'} · AUDIT-SUP-EXT-001</p>
               </div>
             </div>
             {/* Stats */}

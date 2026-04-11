@@ -62,6 +62,7 @@ export function AICostEconomicsPanel() {
           <DollarSign className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-semibold">Economía IA</h2>
           <Badge variant="outline" className="text-[10px]">Fase 4</Badge>
+          <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600 bg-amber-500/10">Estimado</Badge>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border overflow-hidden">
@@ -90,14 +91,14 @@ export function AICostEconomicsPanel() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="border-l-4 border-l-primary">
             <CardContent className="p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gasto Total</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gasto Total (est.)</p>
               <p className="text-xl font-bold">{kpis.totalSpend.toFixed(2)}€</p>
               <p className="text-[10px] text-muted-foreground">{kpis.totalInvocations} invocaciones</p>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-emerald-500">
             <CardContent className="p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ahorro vs Manual</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ahorro vs Manual (est.)</p>
               <p className={cn('text-xl font-bold', kpis.costSavingsVsManual > 0 ? 'text-emerald-600' : 'text-destructive')}>
                 {kpis.costSavingsVsManual > 0 ? '+' : ''}{kpis.costSavingsVsManual.toFixed(0)}€
               </p>
@@ -109,7 +110,7 @@ export function AICostEconomicsPanel() {
           </Card>
           <Card className="border-l-4 border-l-violet-500">
             <CardContent className="p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Coste/Llamada</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Coste/Llamada (est.)</p>
               <p className="text-xl font-bold">{kpis.avgCostPerCall.toFixed(3)}€</p>
               <p className="text-[10px] text-muted-foreground">media por invocación</p>
             </CardContent>
@@ -131,7 +132,7 @@ export function AICostEconomicsPanel() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Wallet className={cn('h-4 w-4', budgetColor)} />
-                <span className="text-sm font-medium">Presupuesto Mensual</span>
+                <span className="text-sm font-medium">Presupuesto Mensual (est.)</span>
               </div>
               <Badge variant={budgetStatus.status === 'exceeded' ? 'destructive' : budgetStatus.status === 'warning' ? 'secondary' : 'default'} className="text-[10px]">
                 {budgetStatus.status === 'exceeded' ? 'Excedido' : budgetStatus.status === 'warning' ? 'Alerta' : 'En rango'}
@@ -151,6 +152,7 @@ export function AICostEconomicsPanel() {
                 {budgetStatus.daysRemaining}d restantes
               </span>
             </div>
+            <p className="text-[10px] text-muted-foreground mt-1 italic">Presupuesto y costes estimados con constantes internas</p>
           </CardContent>
         </Card>
       )}
@@ -259,7 +261,7 @@ export function AICostEconomicsPanel() {
                           agent.roi > 5 ? 'bg-primary/10 text-primary border-primary/30' :
                           'bg-muted text-muted-foreground'
                         )}>
-                          ROI {agent.roi}x
+                          ROI {agent.roi}x (est.)
                         </Badge>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">

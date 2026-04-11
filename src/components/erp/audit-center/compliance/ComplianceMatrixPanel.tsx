@@ -32,14 +32,17 @@ export function ComplianceMatrixPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Matriz de Compliance</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold">Matriz de Compliance</h3>
+            <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600 bg-amber-500/10">Datos de ejemplo</Badge>
+          </div>
           <p className="text-sm text-muted-foreground">
             Verificación continua por el agente AUDIT-AGT-003 · Motor de reglas automático
           </p>
         </div>
         <div className="text-center">
           <p className="text-3xl font-bold">{overallScore}%</p>
-          <p className="text-xs text-muted-foreground">Score global</p>
+          <p className="text-xs text-muted-foreground">Score global (demo)</p>
         </div>
       </div>
 

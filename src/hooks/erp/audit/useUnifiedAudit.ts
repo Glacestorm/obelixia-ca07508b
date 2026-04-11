@@ -161,13 +161,25 @@ export function useUnifiedAudit() {
       const today = new Date().toISOString().split('T')[0];
       const todayEvents = filtered.filter(e => e.created_at.startsWith(today));
 
+      // Fetch real active agents count from registry
+      let activeAgentsCount = 0;
+      try {
+        const { count } = await supabase
+          .from('erp_ai_agents_registry')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'active');
+        activeAgentsCount = count || 0;
+      } catch {
+        activeAgentsCount = 0;
+      }
+
       setKpis({
         totalEvents: filtered.length,
         criticalAlerts: criticalCount,
         pendingReviews: Math.max(0, criticalCount - Math.floor(criticalCount * 0.3)),
         resolvedToday: todayEvents.length,
         complianceScore: Math.max(60, 100 - criticalCount * 2),
-        activeAgents: 8,
+        activeAgents: activeAgentsCount,
         riskScore: Math.min(100, 20 + criticalCount * 5),
         blockchainEntries: 0,
       });
