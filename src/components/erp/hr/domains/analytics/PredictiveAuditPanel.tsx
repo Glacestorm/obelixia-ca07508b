@@ -262,7 +262,7 @@ export function PredictiveAuditPanel({ companyId }: PredictiveAuditPanelProps) {
                     <div><span className="text-muted-foreground">Restricciones</span><p className="font-medium">Solo lectura · Sin PII · Logs auditados</p></div>
                   </div>
                 </div>
-                <Button variant="outline" onClick={() => toast.info('Configuración del portal de auditor próximamente')}><Users className="h-4 w-4 mr-1" /> Configurar acceso auditor</Button>
+                <Button variant="outline" disabled><Users className="h-4 w-4 mr-1" /> Configurar acceso auditor (próximamente)</Button>
               </div>
             </CardContent>
           </Card>

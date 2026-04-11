@@ -123,7 +123,7 @@ export function SubmissionDetail({ submissionId, hub, onBack }: Props) {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Detalles del envío</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-xs">
             <div className="grid grid-cols-2 gap-2">
-              <div><span className="text-muted-foreground">Conector:</span> {submission.adapter_id?.slice(0, 8) || '—'}</div>
+              <div><span className="text-muted-foreground">Conector:</span> {(submission as any).adapter_name || submission.adapter_id?.slice(0, 8) || '—'}</div>
               <div><span className="text-muted-foreground">Período:</span> {submission.reference_period || '—'}</div>
               <div><span className="text-muted-foreground">Prioridad:</span> <Badge variant={submission.priority === 'urgent' ? 'destructive' : 'outline'} className="text-[10px]">{submission.priority}</Badge></div>
               <div><span className="text-muted-foreground">Intentos:</span> {submission.attempts}/{submission.max_retries}</div>

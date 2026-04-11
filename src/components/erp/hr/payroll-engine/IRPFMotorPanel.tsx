@@ -241,9 +241,16 @@ export function IRPFMotorPanel({
                       Declaración {periodicity === 'mensual' ? 'mensual (grandes empresas)' : 'trimestral'} de retenciones IRPF
                     </CardDescription>
                   </div>
-                  <Button size="sm" onClick={() => toast.info('Generar Modelo 111 desde motor de nómina')}>
-                    <Download className="h-4 w-4 mr-1" /> Generar
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0}>
+                        <Button size="sm" disabled>
+                          <Download className="h-4 w-4 mr-1" /> Generar
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Requiere motor de generación AEAT — en desarrollo</TooltipContent>
+                  </Tooltip>
                 </div>
               </CardHeader>
               <CardContent>
@@ -335,9 +342,16 @@ export function IRPFMotorPanel({
                           Retención acum.: {(emp.retencionMensual * 6).toFixed(2)} € · Tipo: {emp.tipoEfectivo}%
                         </p>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => toast.success(`Certificado de ${emp.name} generado`)}>
-                        <Download className="h-4 w-4 mr-1" /> PDF
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <Button variant="ghost" size="sm" disabled>
+                              <Download className="h-4 w-4 mr-1" /> PDF
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Generación PDF próximamente</TooltipContent>
+                      </Tooltip>
                     </div>
                   ))}
                 </div>
