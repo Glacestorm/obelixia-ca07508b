@@ -222,8 +222,8 @@ export function detect145Changes(
   const newValues: Record<string, unknown> = {};
 
   for (const field of IRPF_IMPACT_FIELDS) {
-    const prev = (previous as Record<string, unknown>)[field];
-    const curr = (current as Record<string, unknown>)[field];
+    const prev = (previous as unknown as Record<string, unknown>)[field];
+    const curr = (current as unknown as Record<string, unknown>)[field];
     if (JSON.stringify(prev) !== JSON.stringify(curr)) {
       changedFields.push(field);
       previousValues[field] = prev;

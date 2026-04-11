@@ -515,7 +515,12 @@ const VALID_TRANSITIONS: Record<AEATArtifactStatus, AEATArtifactStatus[]> = {
   generated: ['validated_internal', 'error'],
   validated_internal: ['dry_run_ready', 'error'],
   dry_run_ready: ['pending_approval', 'error'],
-  pending_approval: ['validated_internal'],
+  pending_approval: ['sent', 'validated_internal'],
+  sent: ['accepted', 'rejected', 'error'],
+  accepted: ['confirmed', 'archived'],
+  rejected: ['generated', 'error'],
+  confirmed: ['archived'],
+  archived: [],
   error: ['generated'],
 };
 
