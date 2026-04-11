@@ -542,5 +542,134 @@ describe('computeRetributiveAudit', () => {
     const report = computeRetributiveAudit(employees, { p1: 80, p2: 30 }, '2026-01');
     expect(report.groupsWithAlert).toBe(1);
     expect(report.entries[0].alerts.length).toBeGreaterThan(0);
+});
+
+// ─── EQUITY VPT CONTEXT (S9.5) ────────────────────────────
+
+describe('computeEquityVPTContext', () => {
+  const employees = [
+    { employeeId: '1', gender: 'M' as const, positionId: 'p1' },
+    { employeeId: '2', gender: 'M' as const, positionId: 'p1' },
+    { employeeId: '3', gender: 'F' as const, positionId: 'p2' },
+    { employeeId: '4', gender: 'F' as const, positionId: 'p3' },
+  ];
+
+  it('should return complete context with VPT data', () => {
+    const vptMap = { p1: 70, p2: 45, p3: 50 };
+    const ctx = computeEquityVPTContext(employees, vptMap);
+    expect(ctx.vptContextAvailable).toBe(true);
+    expect(ctx.positionsValued).toBe(3);
+    expect(ctx.totalPositions).toBe(3);
+    expect(ctx.vptCoverage).toBe(1);
+    expect(ctx.avgScoreMale).toBe(70);
+    expect(ctx.avgScoreFemale).toBeCloseTo(47.5, 1);
+    expect(ctx.scoreDifference).toBeGreaterThan(15);
+    expect(ctx.divergenceRelevant).toBe(true);
+    expect(ctx.insight).not.toBeNull();
   });
+
+  it('should return unavailable context without VPT', () => {
+    const ctx = computeEquityVPTContext(employees, {});
+    expect(ctx.vptContextAvailable).toBe(false);
+    expect(ctx.vptCoverage).toBe(0);
+    expect(ctx.avgScoreMale).toBeNull();
+    expect(ctx.avgScoreFemale).toBeNull();
+    expect(ctx.scoreDifference).toBeNull();
+    expect(ctx.divergenceRelevant).toBe(false);
+    expect(ctx.insight).toBeNull();
+  });
+
+  it('should compute correct coverage with partial VPT', () => {
+    const vptMap = { p1: 60 }; // only one of 3 positions valued
+    const ctx = computeEquityVPTContext(employees, vptMap);
+    expect(ctx.vptContextAvailable).toBe(true);
+    expect(ctx.positionsValued).toBe(1);
+    expect(ctx.totalPositions).toBe(3);
+    // 2 of 4 employees have VPT (both on p1)
+    expect(ctx.vptCoverage).toBe(0.5);
+  });
+
+  it('should not flag divergence when scores are similar', () => {
+    const vptMap = { p1: 55, p2: 50, p3: 52 };
+    const ctx = computeEquityVPTContext(employees, vptMap);
+    expect(ctx.divergenceRelevant).toBe(false);
+    expect(ctx.insight).toContain('similares');
+  });
+
+  it('should never contain justificative language', () => {
+    const vptMap = { p1: 80, p2: 30, p3: 35 };
+    const ctx = computeEquityVPTContext(employees, vptMap);
+    const combined = `${ctx.insight ?? ''} ${ctx.disclaimer}`;
+    expect(combined).not.toContain('justificad');
+    expect(combined).not.toContain('explicad');
+    expect(combined).not.toContain('corregid');
+    expect(combined).not.toContain('ajustad');
+    expect(ctx.disclaimer).toBe(VPT_CONTEXT_DISCLAIMER);
+  });
+
+  it('should include VPT_CONTEXT_DISCLAIMER', () => {
+    const ctx = computeEquityVPTContext(employees, { p1: 60, p2: 50, p3: 55 });
+    expect(ctx.disclaimer).toContain('contexto descriptivo complementario');
+    expect(ctx.disclaimer).toContain('no constituyen explicación');
+  });
+});
+
+// ─── FAIRNESS VPT SUMMARY (S9.5) ──────────────────────────
+
+describe('computeFairnessVPTSummary', () => {
+  const employees = [
+    { employeeId: '1', gender: 'M' as const, positionId: 'p1' },
+    { employeeId: '2', gender: 'M' as const, positionId: 'p2' },
+    { employeeId: '3', gender: 'F' as const, positionId: 'p3' },
+    { employeeId: '4', gender: 'F' as const, positionId: 'p3' },
+  ];
+
+  it('should calculate coverage and scores correctly', () => {
+    const vptMap = { p1: 70, p2: 80, p3: 40 };
+    const summary = computeFairnessVPTSummary(employees, vptMap);
+    expect(summary.available).toBe(true);
+    expect(summary.positionsValued).toBe(3);
+    expect(summary.totalPositions).toBe(3);
+    expect(summary.coverageRatio).toBe(1);
+    expect(summary.avgScoreMale).toBe(75);
+    expect(summary.avgScoreFemale).toBe(40);
+    expect(summary.scoreDifference).toBe(35);
+  });
+
+  it('should detect divergence with concurrent gap', () => {
+    const vptMap = { p1: 80, p2: 75, p3: 30 };
+    const summary = computeFairnessVPTSummary(employees, vptMap, 18);
+    expect(summary.divergenceAlert).not.toBeNull();
+    expect(summary.divergenceAlert!.level).toBe('warning');
+    expect(summary.divergenceAlert!.message).toContain('análisis individualizado');
+    expect(summary.divergenceAlert!.message).not.toContain('justificación');
+  });
+
+  it('should not produce false positive with similar scores', () => {
+    const vptMap = { p1: 55, p2: 58, p3: 52 };
+    const summary = computeFairnessVPTSummary(employees, vptMap, 5);
+    expect(summary.divergenceAlert).toBeNull();
+  });
+
+  it('should return unavailable without VPT data', () => {
+    const summary = computeFairnessVPTSummary(employees, {});
+    expect(summary.available).toBe(false);
+    expect(summary.avgScoreMale).toBeNull();
+    expect(summary.avgScoreFemale).toBeNull();
+    expect(summary.divergenceAlert).toBeNull();
+  });
+
+  it('should handle divergence without significant salary gap', () => {
+    const vptMap = { p1: 80, p2: 75, p3: 30 };
+    const summary = computeFairnessVPTSummary(employees, vptMap, 3); // small gap
+    expect(summary.divergenceAlert).not.toBeNull();
+    expect(summary.divergenceAlert!.level).toBe('info');
+    expect(summary.divergenceAlert!.message).toContain('sin brecha salarial significativa');
+  });
+
+  it('should include disclaimer', () => {
+    const summary = computeFairnessVPTSummary(employees, { p1: 60, p2: 55, p3: 50 });
+    expect(summary.disclaimer).toBe(VPT_CONTEXT_DISCLAIMER);
+  });
+});
 });
