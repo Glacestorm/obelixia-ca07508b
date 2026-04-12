@@ -33,7 +33,7 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
   const { report: srReport, isLoading: loadSR, employeeCount: srEmployees } =
     useS9SalaryRegister(companyId, currentPeriod);
 
-  const { analytics, isLoading: loadVPT } = useS9VPT(companyId);
+  const { analytics, incoherences, isLoading: loadVPT } = useS9VPT(companyId);
 
   const isLoading = loadAudit || loadSR || loadVPT;
 
@@ -46,9 +46,9 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
         entries: auditReport.entries.length,
       } : null,
       vpt: {
-        positionsValued: analytics?.positionsValued ?? vptCount ?? 0,
+        positionsValued: analytics?.valuatedPositions ?? vptCount ?? 0,
         totalPositions: analytics?.totalPositions ?? (vptCoverage > 0 ? Math.round(vptCount / vptCoverage) : 0),
-        incoherenceCount: analytics?.incoherences?.length ?? 0,
+        incoherenceCount: incoherences?.length ?? 0,
         latestApproval: latestVPTApproval ?? null,
       },
       salaryRegister: srReport ? {
@@ -57,7 +57,7 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
       } : null,
     };
     return generateExecutivePDFData(input);
-  }, [auditReport, analytics, srReport, currentPeriod, hasVPTData, vptCount, vptCoverage, latestVPTApproval, srEmployees]);
+  }, [auditReport, analytics, incoherences, srReport, currentPeriod, hasVPTData, vptCount, vptCoverage, latestVPTApproval, srEmployees]);
 
   const handleExportPDF = useCallback(() => {
     try {
