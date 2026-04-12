@@ -159,13 +159,18 @@ function deriveOverallSupportLevel(
 
 // ── Main Supervisor ──
 
-export function evaluateExpatriateSupervisor(assignment: MobilityAssignment): SupervisorResult {
+export function evaluateExpatriateSupervisor(
+  assignment: MobilityAssignment,
+  packOverride?: CorridorKnowledgePack | null,
+): SupervisorResult {
   // 1. Detect activation triggers
   const activationTriggers = detectActivationTriggers(assignment);
   const activated = activationTriggers.some(t => t.detected);
 
-  // 2. Resolve corridor pack
-  const corridorPack = getCorridorPack(assignment.home_country_code, assignment.host_country_code);
+  // 2. Resolve corridor pack — use override if provided, otherwise fall back to TS constants
+  const corridorPack = packOverride !== undefined
+    ? packOverride
+    : getCorridorPack(assignment.home_country_code, assignment.host_country_code);
   const corridorLabel = `${assignment.home_country_code}↔${assignment.host_country_code}`;
   const hasCorridorPack = corridorPack !== null;
 

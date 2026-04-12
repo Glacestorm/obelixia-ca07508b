@@ -11,6 +11,7 @@ import { MobilityDashboard } from './MobilityDashboard';
 import { MobilityAssignmentsList } from './MobilityAssignmentsList';
 import { MobilityAssignmentForm } from './MobilityAssignmentForm';
 import { MobilityAssignmentDetail } from './MobilityAssignmentDetail';
+import { CorridorPackAdminPanel } from './CorridorPackAdminPanel';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
@@ -151,6 +152,7 @@ export function GlobalMobilityModule({ companyId }: Props) {
         <TabsList>
           <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
           <TabsTrigger value="assignments" className="text-xs">Asignaciones</TabsTrigger>
+          <TabsTrigger value="packs" className="text-xs">Knowledge Packs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -163,6 +165,10 @@ export function GlobalMobilityModule({ companyId }: Props) {
 
         <TabsContent value="assignments">
           {renderAssignmentView()}
+        </TabsContent>
+
+        <TabsContent value="packs">
+          <CorridorPackAdminPanel companyId={companyId} />
         </TabsContent>
       </Tabs>
     </div>
