@@ -68,8 +68,10 @@ export function TPVTerminalsManager({ companyId }: Props) {
   const fetchTerminals = async () => {
     try {
       setLoading(true);
+      // NOTE: company_tpv_terminals schema in types.ts has different columns than what
+      // this component uses (terminal_type, bank_name, etc.) — as any required
       const { data: terminalsData, error: terminalsError } = await supabase
-        .from('company_tpv_terminals')
+        .from('company_tpv_terminals' as any)
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
@@ -80,7 +82,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
       // Fetch commissions for all terminals
       // NOTE: tpv_commission_rates NOT in generated types — as any required
       if (terminalsData && terminalsData.length > 0) {
-        const terminalIds = terminalsData.map((t) => t.id);
+        const terminalIds = (terminalsData as unknown as TPVTerminal[]).map((t) => t.id);
         const { data: commissionsData, error: commissionsError } = await supabase
           .from('tpv_commission_rates' as any)
           .select('*')
@@ -112,8 +114,9 @@ export function TPVTerminalsManager({ companyId }: Props) {
       let terminalId: string;
 
       if (editingTerminal) {
+        // NOTE: company_tpv_terminals schema mismatch — as any required
         const { error } = await supabase
-          .from('company_tpv_terminals')
+          .from('company_tpv_terminals' as any)
           .update({
             terminal_type: formData.terminal_type,
             terminal_identifier: formData.terminal_identifier,
@@ -129,7 +132,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
         toast.success('Terminal actualizado');
       } else {
         const { data, error } = await supabase
-          .from('company_tpv_terminals')
+          .from('company_tpv_terminals' as any)
           .insert({
             company_id: companyId,
             terminal_type: formData.terminal_type,
@@ -143,7 +146,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
           .single();
 
         if (error) throw error;
-        terminalId = data.id;
+        terminalId = (data as any).id;
         toast.success('Terminal añadido');
       }
 
@@ -174,7 +177,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
 
     try {
       const { error } = await supabase
-        .from('company_tpv_terminals')
+        .from('company_tpv_terminals' as any)
         .delete()
         .eq('id', id);
 
