@@ -10,6 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { CorridorPackRow } from './useCorridorPackRepository';
 
+// ── RPC result contract ──────────────────────────────────────────────────────
+/** Shape returned by corridor pack RPC functions (publish, duplicate, deprecate, toggle). */
+interface CorridorRpcResult {
+  success: boolean;
+  error?: string;
+  new_pack_id?: string;
+}
+
 // ── Filter types ─────────────────────────────────────────────────────────────
 
 export interface CorridorPackFilters {
@@ -34,7 +42,7 @@ export function useCorridorPackAdmin(companyId?: string) {
     return useQuery({
       queryKey: [...queryKeyBase, 'list', filters],
       queryFn: async (): Promise<CorridorPackRow[]> => {
-        let query = (supabase as any)
+        let query = supabase
           .from('erp_hr_corridor_packs')
           .select('*')
           .order('origin', { ascending: true })
@@ -53,7 +61,7 @@ export function useCorridorPackAdmin(companyId?: string) {
           console.error('[useCorridorPackAdmin] list error:', error);
           return [];
         }
-        return (data ?? []) as CorridorPackRow[];
+        return (data ?? []) as unknown as CorridorPackRow[];
       },
     });
   };
@@ -65,7 +73,7 @@ export function useCorridorPackAdmin(companyId?: string) {
       queryKey: [...queryKeyBase, 'detail', packId],
       queryFn: async (): Promise<CorridorPackRow | null> => {
         if (!packId) return null;
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('erp_hr_corridor_packs')
           .select('*')
           .eq('id', packId)
@@ -75,7 +83,7 @@ export function useCorridorPackAdmin(companyId?: string) {
           console.error('[useCorridorPackAdmin] detail error:', error);
           return null;
         }
-        return data as CorridorPackRow | null;
+        return data as unknown as CorridorPackRow | null;
       },
       enabled: !!packId,
     });
@@ -93,7 +101,7 @@ export function useCorridorPackAdmin(companyId?: string) {
     >>,
   ): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('erp_hr_corridor_packs')
       .update({ ...updates, updated_by: user?.id ?? null })
       .eq('id', packId);
@@ -112,7 +120,7 @@ export function useCorridorPackAdmin(companyId?: string) {
   // ── Publish (RPC) ────────────────────────────────────────────────────────
 
   const publishPack = useCallback(async (packId: string, reason: string): Promise<boolean> => {
-    const { data, error } = await supabase.rpc('publish_corridor_pack' as any, {
+    const { data, error } = await supabase.rpc('publish_corridor_pack', {
       p_pack_id: packId,
       p_reason: reason,
     });
@@ -123,7 +131,7 @@ export function useCorridorPackAdmin(companyId?: string) {
       return false;
     }
 
-    const result = data as any;
+    const result = data as unknown as CorridorRpcResult;
     if (!result?.success) {
       toast.error(result?.error ?? 'Error al publicar');
       return false;
@@ -141,7 +149,7 @@ export function useCorridorPackAdmin(companyId?: string) {
     newVersion: string,
     reason: string,
   ): Promise<string | null> => {
-    const { data, error } = await supabase.rpc('duplicate_corridor_pack' as any, {
+    const { data, error } = await supabase.rpc('duplicate_corridor_pack', {
       p_pack_id: packId,
       p_new_version: newVersion,
       p_reason: reason,
@@ -153,7 +161,7 @@ export function useCorridorPackAdmin(companyId?: string) {
       return null;
     }
 
-    const result = data as any;
+    const result = data as unknown as CorridorRpcResult;
     if (!result?.success) {
       toast.error(result?.error ?? 'Error al duplicar');
       return null;
@@ -161,13 +169,13 @@ export function useCorridorPackAdmin(companyId?: string) {
 
     toast.success(`Nueva versión ${newVersion} creada`);
     queryClient.invalidateQueries({ queryKey: queryKeyBase });
-    return result.new_pack_id;
+    return result.new_pack_id ?? null;
   }, [queryClient, queryKeyBase]);
 
   // ── Deprecate (RPC) ──────────────────────────────────────────────────────
 
   const deprecatePack = useCallback(async (packId: string, reason: string): Promise<boolean> => {
-    const { data, error } = await supabase.rpc('deprecate_corridor_pack' as any, {
+    const { data, error } = await supabase.rpc('deprecate_corridor_pack', {
       p_pack_id: packId,
       p_reason: reason,
     });
@@ -178,7 +186,7 @@ export function useCorridorPackAdmin(companyId?: string) {
       return false;
     }
 
-    const result = data as any;
+    const result = data as unknown as CorridorRpcResult;
     if (!result?.success) {
       toast.error(result?.error ?? 'Error al deprecar');
       return false;
@@ -196,7 +204,7 @@ export function useCorridorPackAdmin(companyId?: string) {
     active: boolean,
     reason: string,
   ): Promise<boolean> => {
-    const { data, error } = await supabase.rpc('toggle_corridor_pack_active' as any, {
+    const { data, error } = await supabase.rpc('toggle_corridor_pack_active', {
       p_pack_id: packId,
       p_active: active,
       p_reason: reason,
@@ -208,7 +216,7 @@ export function useCorridorPackAdmin(companyId?: string) {
       return false;
     }
 
-    const result = data as any;
+    const result = data as unknown as CorridorRpcResult;
     if (!result?.success) {
       toast.error(result?.error ?? 'Error al cambiar estado');
       return false;
@@ -226,7 +234,7 @@ export function useCorridorPackAdmin(companyId?: string) {
       queryKey: [...queryKeyBase, 'audit', packId],
       queryFn: async () => {
         if (!packId) return [];
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('erp_hr_audit_log')
           .select('*')
           .eq('table_name', 'erp_hr_corridor_packs')

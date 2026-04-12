@@ -51,7 +51,7 @@ export function useHRVersionRegistry(companyId: string) {
     return useQuery({
       queryKey: ['hr-versions', companyId, entityType, entityId],
       queryFn: async (): Promise<VersionRecord[]> => {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('erp_hr_version_registry')
           .select('*')
           .eq('company_id', companyId)
@@ -63,7 +63,7 @@ export function useHRVersionRegistry(companyId: string) {
           console.error('[useHRVersionRegistry] queryHistory error:', error);
           return [];
         }
-        return (data ?? []) as VersionRecord[];
+        return (data ?? []) as unknown as VersionRecord[];
       },
       enabled: !!companyId && !!entityId,
     });
@@ -79,7 +79,7 @@ export function useHRVersionRegistry(companyId: string) {
     metadata?: Record<string, unknown>;
   }): Promise<VersionRecord | null> => {
     // Get current max version number
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('erp_hr_version_registry')
       .select('id, version_number')
       .eq('company_id', companyId)
@@ -94,7 +94,7 @@ export function useHRVersionRegistry(companyId: string) {
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('erp_hr_version_registry')
       .insert({
         company_id: companyId,
@@ -118,7 +118,7 @@ export function useHRVersionRegistry(companyId: string) {
 
     // Mark previous version as superseded if it was closed
     if (parentId && existing) {
-      await (supabase as any)
+      await supabase
         .from('erp_hr_version_registry')
         .update({ superseded_by_id: data.id })
         .eq('id', parentId);
@@ -128,7 +128,7 @@ export function useHRVersionRegistry(companyId: string) {
       queryKey: ['hr-versions', companyId, params.entityType, params.entityId],
     });
 
-    return data as VersionRecord;
+    return data as unknown as VersionRecord;
   }, [companyId, queryClient]);
 
   // ── Transition state ───────────────────────────────────────────────────
@@ -141,7 +141,7 @@ export function useHRVersionRegistry(companyId: string) {
     entityId?: string,
   ): Promise<boolean> => {
     // Get current state first
-    const { data: current } = await (supabase as any)
+    const { data: current } = await supabase
       .from('erp_hr_version_registry')
       .select('state')
       .eq('id', versionId)
@@ -157,7 +157,7 @@ export function useHRVersionRegistry(companyId: string) {
 
     const { data: { user } } = await supabase.auth.getUser();
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('erp_hr_version_registry')
       .update({
         state: newState,

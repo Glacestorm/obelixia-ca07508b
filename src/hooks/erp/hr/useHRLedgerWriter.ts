@@ -94,7 +94,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
 
       const row = await buildLedgerRow(fullInput);
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('erp_hr_ledger')
         .insert(row)
         .select('id')
@@ -135,7 +135,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
         })
       );
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('erp_hr_evidence')
         .insert(rows);
 
@@ -162,7 +162,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
   }): Promise<string | null> => {
     try {
       // Get next version
-      const { data: existing } = await (supabase as any)
+      const { data: existing } = await supabase
         .from('erp_hr_version_registry')
         .select('id, version_number')
         .eq('company_id', companyId)
@@ -175,7 +175,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
       const nextVersion = existing ? (existing.version_number as number) + 1 : 1;
       const actorId = await getActorId();
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('erp_hr_version_registry')
         .insert({
           company_id: companyId,
@@ -199,7 +199,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
 
       // Supersede previous version
       if (existing?.id) {
-        await (supabase as any)
+        await supabase
           .from('erp_hr_version_registry')
           .update({ superseded_by_id: data.id })
           .eq('id', existing.id);

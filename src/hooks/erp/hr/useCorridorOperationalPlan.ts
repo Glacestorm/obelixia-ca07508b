@@ -32,6 +32,26 @@ interface UseCorridorOperationalPlanResult {
   isCheckingDuplicates: boolean;
 }
 
+/** Shape of hr_tasks rows selected for deduplication checks */
+interface TaskDedupRow {
+  task_type: string;
+  metadata: { deduplication_key?: string; phase?: string } | null;
+}
+
+/** Extract deduplication keys from existing task rows */
+function extractDedupKeys(rows: TaskDedupRow[], assignmentId: string): Set<string> {
+  const keys = new Set<string>();
+  for (const row of rows) {
+    const dedupKey = row.metadata?.deduplication_key;
+    if (dedupKey) {
+      keys.add(dedupKey);
+    }
+    // Also match by assignment_id + task_type as fallback
+    keys.add(`${assignmentId}:${row.task_type}:${row.metadata?.phase ?? 'unknown'}`);
+  }
+  return keys;
+}
+
 export function useCorridorOperationalPlan(
   assignment: MobilityAssignment | null,
   documents: MobilityDocument[] = [],
@@ -57,7 +77,7 @@ export function useCorridorOperationalPlan(
     if (!assignment) return;
     setIsCheckingDuplicates(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('hr_tasks')
         .select('task_type, metadata')
         .eq('assignment_id', assignment.id)
@@ -66,17 +86,8 @@ export function useCorridorOperationalPlan(
 
       if (error) throw error;
 
-      const existing = new Set<string>();
-      for (const row of (data ?? [])) {
-        // Reconstruct deduplication key from stored metadata
-        const dedupKey = row.metadata?.deduplication_key;
-        if (dedupKey) {
-          existing.add(dedupKey);
-        }
-        // Also match by assignment_id + task_type as fallback
-        existing.add(`${assignment.id}:${row.task_type}:${row.metadata?.phase ?? 'unknown'}`);
-      }
-      setExistingTaskTypes(existing);
+      const rows = (data ?? []) as unknown as TaskDedupRow[];
+      setExistingTaskTypes(extractDedupKeys(rows, assignment.id));
     } catch (e) {
       console.error('[useCorridorOperationalPlan] checkExistingTasks:', e);
     } finally {
@@ -94,19 +105,15 @@ export function useCorridorOperationalPlan(
     // Re-check for duplicates right before creating
     let currentExisting: Set<string>;
     try {
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('hr_tasks')
         .select('task_type, metadata')
         .eq('assignment_id', assignment.id)
         .eq('category', 'mobility')
         .in('status', ['pending', 'in_progress']);
 
-      currentExisting = new Set<string>();
-      for (const row of (data ?? [])) {
-        const dedupKey = row.metadata?.deduplication_key;
-        if (dedupKey) currentExisting.add(dedupKey);
-        currentExisting.add(`${assignment.id}:${row.task_type}:${row.metadata?.phase ?? 'unknown'}`);
-      }
+      const rows = (data ?? []) as unknown as TaskDedupRow[];
+      currentExisting = extractDedupKeys(rows, assignment.id);
     } catch {
       currentExisting = existingTaskTypes;
     }
@@ -121,8 +128,8 @@ export function useCorridorOperationalPlan(
       company_id: companyId,
       title: t.title,
       task_type: t.taskType,
-      category: t.category as any,
-      priority: t.priority as any,
+      category: t.category as TaskCreateData['category'],
+      priority: t.priority as TaskCreateData['priority'],
       source_type: 'system' as const,
       assignment_id: assignment.id,
       tags: ['corridor_operational', t.phase],
@@ -136,7 +143,7 @@ export function useCorridorOperationalPlan(
     }));
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('hr_tasks')
         .insert(inserts);
 
