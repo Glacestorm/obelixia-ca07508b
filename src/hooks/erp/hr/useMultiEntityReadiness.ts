@@ -38,8 +38,9 @@ export function useMultiEntityReadiness(companyId: string): UseMultiEntityReadin
 
     try {
       // Fetch legal entities
-      const { data: entities } = await supabase
-        .from('erp_hr_legal_entities' as any)
+      // erp_hr_legal_entities.cif not in generated types — cast retained
+      const { data: entities } = await (supabase as any)
+        .from('erp_hr_legal_entities')
         .select('id, legal_name, cif, is_active')
         .eq('company_id', companyId)
         .eq('is_active', true);
@@ -59,44 +60,46 @@ export function useMultiEntityReadiness(companyId: string): UseMultiEntityReadin
       }
 
       // Multi-entity: fetch per-entity data
+      // NOTE: hr_employees/hr_contracts are DB views; legal_entity_id and other cols not in types — cast retained
       const [employeesRes, contractsRes, payrollRes, certsRes] = await Promise.all([
-        supabase.from('hr_employees' as any)
+        (supabase as any).from('hr_employees')
           .select('id, status, registration_status, legal_entity_id')
           .eq('company_id', companyId)
           .eq('status', 'active'),
-        supabase.from('hr_contracts' as any)
+        (supabase as any).from('hr_contracts')
           .select('id, status, contract_type, legal_entity_id')
           .eq('company_id', companyId)
           .in('status', ['active', 'pending']),
-        supabase.from('hr_payroll_periods' as any)
+        supabase.from('hr_payroll_periods')
           .select('id, status, legal_entity_id')
           .eq('company_id', companyId)
           .eq('status', 'closed'),
-        supabase.from('erp_hr_domain_certificates' as any)
+        // erp_hr_domain_certificates.legal_entity_id not in types — cast retained
+        (supabase as any).from('erp_hr_domain_certificates')
           .select('domain, certificate_status, certificate_type, configuration_completeness, expiration_date, readiness_impact, legal_entity_id')
           .eq('company_id', companyId),
       ]);
 
-      const allEmployees = (employeesRes.data || []) as any[];
-      const allContracts = (contractsRes.data || []) as any[];
-      const allPeriods = (payrollRes.data || []) as any[];
-      const allCerts = (certsRes.data || []) as any[];
+      const allEmployees = (employeesRes.data || []) as Array<{ id: string; status: string; registration_status: string; legal_entity_id: string | null }>;
+      const allContracts = (contractsRes.data || []) as Array<{ id: string; status: string; contract_type: string; legal_entity_id: string | null }>;
+      const allPeriods = (payrollRes.data || []) as unknown as Array<{ id: string; status: string | null; legal_entity_id: string | null }>;
+      const allCerts = (certsRes.data || []) as Array<{ domain: string; certificate_status: string; certificate_type: string; configuration_completeness: number; expiration_date: string | null; readiness_impact: string; legal_entity_id: string | null }>;
 
       const adapterMappings = adapters.map(a => ({
         id: a.id, adapter_type: a.adapter_type, system_name: a.system_name, is_active: a.is_active, status: a.status,
       }));
 
       const inputs: EntityReadinessInput[] = (entities as any[]).map((ent: any) => {
-        const entEmployees = allEmployees.filter((e: any) => e.legal_entity_id === ent.id);
-        const completeEmp = entEmployees.filter((e: any) =>
+        const entEmployees = allEmployees.filter(e => e.legal_entity_id === ent.id);
+        const completeEmp = entEmployees.filter(e =>
           e.registration_status === 'completed' || e.registration_status === 'tgss_prepared'
         ).length;
 
-        const entContracts = allContracts.filter((c: any) => c.legal_entity_id === ent.id);
-        const completeContracts = entContracts.filter((c: any) => c.contract_type && c.status === 'active').length;
+        const entContracts = allContracts.filter(c => c.legal_entity_id === ent.id);
+        const completeContracts = entContracts.filter(c => c.contract_type && c.status === 'active').length;
 
-        const entPeriods = allPeriods.filter((p: any) => p.legal_entity_id === ent.id);
-        const entCerts = allCerts.filter((c: any) => c.legal_entity_id === ent.id || !c.legal_entity_id);
+        const entPeriods = allPeriods.filter(p => p.legal_entity_id === ent.id);
+        const entCerts = allCerts.filter(c => c.legal_entity_id === ent.id || !c.legal_entity_id);
 
         const ctx: ConnectorDataContext = {
           employeesWithCompleteData: completeEmp,
@@ -109,7 +112,7 @@ export function useMultiEntityReadiness(companyId: string): UseMultiEntityReadin
           hasFiscalExpedient: entPeriods.length > 0,
           docCompletenessAvg: entEmployees.length > 0 ? Math.round((completeEmp / entEmployees.length) * 100) : 0,
           configuredAdapters: adapterMappings,
-          certificateConfigs: entCerts.map((c: any) => ({
+          certificateConfigs: entCerts.map(c => ({
             domain: c.domain,
             certificate_status: c.certificate_status,
             certificate_type: c.certificate_type,
@@ -121,9 +124,9 @@ export function useMultiEntityReadiness(companyId: string): UseMultiEntityReadin
 
         return {
           entityId: ent.id,
-          entityName: ent.legal_name,
+          entityName: ent.legal_name ?? 'Sin nombre',
           entityType: 'legal_entity' as const,
-          fiscalId: ent.cif,
+          fiscalId: ent.cif ?? undefined,
           dataContext: ctx,
         };
       });
@@ -146,21 +149,22 @@ export function useMultiEntityReadiness(companyId: string): UseMultiEntityReadin
     _entityId: string | null,
     adapters: IntegrationAdapter[],
   ): Promise<ConnectorDataContext> {
+    // NOTE: hr_employees/hr_contracts are DB views not in generated types — cast retained
     const [empRes, contRes, payRes] = await Promise.all([
-      supabase.from('hr_employees' as any).select('id, status, registration_status', { count: 'exact' })
+      (supabase as any).from('hr_employees').select('id, status, registration_status', { count: 'exact' })
         .eq('company_id', cId).eq('status', 'active'),
-      supabase.from('hr_contracts' as any).select('id, status, contract_type', { count: 'exact' })
+      (supabase as any).from('hr_contracts').select('id, status, contract_type', { count: 'exact' })
         .eq('company_id', cId).in('status', ['active', 'pending']),
-      supabase.from('hr_payroll_periods' as any).select('id, status', { count: 'exact' })
+      supabase.from('hr_payroll_periods').select('id, status', { count: 'exact' })
         .eq('company_id', cId).eq('status', 'closed'),
     ]);
 
-    const employees = (empRes.data || []) as any[];
-    const complete = employees.filter((e: any) =>
+    const employees = (empRes.data || []) as Array<{ id: string; status: string; registration_status: string }>;
+    const complete = employees.filter(e =>
       e.registration_status === 'completed' || e.registration_status === 'tgss_prepared'
     ).length;
-    const contracts = (contRes.data || []) as any[];
-    const completeContracts = contracts.filter((c: any) => c.contract_type && c.status === 'active').length;
+    const contracts = (contRes.data || []) as Array<{ id: string; status: string; contract_type: string }>;
+    const completeContracts = contracts.filter(c => c.contract_type && c.status === 'active').length;
 
     return {
       employeesWithCompleteData: complete,

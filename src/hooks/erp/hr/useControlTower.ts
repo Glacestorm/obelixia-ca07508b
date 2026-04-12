@@ -68,8 +68,8 @@ async function fetchEnrichedSignals(
 
   // Fetch all enrichment data in parallel
   const [submissionsRes, alertsRes, evidenceRes, versionRes] = await Promise.all([
-    // Readiness: latest submissions per company to derive circuit statuses
-    supabase
+    // Readiness: latest submissions per company — period_year not in generated types, cast retained
+    (supabase as any)
       .from('hr_official_submissions')
       .select('company_id, status, submission_domain, submission_type, period_year, period_month, created_at')
       .in('company_id', companyIds)
@@ -78,14 +78,14 @@ async function fetchEnrichedSignals(
 
     // Documental: unresolved HR alerts per company
     supabase
-      .from('erp_hr_alerts' as any)
+      .from('erp_hr_alerts')
       .select('company_id, severity, title, is_resolved')
       .in('company_id', companyIds)
       .eq('is_resolved', false)
       .limit(500),
 
     // Traceability: evidence counts per company + type check
-    (supabase as any)
+    supabase
       .from('erp_hr_evidence')
       .select('company_id, ref_entity_type')
       .in('company_id', companyIds)
@@ -93,17 +93,17 @@ async function fetchEnrichedSignals(
       .limit(1000),
 
     // Traceability: version counts per company + type check
-    (supabase as any)
+    supabase
       .from('erp_hr_version_registry')
       .select('company_id, entity_type')
       .in('company_id', companyIds)
       .limit(1000),
   ]);
 
-  const submissions = (submissionsRes.data || []) as any[];
-  const alerts = (alertsRes.data || []) as any[];
-  const evidenceRows = (evidenceRes.data || []) as any[];
-  const versionRows = (versionRes.data || []) as any[];
+  const submissions = (submissionsRes.data || []) as Array<{ company_id: string; status: string; submission_domain: string; submission_type: string }>;
+  const alerts = (alertsRes.data || []) as Array<{ company_id: string; severity: string; title: string; is_resolved: boolean }>;
+  const evidenceRows = (evidenceRes.data || []) as Array<{ company_id: string; ref_entity_type: string }>;
+  const versionRows = (versionRes.data || []) as Array<{ company_id: string; entity_type: string }>;
 
   // Initialize map for all companies
   for (const cid of companyIds) {
@@ -321,7 +321,9 @@ export function useControlTower(): UseControlTowerReturn {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        // erp_hr_ledger.immutable_hash is required in types but computed server-side — cast retained
         await (supabase as any).from('erp_hr_ledger').insert({
+          company_id: 'system',
           event_type: 'system_event',
           entity_type: 'control_tower',
           entity_id: user.id,

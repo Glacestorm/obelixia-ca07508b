@@ -149,6 +149,7 @@ export function useHRDocumentGenerator() {
 
           // Audit: log generation event (best-effort)
           if (newDoc?.id) {
+            // erp_hr_document_access_log is not in generated types — cast retained
             (supabase as any)
               .from('erp_hr_document_access_log')
               .insert({
@@ -165,7 +166,7 @@ export function useHRDocumentGenerator() {
                   related_entity_id: context.relatedEntityId,
                 },
               })
-              .then(({ error: auditErr }: any) => {
+              .then(({ error: auditErr }: { error: { message: string } | null }) => {
                 if (auditErr) console.warn('[useHRDocumentGenerator] Audit log failed (non-blocking):', auditErr.message);
               });
           }
@@ -196,7 +197,7 @@ export function useHRDocumentGenerator() {
                   generation_mode: rule.generation_mode ?? 'auto',
                 },
               });
-              (supabase as any).from('erp_hr_ledger').insert(row).then(() => {});
+              supabase.from('erp_hr_ledger').insert(row as unknown as import('@/integrations/supabase/types').Database['public']['Tables']['erp_hr_ledger']['Insert']).then(() => {});
             } catch (ledgerErr) {
               console.warn('[useHRDocumentGenerator] Ledger write failed (non-blocking):', ledgerErr);
             }

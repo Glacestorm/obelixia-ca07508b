@@ -80,13 +80,13 @@ export function useMonthlyClosing(companyId: string) {
     try {
       // Fetch runs, records, incidents in parallel
       const [runsRes, recsRes, incRes] = await Promise.all([
-        (supabase as any).from('erp_hr_payroll_runs')
+        supabase.from('erp_hr_payroll_runs')
           .select('id, run_number, status, run_type, total_gross, total_net, total_employer_cost, total_employees, employees_errored, warnings_count, snapshot_hash, completed_at')
           .eq('period_id', period.id).eq('company_id', companyId),
         supabase.from('hr_payroll_records')
           .select('id, status, gross_salary, net_salary, employer_cost')
           .eq('payroll_period_id', period.id),
-        (supabase as any).from('erp_hr_payroll_incidents')
+        supabase.from('erp_hr_payroll_incidents')
           .select('id, status')
           .eq('company_id', companyId).eq('period_id', period.id),
       ]);
@@ -105,8 +105,9 @@ export function useMonthlyClosing(companyId: string) {
       const preCloseValidation = validatePreCloseEngine(preCloseInput);
 
       // Fetch expedient readiness (SS + Fiscal metadata)
+      // erp_hr_fiscal_withholdings NOT in generated types — cast retained
       const [ssRes, fiscalRes] = await Promise.all([
-        (supabase as any).from('erp_hr_ss_contributions')
+        supabase.from('erp_hr_ss_contributions')
           .select('metadata')
           .eq('company_id', companyId)
           .eq('period_year', period.fiscal_year)
@@ -120,9 +121,11 @@ export function useMonthlyClosing(companyId: string) {
           .maybeSingle(),
       ]);
 
-      const ssStatus = (ssRes.data?.metadata as any)?.expedient_status || null;
+      const ssMeta = ssRes.data?.metadata as Record<string, unknown> | null;
+      const ssStatus = (ssMeta?.expedient_status as string) || null;
       const ssScore = ssStatus ? 50 : null; // Simplified score
-      const fiscalStatus = (fiscalRes.data?.metadata as any)?.expedient_status || null;
+      const fiscalMeta = (fiscalRes.data?.metadata as Record<string, unknown> | null);
+      const fiscalStatus = (fiscalMeta?.expedient_status as string) || null;
       const fiscalScore = fiscalStatus ? 50 : null;
 
       const expedientReadiness = computeExpedientReadiness(
@@ -131,7 +134,8 @@ export function useMonthlyClosing(companyId: string) {
       );
 
       // Closure snapshot from metadata
-      const closureSnapshot = (period.metadata as any)?.closure_snapshot as PeriodClosureSnapshot | null ?? null;
+      const periodMeta = (period.metadata ?? {}) as Record<string, unknown>;
+      const closureSnapshot = (periodMeta.closure_snapshot as PeriodClosureSnapshot | null) ?? null;
 
       // Derive phase
       const phase = derivePhaseFromPeriodStatus(
@@ -141,10 +145,10 @@ export function useMonthlyClosing(companyId: string) {
       );
 
       // Pending incidents
-      const pendingIncidents = incidents.filter((i: any) => i.status === 'pending');
+      const pendingIncidents = incidents.filter(i => i.status === 'pending');
 
       // Build checklist
-      const approvedRun = runs.find((r: any) => r.status === 'approved');
+      const approvedRun = runs.find(r => r.status === 'approved');
       const checklist = buildClosingChecklist({
         preCloseValidation,
         expedientReadiness,
@@ -199,7 +203,7 @@ export function useMonthlyClosing(companyId: string) {
       if (period.locked_at) {
         timeline.push(buildPhaseTimelineEvent('completed', 'Período bloqueado', 'Período bloqueado definitivamente'));
       }
-      const reopenHistory = (period.metadata as any)?.reopen_history || [];
+      const reopenHistory = (periodMeta.reopen_history as Array<{ reason?: string; reopened_by?: string }>) || [];
       for (const reopen of reopenHistory) {
         timeline.push(buildPhaseTimelineEvent('reopened', 'Período reabierto', reopen.reason || 'Reapertura controlada', reopen.reopened_by));
       }
@@ -317,7 +321,7 @@ export function useMonthlyClosing(companyId: string) {
     // 1. Supersede the version registry entry if it exists
     if (data.versionId) {
       try {
-        const { data: currentVersion } = await (supabase as any)
+        const { data: currentVersion } = await supabase
           .from('erp_hr_version_registry')
           .select('state')
           .eq('id', data.versionId)
@@ -325,10 +329,10 @@ export function useMonthlyClosing(companyId: string) {
 
         if (currentVersion?.state === 'closed') {
           const { data: { user } } = await supabase.auth.getUser();
-          await (supabase as any)
+          await supabase
             .from('erp_hr_version_registry')
             .update({
-              state: 'reopened',
+              state: 'reopened' as import('@/integrations/supabase/types').Database['public']['Enums']['hr_version_state'],
               previous_state: 'closed',
               state_changed_by: user?.id ?? null,
               state_change_reason: reason,
@@ -342,7 +346,7 @@ export function useMonthlyClosing(companyId: string) {
 
     // 2. Invalidate closure evidence linked to this period
     try {
-      const { data: evidenceRows } = await (supabase as any)
+      const { data: evidenceRows } = await supabase
         .from('erp_hr_evidence')
         .select('id')
         .eq('ref_entity_type', 'payroll_period')
@@ -352,7 +356,7 @@ export function useMonthlyClosing(companyId: string) {
 
       if (evidenceRows && evidenceRows.length > 0) {
         for (const row of evidenceRows) {
-          await (supabase as any)
+          await supabase
             .from('erp_hr_evidence')
             .update({
               is_valid: false,
@@ -411,10 +415,10 @@ export function useMonthlyClosing(companyId: string) {
     if (data.versionId) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        await (supabase as any)
+        await supabase
           .from('erp_hr_version_registry')
           .update({
-            state: 'validated',
+            state: 'validated' as import('@/integrations/supabase/types').Database['public']['Enums']['hr_version_state'],
             previous_state: 'closed',
             state_changed_by: user?.id ?? null,
             state_change_reason: 'Período bloqueado definitivamente',
