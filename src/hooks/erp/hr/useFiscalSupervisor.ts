@@ -81,6 +81,27 @@ export function useFiscalSupervisor(filters: FiscalSupervisorFilters) {
     staleTime: 60_000,
   });
 
+  // ─── Fetch payroll incidents (atrasos, regularizaciones, vacaciones, etc.) ───
+  const payrollIncidentsQuery = useQuery({
+    queryKey: ['fiscal-supervisor-payroll-incidents', companyId, periodYear, periodMonth],
+    queryFn: async () => {
+      let q = supabase
+        .from('erp_hr_payroll_incidents')
+        .select('id, employee_id, incident_type, concept_code, tributa_irpf, cotiza_ss, amount, description, status, applies_from, applies_to, period_month, period_year')
+        .eq('company_id', companyId)
+        .in('status', ['pending', 'validated', 'applied']);
+
+      if (periodYear) q = q.eq('period_year', periodYear);
+      if (periodMonth) q = q.eq('period_month', periodMonth);
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!companyId,
+    staleTime: 60_000,
+  });
+
   // ─── Transform & run engine ───────────────────────────────
   const result = useMemo((): FiscalSupervisorResult | null => {
     if (!payrollQuery.data) return null;
@@ -149,8 +170,7 @@ export function useFiscalSupervisor(filters: FiscalSupervisorFilters) {
       }));
 
     // Build incident flags from IT processes
-    const FISCAL_TYPES = new Set(['EC', 'AT', 'EP', 'MAT', 'PAT', 'RISK', 'NURSING', 'ERE']);
-    const activeIncidents: ActiveIncidentFlag[] = (itProcessesQuery.data ?? [])
+    const itIncidents: ActiveIncidentFlag[] = (itProcessesQuery.data ?? [])
       .filter(i => !employeeId || i.employee_id === employeeId)
       .map(i => {
         const emp = employees.find(e => e.id === i.employee_id);
@@ -160,11 +180,32 @@ export function useFiscalSupervisor(filters: FiscalSupervisorFilters) {
           incidentType: i.process_type ?? 'OTHER',
           startDate: i.start_date ?? '',
           endDate: i.end_date ?? undefined,
-          affectsFiscal: true, // All IT processes affect fiscal
+          affectsFiscal: true,
           affectsCotizacion: true,
           description: i.notes ?? undefined,
         };
       });
+
+    // Build incident flags from payroll incidents (atrasos, regularizaciones, vacaciones, etc.)
+    const payrollIncidents: ActiveIncidentFlag[] = (payrollIncidentsQuery.data ?? [])
+      .filter(i => !employeeId || i.employee_id === employeeId)
+      .filter(i => i.tributa_irpf || i.cotiza_ss)
+      .map(i => {
+        const emp = employees.find(e => e.id === i.employee_id);
+        return {
+          employeeId: i.employee_id,
+          employeeName: emp ? `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() : i.employee_id,
+          incidentType: i.incident_type ?? i.concept_code ?? 'PAYROLL_INCIDENT',
+          startDate: i.applies_from ?? '',
+          endDate: i.applies_to ?? undefined,
+          affectsFiscal: !!i.tributa_irpf,
+          affectsCotizacion: !!i.cotiza_ss,
+          description: i.description ?? undefined,
+        };
+      });
+
+    // Merge both incident sources
+    const activeIncidents = [...itIncidents, ...payrollIncidents];
 
     const input: FiscalSupervisorInput = {
       companyId,
@@ -196,16 +237,17 @@ export function useFiscalSupervisor(filters: FiscalSupervisorFilters) {
     }
 
     return supervisorResult;
-  }, [payrollQuery.data, employeesQuery.data, itProcessesQuery.data, companyId, periodYear, periodMonth, employeeId, statusFilter]);
+  }, [payrollQuery.data, employeesQuery.data, itProcessesQuery.data, payrollIncidentsQuery.data, companyId, periodYear, periodMonth, employeeId, statusFilter]);
 
   return {
     result,
-    isLoading: payrollQuery.isLoading || employeesQuery.isLoading || itProcessesQuery.isLoading,
-    error: payrollQuery.error?.message ?? employeesQuery.error?.message ?? itProcessesQuery.error?.message ?? null,
+    isLoading: payrollQuery.isLoading || employeesQuery.isLoading || itProcessesQuery.isLoading || payrollIncidentsQuery.isLoading,
+    error: payrollQuery.error?.message ?? employeesQuery.error?.message ?? itProcessesQuery.error?.message ?? payrollIncidentsQuery.error?.message ?? null,
     refetch: () => {
       payrollQuery.refetch();
       employeesQuery.refetch();
       itProcessesQuery.refetch();
+      payrollIncidentsQuery.refetch();
     },
   };
 }
