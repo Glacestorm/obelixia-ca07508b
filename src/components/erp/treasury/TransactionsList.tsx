@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { TransactionDetailDrawer } from './TransactionDetailDrawer';
+import type { TransactionDetail } from './TransactionDetailDrawer';
 
 interface Transaction {
   id: string;
@@ -63,6 +65,8 @@ export function TransactionsList({ companyId }: TransactionsListProps) {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [selectedTx, setSelectedTx] = useState<TransactionDetail | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchTransactions = useCallback(async (pageNum: number, search: string) => {
     setIsLoading(true);
