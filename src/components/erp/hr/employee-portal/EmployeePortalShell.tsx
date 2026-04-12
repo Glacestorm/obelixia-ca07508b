@@ -11,6 +11,7 @@ import { EmployeePortalNav, type PortalSection } from './EmployeePortalNav';
 import { EmployeePortalHome } from './EmployeePortalHome';
 import { EmployeePortalHeader } from './EmployeePortalHeader';
 import { EmployeeDocumentsSection } from './EmployeeDocumentsSection';
+import { EmployeeCertificatesSection } from './EmployeeCertificatesSection';
 import { EmployeePayslipsSection } from './EmployeePayslipsSection';
 import { EmployeeRequestsSection } from './EmployeeRequestsSection';
 import { EmployeeTimeSection } from './EmployeeTimeSection';
@@ -58,6 +59,8 @@ function EmployeePortalDesktopShell() {
         );
       case 'documents':
         return <EmployeeDocumentsSection employee={employee} />;
+      case 'certificates':
+        return <EmployeeCertificatesSection employee={employee} />;
       case 'payslips':
         return <EmployeePayslipsSection employee={employee} onNavigate={handleNavigate} />;
       case 'requests':
