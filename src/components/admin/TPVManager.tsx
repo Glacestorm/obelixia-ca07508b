@@ -57,10 +57,10 @@ export function TPVManager() {
     try {
       setLoading(true);
 
-      // Fetch all terminals with company info
+      // NOTE: company_tpv_terminals schema in types.ts has different columns than what
+      // this component uses (terminal_type, bank_name, etc.) — as any required
       const { data: terminals, error: terminalsError } = await supabase
-        .from('company_tpv_terminals')
-        .select(`
+        .from('company_tpv_terminals' as any)
           id,
           terminal_identifier,
           terminal_type,
