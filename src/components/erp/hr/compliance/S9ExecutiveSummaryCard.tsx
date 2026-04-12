@@ -98,7 +98,7 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
       doc.setTextColor(75, 85, 99);
       doc.text(sanitizeForPDF(`Periodo: ${summaryData.period} | Generado: ${new Date().toLocaleDateString('es-ES')}`), margin, y);
       y += 4;
-      doc.text(sanitizeForPDF(`Estado: ${summaryData.readiness}`), margin, y);
+      doc.text(sanitizeForPDF(`Estado: ${summaryData.readiness}${summaryData.latestVersionId ? ` | VPT-REF: ${summaryData.latestVersionId.slice(0, 8)}` : ''}`), margin, y);
       y += 10;
 
       // KPIs
