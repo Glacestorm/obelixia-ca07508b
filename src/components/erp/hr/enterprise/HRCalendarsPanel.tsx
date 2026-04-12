@@ -66,8 +66,9 @@ export function HRCalendarsPanel({ companyId }: Props) {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent>
-              <p className="text-xs text-muted-foreground mb-3">
-                Festivos utilizados para el cálculo de días hábiles y vencimientos documentales.
+              <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Estos festivos se usan automáticamente para el cálculo de días hábiles, vencimientos y plazos legales.
               </p>
               {holidaysLoading ? (
                 <p className="text-sm text-muted-foreground">Cargando festivos...</p>
@@ -98,10 +99,13 @@ export function HRCalendarsPanel({ companyId }: Props) {
 
       {/* Legacy enterprise calendars */}
       {calendars.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>Sin calendarios enterprise. Genera datos demo para crear calendarios con festivos.</p>
+        <Card className="border-dashed">
+          <CardContent className="py-6 text-center text-muted-foreground">
+            <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Sin calendarios enterprise adicionales.</p>
+            {holidayCount > 0 && (
+              <p className="text-xs mt-1">Los plazos ya se calculan con los <strong>{holidayCount} festivos operativos</strong> configurados arriba.</p>
+            )}
           </CardContent>
         </Card>
       ) : (
