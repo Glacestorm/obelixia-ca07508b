@@ -56,7 +56,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
         .order('created_at', { ascending: false });
 
       if (terminalsError) throw terminalsError;
-      setTerminals((terminalsData as TPVTerminal[]) || []);
+      setTerminals((terminalsData ?? []) as TPVTerminal[]);
     } catch (error) {
       console.error('Error fetching terminals:', error);
       toast.error('Error al cargar terminales TPV');

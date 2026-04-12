@@ -28,6 +28,67 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
+// ── Typed shapes for pack_data sub-objects ──────────────────────────────────
+interface PackSourceItem {
+  type?: string;
+  label?: string;
+  url?: string;
+}
+
+interface PackDataSS {
+  regime?: string;
+  framework?: string;
+  maxMonths?: number;
+  certType?: string;
+  notes?: string;
+}
+
+interface PackDataCDI {
+  hasCDI?: boolean;
+  treatyRef?: string;
+  keyArticles?: string[];
+}
+
+interface PackDataTax {
+  residenceDaysThreshold?: number;
+  art7pApplicable?: boolean;
+  exitTax?: boolean;
+  beckhamEquivalent?: string;
+  notes?: string;
+}
+
+interface PackDataImmigration {
+  workPermitRequired?: boolean;
+  visaType?: string;
+  processingDays?: string;
+  notes?: string;
+}
+
+interface PackDataPayroll {
+  splitRecommended?: boolean;
+  shadowRecommended?: boolean;
+  taxEqRecommended?: boolean;
+}
+
+interface PackDataReviewTrigger {
+  id: string;
+  severity?: string;
+  affectedModule?: string;
+  evidenceRequired?: boolean;
+  reason?: string;
+  suggestedAction?: string;
+}
+
+interface PackDataBlob {
+  ss?: PackDataSS;
+  cdi?: PackDataCDI;
+  tax?: PackDataTax;
+  immigration?: PackDataImmigration;
+  payroll?: PackDataPayroll;
+  requiredDocuments?: string[];
+  reviewTriggers?: PackDataReviewTrigger[];
+}
+
 interface Props {
   companyId?: string;
 }
@@ -350,7 +411,7 @@ function PackDetailView({
     );
   }
 
-  const pd = pack.pack_data as any;
+  const pd = pack.pack_data as PackDataBlob;
 
   return (
     <div className="space-y-4">
@@ -471,10 +532,10 @@ function PackDetailView({
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Fuentes</CardTitle></CardHeader>
                 <CardContent>
                   <ul className="space-y-1">
-                    {(pack.sources as any[]).map((s, i) => (
+                    {(pack.sources as PackSourceItem[]).map((s, i) => (
                       <li key={i} className="text-xs flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">{s.type}</Badge>
-                        <span>{s.label}</span>
+                        <Badge variant="outline" className="text-[10px]">{s.type ?? ''}</Badge>
+                        <span>{s.label ?? ''}</span>
                       </li>
                     ))}
                   </ul>
@@ -548,12 +609,12 @@ function PackDetailView({
               </Card>
             )}
 
-            {pd?.requiredDocuments?.length > 0 && (
+            {(pd?.requiredDocuments?.length ?? 0) > 0 && (
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Documentos requeridos</CardTitle></CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-1">
-                    {pd.requiredDocuments.map((d: string) => (
+                    {(pd.requiredDocuments ?? []).map((d) => (
                       <Badge key={d} variant="outline" className="text-xs">{d.replace(/_/g, ' ')}</Badge>
                     ))}
                   </div>
@@ -566,9 +627,9 @@ function PackDetailView({
         <TabsContent value="triggers">
           <Card>
             <CardContent className="p-0">
-              {pd?.reviewTriggers?.length > 0 ? (
+              {(pd?.reviewTriggers?.length ?? 0) > 0 ? (
                 <div className="divide-y">
-                  {pd.reviewTriggers.map((t: any) => (
+                  {(pd.reviewTriggers ?? []).map((t) => (
                     <div key={t.id} className="px-4 py-3">
                       <div className="flex items-center gap-2 mb-1">
                         <TriggerSeverityIcon severity={t.severity} />
