@@ -276,6 +276,18 @@ export function TaskDetail({ task, engine, onClose }: Props) {
         {task.escalation_at && <p>Escalada: {new Date(task.escalation_at).toLocaleString('es-ES')}</p>}
       </div>
 
+      {/* S9.11-P3: Process deadlines when linked to admin request */}
+      {requestType && (
+        <>
+          <Separator />
+          <ProcessDeadlinesSummary
+            processType={requestType}
+            triggerDate={task.created_at}
+            maxItems={3}
+          />
+        </>
+      )}
+
       {/* V2-ES.3 Paso 2: Linked documents */}
       {task.company_id && (
         <>
