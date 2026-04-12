@@ -8,3 +8,4 @@
 export { HRSocialSecurityPanel } from '../../HRSocialSecurityPanel';
 export { ESLocalizationPlugin } from '../../localization/es';
 export { HRCNAEIntelligencePanel } from '../../cnae-intelligence/HRCNAEIntelligencePanel';
+export { HRFiscalSupervisorPanel } from '../../compliance/HRFiscalSupervisorPanel';

@@ -29,3 +29,6 @@ export { HRLegalOnboardingPanel } from './HRLegalOnboardingPanel';
 
 // C5 - Motor de Sanciones Laborales
 export { HRDisciplinarySanctionsPanel } from './HRDisciplinarySanctionsPanel';
+
+// G1.2 - Fiscal Supervisor Core
+export { HRFiscalSupervisorPanel } from './HRFiscalSupervisorPanel';
