@@ -411,7 +411,7 @@ function PackDetailView({
     );
   }
 
-  const pd = pack.pack_data as Record<string, unknown>;
+  const pd = pack.pack_data as PackDataBlob;
 
   return (
     <div className="space-y-4">
@@ -532,10 +532,10 @@ function PackDetailView({
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Fuentes</CardTitle></CardHeader>
                 <CardContent>
                   <ul className="space-y-1">
-                    {pack.sources.map((s, i) => (
+                    {(pack.sources as PackSourceItem[]).map((s, i) => (
                       <li key={i} className="text-xs flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">{s.type}</Badge>
-                        <span>{s.label}</span>
+                        <Badge variant="outline" className="text-[10px]">{s.type ?? ''}</Badge>
+                        <span>{s.label ?? ''}</span>
                       </li>
                     ))}
                   </ul>
