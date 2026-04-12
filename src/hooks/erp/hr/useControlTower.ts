@@ -321,7 +321,8 @@ export function useControlTower(): UseControlTowerReturn {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        await supabase.from('erp_hr_ledger').insert([{
+        // erp_hr_ledger.immutable_hash is required in types but computed server-side — cast retained
+        await (supabase as any).from('erp_hr_ledger').insert({
           company_id: 'system',
           event_type: 'system_event',
           entity_type: 'control_tower',
@@ -335,8 +336,8 @@ export function useControlTower(): UseControlTowerReturn {
             critical_count: summary?.criticalCount ?? 0,
             total_alerts: summary?.totalAlerts ?? 0,
             enrichment_loaded: enrichmentLoaded,
-          } as unknown as import('@/integrations/supabase/types').Json,
-        }]);
+          },
+        });
       } catch {
         // fire-and-forget
       }

@@ -62,9 +62,9 @@ export function useOfficialReadinessMatrix(companyId: string) {
       // 1. Gather connector readiness context (same as useOfficialReadiness)
       // NOTE: hr_employees and hr_contracts are DB views not in generated types — cast retained
       const [employeesRes, contractsRes, payrollRes, ssRes, certsRes, adaptersRes] = await Promise.all([
-        supabase.from('hr_employees' as any).select('id, status, registration_status', { count: 'exact' })
+        (supabase as any).from('hr_employees').select('id, status, registration_status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'active'),
-        supabase.from('hr_contracts' as any).select('id, status, contract_type', { count: 'exact' })
+        (supabase as any).from('hr_contracts').select('id, status, contract_type', { count: 'exact' })
           .eq('company_id', companyId).in('status', ['active', 'pending']),
         supabase.from('hr_payroll_periods').select('id, status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'closed'),

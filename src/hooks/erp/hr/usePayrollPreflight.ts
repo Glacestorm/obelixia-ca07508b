@@ -77,8 +77,8 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
           .eq('status', 'active'),
       ]);
 
-      const period = periodRes.data as Record<string, unknown> | null;
-      const resolvedPeriodId = periodId || (period?.id as string | undefined);
+      const period = periodRes.data as any;
+      const resolvedPeriodId = periodId || period?.id;
       const incidents = (incidentRes.data || []) as Array<{ id: string; status: string }>;
       const latestRun = runsRes.data;
       const hasTerminations = (terminationRes.count ?? 0) > 0;
@@ -94,7 +94,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       };
 
       // Check artifacts from metadata
-      const meta = (period?.metadata || {}) as Record<string, unknown>;
+      const meta = (period?.metadata || {}) as any;
 
       // ── Dynamic deadlines via regulatoryCalendarEngine ──
       const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -147,7 +147,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
 
       // ── Last-mile readiness (best-effort from metadata) ──
       const lastMileReadiness: Record<string, LastMileStepStatus> = {};
-      const lmMeta = meta.last_mile_readiness as Record<string, Record<string, string>> | undefined;
+      const lmMeta = meta.last_mile_readiness as Record<string, any> | undefined;
       if (lmMeta) {
         for (const [key, val] of Object.entries(lmMeta)) {
           if (val && typeof val === 'object') {
@@ -162,7 +162,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       }
 
       const input: PreflightInput = {
-        periodStatus: (period?.status as string) || 'draft',
+        periodStatus: period?.status || 'draft',
         periodId: resolvedPeriodId,
         incidentCounts,
         latestRunStatus: latestRun?.status || null,

@@ -312,7 +312,8 @@ function buildSummary(companies: PortfolioCompany[]): PortfolioSummary {
  */
 async function tracePortfolioAccess(userId: string, companiesCount: number, role: AdvisoryRole) {
   try {
-    await supabase.from('erp_hr_ledger').insert([{
+    // erp_hr_ledger.immutable_hash is required in types but computed server-side — cast retained
+    await (supabase as any).from('erp_hr_ledger').insert({
       company_id: 'system',
       event_type: 'system_event',
       entity_type: 'advisory_portfolio',
@@ -324,8 +325,8 @@ async function tracePortfolioAccess(userId: string, companiesCount: number, role
         action: 'portfolio_accessed',
         companies_in_portfolio: companiesCount,
         advisor_role: role,
-      } as unknown as import('@/integrations/supabase/types').Json,
-    }]);
+      },
+    });
   } catch (err) {
     // Fire-and-forget: never block business flow
     console.debug('[AdvisoryPortfolio] Ledger trace failed (non-blocking):', err);
