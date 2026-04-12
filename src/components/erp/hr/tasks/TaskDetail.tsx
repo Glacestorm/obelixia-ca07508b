@@ -1,6 +1,7 @@
 /**
  * TaskDetail — Slide-over detail panel for a task
  * H1.1: UUID→name lookups for employee, assigned_to; copy button for technical IDs
+ * S9.11-P3: ProcessDeadlinesSummary for tasks linked to admin requests
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { HRTask } from '@/hooks/erp/hr/useHRTasksEngine';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
+import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -93,6 +95,26 @@ function useEntityNameResolver(task: HRTask) {
   return names;
 }
 
+/** Lightweight: fetch request_type for a linked admin_request (single field, single query) */
+function useLinkedRequestType(task: HRTask) {
+  const [requestType, setRequestType] = useState<string | null>(null);
+  const isLinked = task.related_entity_type === 'admin_request' && !!task.related_entity_id;
+
+  useEffect(() => {
+    if (!isLinked) return;
+    (supabase as any)
+      .from('erp_hr_admin_requests')
+      .select('request_type')
+      .eq('id', task.related_entity_id!)
+      .single()
+      .then(({ data }: { data: { request_type?: string } | null }) => {
+        if (data?.request_type) setRequestType(data.request_type);
+      });
+  }, [isLinked, task.related_entity_id]);
+
+  return { requestType, isLinked };
+}
+
 function CopyableId({ label, id }: { label: string; id: string }) {
   return (
     <p className="text-muted-foreground flex items-center gap-1">
@@ -112,6 +134,7 @@ function CopyableId({ label, id }: { label: string; id: string }) {
 export function TaskDetail({ task, engine, onClose }: Props) {
   const isActive = task.status === 'pending' || task.status === 'in_progress';
   const names = useEntityNameResolver(task);
+  const { requestType } = useLinkedRequestType(task);
 
   const resolvedName = (id: string | null | undefined) => {
     if (!id) return null;
@@ -252,6 +275,18 @@ export function TaskDetail({ task, engine, onClose }: Props) {
         {task.completed_at && <p>Completada: {new Date(task.completed_at).toLocaleString('es-ES')}</p>}
         {task.escalation_at && <p>Escalada: {new Date(task.escalation_at).toLocaleString('es-ES')}</p>}
       </div>
+
+      {/* S9.11-P3: Process deadlines when linked to admin request */}
+      {requestType && (
+        <>
+          <Separator />
+          <ProcessDeadlinesSummary
+            processType={requestType}
+            triggerDate={task.created_at}
+            maxItems={3}
+          />
+        </>
+      )}
 
       {/* V2-ES.3 Paso 2: Linked documents */}
       {task.company_id && (
