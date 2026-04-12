@@ -8,7 +8,7 @@
 import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getCorridorPack, type CorridorKnowledgePack, type PackSourceRef } from '@/engines/erp/hr/corridorKnowledgePacks';
+import { getCorridorPack, type CorridorKnowledgePack, type PackSourceRef, type CorridorReviewTrigger } from '@/engines/erp/hr/corridorKnowledgePacks';
 
 // ── Pack data shape as stored in pack_data JSON column ──────────────────────
 /** Intermediate type for the JSON blob stored in erp_hr_corridor_packs.pack_data */
@@ -58,7 +58,7 @@ export interface CorridorPackRow {
  */
 function dbRowToCorridorPack(row: CorridorPackRow): CorridorKnowledgePack {
   const pd = row.pack_data as PackDataBlob;
-  const sourceRefs = (Array.isArray(row.sources) ? row.sources : []) as PackSourceRef[];
+  const sourceRefs = (Array.isArray(row.sources) ? row.sources : []) as unknown as PackSourceRef[];
 
   return {
     id: row.canonical_code + '-v' + row.version,
@@ -78,7 +78,7 @@ function dbRowToCorridorPack(row: CorridorPackRow): CorridorKnowledgePack {
     immigration: pd.immigration,
     payroll: pd.payroll,
     requiredDocuments: pd.requiredDocuments ?? [],
-    reviewTriggers: pd.reviewTriggers ?? [],
+    reviewTriggers: (pd.reviewTriggers ?? []) as unknown as CorridorKnowledgePack['reviewTriggers'],
   };
 }
 
