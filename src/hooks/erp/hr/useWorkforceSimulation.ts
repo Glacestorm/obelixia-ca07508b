@@ -55,10 +55,10 @@ export function useWorkforceSimulation(companyId: string) {
           .eq('company_id', companyId),
         supabase
           .from('erp_hr_payrolls')
-          .select('id, gross_salary, net_salary, total_cost, status, period_start')
+          .select('id, gross_salary, net_salary, total_cost, status, period_month')
           .eq('company_id', companyId)
           .eq('status', 'closed')
-          .order('period_start', { ascending: false })
+          .order('period_month', { ascending: false })
           .limit(500),
         // 8B: windowed to last 90 days
         supabase
@@ -68,10 +68,10 @@ export function useWorkforceSimulation(companyId: string) {
           .in('status', ['approved', 'taken'])
           .gte('start_date', ninetyDaysAgo)
           .limit(500),
-        // 8B: fetch contract hours if available
+        // 8B: fetch employee weekly_hours if available (weekly_hours is on erp_hr_employees)
         supabase
-          .from('erp_hr_contracts')
-          .select('id, weekly_hours, contract_type, status')
+          .from('erp_hr_employees')
+          .select('id, weekly_hours')
           .eq('company_id', companyId)
           .eq('status', 'active')
           .limit(500),
@@ -80,7 +80,7 @@ export function useWorkforceSimulation(companyId: string) {
       const employees = empRes.data || [];
       const payrolls = payRes.data || [];
       const leaves = leaveRes.data || [];
-      const contracts = contractRes.data || [];
+      const weeklyHoursData = contractRes.data || [];
 
       const active = employees.filter(e => e.status === 'active');
       const headcount = employees.length;
@@ -131,8 +131,8 @@ export function useWorkforceSimulation(companyId: string) {
       // ── 8B: Weekly hours from contracts ──
       let avgWorkingHoursWeek = 40; // Spanish legal default
       dataQuality.avgWorkingHoursWeek = 'estimated';
-      if (contracts.length > 0) {
-        const hoursValues = contracts.map(c => c.weekly_hours).filter((h): h is number => h != null && h > 0);
+      if (weeklyHoursData.length > 0) {
+        const hoursValues = weeklyHoursData.map(c => c.weekly_hours).filter((h): h is number => h != null && h > 0);
         if (hoursValues.length > 0) {
           avgWorkingHoursWeek = Math.round((hoursValues.reduce((a, b) => a + b, 0) / hoursValues.length) * 10) / 10;
           dataQuality.avgWorkingHoursWeek = 'real';
