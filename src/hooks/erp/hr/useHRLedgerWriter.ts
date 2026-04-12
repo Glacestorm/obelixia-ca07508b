@@ -12,7 +12,9 @@
 
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
+import type { Json, Database } from '@/integrations/supabase/types';
+
+type HrVersionState = Database['public']['Enums']['hr_version_state'];
 import {
   buildLedgerRow,
   detectChangedFields,
