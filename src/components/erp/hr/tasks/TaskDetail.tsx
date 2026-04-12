@@ -134,6 +134,7 @@ function CopyableId({ label, id }: { label: string; id: string }) {
 export function TaskDetail({ task, engine, onClose }: Props) {
   const isActive = task.status === 'pending' || task.status === 'in_progress';
   const names = useEntityNameResolver(task);
+  const { requestType } = useLinkedRequestType(task);
 
   const resolvedName = (id: string | null | undefined) => {
     if (!id) return null;
