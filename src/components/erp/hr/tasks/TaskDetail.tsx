@@ -102,12 +102,12 @@ function useLinkedRequestType(task: HRTask) {
 
   useEffect(() => {
     if (!isLinked) return;
-    supabase
+    (supabase as any)
       .from('erp_hr_admin_requests')
       .select('request_type')
       .eq('id', task.related_entity_id!)
       .single()
-      .then(({ data }) => {
+      .then(({ data }: { data: { request_type?: string } | null }) => {
         if (data?.request_type) setRequestType(data.request_type);
       });
   }, [isLinked, task.related_entity_id]);
