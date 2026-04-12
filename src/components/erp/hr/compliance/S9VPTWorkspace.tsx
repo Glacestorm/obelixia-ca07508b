@@ -4,6 +4,8 @@
  *
  * Status semantics (aligned with useHRVersionRegistry):
  *   draft → review → approved (vigente) → closed / superseded
+ *
+ * S9.10: Includes version history panel for traceability.
  */
 
 import { memo, useState, useCallback, useMemo } from 'react';
@@ -27,6 +29,7 @@ import {
   FileCheck,
   XCircle,
   Info,
+  History,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useS9VPT, type VPTRow } from '@/hooks/erp/hr/useS9VPT';
@@ -38,6 +41,7 @@ import {
   VPT_SUBFACTOR_LABELS,
   VPT_FACTOR_LABELS,
 } from '@/engines/erp/hr/s9ComplianceEngine';
+import { VersionHistoryPanel } from '../ledger/VersionHistoryPanel';
 import type { VPTFactorScores, VPTFactor, VPTValuationStatus } from '@/types/s9-compliance';
 
 interface S9VPTWorkspaceProps {
@@ -237,6 +241,7 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
   const { updateScores, transitionStatus, setEquivalentBand, isUpdating } = useS9VPT(companyId);
   const [scores, setScores] = useState<VPTFactorScores>(valuation.factor_scores);
   const [notes, setNotes] = useState(valuation.notes ?? '');
+  const [showHistory, setShowHistory] = useState(false);
 
   const methodology = valuation.methodology_snapshot ?? DEFAULT_VPT_METHODOLOGY;
   const breakdown = useMemo(() => computeVPTScore(scores, methodology), [scores, methodology]);
@@ -286,7 +291,22 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onBack}>← Volver</Button>
         <div className="flex items-center gap-2">
+          {/* S9.10: Version history button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowHistory(!showHistory)}
+            className="gap-1"
+          >
+            <History className="h-3.5 w-3.5" />
+            Historial
+          </Button>
           <StatusBadge status={valuation.status} />
+          {valuation.version_id && (
+            <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground">
+              VPT-REF: {valuation.version_id.slice(0, 8)}
+            </Badge>
+          )}
           {isEditable && (
             <>
               <Button size="sm" variant="outline" onClick={() => handleTransition('review')}>Enviar a revisión</Button>
@@ -381,6 +401,16 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
           />
         </CardContent>
       </Card>
+
+      {/* S9.10: Version history panel */}
+      {showHistory && (
+        <VersionHistoryPanel
+          companyId={companyId}
+          entityType="vpt_valuation"
+          entityId={valuation.position_id}
+          title="Historial de versiones VPT"
+        />
+      )}
     </div>
   );
 }
