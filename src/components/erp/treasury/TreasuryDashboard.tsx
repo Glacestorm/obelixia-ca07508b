@@ -6,6 +6,7 @@ import {
   Wallet, 
   ArrowDownCircle, 
   ArrowUpCircle, 
+  ArrowUpDown,
   Building2, 
   FileText,
   TrendingUp,
@@ -25,6 +26,7 @@ import { CashFlowForecast } from './CashFlowForecast';
 import { AgingReport } from './AgingReport';
 import { InvestmentsPanel, FinancingInvestmentsModule } from './financing';
 import { BankingHubDashboard } from '../banking';
+import { TransactionsList } from './TransactionsList';
 
 export function TreasuryDashboard() {
   const { currentCompany } = useERPContext();
@@ -152,6 +154,10 @@ export function TreasuryDashboard() {
             <PiggyBank className="h-4 w-4" />
             Inversiones
           </TabsTrigger>
+          <TabsTrigger value="transactions" className="gap-1.5">
+            <ArrowUpDown className="h-4 w-4" />
+            Movimientos
+          </TabsTrigger>
           <TabsTrigger value="banking-hub" className="gap-1.5">
             <Link2 className="h-4 w-4" />
             Open Banking
@@ -192,6 +198,10 @@ export function TreasuryDashboard() {
 
         <TabsContent value="investments" className="mt-4">
           <InvestmentsPanel companyId={currentCompany.id} />
+        </TabsContent>
+
+        <TabsContent value="transactions" className="mt-4">
+          <TransactionsList companyId={currentCompany.id} />
         </TabsContent>
 
         <TabsContent value="banking-hub" className="mt-4">
