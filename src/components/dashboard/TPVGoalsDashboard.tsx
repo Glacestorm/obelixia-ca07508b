@@ -21,8 +21,7 @@ interface TPVGoal {
 }
 
 interface TPVMetrics {
-  totalRevenue: number;
-  averageAffiliation: number;
+  totalMonthlyVolume: number;
   averageCommission: number;
   activeTerminals: number;
 }
@@ -54,8 +53,8 @@ export function TPVGoalsDashboard() {
 
       // Fetch current TPV metrics
       let terminalsQuery = supabase
-        .from('company_tpv_terminals' as any)
-        .select('annual_revenue, affiliation_percentage, active, company_id, id');
+        .from('company_tpv_terminals')
+        .select('monthly_volume, commission_rate, status, company_id, id');
 
       // If not admin, filter by gestor's companies
       if (!isAdmin && user?.id) {
@@ -68,10 +67,8 @@ export function TPVGoalsDashboard() {
         if (companyIds.length > 0) {
           terminalsQuery = terminalsQuery.in('company_id', companyIds);
         } else {
-          // No companies for this gestor
           setMetrics({
-            totalRevenue: 0,
-            averageAffiliation: 0,
+            totalMonthlyVolume: 0,
             averageCommission: 0,
             activeTerminals: 0,
           });
@@ -85,37 +82,22 @@ export function TPVGoalsDashboard() {
 
       if (terminalsError) throw terminalsError;
 
-      // Fetch commission rates
-      const terminalIds = terminals?.map((t: any) => t.id) || [];
-      const { data: commissions, error: commissionsError } = await supabase
-        .from('tpv_commission_rates' as any)
-        .select('*')
-        .in('terminal_id', terminalIds);
-
-      if (commissionsError) throw commissionsError;
-
       // Calculate metrics
-      const activeTerminals = terminals?.filter((t: any) => t.active) || [];
-      const totalRevenue = terminals?.reduce((sum: number, t: any) => sum + (t.annual_revenue || 0), 0) || 0;
-      const averageAffiliation = activeTerminals.length > 0
-        ? activeTerminals.reduce((sum: number, t: any) => sum + (t.affiliation_percentage || 0), 0) / activeTerminals.length
-        : 0;
+      const activeTerminals = terminals?.filter(t => t.status === 'active') || [];
+      const totalMonthlyVolume = terminals?.reduce((sum, t) => sum + (t.monthly_volume || 0), 0) || 0;
 
-      // Calculate average commission (nacional)
-      const nationalCommissions = commissions?.filter((c: any) => c.card_type === 'NACIONAL') || [];
-      const averageCommission = nationalCommissions.length > 0
-        ? nationalCommissions.reduce((sum: number, c: any) => sum + c.commission_rate, 0) / nationalCommissions.length
+      const averageCommission = activeTerminals.length > 0
+        ? activeTerminals.reduce((sum, t) => sum + (t.commission_rate || 0), 0) / activeTerminals.length
         : 0;
 
       setMetrics({
-        totalRevenue,
-        averageAffiliation,
+        totalMonthlyVolume,
         averageCommission,
         activeTerminals: activeTerminals.length,
       });
 
       setGoals(goalsData || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching TPV goals:', error);
       toast.error('Error al cargar objetivos de TPV');
     } finally {
@@ -125,7 +107,6 @@ export function TPVGoalsDashboard() {
 
   const getGoalProgress = (metricType: string, currentValue: number, targetValue: number) => {
     if (metricType === 'tpv_commission') {
-      // For commission, lower is better, so invert the calculation
       const progress = Math.max(0, Math.min(100, ((targetValue - currentValue) / targetValue) * 100 + 100));
       return progress;
     }
@@ -155,7 +136,7 @@ export function TPVGoalsDashboard() {
   const getMetricLabel = (metricType: string) => {
     switch (metricType) {
       case 'tpv_revenue':
-        return 'Facturación TPV';
+        return 'Volumen Mensual TPV';
       case 'tpv_affiliation':
         return 'Vinculación TPV';
       case 'tpv_commission':
@@ -169,9 +150,10 @@ export function TPVGoalsDashboard() {
     if (!metrics) return 0;
     switch (metricType) {
       case 'tpv_revenue':
-        return metrics.totalRevenue;
+        return metrics.totalMonthlyVolume;
       case 'tpv_affiliation':
-        return metrics.averageAffiliation;
+        // No affiliation field in real schema — return 0
+        return 0;
       case 'tpv_commission':
         return metrics.averageCommission;
       default:
@@ -210,20 +192,12 @@ export function TPVGoalsDashboard() {
 
       <TabsContent value="goals" className="space-y-6">
         {/* Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Facturación Total TPV</CardDescription>
+            <CardDescription>Volumen Mensual TPV</CardDescription>
             <CardTitle className="text-2xl">
-              {formatValue('tpv_revenue', metrics?.totalRevenue || 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Vinculación Media</CardDescription>
-            <CardTitle className="text-2xl">
-              {formatValue('tpv_affiliation', metrics?.averageAffiliation || 0)}
+              {formatValue('tpv_revenue', metrics?.totalMonthlyVolume || 0)}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -251,7 +225,7 @@ export function TPVGoalsDashboard() {
             Objetivos de TPV
           </CardTitle>
           <CardDescription>
-            Seguimiento de metas de facturación, vinculación y comisiones
+            Seguimiento de metas de volumen y comisiones
           </CardDescription>
         </CardHeader>
         <CardContent>
