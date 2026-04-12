@@ -48,12 +48,12 @@ export const UpcomingVisitsWidget = () => {
 
       // Fetch reminder preferences
       const { data: prefData } = await supabase
-        .from('visit_reminder_preferences' as any)
+        .from('visit_reminder_preferences')
         .select('enabled, minutes_before')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      setReminderPreference((prefData as unknown as ReminderPreference) || { enabled: false, minutes_before: 60 });
+      setReminderPreference(prefData || { enabled: false, minutes_before: 60 });
 
       // Fetch upcoming visits for the next 7 days
       const today = new Date();
@@ -61,7 +61,7 @@ export const UpcomingVisitsWidget = () => {
       nextWeek.setDate(today.getDate() + 7);
 
       const { data: visitsData, error } = await supabase
-        .from('visits' as any)
+        .from('visits')
         .select(`
           id,
           visit_date,
@@ -79,8 +79,8 @@ export const UpcomingVisitsWidget = () => {
 
       if (error) throw error;
 
-      setVisits((visitsData as any) || []);
-    } catch (error: any) {
+      setVisits((visitsData as unknown as Visit[]) || []);
+    } catch (error) {
       console.error('Error fetching visits:', error);
       toast.error('Error al cargar las visitas');
     } finally {

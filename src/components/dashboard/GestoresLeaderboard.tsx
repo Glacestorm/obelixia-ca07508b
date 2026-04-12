@@ -32,6 +32,18 @@ interface GestorPerformance {
   score: number;
 }
 
+interface VisitWithProfile {
+  gestor_id: string;
+  result: string | null;
+  porcentaje_vinculacion: number | null;
+  profiles: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  } | null;
+}
+
 type RankingMetric = 'overall' | 'visits' | 'conversion' | 'vinculacion';
 
 export const GestoresLeaderboard = () => {
@@ -54,7 +66,7 @@ export const GestoresLeaderboard = () => {
 
       // Fetch all visits with gestor info
       const { data: visitsData, error: visitsError } = await supabase
-        .from('visits' as any)
+        .from('visits')
         .select(`
           gestor_id,
           result,
@@ -74,7 +86,7 @@ export const GestoresLeaderboard = () => {
       // Group visits by gestor and calculate metrics
       const gestorMap = new Map<string, GestorPerformance>();
 
-      (visitsData as any)?.forEach((visit: any) => {
+      (visitsData as unknown as VisitWithProfile[] | null)?.forEach((visit) => {
         const gestorId = visit.gestor_id;
         const profile = visit.profiles;
 
@@ -124,11 +136,10 @@ export const GestoresLeaderboard = () => {
           ? gestor.total_vinculacion / gestor.successful_visits
           : 0;
 
-        // Calculate overall score (weighted)
         const score = 
-          (gestor.total_visits * 2) + // Visits weight: 2
-          (conversion_rate * 1.5) +    // Conversion weight: 1.5
-          (avg_vinculacion * 1);       // Vinculación weight: 1
+          (gestor.total_visits * 2) +
+          (conversion_rate * 1.5) +
+          (avg_vinculacion * 1);
 
         return {
           ...gestor,
@@ -145,7 +156,7 @@ export const GestoresLeaderboard = () => {
       });
 
       setRankings(gestoresArray);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching performance data:', error);
       toast.error('Error al cargar el ranking');
     } finally {

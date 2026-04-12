@@ -127,15 +127,15 @@ const SettingsPage: React.FC = () => {
 
       if (error) throw error;
       
-      // También actualizar el perfil en la tabla profiles si existe
-      await (supabase
-        .from('profiles' as any)
+      // Update profile in profiles table
+      // NOTE: profiles table does NOT have 'company' or 'phone' columns in types.ts
+      // Only full_name is a valid column — the other fields are stored in auth.users metadata only
+      await supabase
+        .from('profiles')
         .update({
           full_name: profileForm.full_name,
-          company: profileForm.company,
-          phone: profileForm.phone,
         })
-        .eq('id', user.id) as any);
+        .eq('id', user.id);
 
       toast.success(language === 'es' ? 'Perfil actualizado correctamente' : 'Profile updated successfully');
     } catch (error) {

@@ -59,9 +59,8 @@ export const VisitReminders = () => {
     try {
       setLoading(true);
       
-      // Check if preference exists
       const { data, error } = await supabase
-        .from('visit_reminder_preferences' as any)
+        .from('visit_reminder_preferences')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
@@ -71,9 +70,8 @@ export const VisitReminders = () => {
       }
 
       if (data) {
-        setPreference(data as unknown as ReminderPreference);
+        setPreference(data as ReminderPreference);
       } else {
-        // Create default preference
         const defaultPref: ReminderPreference = {
           user_id: user.id,
           enabled: false,
@@ -81,7 +79,7 @@ export const VisitReminders = () => {
         };
         setPreference(defaultPref);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching preference:', error);
       toast.error('Error al cargar preferencias');
     } finally {
@@ -92,7 +90,6 @@ export const VisitReminders = () => {
   const handleEnableToggle = async (enabled: boolean) => {
     if (!user || !preference) return;
 
-    // Request permission first if enabling and not granted
     if (enabled && permission !== 'granted') {
       const result = await requestPermission();
       if (result !== 'granted') {
@@ -107,26 +104,28 @@ export const VisitReminders = () => {
       const updatedPref = { ...preference, enabled };
 
       if (preference.id) {
-        // Update existing
         const { error } = await supabase
-          .from('visit_reminder_preferences' as any)
+          .from('visit_reminder_preferences')
           .update({
             enabled,
             updated_at: new Date().toISOString(),
-          } as any)
+          })
           .eq('id', preference.id);
 
         if (error) throw error;
       } else {
-        // Insert new
         const { data, error } = await supabase
-          .from('visit_reminder_preferences' as any)
-          .insert(updatedPref as any)
+          .from('visit_reminder_preferences')
+          .insert({
+            user_id: updatedPref.user_id,
+            enabled: updatedPref.enabled,
+            minutes_before: updatedPref.minutes_before,
+          })
           .select()
           .single();
 
         if (error) throw error;
-        updatedPref.id = (data as any).id;
+        updatedPref.id = data.id;
       }
 
       setPreference(updatedPref);
@@ -139,7 +138,7 @@ export const VisitReminders = () => {
           requireInteraction: false,
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving preference:', error);
       toast.error('Error al guardar preferencias');
     } finally {
@@ -158,28 +157,32 @@ export const VisitReminders = () => {
 
       if (preference.id) {
         const { error } = await supabase
-          .from('visit_reminder_preferences' as any)
+          .from('visit_reminder_preferences')
           .update({
             minutes_before: minutesBefore,
             updated_at: new Date().toISOString(),
-          } as any)
+          })
           .eq('id', preference.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
-          .from('visit_reminder_preferences' as any)
-          .insert(updatedPref as any)
+          .from('visit_reminder_preferences')
+          .insert({
+            user_id: updatedPref.user_id,
+            enabled: updatedPref.enabled,
+            minutes_before: updatedPref.minutes_before,
+          })
           .select()
           .single();
 
         if (error) throw error;
-        updatedPref.id = (data as any).id;
+        updatedPref.id = data.id;
       }
 
       setPreference(updatedPref);
       toast.success('Tiempo de recordatorio actualizado');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating preference:', error);
       toast.error('Error al actualizar preferencias');
     } finally {

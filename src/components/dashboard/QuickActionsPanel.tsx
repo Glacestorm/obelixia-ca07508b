@@ -39,6 +39,11 @@ interface Company {
   name: string;
 }
 
+interface VisitWithCompanyName {
+  company_id: string;
+  companies: { name: string } | null;
+}
+
 export const QuickActionsPanel = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -72,7 +77,7 @@ export const QuickActionsPanel = () => {
       // Fetch today's visits
       const today = format(new Date(), 'yyyy-MM-dd');
       const { data: visitsData } = await supabase
-        .from('visits' as any)
+        .from('visits')
         .select(`
           id,
           visit_date,
@@ -85,16 +90,16 @@ export const QuickActionsPanel = () => {
         .eq('visit_date', today)
         .order('visit_date', { ascending: true });
 
-      setTodayVisits((visitsData as any) || []);
+      setTodayVisits((visitsData as TodayVisit[] | null) || []);
 
       // Fetch most visited companies
       const { data: visitStatsData } = await supabase
-        .from('visits' as any)
+        .from('visits')
         .select('company_id, companies(name)')
         .eq('gestor_id', user.id);
 
       if (visitStatsData) {
-        const visitCounts = (visitStatsData as any).reduce((acc: any, visit: any) => {
+        const visitCounts = (visitStatsData as unknown as VisitWithCompanyName[]).reduce<Record<string, { count: number; name: string }>>((acc, visit) => {
           const companyId = visit.company_id;
           const companyName = visit.companies?.name || 'Sin nombre';
           if (!acc[companyId]) {
@@ -105,7 +110,7 @@ export const QuickActionsPanel = () => {
         }, {});
 
         const sortedCompanies = Object.entries(visitCounts)
-          .map(([id, data]: [string, any]) => ({
+          .map(([id, data]) => ({
             company_id: id,
             company_name: data.name,
             visit_count: data.count,
@@ -119,12 +124,12 @@ export const QuickActionsPanel = () => {
 
       // Fetch all companies for the dropdown
       const { data: companiesData } = await supabase
-        .from('companies' as any)
+        .from('companies')
         .select('id, name')
         .order('name');
 
-      setCompanies((companiesData as any) || []);
-    } catch (error: any) {
+      setCompanies((companiesData as Company[] | null) || []);
+    } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Error al cargar datos');
     } finally {
@@ -145,7 +150,7 @@ export const QuickActionsPanel = () => {
 
       // Insert visit
       const { data: visitData, error: visitError } = await supabase
-        .from('visits' as any)
+        .from('visits')
         .insert({
           company_id: selectedCompany,
           gestor_id: user.id,
@@ -158,9 +163,9 @@ export const QuickActionsPanel = () => {
       if (visitError) throw visitError;
 
       // Insert participants if any
-      if (selectedParticipants.length > 0 && visitData && (visitData as any).id) {
+      if (selectedParticipants.length > 0 && visitData) {
         const participantsData = selectedParticipants.map(userId => ({
-          visit_id: (visitData as any).id,
+          visit_id: visitData.id,
           user_id: userId,
         }));
 
@@ -177,7 +182,7 @@ export const QuickActionsPanel = () => {
       setNotes('');
       setSelectedParticipants([]);
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating visit:', error);
       toast.error('Error al crear la visita');
     } finally {
