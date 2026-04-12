@@ -18,7 +18,7 @@ interface Props {
   onUpsert: (p: Partial<MobilityCostProjection>) => void;
 }
 
-const COST_FIELDS = [
+const COST_FIELDS: { key: keyof MobilityCostProjection; label: string }[] = [
   { key: 'base_salary_home', label: 'Salario base origen' },
   { key: 'base_salary_host', label: 'Salario base destino' },
   { key: 'housing_allowance', label: 'Housing' },
@@ -56,7 +56,7 @@ export function MobilityCostProjectionPanel({ assignmentId, projections, currenc
     setEditingId(p.id);
     setForm({
       projection_year: p.projection_year,
-      ...Object.fromEntries(COST_FIELDS.map(f => [f.key, (p as any)[f.key] || 0])),
+      ...Object.fromEntries(COST_FIELDS.map(f => [f.key, (p[f.key] as number) || 0])),
     });
     setShowForm(true);
   };
@@ -70,7 +70,7 @@ export function MobilityCostProjectionPanel({ assignmentId, projections, currenc
       total_annual_cost: total,
       currency_code: currency,
       exchange_rate: 1,
-    } as any);
+    });
     setShowForm(false);
     setEditingId(null);
   };
@@ -132,10 +132,10 @@ export function MobilityCostProjectionPanel({ assignmentId, projections, currenc
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-                    {COST_FIELDS.filter(f => (p as any)[f.key] > 0).map(f => (
+                    {COST_FIELDS.filter(f => (p[f.key] as number) > 0).map(f => (
                       <div key={f.key} className="flex justify-between bg-muted/30 px-2 py-1 rounded">
                         <span className="text-muted-foreground">{f.label}</span>
-                        <span>{fmt((p as any)[f.key])}</span>
+                        <span>{fmt(p[f.key] as number)}</span>
                       </div>
                     ))}
                   </div>

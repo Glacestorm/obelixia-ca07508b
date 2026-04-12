@@ -4,6 +4,9 @@
  * readiness for all official connectors.
  *
  * Uses ONLY already-loaded data or lightweight queries.
+ *
+ * NOTE: Tables 'hr_employees' and 'hr_contracts' are NOT in generated types
+ * (they exist in DB as views/aliases). Casts on .from() for those are retained.
  */
 import { useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,16 +33,17 @@ export function useOfficialReadiness(companyId: string): UseOfficialReadinessRet
     setIsEvaluating(true);
     try {
       // Gather context from lightweight queries
+      // NOTE: 'hr_employees' and 'hr_contracts' are DB views not in generated types — cast retained
       const [employeesRes, contractsRes, payrollRes, ssRes, certsRes] = await Promise.all([
         supabase.from('hr_employees' as any).select('id, status, registration_status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'active'),
         supabase.from('hr_contracts' as any).select('id, status, contract_type', { count: 'exact' })
           .eq('company_id', companyId).in('status', ['active', 'pending']),
-        supabase.from('hr_payroll_periods' as any).select('id, status', { count: 'exact' })
+        supabase.from('hr_payroll_periods').select('id, status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'closed'),
-        supabase.from('erp_hr_ss_contributions' as any).select('id', { count: 'exact' })
+        supabase.from('erp_hr_ss_contributions').select('id', { count: 'exact' })
           .eq('company_id', companyId),
-        supabase.from('erp_hr_domain_certificates' as any)
+        supabase.from('erp_hr_domain_certificates')
           .select('domain, certificate_status, certificate_type, configuration_completeness, expiration_date, readiness_impact')
           .eq('company_id', companyId),
       ]);
@@ -79,7 +83,14 @@ export function useOfficialReadiness(companyId: string): UseOfficialReadinessRet
           is_active: a.is_active,
           status: a.status,
         })),
-        certificateConfigs: ((certsRes.data || []) as any[]).map(c => ({
+        certificateConfigs: ((certsRes.data || []) as Array<{
+          domain: string;
+          certificate_status: string;
+          certificate_type: string;
+          configuration_completeness: number;
+          expiration_date: string | null;
+          readiness_impact: string;
+        }>).map(c => ({
           domain: c.domain,
           certificate_status: c.certificate_status,
           certificate_type: c.certificate_type,

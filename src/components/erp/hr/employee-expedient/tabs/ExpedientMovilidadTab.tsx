@@ -43,7 +43,7 @@ export function ExpedientMovilidadTab({ employeeId, companyId, onNavigate }: Pro
     const load = async () => {
       setLoading(true);
       const { data } = await supabase
-        .from('hr_mobility_assignments' as any)
+        .from('hr_mobility_assignments')
         .select('id, home_country_code, host_country_code, assignment_type, status, start_date, end_date, compensation_approach, split_payroll')
         .eq('employee_id', employeeId)
         .eq('company_id', companyId)

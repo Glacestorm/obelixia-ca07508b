@@ -26,7 +26,7 @@ export function usePayrollIncidents(companyId?: string) {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
+        .from('erp_hr_payroll_incidents')
         .select('*')
         .eq('company_id', companyId)
         .eq('period_id', periodId)
@@ -47,7 +47,7 @@ export function usePayrollIncidents(companyId?: string) {
     setIsLoading(true);
     try {
       let query = supabase
-        .from('erp_hr_payroll_incidents' as any)
+        .from('erp_hr_payroll_incidents')
         .select('*')
         .eq('company_id', companyId)
         .eq('employee_id', employeeId)
@@ -70,7 +70,7 @@ export function usePayrollIncidents(companyId?: string) {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
+        .from('erp_hr_payroll_incidents')
         .select('*')
         .eq('company_id', companyId)
         .eq('period_year', year)
@@ -115,8 +115,8 @@ export function usePayrollIncidents(companyId?: string) {
       };
 
       const { data, error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
-        .insert([row] as any)
+        .from('erp_hr_payroll_incidents')
+        .insert([row])
         .select()
         .single();
 
@@ -164,8 +164,8 @@ export function usePayrollIncidents(companyId?: string) {
         }
       }
       const { error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
-        .update(updates as any)
+        .from('erp_hr_payroll_incidents')
+        .update(updates)
         .eq('id', id);
 
       if (error) throw error;
@@ -203,8 +203,8 @@ export function usePayrollIncidents(companyId?: string) {
       };
 
       const { error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
-        .update(updates as any)
+        .from('erp_hr_payroll_incidents')
+        .update(updates)
         .eq('id', id);
 
       if (error) throw error;
@@ -245,8 +245,8 @@ export function usePayrollIncidents(companyId?: string) {
         }
       }
       const { error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
-        .update({ status: 'cancelled' } as any)
+        .from('erp_hr_payroll_incidents')
+        .update({ status: 'cancelled' })
         .eq('id', id);
 
       if (error) throw error;
@@ -295,8 +295,8 @@ export function usePayrollIncidents(companyId?: string) {
       };
 
       const { error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
-        .update(updates as any)
+        .from('erp_hr_payroll_incidents')
+        .update(updates)
         .in('id', pendingIds);
 
       if (error) throw error;
@@ -318,7 +318,7 @@ export function usePayrollIncidents(companyId?: string) {
     if (!companyId) return null;
     try {
       const { data, error } = await supabase
-        .from('erp_hr_payroll_incidents' as any)
+        .from('erp_hr_payroll_incidents')
         .select('*')
         .eq('company_id', companyId)
         .eq('period_id', periodId)

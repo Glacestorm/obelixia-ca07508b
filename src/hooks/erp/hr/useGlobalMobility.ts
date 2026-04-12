@@ -6,6 +6,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
 
 // ============ TYPES ============
 
@@ -180,7 +181,7 @@ export function useGlobalMobility(companyId: string) {
     setLoading(true);
     try {
       let query = supabase
-        .from('hr_mobility_assignments' as any)
+        .from('hr_mobility_assignments')
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
@@ -209,9 +210,9 @@ export function useGlobalMobility(companyId: string) {
   const getAssignment = useCallback(async (id: string) => {
     try {
       const [assignRes, docsRes, costsRes] = await Promise.all([
-        supabase.from('hr_mobility_assignments' as any).select('*').eq('id', id).single(),
-        supabase.from('hr_mobility_documents' as any).select('*').eq('assignment_id', id).order('created_at', { ascending: false }),
-        supabase.from('hr_mobility_cost_projections' as any).select('*').eq('assignment_id', id).order('projection_year', { ascending: true }),
+        supabase.from('hr_mobility_assignments').select('*').eq('id', id).single(),
+        supabase.from('hr_mobility_documents').select('*').eq('assignment_id', id).order('created_at', { ascending: false }),
+        supabase.from('hr_mobility_cost_projections').select('*').eq('assignment_id', id).order('projection_year', { ascending: true }),
       ]);
       if (assignRes.error) throw assignRes.error;
       return {
@@ -229,19 +230,26 @@ export function useGlobalMobility(companyId: string) {
   // --- Create assignment ---
   const createAssignment = useCallback(async (data: Partial<MobilityAssignment>) => {
     try {
+      const { allowance_package, metadata, ...rest } = data;
+      const insertPayload = {
+        ...rest,
+        company_id: companyId,
+        allowance_package: (allowance_package ?? {}) as unknown as Json,
+        metadata: (metadata ?? null) as unknown as Json,
+      };
       const { data: result, error } = await supabase
-        .from('hr_mobility_assignments' as any)
-        .insert([{ ...data, company_id: companyId }] as any)
+        .from('hr_mobility_assignments')
+        .insert([insertPayload])
         .select()
         .single();
       if (error) throw error;
 
       // Audit
-      await supabase.from('hr_mobility_audit_log' as any).insert([{
-        assignment_id: (result as any).id,
+      await supabase.from('hr_mobility_audit_log').insert([{
+        assignment_id: result.id,
         action: 'created',
-        new_value: result,
-      }] as any);
+        new_value: result as unknown as Json,
+      }]);
 
       toast.success('Asignación creada');
       await fetchAssignments();
@@ -256,21 +264,26 @@ export function useGlobalMobility(companyId: string) {
   // --- Update assignment ---
   const updateAssignment = useCallback(async (id: string, updates: Partial<MobilityAssignment>) => {
     try {
-      const { data: old } = await supabase.from('hr_mobility_assignments' as any).select('*').eq('id', id).single();
+      const { data: old } = await supabase.from('hr_mobility_assignments').select('*').eq('id', id).single();
+      const { allowance_package, metadata, ...rest } = updates;
+      const updatePayload: Record<string, unknown> = { ...rest };
+      if (allowance_package !== undefined) updatePayload.allowance_package = allowance_package as unknown as Json;
+      if (metadata !== undefined) updatePayload.metadata = metadata as unknown as Json;
+
       const { data: result, error } = await supabase
-        .from('hr_mobility_assignments' as any)
-        .update(updates as any)
+        .from('hr_mobility_assignments')
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
       if (error) throw error;
 
-      await supabase.from('hr_mobility_audit_log' as any).insert([{
+      await supabase.from('hr_mobility_audit_log').insert([{
         assignment_id: id,
         action: 'status_changed',
-        old_value: old,
-        new_value: result,
-      }] as any);
+        old_value: old as unknown as Json,
+        new_value: result as unknown as Json,
+      }]);
 
       toast.success('Asignación actualizada');
       await fetchAssignments();
@@ -293,8 +306,8 @@ export function useGlobalMobility(companyId: string) {
       return null;
     }
 
-    const updates: Partial<MobilityAssignment> = { status: newStatus } as any;
-    if (newStatus === 'completed') (updates as any).actual_end_date = new Date().toISOString().split('T')[0];
+    const updates: Partial<MobilityAssignment> = { status: newStatus };
+    if (newStatus === 'completed') updates.actual_end_date = new Date().toISOString().split('T')[0];
 
     return updateAssignment(id, updates);
   }, [assignments, updateAssignment]);
@@ -302,7 +315,7 @@ export function useGlobalMobility(companyId: string) {
   // --- Documents ---
   const fetchDocuments = useCallback(async (assignmentId: string) => {
     const { data, error } = await supabase
-      .from('hr_mobility_documents' as any)
+      .from('hr_mobility_documents')
       .select('*')
       .eq('assignment_id', assignmentId)
       .order('created_at', { ascending: false });
@@ -312,18 +325,23 @@ export function useGlobalMobility(companyId: string) {
 
   const addDocument = useCallback(async (doc: Partial<MobilityDocument>) => {
     try {
+      const { metadata, ...rest } = doc;
+      const insertPayload = {
+        ...rest,
+        metadata: (metadata ?? null) as unknown as Json,
+      };
       const { data, error } = await supabase
-        .from('hr_mobility_documents' as any)
-        .insert([doc] as any)
+        .from('hr_mobility_documents')
+        .insert([insertPayload])
         .select()
         .single();
       if (error) throw error;
 
-      await supabase.from('hr_mobility_audit_log' as any).insert([{
+      await supabase.from('hr_mobility_audit_log').insert([{
         assignment_id: doc.assignment_id,
         action: 'document_added',
-        new_value: data,
-      }] as any);
+        new_value: data as unknown as Json,
+      }]);
 
       toast.success('Documento añadido');
       return data as unknown as MobilityDocument;
@@ -336,9 +354,13 @@ export function useGlobalMobility(companyId: string) {
 
   const updateDocument = useCallback(async (id: string, updates: Partial<MobilityDocument>) => {
     try {
+      const { metadata, ...rest } = updates;
+      const updatePayload: Record<string, unknown> = { ...rest };
+      if (metadata !== undefined) updatePayload.metadata = metadata as unknown as Json;
+
       const { error } = await supabase
-        .from('hr_mobility_documents' as any)
-        .update(updates as any)
+        .from('hr_mobility_documents')
+        .update(updatePayload)
         .eq('id', id);
       if (error) throw error;
       toast.success('Documento actualizado');
@@ -353,7 +375,7 @@ export function useGlobalMobility(companyId: string) {
   // --- Cost projections ---
   const fetchCostProjection = useCallback(async (assignmentId: string, year?: number) => {
     let query = supabase
-      .from('hr_mobility_cost_projections' as any)
+      .from('hr_mobility_cost_projections')
       .select('*')
       .eq('assignment_id', assignmentId)
       .order('projection_year', { ascending: true });
@@ -365,18 +387,23 @@ export function useGlobalMobility(companyId: string) {
 
   const upsertCostProjection = useCallback(async (projection: Partial<MobilityCostProjection>) => {
     try {
+      const { metadata, ...rest } = projection;
+      const upsertPayload = {
+        ...rest,
+        metadata: (metadata ?? null) as unknown as Json,
+      };
       const { data, error } = await supabase
-        .from('hr_mobility_cost_projections' as any)
-        .upsert([projection] as any, { onConflict: 'assignment_id,projection_year' })
+        .from('hr_mobility_cost_projections')
+        .upsert([upsertPayload], { onConflict: 'assignment_id,projection_year' })
         .select()
         .single();
       if (error) throw error;
 
-      await supabase.from('hr_mobility_audit_log' as any).insert([{
+      await supabase.from('hr_mobility_audit_log').insert([{
         assignment_id: projection.assignment_id,
         action: 'cost_updated',
-        new_value: data,
-      }] as any);
+        new_value: data as unknown as Json,
+      }]);
 
       toast.success('Proyección de coste guardada');
       return data as unknown as MobilityCostProjection;
@@ -407,7 +434,7 @@ export function useGlobalMobility(companyId: string) {
 
     // Expiring docs
     const { data: expiringDocs } = await supabase
-      .from('hr_mobility_documents' as any)
+      .from('hr_mobility_documents')
       .select('id')
       .lte('expiry_date', new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0])
       .gte('expiry_date', new Date().toISOString().split('T')[0])
@@ -432,7 +459,7 @@ export function useGlobalMobility(companyId: string) {
     const futureDate = new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase
-      .from('hr_mobility_documents' as any)
+      .from('hr_mobility_documents')
       .select('*')
       .lte('expiry_date', futureDate)
       .gte('expiry_date', today)
@@ -444,7 +471,7 @@ export function useGlobalMobility(companyId: string) {
   // --- Audit log ---
   const fetchAuditLog = useCallback(async (assignmentId: string) => {
     const { data, error } = await supabase
-      .from('hr_mobility_audit_log' as any)
+      .from('hr_mobility_audit_log')
       .select('*')
       .eq('assignment_id', assignmentId)
       .order('created_at', { ascending: false });
@@ -483,7 +510,7 @@ export function useGlobalMobility(companyId: string) {
     }
     try {
       const { error } = await supabase
-        .from('hr_mobility_assignments' as any)
+        .from('hr_mobility_assignments')
         .delete()
         .eq('id', id);
       if (error) throw error;
