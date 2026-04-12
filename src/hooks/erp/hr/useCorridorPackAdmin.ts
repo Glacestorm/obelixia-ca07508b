@@ -102,16 +102,18 @@ export function useCorridorPackAdmin(companyId?: string) {
     >>,
   ): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
-    const updatePayload = {
-      ...updates,
+    // Build update payload, stripping Record<string, unknown> fields and re-adding as Json
+    const { pack_data, sources, ...safeUpdates } = updates;
+    const updatePayload: Record<string, unknown> = {
+      ...safeUpdates,
       updated_by: user?.id ?? null,
-      // Cast Record<string, unknown> fields to Json for Supabase compatibility
-      ...(updates.pack_data !== undefined ? { pack_data: updates.pack_data as unknown as Json } : {}),
-      ...(updates.sources !== undefined ? { sources: updates.sources as unknown as Json } : {}),
     };
+    if (pack_data !== undefined) updatePayload.pack_data = pack_data as unknown as Json;
+    if (sources !== undefined) updatePayload.sources = sources as unknown as Json;
+
     const { error } = await supabase
       .from('erp_hr_corridor_packs')
-      .update(updatePayload)
+      .update(updatePayload as Parameters<ReturnType<typeof supabase.from<'erp_hr_corridor_packs'>>['update']>[0])
       .eq('id', packId);
 
     if (error) {

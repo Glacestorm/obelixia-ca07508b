@@ -191,7 +191,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
 
       const { data, error } = await supabase
         .from('erp_hr_version_registry')
-        .insert({
+        .insert([{
           company_id: companyId,
           entity_type: params.entityType,
           entity_id: params.entityId,
@@ -202,7 +202,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
           parent_version_id: existing?.id ?? null,
           created_by: actorId,
           metadata: (params.metadata ?? {}) as unknown as Json,
-        })
+        }])
         .select('id')
         .single();
 

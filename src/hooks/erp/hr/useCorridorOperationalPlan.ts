@@ -125,13 +125,13 @@ export function useCorridorOperationalPlan(
       return 0;
     }
 
-    const inserts: TaskCreateData[] = newTasks.map(t => ({
+    const inserts = newTasks.map(t => ({
       company_id: companyId,
       title: t.title,
       task_type: t.taskType,
-      category: t.category as TaskCreateData['category'],
-      priority: t.priority as TaskCreateData['priority'],
-      source_type: 'system' as const,
+      category: t.category,
+      priority: t.priority,
+      source_type: 'system',
       assignment_id: assignment.id,
       tags: ['corridor_operational', t.phase],
       metadata: {
