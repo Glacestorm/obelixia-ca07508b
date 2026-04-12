@@ -14,6 +14,7 @@ import {
   suggestEquivalentBand,
   compareVPTValuations,
   DEFAULT_VPT_METHODOLOGY,
+  DEFAULT_METHODOLOGY_VERSION,
   generateVPTEnrichedRegister,
   computeRetributiveAudit,
   computeEquityVPTContext,
