@@ -773,4 +773,47 @@ function EmptyState({ icon: Icon, text, subtext }: { icon: React.ElementType; te
   );
 }
 
+function MeasureEvidenceEditor({ evidence, onChange }: { evidence: string[]; onChange: (ev: string[]) => void }) {
+  const [input, setInput] = useState('');
+  const handleAdd = () => {
+    const val = input.trim();
+    if (val && !evidence.includes(val)) {
+      onChange([...evidence, val]);
+      setInput('');
+    }
+  };
+  return (
+    <div className="mt-2">
+      <div className="flex items-center gap-1 mb-1">
+        <Paperclip className="h-3 w-3 text-muted-foreground" />
+        <span className="text-[10px] font-medium text-muted-foreground">Evidencias ({evidence.length})</span>
+      </div>
+      {evidence.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {evidence.map((ev, i) => (
+            <Badge key={i} variant="secondary" className="text-[10px] gap-1 pr-1">
+              {ev}
+              <button onClick={() => onChange(evidence.filter((_, j) => j !== i))} className="ml-0.5 hover:text-destructive">
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-1">
+        <Input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
+          placeholder="Acta, documento, URL..."
+          className="h-6 text-[10px] flex-1"
+        />
+        <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={handleAdd} disabled={!input.trim()}>
+          +
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default HREqualityPanel;
