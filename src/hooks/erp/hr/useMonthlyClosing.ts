@@ -105,7 +105,8 @@ export function useMonthlyClosing(companyId: string) {
       const preCloseValidation = validatePreCloseEngine(preCloseInput);
 
       // Fetch expedient readiness (SS + Fiscal metadata)
-      // erp_hr_fiscal_withholdings NOT in generated types — cast retained
+      // NOTE: erp_hr_fiscal_withholdings does NOT exist in DB — query always returns null.
+      // Cast retained because table is planned but not yet created. Fails silently.
       const [ssRes, fiscalRes] = await Promise.all([
         supabase.from('erp_hr_ss_contributions')
           .select('metadata')
@@ -113,7 +114,7 @@ export function useMonthlyClosing(companyId: string) {
           .eq('period_year', period.fiscal_year)
           .eq('period_month', period.period_number)
           .maybeSingle(),
-        (supabase as any).from('erp_hr_fiscal_withholdings')
+        (supabase.from('erp_hr_fiscal_withholdings' as any) as any)
           .select('metadata')
           .eq('company_id', companyId)
           .eq('period_year', period.fiscal_year)
