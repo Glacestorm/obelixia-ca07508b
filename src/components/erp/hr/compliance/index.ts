@@ -17,3 +17,6 @@ export { HRTimeTrackingPanel } from './HRTimeTrackingPanel';
 
 // C3 - Inspection Copilot
 export { HRInspectionCopilotPanel } from './HRInspectionCopilotPanel';
+
+// C1 - Motor de Convenios Colectivos
+export { HRCollectiveAgreementPanel } from './HRCollectiveAgreementPanel';
