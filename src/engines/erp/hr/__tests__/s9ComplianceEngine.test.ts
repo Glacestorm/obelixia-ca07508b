@@ -547,6 +547,7 @@ describe('computeRetributiveAudit', () => {
     const report = computeRetributiveAudit(employees, { p1: 80, p2: 30 }, '2026-01');
     expect(report.groupsWithAlert).toBe(1);
     expect(report.entries[0].alerts.length).toBeGreaterThan(0);
+  });
 });
 
 // ─── EQUITY VPT CONTEXT (S9.5) ────────────────────────────
