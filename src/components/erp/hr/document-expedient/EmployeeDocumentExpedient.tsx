@@ -3,7 +3,7 @@
  * Categorías: Personal, Contratos, Nómina, Compliance, Médicos, Formación, Legal, Movilidad
  * V2-ES.4 Paso 6+: Incluye resumen ejecutivo, indicadores de archivo/versión y generación
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
