@@ -55,10 +55,10 @@ export function useWorkforceSimulation(companyId: string) {
           .eq('company_id', companyId),
         supabase
           .from('erp_hr_payrolls')
-          .select('id, gross_salary, net_salary, total_cost, status, period_start')
+          .select('id, gross_salary, net_salary, total_cost, status, period_month')
           .eq('company_id', companyId)
           .eq('status', 'closed')
-          .order('period_start', { ascending: false })
+          .order('period_month', { ascending: false })
           .limit(500),
         // 8B: windowed to last 90 days
         supabase
@@ -68,19 +68,19 @@ export function useWorkforceSimulation(companyId: string) {
           .in('status', ['approved', 'taken'])
           .gte('start_date', ninetyDaysAgo)
           .limit(500),
-        // 8B: fetch contract hours if available
+        // 8B: fetch employee weekly_hours if available (weekly_hours is on erp_hr_employees)
         supabase
-          .from('erp_hr_contracts' as any)
-          .select('id, weekly_hours, contract_type, status')
+          .from('erp_hr_employees')
+          .select('id, weekly_hours')
           .eq('company_id', companyId)
           .eq('status', 'active')
           .limit(500),
       ]);
 
       const employees = empRes.data || [];
-      const payrolls = (payRes.data || []) as any[];
-      const leaves = (leaveRes.data || []) as any[];
-      const contracts = (contractRes.data || []) as any[];
+      const payrolls = payRes.data || [];
+      const leaves = leaveRes.data || [];
+      const weeklyHoursData = contractRes.data || [];
 
       const active = employees.filter(e => e.status === 'active');
       const headcount = employees.length;
@@ -102,7 +102,7 @@ export function useWorkforceSimulation(companyId: string) {
       dataQuality.totalEmployerMonthlyCost = 'estimated';
       if (payrolls.length > 0) {
         const latestPayrolls = payrolls.slice(0, activeCount);
-        const payrollTotalCost = latestPayrolls.reduce((s: number, p: any) => s + (p.total_cost || 0), 0);
+        const payrollTotalCost = latestPayrolls.reduce((s, p) => s + (p.total_cost || 0), 0);
         if (payrollTotalCost > 0) {
           totalEmployerMonthly = payrollTotalCost;
           dataQuality.totalEmployerMonthlyCost = 'real';
@@ -110,7 +110,7 @@ export function useWorkforceSimulation(companyId: string) {
       }
 
       // ── 8B: Absenteeism with 90-day window ──
-      const totalDaysLost90d = leaves.reduce((s: number, l: any) => s + (l.days_requested || 0), 0);
+      const totalDaysLost90d = leaves.reduce((s, l) => s + (l.days_requested || 0), 0);
       const monthsInWindow = 3; // 90 days ≈ 3 months
       const totalDaysLostMonth = monthsInWindow > 0 ? Math.round(totalDaysLost90d / monthsInWindow) : 0;
       const workingDaysPerMonth = 22;
@@ -131,10 +131,10 @@ export function useWorkforceSimulation(companyId: string) {
       // ── 8B: Weekly hours from contracts ──
       let avgWorkingHoursWeek = 40; // Spanish legal default
       dataQuality.avgWorkingHoursWeek = 'estimated';
-      if (contracts.length > 0) {
-        const hoursValues = contracts.map((c: any) => c.weekly_hours).filter((h: any) => h && h > 0);
+      if (weeklyHoursData.length > 0) {
+        const hoursValues = weeklyHoursData.map(c => c.weekly_hours).filter((h): h is number => h != null && h > 0);
         if (hoursValues.length > 0) {
-          avgWorkingHoursWeek = Math.round((hoursValues.reduce((a: number, b: number) => a + b, 0) / hoursValues.length) * 10) / 10;
+          avgWorkingHoursWeek = Math.round((hoursValues.reduce((a, b) => a + b, 0) / hoursValues.length) * 10) / 10;
           dataQuality.avgWorkingHoursWeek = 'real';
         }
       }
@@ -144,7 +144,7 @@ export function useWorkforceSimulation(companyId: string) {
       dataQuality.variablePayTotal = 'unavailable';
       if (payrolls.length > 0 && salaries.length > 0) {
         const latestPayrolls = payrolls.slice(0, activeCount);
-        const totalPayrollGross = latestPayrolls.reduce((s: number, p: any) => s + (p.gross_salary || 0), 0);
+        const totalPayrollGross = latestPayrolls.reduce((s, p) => s + (p.gross_salary || 0), 0);
         const diff = totalPayrollGross - totalGrossMonthly;
         if (diff > 0) {
           variablePayTotal = Math.round(diff);
@@ -224,7 +224,9 @@ export function useWorkforceSimulation(companyId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from('erp_hr_simulation_snapshots' as any).insert({
+    // NOTE: erp_hr_simulation_snapshots is NOT in generated types — table may not exist yet.
+    // Cast retained as boundary: insert fails silently if table missing (non-blocking persistence).
+    await (supabase.from('erp_hr_simulation_snapshots' as any) as any).insert({
       company_id: result.baseline.companyId,
       created_by: user.id,
       scenario_type: result.input.scenarioType,
@@ -249,7 +251,7 @@ export function useWorkforceSimulation(companyId: string) {
         percentChangeEmployer: result.impact.percentChangeEmployer,
         operationalRisks: result.impact.operationalRisks,
       },
-    } as any);
+    });
   }, []);
 
   // ── AI Narrative enrichment ────────────────────────────────────────────

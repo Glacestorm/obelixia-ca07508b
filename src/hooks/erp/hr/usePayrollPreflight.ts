@@ -37,19 +37,18 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       const now = new Date();
 
       // Fetch period + incidents + run status + terminations + active employees in parallel
-      // NOTE: erp_hr_payroll_periods and erp_hr_incidents are NOT in generated types — cast retained
+      // NOTE: erp_hr_incidents does NOT exist in DB — query always returns null/empty.
+      // Cast retained because table is planned but not yet created. Fails silently.
       const [periodRes, incidentRes, runsRes, terminationRes, activeEmpRes, contractsRes] = await Promise.all([
         supabase
-          .from('erp_hr_payroll_periods' as any)
+          .from('hr_payroll_periods')
           .select('id, status, metadata')
           .eq('company_id', companyId)
-          .order('year', { ascending: false })
-          .order('month', { ascending: false })
+          .order('fiscal_year', { ascending: false })
+          .order('period_number', { ascending: false })
           .limit(1)
           .maybeSingle(),
-        // erp_hr_incidents NOT in generated types — cast retained
-        (supabase as any)
-          .from('erp_hr_incidents')
+        (supabase.from('erp_hr_incidents' as any) as any)
           .select('id, status')
           .eq('company_id', companyId)
           .limit(500),
@@ -77,7 +76,9 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
           .eq('status', 'active'),
       ]);
 
-      const period = periodRes.data as any;
+      // periodRes now returns typed hr_payroll_periods row
+
+      const period = periodRes.data;
       const resolvedPeriodId = periodId || period?.id;
       const incidents = (incidentRes.data || []) as Array<{ id: string; status: string }>;
       const latestRun = runsRes.data;
