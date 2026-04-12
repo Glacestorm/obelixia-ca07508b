@@ -14,3 +14,6 @@ export { HRComplianceCalendar } from './HRComplianceCalendar';
 export { HRWhistleblowerPanel } from './HRWhistleblowerPanel';
 export { HREqualityPanel } from './HREqualityPanel';
 export { HRTimeTrackingPanel } from './HRTimeTrackingPanel';
+
+// C3 - Inspection Copilot
+export { HRInspectionCopilotPanel } from './HRInspectionCopilotPanel';
