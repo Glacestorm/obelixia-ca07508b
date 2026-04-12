@@ -1,13 +1,28 @@
 /**
- * useHREquality Hook
+ * useHREquality Hook — Enhanced for B1 Complete
  * Gestión de Planes de Igualdad, Auditorías Salariales y Protocolos de Acoso
- * Cumplimiento: Ley Orgánica 3/2007, RD 901/2020, Ley 15/2022
+ * Cumplimiento: Ley Orgánica 3/2007, RD 901/2020, RD 902/2020, Ley 15/2022
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import {
+  parseDiagnosisData,
+  parseMeasuresData,
+  parseNegotiationTimeline,
+  serializeDiagnosisData,
+  serializeMeasuresData,
+  serializeNegotiationTimeline,
+  evaluateRegconReadiness,
+  computeDiagnosticProgress,
+  computeMeasuresSummary,
+  type DiagnosticAreaScore,
+  type EqualityMeasure,
+  type NegotiationEvent,
+  type RegconReadinessResult,
+} from '@/engines/erp/hr/equalityPlanEngine';
 
 export type EqualityPlanStatus = 'draft' | 'in_progress' | 'approved' | 'expired' | 'under_review';
 
@@ -100,58 +115,33 @@ export function useHREquality(companyId?: string) {
     setError(null);
 
     try {
-      // Fetch plans
-      const { data: plansData, error: plansError } = await supabase
-        .from('erp_hr_equality_plans')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+      const [plansRes, auditsRes, protocolsRes] = await Promise.all([
+        supabase.from('erp_hr_equality_plans').select('*').eq('company_id', companyId).order('created_at', { ascending: false }),
+        supabase.from('erp_hr_salary_audits').select('*').eq('company_id', companyId).order('audit_year', { ascending: false }),
+        supabase.from('erp_hr_harassment_protocols').select('*').eq('company_id', companyId).order('created_at', { ascending: false }),
+      ]);
 
-      if (plansError) throw plansError;
+      if (plansRes.error) throw plansRes.error;
+      if (auditsRes.error) throw auditsRes.error;
+      if (protocolsRes.error) throw protocolsRes.error;
 
-      // Fetch audits
-      const { data: auditsData, error: auditsError } = await supabase
-        .from('erp_hr_salary_audits')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('audit_year', { ascending: false });
-
-      if (auditsError) throw auditsError;
-
-      // Fetch protocols
-      const { data: protocolsData, error: protocolsError } = await supabase
-        .from('erp_hr_harassment_protocols')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
-
-      if (protocolsError) throw protocolsError;
-
-      const typedPlans = (plansData || []) as unknown as EqualityPlan[];
-      const typedAudits = (auditsData || []) as unknown as SalaryAudit[];
-      const typedProtocols = (protocolsData || []) as unknown as HarassmentProtocol[];
+      const typedPlans = (plansRes.data || []) as unknown as EqualityPlan[];
+      const typedAudits = (auditsRes.data || []) as unknown as SalaryAudit[];
+      const typedProtocols = (protocolsRes.data || []) as unknown as HarassmentProtocol[];
 
       setPlans(typedPlans);
       setAudits(typedAudits);
       setProtocols(typedProtocols);
 
-      // Calculate stats
       const now = new Date();
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
       const activePlans = typedPlans.filter(p => p.status === 'approved');
       const expiringSoon = typedPlans.filter(p => {
         const endDate = new Date(p.end_date);
         return endDate <= thirtyDaysFromNow && endDate > now;
       });
-
-      const gapValues = typedAudits
-        .filter(a => a.overall_gap_percentage !== null)
-        .map(a => a.overall_gap_percentage as number);
-      
-      const avgGap = gapValues.length > 0 
-        ? gapValues.reduce((a, b) => a + b, 0) / gapValues.length 
-        : null;
+      const gapValues = typedAudits.filter(a => a.overall_gap_percentage !== null).map(a => a.overall_gap_percentage as number);
+      const avgGap = gapValues.length > 0 ? gapValues.reduce((a, b) => a + b, 0) / gapValues.length : null;
 
       setStats({
         totalPlans: typedPlans.length,
@@ -160,7 +150,6 @@ export function useHREquality(companyId?: string) {
         avgGenderGap: avgGap,
         protocolsActive: typedProtocols.filter(p => p.is_active).length
       });
-
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al cargar datos de igualdad';
       setError(message);
@@ -170,7 +159,7 @@ export function useHREquality(companyId?: string) {
     }
   }, [companyId]);
 
-  // Create equality plan - matching actual DB schema
+  // Create equality plan
   const createPlan = useCallback(async (planData: {
     plan_name: string;
     start_date: string;
@@ -196,7 +185,6 @@ export function useHREquality(companyId?: string) {
         .single();
 
       if (error) throw error;
-
       toast.success('Plan de igualdad creado');
       await fetchEqualityData();
       return data as unknown as EqualityPlan;
@@ -207,11 +195,49 @@ export function useHREquality(companyId?: string) {
     }
   }, [companyId, user?.id, fetchEqualityData]);
 
-  // Create salary audit - matching actual DB schema
+  // Update plan (diagnosis, measures, objectives, status, etc.)
+  const updatePlan = useCallback(async (
+    planId: string,
+    updates: Partial<Pick<EqualityPlan, 'plan_name' | 'status' | 'diagnosis_data' | 'measures' | 'objectives' | 'equality_commission' | 'document_urls'>>
+  ) => {
+    try {
+      const { error } = await supabase
+        .from('erp_hr_equality_plans')
+        .update(updates as any)
+        .eq('id', planId);
+
+      if (error) throw error;
+      toast.success('Plan actualizado');
+      await fetchEqualityData();
+      return true;
+    } catch (err) {
+      console.error('[useHREquality] updatePlan error:', err);
+      toast.error('Error al actualizar plan');
+      return false;
+    }
+  }, [fetchEqualityData]);
+
+  // Save diagnostic areas
+  const saveDiagnosis = useCallback(async (planId: string, areas: DiagnosticAreaScore[]) => {
+    return updatePlan(planId, { diagnosis_data: serializeDiagnosisData(areas) as any });
+  }, [updatePlan]);
+
+  // Save measures
+  const saveMeasures = useCallback(async (planId: string, items: EqualityMeasure[]) => {
+    return updatePlan(planId, { measures: serializeMeasuresData(items) as any });
+  }, [updatePlan]);
+
+  // Save negotiation timeline (stored in objectives JSONB for now)
+  const saveTimeline = useCallback(async (planId: string, events: NegotiationEvent[]) => {
+    return updatePlan(planId, { objectives: serializeNegotiationTimeline(events) as any });
+  }, [updatePlan]);
+
+  // Create salary audit
   const createAudit = useCallback(async (auditData: {
     audit_year: number;
     audit_period?: string;
     overall_gap_percentage?: number;
+    equality_plan_id?: string;
   }) => {
     if (!companyId) {
       toast.error('Empresa no seleccionada');
@@ -226,13 +252,13 @@ export function useHREquality(companyId?: string) {
           audit_year: auditData.audit_year,
           audit_period: auditData.audit_period || null,
           overall_gap_percentage: auditData.overall_gap_percentage || null,
+          equality_plan_id: auditData.equality_plan_id || null,
           status: 'draft'
         }])
         .select()
         .single();
 
       if (error) throw error;
-
       toast.success('Auditoría salarial registrada');
       await fetchEqualityData();
       return data as unknown as SalaryAudit;
@@ -245,7 +271,7 @@ export function useHREquality(companyId?: string) {
 
   // Update protocol
   const updateProtocol = useCallback(async (
-    protocolId: string, 
+    protocolId: string,
     updates: Partial<HarassmentProtocol>
   ) => {
     try {
@@ -255,7 +281,6 @@ export function useHREquality(companyId?: string) {
         .eq('id', protocolId);
 
       if (error) throw error;
-
       toast.success('Protocolo actualizado');
       await fetchEqualityData();
       return true;
@@ -265,6 +290,34 @@ export function useHREquality(companyId?: string) {
       return false;
     }
   }, [fetchEqualityData]);
+
+  // Compute REGCON readiness for a plan
+  const getRegconReadiness = useCallback((plan: EqualityPlan | null): RegconReadinessResult => {
+    if (!plan) {
+      return evaluateRegconReadiness({
+        planExists: false, planApproved: false, diagnosticComplete: false,
+        measuresApproved: false, salaryAuditDone: false,
+        harassmentProtocolActive: false, commissionConstituted: false,
+        hasRegistrationNumber: false,
+      });
+    }
+
+    const diagAreas = parseDiagnosisData(plan.diagnosis_data);
+    const measures = parseMeasuresData(plan.measures);
+    const diagProgress = computeDiagnosticProgress(diagAreas);
+    const measuresSummary = computeMeasuresSummary(measures);
+
+    return evaluateRegconReadiness({
+      planExists: true,
+      planApproved: plan.status === 'approved',
+      diagnosticComplete: diagProgress.percentage === 100,
+      measuresApproved: measuresSummary.total > 0 && measuresSummary.byStatus.proposed === 0,
+      salaryAuditDone: audits.some(a => a.status === 'approved' || a.status === 'completed'),
+      harassmentProtocolActive: protocols.some(p => p.is_active),
+      commissionConstituted: plan.equality_commission != null && Object.keys(plan.equality_commission).length > 0,
+      hasRegistrationNumber: !!plan.registration_number,
+    });
+  }, [audits, protocols]);
 
   // Initial fetch
   useEffect(() => {
@@ -282,8 +335,13 @@ export function useHREquality(companyId?: string) {
     error,
     fetchEqualityData,
     createPlan,
+    updatePlan,
+    saveDiagnosis,
+    saveMeasures,
+    saveTimeline,
     createAudit,
-    updateProtocol
+    updateProtocol,
+    getRegconReadiness,
   };
 }
 
