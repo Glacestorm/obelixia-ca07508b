@@ -89,7 +89,7 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
       }
 
       // 2. Get advisor assignments — ONLY explicit assignments, no fallback
-      const { data: assignments, error: assErr } = await (supabase as any)
+      const { data: assignments, error: assErr } = await supabase
         .from('erp_hr_advisor_assignments')
         .select('company_id, role, assigned_at, is_active, notes')
         .eq('advisor_user_id', user.id)
@@ -115,7 +115,7 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
       setHasNoAssignments(false);
 
       // Determine highest role (validated)
-      const roles = (assignments as any[])
+      const roles = assignments
         .map(a => a.role as string)
         .filter(r => VALID_ROLES.includes(r as AdvisoryRole)) as AdvisoryRole[];
       const roleHierarchy: AdvisoryRole[] = ['supervisor', 'responsable_cartera', 'tecnico_laboral'];
@@ -123,7 +123,7 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
       setAdvisorRole(highestRole);
 
       // 3. Fetch company details
-      const companyIds = (assignments as any[]).map(a => a.company_id);
+      const companyIds = assignments.map(a => a.company_id);
       const { data: companyData } = await supabase
         .from('erp_companies')
         .select('id, name, legal_name, tax_id, is_active')
@@ -135,7 +135,7 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
         return;
       }
 
-      const assignmentMap = new Map((assignments as any[]).map(a => [a.company_id, a]));
+      const assignmentMap = new Map(assignments.map(a => [a.company_id, a]));
 
       const enrichInput = companyData.map(c => {
         const assignment = assignmentMap.get(c.id);
@@ -204,15 +204,15 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
   // Employee counts via RPC (no row download, no 1000-row limit)
   // Tasks and periods via batch queries with limits
   const [empCountRes, taskData, periodData] = await Promise.all([
-    (supabase as any).rpc('count_active_employees_by_company', {
+    supabase.rpc('count_active_employees_by_company', {
       p_company_ids: companyIds,
     }),
-    supabase.from('erp_hr_tasks' as any)
+    supabase.from('hr_tasks')
       .select('company_id, sla_breached')
       .in('company_id', companyIds)
       .in('status', ['pending', 'in_progress'])
       .limit(2000),
-    supabase.from('hr_payroll_periods' as any)
+    supabase.from('hr_payroll_periods')
       .select('company_id, status, period_end')
       .in('company_id', companyIds)
       .order('period_end', { ascending: false })
@@ -221,12 +221,12 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
 
   // Build employee count map from RPC result
   const empCountMap = new Map<string, number>();
-  for (const row of (empCountRes.data || []) as any[]) {
+  for (const row of (empCountRes.data || []) as Array<{ company_id: string; active_count: number }>) {
     empCountMap.set(row.company_id, Number(row.active_count));
   }
 
-  const tasks = (taskData.data || []) as any[];
-  const periods = (periodData.data || []) as any[];
+  const tasks = taskData.data || [];
+  const periods = periodData.data || [];
 
   // Pre-group by company_id for O(n) lookup instead of O(n×m) filter
   const tasksByCompany = groupBy(tasks, 'company_id');
@@ -238,7 +238,7 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
     const companyPeriods = periodsByCompany.get(input.companyId) || [];
 
     const pendingTasks = companyTasks.length;
-    const overdueTasks = companyTasks.filter((t: any) => t.sla_breached).length;
+    const overdueTasks = companyTasks.filter(t => t.sla_breached).length;
 
     // Determine closing status from most recent period
     const latestPeriod = companyPeriods[0];
@@ -260,7 +260,7 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
       }
     }
 
-    const openPeriods = companyPeriods.filter((p: any) => !['closed', 'locked'].includes(p.status)).length;
+    const openPeriods = companyPeriods.filter(p => !['closed', 'locked'].includes(p.status ?? '')).length;
 
     return {
       id: input.companyId,
@@ -311,7 +311,7 @@ function buildSummary(companies: PortfolioCompany[]): PortfolioSummary {
  */
 async function tracePortfolioAccess(userId: string, companiesCount: number, role: AdvisoryRole) {
   try {
-    await (supabase as any).from('erp_hr_ledger').insert({
+    await supabase.from('erp_hr_ledger').insert({
       event_type: 'system_event',
       entity_type: 'advisory_portfolio',
       entity_id: userId,
@@ -322,7 +322,7 @@ async function tracePortfolioAccess(userId: string, companiesCount: number, role
         action: 'portfolio_accessed',
         companies_in_portfolio: companiesCount,
         advisor_role: role,
-      },
+      } as unknown as import('@/integrations/supabase/types').Json,
     });
   } catch (err) {
     // Fire-and-forget: never block business flow

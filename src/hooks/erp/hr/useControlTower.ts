@@ -78,14 +78,14 @@ async function fetchEnrichedSignals(
 
     // Documental: unresolved HR alerts per company
     supabase
-      .from('erp_hr_alerts' as any)
+      .from('erp_hr_alerts')
       .select('company_id, severity, title, is_resolved')
       .in('company_id', companyIds)
       .eq('is_resolved', false)
       .limit(500),
 
     // Traceability: evidence counts per company + type check
-    (supabase as any)
+    supabase
       .from('erp_hr_evidence')
       .select('company_id, ref_entity_type')
       .in('company_id', companyIds)
@@ -93,17 +93,17 @@ async function fetchEnrichedSignals(
       .limit(1000),
 
     // Traceability: version counts per company + type check
-    (supabase as any)
+    supabase
       .from('erp_hr_version_registry')
       .select('company_id, entity_type')
       .in('company_id', companyIds)
       .limit(1000),
   ]);
 
-  const submissions = (submissionsRes.data || []) as any[];
-  const alerts = (alertsRes.data || []) as any[];
-  const evidenceRows = (evidenceRes.data || []) as any[];
-  const versionRows = (versionRes.data || []) as any[];
+  const submissions = submissionsRes.data || [];
+  const alerts = alertsRes.data || [];
+  const evidenceRows = evidenceRes.data || [];
+  const versionRows = versionRes.data || [];
 
   // Initialize map for all companies
   for (const cid of companyIds) {
@@ -321,7 +321,7 @@ export function useControlTower(): UseControlTowerReturn {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        await (supabase as any).from('erp_hr_ledger').insert({
+        await supabase.from('erp_hr_ledger').insert({
           event_type: 'system_event',
           entity_type: 'control_tower',
           entity_id: user.id,
@@ -334,7 +334,7 @@ export function useControlTower(): UseControlTowerReturn {
             critical_count: summary?.criticalCount ?? 0,
             total_alerts: summary?.totalAlerts ?? 0,
             enrichment_loaded: enrichmentLoaded,
-          },
+          } as unknown as import('@/integrations/supabase/types').Json,
         });
       } catch {
         // fire-and-forget

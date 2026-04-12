@@ -60,16 +60,17 @@ export function useOfficialReadinessMatrix(companyId: string) {
 
     try {
       // 1. Gather connector readiness context (same as useOfficialReadiness)
+      // NOTE: hr_employees and hr_contracts are DB views not in generated types — cast retained
       const [employeesRes, contractsRes, payrollRes, ssRes, certsRes, adaptersRes] = await Promise.all([
         supabase.from('hr_employees' as any).select('id, status, registration_status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'active'),
         supabase.from('hr_contracts' as any).select('id, status, contract_type', { count: 'exact' })
           .eq('company_id', companyId).in('status', ['active', 'pending']),
-        supabase.from('hr_payroll_periods' as any).select('id, status', { count: 'exact' })
+        supabase.from('hr_payroll_periods').select('id, status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'closed'),
-        supabase.from('erp_hr_ss_contributions' as any).select('id', { count: 'exact' })
+        supabase.from('erp_hr_ss_contributions').select('id', { count: 'exact' })
           .eq('company_id', companyId),
-        (supabase as any).from('erp_hr_domain_certificates')
+        supabase.from('erp_hr_domain_certificates')
           .select('domain, certificate_status, certificate_type, configuration_completeness, expiration_date, readiness_impact')
           .eq('company_id', companyId),
         supabase.from('hr_integration_adapters').select('id, adapter_type, system_name, is_active, status')
@@ -77,19 +78,19 @@ export function useOfficialReadinessMatrix(companyId: string) {
       ]);
 
       const totalEmployees = employeesRes.count ?? 0;
-      const employees = (employeesRes.data || []) as any[];
-      const completeEmployees = employees.filter((e: any) =>
+      const employees = (employeesRes.data || []) as Array<{ id: string; status: string; registration_status: string }>;
+      const completeEmployees = employees.filter(e =>
         e.registration_status === 'completed' || e.registration_status === 'tgss_prepared'
       ).length;
 
       const totalContracts = contractsRes.count ?? 0;
-      const contracts = (contractsRes.data || []) as any[];
-      const completeContracts = contracts.filter((c: any) => c.contract_type && c.status === 'active').length;
+      const contracts = (contractsRes.data || []) as Array<{ id: string; status: string; contract_type: string }>;
+      const completeContracts = contracts.filter(c => c.contract_type && c.status === 'active').length;
 
       const closedPeriods = payrollRes.count ?? 0;
       const hasSSExpedient = (ssRes.count ?? 0) > 0;
 
-      const adapters = (adaptersRes.data || []) as any[];
+      const adapters = adaptersRes.data || [];
 
       const ctx: ConnectorDataContext = {
         employeesWithCompleteData: completeEmployees,
@@ -101,14 +102,14 @@ export function useOfficialReadinessMatrix(companyId: string) {
         hasSSExpedient,
         hasFiscalExpedient: closedPeriods > 0,
         docCompletenessAvg: totalEmployees > 0 ? Math.round((completeEmployees / totalEmployees) * 100) : 0,
-        configuredAdapters: adapters.map((a: any) => ({
+        configuredAdapters: adapters.map(a => ({
           id: a.id,
           adapter_type: a.adapter_type,
           system_name: a.system_name,
           is_active: a.is_active,
           status: a.status,
         })),
-        certificateConfigs: ((certsRes.data || []) as any[]).map((c: any) => ({
+        certificateConfigs: (certsRes.data || []).map(c => ({
           domain: c.domain,
           certificate_status: c.certificate_status,
           certificate_type: c.certificate_type,
@@ -160,7 +161,7 @@ export function useOfficialReadinessMatrix(companyId: string) {
 
       // 4. Certificate statuses
       const certStatuses = new Map<string, string>();
-      for (const cert of ((certsRes.data || []) as any[])) {
+      for (const cert of (certsRes.data || [])) {
         certStatuses.set(cert.domain, cert.certificate_status);
       }
 
@@ -169,7 +170,7 @@ export function useOfficialReadinessMatrix(companyId: string) {
         connectorReadinessMap: connectorMap,
         latestSubmissions,
         certificateStatuses: certStatuses,
-        adapterIds: new Set(adapters.map((a: any) => a.id)),
+        adapterIds: new Set(adapters.map(a => a.id)),
       });
 
       setMatrix(result);

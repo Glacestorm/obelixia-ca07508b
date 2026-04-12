@@ -73,8 +73,8 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
     ss_regime_country: initial.ss_regime_country || 'ES',
     home_legal_entity_id: initial.home_legal_entity_id || '',
     host_legal_entity_id: initial.host_legal_entity_id || '',
-    job_title_host: (initial as any).job_title_host || '',
-    reporting_to: (initial as any).reporting_to || '',
+    job_title_host: (initial as Record<string, unknown>).job_title_host as string || '',
+    reporting_to: (initial as Record<string, unknown>).reporting_to as string || '',
     compensation_approach: initial.compensation_approach || 'tax_equalization',
     currency_code: initial.currency_code || 'EUR',
     split_payroll: initial.split_payroll || false,
@@ -156,7 +156,7 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
       days_in_host: form.days_in_host || null,
       notes: form.notes || null,
       status: initial.status || 'draft',
-    } as any);
+    } as Partial<MobilityAssignment>);
   };
 
   const updateField = (field: string, value: unknown) => {
@@ -167,7 +167,7 @@ export function MobilityAssignmentForm({ initial = {}, onSubmit, onCancel, isEdi
   const renderCountrySelect = (field: string, label: string, placeholder: string) => (
     <div>
       <Label className="text-xs">{label}</Label>
-      <Select value={(form as any)[field]} onValueChange={v => updateField(field, v)}>
+      <Select value={form[field as keyof typeof form] as string} onValueChange={v => updateField(field, v)}>
         <SelectTrigger className={`h-8 text-xs ${errors[field] ? 'border-destructive' : ''}`}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

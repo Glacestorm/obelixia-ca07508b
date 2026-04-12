@@ -37,6 +37,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       const now = new Date();
 
       // Fetch period + incidents + run status + terminations + active employees in parallel
+      // NOTE: erp_hr_payroll_periods and erp_hr_incidents are NOT in generated types — cast retained
       const [periodRes, incidentRes, runsRes, terminationRes, activeEmpRes, contractsRes] = await Promise.all([
         supabase
           .from('erp_hr_payroll_periods' as any)
@@ -46,53 +47,54 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
           .order('month', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        // erp_hr_incidents NOT in generated types — cast retained
         supabase
           .from('erp_hr_incidents' as any)
           .select('id, status')
           .eq('company_id', companyId)
           .limit(500),
         supabase
-          .from('erp_hr_payroll_runs' as any)
+          .from('erp_hr_payroll_runs')
           .select('id, status')
           .eq('company_id', companyId)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
         supabase
-          .from('erp_hr_employees' as any)
+          .from('erp_hr_employees')
           .select('id', { count: 'exact', head: true })
           .eq('company_id', companyId)
           .eq('status', 'terminated'),
         supabase
-          .from('erp_hr_employees' as any)
+          .from('erp_hr_employees')
           .select('id', { count: 'exact', head: true })
           .eq('company_id', companyId)
           .eq('status', 'active'),
         supabase
-          .from('erp_hr_contracts' as any)
+          .from('erp_hr_contracts')
           .select('id, status, start_date, end_date')
           .eq('company_id', companyId)
           .eq('status', 'active'),
       ]);
 
-      const period = periodRes.data as any;
-      const resolvedPeriodId = periodId || period?.id;
-      const incidents = (incidentRes.data || []) as any[];
-      const latestRun = runsRes.data as any;
+      const period = periodRes.data as Record<string, unknown> | null;
+      const resolvedPeriodId = periodId || (period?.id as string | undefined);
+      const incidents = (incidentRes.data || []) as Array<{ id: string; status: string }>;
+      const latestRun = runsRes.data;
       const hasTerminations = (terminationRes.count ?? 0) > 0;
       const hasActiveEmployees = (activeEmpRes.count ?? 0) > 0;
-      const contracts = (contractsRes.data || []) as any[];
+      const contracts = contractsRes.data || [];
 
       // Derive incident counts
       const incidentCounts = {
         total: incidents.length,
-        pending: incidents.filter((i: any) => i.status === 'pending').length,
-        validated: incidents.filter((i: any) => i.status === 'validated').length,
-        applied: incidents.filter((i: any) => i.status === 'applied').length,
+        pending: incidents.filter(i => i.status === 'pending').length,
+        validated: incidents.filter(i => i.status === 'validated').length,
+        applied: incidents.filter(i => i.status === 'applied').length,
       };
 
       // Check artifacts from metadata
-      const meta = (period?.metadata || {}) as any;
+      const meta = (period?.metadata || {}) as Record<string, unknown>;
 
       // ── Dynamic deadlines via regulatoryCalendarEngine ──
       const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -100,7 +102,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       // Contracts expiring within 30 days
       const thirtyDaysLater = new Date();
       thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
-      const expiring = contracts.filter((c: any) => {
+      const expiring = contracts.filter(c => {
         if (!c.end_date) return false;
         const end = new Date(c.end_date);
         return end >= now && end <= thirtyDaysLater;
@@ -109,7 +111,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       // Recent contracts for pending communications
       const fifteenDaysAgo = new Date();
       fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-      const recentContracts = contracts.filter((c: any) => {
+      const recentContracts = contracts.filter(c => {
         if (!c.start_date) return false;
         const start = new Date(c.start_date);
         return start >= fifteenDaysAgo && start <= now;
@@ -122,11 +124,11 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
         currentPeriod,
         pendingContractCommunications: recentContracts.length,
         earliestPendingContractDate: recentContracts.length > 0
-          ? recentContracts.sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())[0].start_date
+          ? recentContracts.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())[0].start_date
           : undefined,
         contractsExpiringSoon: expiring.length,
         earliestExpirationDate: expiring.length > 0
-          ? expiring.sort((a: any, b: any) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime())[0].end_date
+          ? expiring.sort((a, b) => new Date(a.end_date!).getTime() - new Date(b.end_date!).getTime())[0].end_date ?? undefined
           : undefined,
         fiscalYear: now.getFullYear(),
         closedPayrollPeriodsCount: 0,
@@ -145,7 +147,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
 
       // ── Last-mile readiness (best-effort from metadata) ──
       const lastMileReadiness: Record<string, LastMileStepStatus> = {};
-      const lmMeta = meta.last_mile_readiness as Record<string, any> | undefined;
+      const lmMeta = meta.last_mile_readiness as Record<string, Record<string, string>> | undefined;
       if (lmMeta) {
         for (const [key, val] of Object.entries(lmMeta)) {
           if (val && typeof val === 'object') {
@@ -160,7 +162,7 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
       }
 
       const input: PreflightInput = {
-        periodStatus: period?.status || 'draft',
+        periodStatus: (period?.status as string) || 'draft',
         periodId: resolvedPeriodId,
         incidentCounts,
         latestRunStatus: latestRun?.status || null,
