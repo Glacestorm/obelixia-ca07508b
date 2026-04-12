@@ -198,7 +198,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
           entity_type: params.entityType,
           entity_id: params.entityId,
           version_number: nextVersion,
-          state: params.state ?? 'draft',
+          state: (params.state ?? 'draft') as HrVersionState,
           content_snapshot: (params.contentSnapshot ?? null) as unknown as Json,
           content_hash: params.contentHash ?? null,
           parent_version_id: existing?.id ?? null,
