@@ -239,7 +239,7 @@ export function useGlobalMobility(companyId: string) {
       };
       const { data: result, error } = await supabase
         .from('hr_mobility_assignments')
-        .insert([insertPayload])
+        .insert([insertPayload] as any) // Partial→Insert boundary: required fields come from caller
         .select()
         .single();
       if (error) throw error;
@@ -332,7 +332,7 @@ export function useGlobalMobility(companyId: string) {
       };
       const { data, error } = await supabase
         .from('hr_mobility_documents')
-        .insert([insertPayload])
+        .insert([insertPayload] as any) // Partial→Insert boundary: required fields come from caller
         .select()
         .single();
       if (error) throw error;
@@ -394,7 +394,7 @@ export function useGlobalMobility(companyId: string) {
       };
       const { data, error } = await supabase
         .from('hr_mobility_cost_projections')
-        .upsert([upsertPayload], { onConflict: 'assignment_id,projection_year' })
+        .upsert([upsertPayload] as any, { onConflict: 'assignment_id,projection_year' }) // Partial→Insert boundary
         .select()
         .single();
       if (error) throw error;

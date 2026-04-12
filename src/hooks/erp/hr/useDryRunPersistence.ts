@@ -172,7 +172,7 @@ export function useDryRunPersistence(companyId: string) {
 
       const { data, error } = await supabase
         .from('erp_hr_dry_run_results')
-        .insert([record])
+        .insert([record] as any) // Record<string,unknown> → Json boundary on dry_run_output/metadata
         .select()
         .single();
 
@@ -232,7 +232,7 @@ export function useDryRunPersistence(companyId: string) {
 
       const { data, error } = await supabase
         .from('erp_hr_dry_run_evidence')
-        .insert([record])
+        .insert([record] as any) // Record<string,unknown> → Json boundary on metadata
         .select()
         .single();
 

@@ -232,7 +232,7 @@ export function useHRDomainCertificates(companyId: string): UseHRDomainCertifica
 
       const { data: result, error: upsertErr } = await supabase
         .from('erp_hr_domain_certificates')
-        .upsert(record, { onConflict: 'company_id,domain' })
+        .upsert([record] as any, { onConflict: 'company_id,domain' }) // issuer_info: Record→Json boundary
         .select()
         .single();
 

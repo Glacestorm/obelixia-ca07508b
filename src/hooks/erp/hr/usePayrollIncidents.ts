@@ -116,7 +116,7 @@ export function usePayrollIncidents(companyId?: string) {
 
       const { data, error } = await supabase
         .from('erp_hr_payroll_incidents')
-        .insert([row])
+        .insert([row] as any) // Partial→Insert boundary: required fields come from incident + flags
         .select()
         .single();
 
@@ -165,7 +165,7 @@ export function usePayrollIncidents(companyId?: string) {
       }
       const { error } = await supabase
         .from('erp_hr_payroll_incidents')
-        .update(updates)
+        .update(updates as any) // Partial<PayrollIncident> → Update boundary (metadata: Record vs Json)
         .eq('id', id);
 
       if (error) throw error;
