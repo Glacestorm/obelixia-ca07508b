@@ -26,3 +26,6 @@ export { HRLaborCostSimulatorPanel } from './HRLaborCostSimulatorPanel';
 
 // C4 - Onboarding Legal Automatizado
 export { HRLegalOnboardingPanel } from './HRLegalOnboardingPanel';
+
+// C5 - Motor de Sanciones Laborales
+export { HRDisciplinarySanctionsPanel } from './HRDisciplinarySanctionsPanel';
