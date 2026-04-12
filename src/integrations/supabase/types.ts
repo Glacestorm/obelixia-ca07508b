@@ -31839,6 +31839,111 @@ export type Database = {
           },
         ]
       }
+      erp_hr_corridor_packs: {
+        Row: {
+          automation_boundary_note: string | null
+          canonical_code: string
+          category: string
+          company_id: string | null
+          confidence_score: number | null
+          created_at: string
+          created_by: string | null
+          destination: string
+          id: string
+          internal_notes: string | null
+          is_active: boolean
+          last_reviewed_at: string | null
+          maturity_level: string
+          next_review_at: string | null
+          officiality: string
+          origin: string
+          pack_data: Json
+          parent_version_id: string | null
+          publication_status: string
+          published_at: string | null
+          published_by: string | null
+          review_owner: string | null
+          slug: string
+          sources: Json
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        Insert: {
+          automation_boundary_note?: string | null
+          canonical_code: string
+          category?: string
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          destination: string
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean
+          last_reviewed_at?: string | null
+          maturity_level?: string
+          next_review_at?: string | null
+          officiality?: string
+          origin: string
+          pack_data: Json
+          parent_version_id?: string | null
+          publication_status?: string
+          published_at?: string | null
+          published_by?: string | null
+          review_owner?: string | null
+          slug: string
+          sources?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Update: {
+          automation_boundary_note?: string | null
+          canonical_code?: string
+          category?: string
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          destination?: string
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean
+          last_reviewed_at?: string | null
+          maturity_level?: string
+          next_review_at?: string | null
+          officiality?: string
+          origin?: string
+          pack_data?: Json
+          parent_version_id?: string | null
+          publication_status?: string
+          published_at?: string | null
+          published_by?: string | null
+          review_owner?: string | null
+          slug?: string
+          sources?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_corridor_packs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_corridor_packs_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_corridor_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_cost_projections: {
         Row: {
           amount: number
@@ -85138,6 +85243,10 @@ export type Database = {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
+      deprecate_corridor_pack: {
+        Args: { p_pack_id: string; p_reason?: string }
+        Returns: Json
+      }
       detect_process_bottlenecks: {
         Args: { p_date_from?: string; p_process_definition_id?: string }
         Returns: {
@@ -85148,6 +85257,10 @@ export type Database = {
           min_duration_ms: number
           node_id: string
         }[]
+      }
+      duplicate_corridor_pack: {
+        Args: { p_new_version: string; p_pack_id: string; p_reason?: string }
+        Returns: Json
       }
       emit_process_event: {
         Args: {
@@ -85858,6 +85971,10 @@ export type Database = {
         Returns: undefined
       }
       mark_overdue_deadlines: { Args: never; Returns: undefined }
+      publish_corridor_pack: {
+        Args: { p_pack_id: string; p_reason?: string }
+        Returns: Json
+      }
       publish_notification: {
         Args: {
           p_action_label?: string
@@ -85953,6 +86070,10 @@ export type Database = {
         }
         Returns: string
       }
+      toggle_corridor_pack_active: {
+        Args: { p_active: boolean; p_pack_id: string; p_reason?: string }
+        Returns: Json
+      }
       try_acquire_regulatory_refresh_lock: { Args: never; Returns: boolean }
       update_leaderboard_counters: {
         Args: { p_counter: string; p_increment?: number; p_user_id: string }
@@ -86020,6 +86141,10 @@ export type Database = {
       }
       user_has_erp_wellness_program_access: {
         Args: { p_program_id: string }
+        Returns: boolean
+      }
+      user_has_hr_mobility_admin_access: {
+        Args: { p_company_id: string }
         Returns: boolean
       }
       user_is_chat_participant: {
