@@ -55,7 +55,7 @@ serve(async (req) => {
           .from('erp_hr_employees')
           .select('id, gender, position_id')
           .eq('company_id', companyId)
-          .eq('is_active', true);
+          .eq('status', 'active');
 
         if (emps && emps.length > 0) {
           const vptMap: Record<string, number> = {};
