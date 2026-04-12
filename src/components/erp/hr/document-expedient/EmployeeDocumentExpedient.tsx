@@ -96,6 +96,70 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   return (
     <>
       <div className="space-y-4">
+        {/* S9.11-P1: Executive summary promoted to header position */}
+        {!isLoadingDocuments && filtered.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
+            {/* Stats row */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs text-muted-foreground">Total documentos</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold text-amber-600">{stats.expiringSoon}</p>
+                <p className="text-xs text-muted-foreground">Vencen pronto</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold text-red-600">{stats.unverified}</p>
+                <p className="text-xs text-muted-foreground">Sin verificar</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold text-emerald-600">{stats.activeConsents}</p>
+                <p className="text-xs text-muted-foreground">Consentimientos</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{Object.keys(stats.byCategory).length}</p>
+                <p className="text-xs text-muted-foreground">Categorías</p>
+              </CardContent></Card>
+            </div>
+            {/* Executive summary — right column on desktop, full-width on mobile */}
+            <div className="lg:w-[340px]">
+              <ExpedientExecutiveSummary
+                docs={filtered}
+                completeness={null}
+                docsWithVersionHistory={docsWithVersionHistory}
+                calendarLabel={calendarLabel}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Stats row fallback when no docs loaded yet */}
+        {(isLoadingDocuments || filtered.length === 0) && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-xs text-muted-foreground">Total documentos</p>
+            </CardContent></Card>
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-amber-600">{stats.expiringSoon}</p>
+              <p className="text-xs text-muted-foreground">Vencen pronto</p>
+            </CardContent></Card>
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-red-600">{stats.unverified}</p>
+              <p className="text-xs text-muted-foreground">Sin verificar</p>
+            </CardContent></Card>
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-600">{stats.activeConsents}</p>
+              <p className="text-xs text-muted-foreground">Consentimientos</p>
+            </CardContent></Card>
+            <Card><CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold">{Object.keys(stats.byCategory).length}</p>
+              <p className="text-xs text-muted-foreground">Categorías</p>
+            </CardContent></Card>
+          </div>
+        )}
+
         {/* V2-ES.5 Paso 1: Registration summary (only if employee has one) */}
         {employeeId && (
           <RegistrationSummaryWidget companyId={companyId} employeeId={employeeId} />
@@ -105,40 +169,6 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
         {employeeId && (
           <ContractSummaryWidget companyId={companyId} employeeId={employeeId} />
         )}
-
-        {/* V2-ES.4+: Executive summary */}
-        {!isLoadingDocuments && filtered.length > 0 && (
-          <ExpedientExecutiveSummary
-            docs={filtered}
-            completeness={null}
-            docsWithVersionHistory={docsWithVersionHistory}
-            calendarLabel={calendarLabel}
-          />
-        )}
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold">{stats.total}</p>
-            <p className="text-xs text-muted-foreground">Total documentos</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-amber-600">{stats.expiringSoon}</p>
-            <p className="text-xs text-muted-foreground">Vencen pronto</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-red-600">{stats.unverified}</p>
-            <p className="text-xs text-muted-foreground">Sin verificar</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-emerald-600">{stats.activeConsents}</p>
-            <p className="text-xs text-muted-foreground">Consentimientos</p>
-          </CardContent></Card>
-          <Card><CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold">{Object.keys(stats.byCategory).length}</p>
-            <p className="text-xs text-muted-foreground">Categorías</p>
-          </CardContent></Card>
-        </div>
 
         {/* Alerts summary bar (legacy) */}
         <DocAlertsSummaryBar docs={filtered} />
