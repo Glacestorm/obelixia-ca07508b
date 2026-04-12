@@ -4,6 +4,7 @@
  * P1.7B-RA: Added Classification and Tax Impact tabs
  */
 import { useEffect, useState, useCallback } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import { MobilityCompliancePanel } from './MobilityCompliancePanel';
 import { MobilityClassificationPanel } from './MobilityClassificationPanel';
 import { MobilityTaxImpactPanel } from './MobilityTaxImpactPanel';
 import { MobilityCorridorPanel } from './MobilityCorridorPanel';
+import { MobilityOperationalPanel } from './MobilityOperationalPanel';
 import { useExpatriateCase } from '@/hooks/erp/hr/useExpatriateCase';
 import type {
   MobilityAssignment, MobilityDocument, MobilityCostProjection, MobilityAuditEntry,
@@ -219,13 +221,28 @@ export function MobilityAssignmentDetail({
           )}
         </TabsContent>
 
-        {/* Corridor — G2.1 */}
+        {/* Corridor — G2.2 Phase 2: Operational + Pack base sub-views */}
         <TabsContent value="corridor">
-          {expatCase?.supervisor ? (
-            <MobilityCorridorPanel supervisor={expatCase.supervisor} />
-          ) : (
-            <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">Cargando inteligencia de corredor…</CardContent></Card>
-          )}
+          <Tabs defaultValue="operational">
+            <TabsList className="grid grid-cols-2 w-full mb-3">
+              <TabsTrigger value="operational" className="text-xs">Vista Operativa</TabsTrigger>
+              <TabsTrigger value="pack_base" className="text-xs">Pack Base</TabsTrigger>
+            </TabsList>
+            <TabsContent value="operational">
+              <MobilityOperationalPanel
+                assignment={assignment}
+                documents={documents}
+                companyId={assignment.company_id}
+              />
+            </TabsContent>
+            <TabsContent value="pack_base">
+              {expatCase?.supervisor ? (
+                <MobilityCorridorPanel supervisor={expatCase.supervisor} />
+              ) : (
+                <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">Cargando inteligencia de corredor…</CardContent></Card>
+              )}
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         {/* Classification — P1.7B-RA */}
