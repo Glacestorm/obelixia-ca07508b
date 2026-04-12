@@ -66,8 +66,9 @@ export function HRCalendarsPanel({ companyId }: Props) {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent>
-              <p className="text-xs text-muted-foreground mb-3">
-                Festivos utilizados para el cálculo de días hábiles y vencimientos documentales.
+              <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Estos festivos se usan automáticamente para el cálculo de días hábiles, vencimientos y plazos legales.
               </p>
               {holidaysLoading ? (
                 <p className="text-sm text-muted-foreground">Cargando festivos...</p>
