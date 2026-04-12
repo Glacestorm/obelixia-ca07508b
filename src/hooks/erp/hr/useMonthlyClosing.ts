@@ -91,9 +91,9 @@ export function useMonthlyClosing(companyId: string) {
           .eq('company_id', companyId).eq('period_id', period.id),
       ]);
 
-      const runs = runsRes.data || [];
-      const records = recsRes.data || [];
-      const incidents = incRes.data || [];
+      const runs = (runsRes.data || []) as any[];
+      const records = (recsRes.data || []) as any[];
+      const incidents = (incRes.data || []) as any[];
 
       // Pre-close validation
       const preCloseInput: PreCloseInput = {

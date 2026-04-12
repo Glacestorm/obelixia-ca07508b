@@ -139,8 +139,8 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
 
       const enrichInput = companyData.map(c => {
         const assignment = assignmentMap.get(c.id);
-        const rawRole = assignment?.role ?? 'tecnico_laboral';
-        const validRole = VALID_ROLES.includes(rawRole) ? rawRole : 'tecnico_laboral';
+        const rawRole = (assignment?.role as string) ?? 'tecnico_laboral';
+        const validRole = (VALID_ROLES.includes(rawRole as AdvisoryRole) ? rawRole : 'tecnico_laboral') as AdvisoryRole;
         return {
           companyId: c.id,
           name: c.name,
@@ -212,7 +212,8 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
       .in('company_id', companyIds)
       .in('status', ['pending', 'in_progress'])
       .limit(2000),
-    supabase.from('hr_payroll_periods')
+    // hr_payroll_periods.period_end not in generated types — cast retained
+    (supabase as any).from('hr_payroll_periods')
       .select('company_id, status, period_end')
       .in('company_id', companyIds)
       .order('period_end', { ascending: false })
@@ -225,8 +226,8 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
     empCountMap.set(row.company_id, Number(row.active_count));
   }
 
-  const tasks = taskData.data || [];
-  const periods = periodData.data || [];
+  const tasks = (taskData.data || []) as Array<{ company_id: string; sla_breached: boolean }>;
+  const periods = (periodData.data || []) as Array<{ company_id: string; status: string; period_end: string }>;
 
   // Pre-group by company_id for O(n) lookup instead of O(n×m) filter
   const tasksByCompany = groupBy(tasks, 'company_id');
@@ -311,7 +312,8 @@ function buildSummary(companies: PortfolioCompany[]): PortfolioSummary {
  */
 async function tracePortfolioAccess(userId: string, companiesCount: number, role: AdvisoryRole) {
   try {
-    await supabase.from('erp_hr_ledger').insert({
+    await supabase.from('erp_hr_ledger').insert([{
+      company_id: 'system',
       event_type: 'system_event',
       entity_type: 'advisory_portfolio',
       entity_id: userId,
@@ -323,7 +325,7 @@ async function tracePortfolioAccess(userId: string, companiesCount: number, role
         companies_in_portfolio: companiesCount,
         advisor_role: role,
       } as unknown as import('@/integrations/supabase/types').Json,
-    });
+    }]);
   } catch (err) {
     // Fire-and-forget: never block business flow
     console.debug('[AdvisoryPortfolio] Ledger trace failed (non-blocking):', err);

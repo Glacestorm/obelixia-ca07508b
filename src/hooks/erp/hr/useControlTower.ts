@@ -68,8 +68,8 @@ async function fetchEnrichedSignals(
 
   // Fetch all enrichment data in parallel
   const [submissionsRes, alertsRes, evidenceRes, versionRes] = await Promise.all([
-    // Readiness: latest submissions per company to derive circuit statuses
-    supabase
+    // Readiness: latest submissions per company — period_year not in generated types, cast retained
+    (supabase as any)
       .from('hr_official_submissions')
       .select('company_id, status, submission_domain, submission_type, period_year, period_month, created_at')
       .in('company_id', companyIds)
@@ -100,10 +100,10 @@ async function fetchEnrichedSignals(
       .limit(1000),
   ]);
 
-  const submissions = submissionsRes.data || [];
-  const alerts = alertsRes.data || [];
-  const evidenceRows = evidenceRes.data || [];
-  const versionRows = versionRes.data || [];
+  const submissions = (submissionsRes.data || []) as Array<{ company_id: string; status: string; submission_domain: string; submission_type: string }>;
+  const alerts = (alertsRes.data || []) as Array<{ company_id: string; severity: string; title: string; is_resolved: boolean }>;
+  const evidenceRows = (evidenceRes.data || []) as Array<{ company_id: string; ref_entity_type: string }>;
+  const versionRows = (versionRes.data || []) as Array<{ company_id: string; entity_type: string }>;
 
   // Initialize map for all companies
   for (const cid of companyIds) {
@@ -321,7 +321,8 @@ export function useControlTower(): UseControlTowerReturn {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        await supabase.from('erp_hr_ledger').insert({
+        await supabase.from('erp_hr_ledger').insert([{
+          company_id: 'system',
           event_type: 'system_event',
           entity_type: 'control_tower',
           entity_id: user.id,
@@ -335,7 +336,7 @@ export function useControlTower(): UseControlTowerReturn {
             total_alerts: summary?.totalAlerts ?? 0,
             enrichment_loaded: enrichmentLoaded,
           } as unknown as import('@/integrations/supabase/types').Json,
-        });
+        }]);
       } catch {
         // fire-and-forget
       }
