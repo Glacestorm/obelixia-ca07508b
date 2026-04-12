@@ -26,35 +26,39 @@ export interface PortfolioFilters {
 // ── Batch fetch helpers ──
 
 async function fetchAllAssignments(companyId: string): Promise<MobilityAssignment[]> {
-  const query = supabase
-    .from('hr_mobility_assignments')
-    .select('*')
-    .eq('company_id', companyId)
-    .in('status', ['active', 'planned', 'pre_assignment', 'extending', 'repatriating', 'draft'])
-    .order('start_date', { ascending: false });
+  try {
+    const { data, error } = await (supabase
+      .from('hr_mobility_assignments')
+      .select('*') as any)
+      .eq('company_id', companyId)
+      .in('status', ['active', 'planned', 'pre_assignment', 'extending', 'repatriating', 'draft'])
+      .order('start_date', { ascending: false });
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.warn('[useMobilityPortfolio] assignments fetch error:', error.message);
+    if (error) {
+      console.warn('[useMobilityPortfolio] assignments fetch error:', error.message);
+      return [];
+    }
+    return (data ?? []) as MobilityAssignment[];
+  } catch {
     return [];
   }
-  return (data ?? []) as unknown as MobilityAssignment[];
 }
 
 async function fetchAllDocuments(companyId: string): Promise<MobilityDocument[]> {
-  const query = supabase
-    .from('hr_mobility_documents')
-    .select('*')
-    .eq('company_id', companyId);
+  try {
+    const { data, error } = await (supabase
+      .from('hr_mobility_documents')
+      .select('*') as any)
+      .eq('company_id', companyId);
 
-  const { data, error } = await query;
-
-  if (error) {
-    console.warn('[useMobilityPortfolio] documents fetch error:', error.message);
+    if (error) {
+      console.warn('[useMobilityPortfolio] documents fetch error:', error.message);
+      return [];
+    }
+    return (data ?? []) as MobilityDocument[];
+  } catch {
     return [];
   }
-  return (data ?? []) as unknown as MobilityDocument[];
 }
 
 /** Group documents by assignment_id */
