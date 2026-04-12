@@ -401,6 +401,16 @@ function VPTDetail({ valuation, companyId, onBack }: { valuation: VPTRow; compan
           />
         </CardContent>
       </Card>
+
+      {/* S9.10: Version history panel */}
+      {showHistory && (
+        <VersionHistoryPanel
+          companyId={companyId}
+          entityType="vpt_valuation"
+          entityId={valuation.position_id}
+          title="Historial de versiones VPT"
+        />
+      )}
     </div>
   );
 }

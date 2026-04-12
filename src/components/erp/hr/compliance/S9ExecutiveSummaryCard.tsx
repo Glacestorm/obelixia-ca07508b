@@ -38,6 +38,10 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
   const isLoading = loadAudit || loadSR || loadVPT;
 
   const summaryData = useMemo(() => {
+    // S9.10: Find latest version_id from approved valuations
+    const approvedVals = (valuationsQuery ?? []).filter((v: any) => v.status === 'approved' && v.version_id);
+    const latestVersionId = approvedVals.length > 0 ? approvedVals[0]?.version_id ?? null : null;
+
     const input: ExecutiveSummaryInput = {
       period: currentPeriod,
       audit: auditReport ? {
@@ -55,9 +59,10 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
         employeeCount: srEmployees,
         hasVPTData,
       } : null,
+      latestVersionId,
     };
     return generateExecutivePDFData(input);
-  }, [auditReport, analytics, incoherences, srReport, currentPeriod, hasVPTData, vptCount, vptCoverage, latestVPTApproval, srEmployees]);
+  }, [auditReport, analytics, incoherences, srReport, currentPeriod, hasVPTData, vptCount, vptCoverage, latestVPTApproval, srEmployees, valuationsQuery]);
 
   const handleExportPDF = useCallback(() => {
     try {
