@@ -73,7 +73,7 @@ export function TransactionsList({ companyId }: TransactionsListProps) {
     try {
       let query = supabase
         .from('erp_bank_transactions')
-        .select('id, description, counterparty_name, amount, transaction_date, category_name, status, currency', { count: 'exact' })
+        .select('id, description, counterparty_name, counterparty_account, counterparty_bank, amount, transaction_date, value_date, category_name, category_code, status, currency, reference, external_id, balance_after, reconciled_at', { count: 'exact' })
         .eq('company_id', companyId)
         .order('transaction_date', { ascending: false })
         .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
@@ -193,7 +193,11 @@ export function TransactionsList({ companyId }: TransactionsListProps) {
               return (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between py-3 gap-4"
+                  className="flex items-center justify-between py-3 gap-4 cursor-pointer rounded-md px-2 -mx-2 hover:bg-muted/50 transition-colors"
+                  onClick={() => { setSelectedTx(tx as TransactionDetail); setDrawerOpen(true); }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedTx(tx as TransactionDetail); setDrawerOpen(true); } }}
                 >
                   {/* Left: icon + text */}
                   <div className="flex items-start gap-3 min-w-0 flex-1">
