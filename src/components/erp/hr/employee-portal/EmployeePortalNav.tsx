@@ -11,6 +11,7 @@ import {
   Home,
   FileText,
   FolderOpen,
+  Award,
   Send,
   Clock,
   Palmtree,
