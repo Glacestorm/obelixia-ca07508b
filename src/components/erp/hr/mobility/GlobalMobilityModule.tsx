@@ -12,6 +12,7 @@ import { MobilityAssignmentsList } from './MobilityAssignmentsList';
 import { MobilityAssignmentForm } from './MobilityAssignmentForm';
 import { MobilityAssignmentDetail } from './MobilityAssignmentDetail';
 import { CorridorPackAdminPanel } from './CorridorPackAdminPanel';
+import { MobilityPortfolioPanel } from './MobilityPortfolioPanel';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
@@ -151,6 +152,7 @@ export function GlobalMobilityModule({ companyId }: Props) {
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v === 'assignments') setView('list'); }}>
         <TabsList>
           <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
+          <TabsTrigger value="operations" className="text-xs">Operaciones</TabsTrigger>
           <TabsTrigger value="assignments" className="text-xs">Asignaciones</TabsTrigger>
           <TabsTrigger value="packs" className="text-xs">Knowledge Packs</TabsTrigger>
         </TabsList>
@@ -160,6 +162,21 @@ export function GlobalMobilityModule({ companyId }: Props) {
             stats={mobility.stats}
             expiringDocs={expiringDocs}
             loading={mobility.loading}
+          />
+        </TabsContent>
+
+        <TabsContent value="operations">
+          <MobilityPortfolioPanel
+            companyId={companyId}
+            employeeMap={employeeMap}
+            onSelectAssignment={(assignmentId) => {
+              const assignment = mobility.assignments.find(a => a.id === assignmentId);
+              if (assignment) {
+                setSelected(assignment);
+                setView('detail');
+                setActiveTab('assignments');
+              }
+            }}
           />
         </TabsContent>
 

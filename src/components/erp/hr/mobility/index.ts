@@ -15,3 +15,4 @@ export { MobilityTaxImpactPanel } from './MobilityTaxImpactPanel';
 export { MobilityCorridorPanel } from './MobilityCorridorPanel';
 export { CorridorPackAdminPanel } from './CorridorPackAdminPanel';
 export { MobilityOperationalPanel } from './MobilityOperationalPanel';
+export { MobilityPortfolioPanel } from './MobilityPortfolioPanel';
