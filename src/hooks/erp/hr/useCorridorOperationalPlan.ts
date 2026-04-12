@@ -15,6 +15,7 @@ import { useExpatriateSupervisor } from '@/hooks/erp/hr/useExpatriateSupervisor'
 import type { MobilityAssignment, MobilityDocument } from '@/hooks/erp/hr/useGlobalMobility';
 import type { TaskCreateData } from '@/hooks/erp/hr/useHRTasksEngine';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 interface UseCorridorOperationalPlanResult {
@@ -139,7 +140,7 @@ export function useCorridorOperationalPlan(
         provenance: t.provenance,
         condition: t.condition,
         generated_by: 'corridor_operational_engine',
-      },
+      } as unknown as Json,
     }));
 
     try {

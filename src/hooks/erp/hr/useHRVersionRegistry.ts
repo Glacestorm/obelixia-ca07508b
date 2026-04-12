@@ -12,6 +12,7 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import {
   canTransitionVersion,
   type VersionState,
@@ -102,11 +103,11 @@ export function useHRVersionRegistry(companyId: string) {
         entity_id: params.entityId,
         version_number: nextVersion,
         state: 'draft',
-        content_snapshot: params.contentSnapshot ?? null,
+        content_snapshot: (params.contentSnapshot ?? null) as unknown as Json,
         content_hash: params.contentHash ?? null,
         parent_version_id: parentId,
         created_by: user?.id ?? null,
-        metadata: params.metadata ?? {},
+        metadata: (params.metadata ?? {}) as unknown as Json,
       })
       .select()
       .single();

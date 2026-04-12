@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
 import type { CorridorPackRow } from './useCorridorPackRepository';
 
 // ── RPC result contract ──────────────────────────────────────────────────────
@@ -101,9 +102,16 @@ export function useCorridorPackAdmin(companyId?: string) {
     >>,
   ): Promise<boolean> => {
     const { data: { user } } = await supabase.auth.getUser();
+    const updatePayload = {
+      ...updates,
+      updated_by: user?.id ?? null,
+      // Cast Record<string, unknown> fields to Json for Supabase compatibility
+      ...(updates.pack_data !== undefined ? { pack_data: updates.pack_data as unknown as Json } : {}),
+      ...(updates.sources !== undefined ? { sources: updates.sources as unknown as Json } : {}),
+    };
     const { error } = await supabase
       .from('erp_hr_corridor_packs')
-      .update({ ...updates, updated_by: user?.id ?? null })
+      .update(updatePayload)
       .eq('id', packId);
 
     if (error) {
