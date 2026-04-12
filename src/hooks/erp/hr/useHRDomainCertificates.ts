@@ -186,7 +186,7 @@ export function useHRDomainCertificates(companyId: string): UseHRDomainCertifica
     setError(null);
     try {
       const { data, error: fetchErr } = await supabase
-        .from('erp_hr_domain_certificates' as any)
+        .from('erp_hr_domain_certificates')
         .select('*')
         .eq('company_id', companyId)
         .order('domain');
@@ -231,8 +231,8 @@ export function useHRDomainCertificates(companyId: string): UseHRDomainCertifica
       };
 
       const { data: result, error: upsertErr } = await supabase
-        .from('erp_hr_domain_certificates' as any)
-        .upsert(record, { onConflict: 'company_id,domain' })
+        .from('erp_hr_domain_certificates')
+        .upsert([record] as any, { onConflict: 'company_id,domain' }) // issuer_info: Record→Json boundary
         .select()
         .single();
 
@@ -281,7 +281,7 @@ export function useHRDomainCertificates(companyId: string): UseHRDomainCertifica
       const impact = computeReadinessImpact(status);
 
       const { error: updateErr } = await supabase
-        .from('erp_hr_domain_certificates' as any)
+        .from('erp_hr_domain_certificates')
         .update({
           certificate_status: status,
           readiness_impact: impact,

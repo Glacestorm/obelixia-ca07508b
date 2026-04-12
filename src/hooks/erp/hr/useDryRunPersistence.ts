@@ -104,7 +104,7 @@ export function useDryRunPersistence(companyId: string) {
     setIsLoading(true);
     try {
       let q = supabase
-        .from('erp_hr_dry_run_results' as any)
+        .from('erp_hr_dry_run_results')
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
@@ -131,7 +131,7 @@ export function useDryRunPersistence(companyId: string) {
     try {
       // Get execution number
       const { count } = await supabase
-        .from('erp_hr_dry_run_results' as any)
+        .from('erp_hr_dry_run_results')
         .select('id', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .eq('submission_domain', input.domain)
@@ -171,8 +171,8 @@ export function useDryRunPersistence(companyId: string) {
       };
 
       const { data, error } = await supabase
-        .from('erp_hr_dry_run_results' as any)
-        .insert([record])
+        .from('erp_hr_dry_run_results')
+        .insert([record] as any) // Record<string,unknown> → Json boundary on dry_run_output/metadata
         .select()
         .single();
 
@@ -203,7 +203,7 @@ export function useDryRunPersistence(companyId: string) {
   const fetchEvidence = useCallback(async (dryRunId: string) => {
     try {
       const { data, error } = await supabase
-        .from('erp_hr_dry_run_evidence' as any)
+        .from('erp_hr_dry_run_evidence')
         .select('*')
         .eq('dry_run_id', dryRunId)
         .order('created_at', { ascending: true });
@@ -231,8 +231,8 @@ export function useDryRunPersistence(companyId: string) {
       };
 
       const { data, error } = await supabase
-        .from('erp_hr_dry_run_evidence' as any)
-        .insert([record])
+        .from('erp_hr_dry_run_evidence')
+        .insert([record] as any) // Record<string,unknown> → Json boundary on metadata
         .select()
         .single();
 

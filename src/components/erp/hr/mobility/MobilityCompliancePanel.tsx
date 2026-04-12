@@ -70,8 +70,8 @@ export function MobilityCompliancePanel({ assignment, documents }: Props) {
     detail: taxCert ? 'Certificado registrado' : 'Recomendable obtener certificado',
   });
 
-  // 5. 183-day rule
-  const daysInHost = (a as any).days_in_host || 0;
+  // 5. 183-day rule — days_in_host and pe_risk_flag exist on MobilityAssignment
+  const daysInHost = a.days_in_host || 0;
   checks.push({
     id: '183_day_rule',
     label: 'Regla de 183 días',
@@ -85,8 +85,8 @@ export function MobilityCompliancePanel({ assignment, documents }: Props) {
     id: 'pe_risk',
     label: 'Riesgo de Establecimiento Permanente',
     description: 'Riesgo de crear PE en país de destino',
-    status: (a as any).pe_risk_flag ? 'error' : a.risk_level === 'high' || a.risk_level === 'critical' ? 'warning' : 'ok',
-    detail: (a as any).pe_risk_flag ? 'Flag PE activo — requiere revisión fiscal' : 'Sin riesgo PE detectado',
+    status: a.pe_risk_flag ? 'error' : a.risk_level === 'high' || a.risk_level === 'critical' ? 'warning' : 'ok',
+    detail: a.pe_risk_flag ? 'Flag PE activo — requiere revisión fiscal' : 'Sin riesgo PE detectado',
   });
 
   // 7. Expiring documents
