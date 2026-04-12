@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, TrendingUp, TrendingDown, Target, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 interface GoalComparison {
   goalId: string;
@@ -39,7 +39,6 @@ export function TPVGoalsComparison() {
     try {
       setLoading(true);
 
-      // Fetch active TPV goals
       const currentDate = new Date().toISOString();
       let goalsQuery = supabase
         .from('goals')
@@ -64,10 +63,9 @@ export function TPVGoalsComparison() {
 
       // Fetch TPV terminals data
       let terminalsQuery = supabase
-        .from('company_tpv_terminals' as any)
-        .select('annual_revenue, affiliation_percentage, active, company_id, id');
+        .from('company_tpv_terminals')
+        .select('monthly_volume, commission_rate, status, company_id, id');
 
-      // Filter by gestor if not admin
       if (!isAdmin && user?.id) {
         const { data: gestorCompanies } = await supabase
           .from('companies')
@@ -87,25 +85,11 @@ export function TPVGoalsComparison() {
       const { data: terminals, error: terminalsError } = await terminalsQuery;
       if (terminalsError) throw terminalsError;
 
-      // Fetch commission rates
-      const terminalIds = terminals?.map((t: any) => t.id) || [];
-      const { data: commissions, error: commissionsError } = await supabase
-        .from('tpv_commission_rates' as any)
-        .select('*')
-        .in('terminal_id', terminalIds);
-
-      if (commissionsError) throw commissionsError;
-
       // Calculate current metrics
-      const activeTerminals = terminals?.filter((t: any) => t.active) || [];
-      const totalRevenue = terminals?.reduce((sum: number, t: any) => sum + (t.annual_revenue || 0), 0) || 0;
-      const averageAffiliation = activeTerminals.length > 0
-        ? activeTerminals.reduce((sum: number, t: any) => sum + (t.affiliation_percentage || 0), 0) / activeTerminals.length
-        : 0;
-
-      const nationalCommissions = commissions?.filter((c: any) => c.card_type === 'NACIONAL') || [];
-      const averageCommission = nationalCommissions.length > 0
-        ? nationalCommissions.reduce((sum: number, c: any) => sum + c.commission_rate, 0) / nationalCommissions.length
+      const activeTerminals = terminals?.filter(t => t.status === 'active') || [];
+      const totalMonthlyVolume = terminals?.reduce((sum, t) => sum + (t.monthly_volume || 0), 0) || 0;
+      const averageCommission = activeTerminals.length > 0
+        ? activeTerminals.reduce((sum, t) => sum + (t.commission_rate || 0), 0) / activeTerminals.length
         : 0;
 
       // Create comparisons
@@ -113,20 +97,17 @@ export function TPVGoalsComparison() {
         let currentValue = 0;
         switch (goal.metric_type) {
           case 'tpv_revenue':
-            currentValue = totalRevenue;
-            break;
-          case 'tpv_affiliation':
-            currentValue = averageAffiliation;
+            currentValue = totalMonthlyVolume;
             break;
           case 'tpv_commission':
             currentValue = averageCommission;
             break;
+          // tpv_affiliation: no real field in schema, remains 0
         }
 
         const deviation = currentValue - goal.target_value;
         const deviationPercentage = goal.target_value > 0 ? (deviation / goal.target_value) * 100 : 0;
         
-        // For commission, lower is better
         let progress = 0;
         if (goal.metric_type === 'tpv_commission') {
           progress = goal.target_value > 0 ? Math.min(100, Math.max(0, ((goal.target_value - currentValue) / goal.target_value) * 100 + 100)) : 0;
@@ -156,7 +137,7 @@ export function TPVGoalsComparison() {
       });
 
       setComparisons(comparisonsData);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching comparisons:', error);
       toast.error('Error al cargar comparaciones');
     } finally {
@@ -167,7 +148,7 @@ export function TPVGoalsComparison() {
   const getMetricLabel = (type: string) => {
     switch (type) {
       case 'tpv_revenue':
-        return 'Facturación TPV';
+        return 'Volumen Mensual TPV';
       case 'tpv_affiliation':
         return 'Vinculación TPV';
       case 'tpv_commission':
@@ -205,7 +186,6 @@ export function TPVGoalsComparison() {
   };
 
   const getDeviationIcon = (deviation: number, metricType: string) => {
-    // For commission, lower is better (negative deviation is good)
     const isGood = metricType === 'tpv_commission' ? deviation < 0 : deviation > 0;
     
     if (isGood) {

@@ -15,12 +15,10 @@ interface GestorPerformance {
   gestorEmail: string;
   avatarUrl: string | null;
   revenueScore: number;
-  affiliationScore: number;
   commissionScore: number;
   overallScore: number;
   totalTerminals: number;
-  totalRevenue: number;
-  avgAffiliation: number;
+  totalMonthlyVolume: number;
   avgCommission: number;
   achievedGoals: number;
   totalGoals: number;
@@ -31,7 +29,7 @@ export function TPVGestorRanking() {
   const [rankings, setRankings] = useState<GestorPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<number>(6);
-  const [selectedMetric, setSelectedMetric] = useState<'overall' | 'revenue' | 'affiliation' | 'commission'>('overall');
+  const [selectedMetric, setSelectedMetric] = useState<'overall' | 'revenue' | 'commission'>('overall');
 
   useEffect(() => {
     fetchRankings();
@@ -55,7 +53,7 @@ export function TPVGestorRanking() {
       const { data: goals, error: goalsError } = await supabase
         .from('goals')
         .select('*')
-        .in('metric_type', ['tpv_revenue', 'tpv_affiliation', 'tpv_commission'])
+        .in('metric_type', ['tpv_revenue', 'tpv_commission'])
         .gte('period_end', startDate)
         .lte('period_start', endDate);
 
@@ -79,12 +77,10 @@ export function TPVGestorRanking() {
               gestorEmail: gestor.email,
               avatarUrl: gestor.avatar_url,
               revenueScore: 0,
-              affiliationScore: 0,
               commissionScore: 0,
               overallScore: 0,
               totalTerminals: 0,
-              totalRevenue: 0,
-              avgAffiliation: 0,
+              totalMonthlyVolume: 0,
               avgCommission: 0,
               achievedGoals: 0,
               totalGoals: 0,
@@ -94,60 +90,40 @@ export function TPVGestorRanking() {
 
           // Get TPV terminals
           const { data: terminals } = await supabase
-            .from('company_tpv_terminals' as any)
-            .select('annual_revenue, affiliation_percentage, active, id')
+            .from('company_tpv_terminals')
+            .select('monthly_volume, commission_rate, status, id')
             .in('company_id', companyIds);
 
-          const activeTerminals = terminals?.filter((t: any) => t.active) || [];
-          const totalRevenue = terminals?.reduce((sum: number, t: any) => sum + (t.annual_revenue || 0), 0) || 0;
-          const avgAffiliation = activeTerminals.length > 0
-            ? activeTerminals.reduce((sum: number, t: any) => sum + (t.affiliation_percentage || 0), 0) / activeTerminals.length
-            : 0;
-
-          // Get commission rates
-          const terminalIds = terminals?.map((t: any) => t.id) || [];
-          const { data: commissions } = await supabase
-            .from('tpv_commission_rates' as any)
-            .select('*')
-            .in('terminal_id', terminalIds)
-            .eq('card_type', 'NACIONAL');
-
-          const avgCommission = commissions && commissions.length > 0
-            ? commissions.reduce((sum: number, c: any) => sum + c.commission_rate, 0) / commissions.length
+          const activeTerminals = terminals?.filter(t => t.status === 'active') || [];
+          const totalMonthlyVolume = terminals?.reduce((sum, t) => sum + (t.monthly_volume || 0), 0) || 0;
+          const avgCommission = activeTerminals.length > 0
+            ? activeTerminals.reduce((sum, t) => sum + (t.commission_rate || 0), 0) / activeTerminals.length
             : 0;
 
           // Calculate scores based on goals
           let revenueScore = 0;
-          let affiliationScore = 0;
           let commissionScore = 0;
           let achievedGoals = 0;
 
-          const revenueGoals = goals?.filter((g: any) => g.metric_type === 'tpv_revenue') || [];
-          const affiliationGoals = goals?.filter((g: any) => g.metric_type === 'tpv_affiliation') || [];
-          const commissionGoals = goals?.filter((g: any) => g.metric_type === 'tpv_commission') || [];
+          const revenueGoals = goals?.filter(g => g.metric_type === 'tpv_revenue') || [];
+          const commissionGoals = goals?.filter(g => g.metric_type === 'tpv_commission') || [];
 
           if (revenueGoals.length > 0) {
-            const avgTarget = revenueGoals.reduce((sum: number, g: any) => sum + g.target_value, 0) / revenueGoals.length;
-            revenueScore = avgTarget > 0 ? Math.min(100, (totalRevenue / avgTarget) * 100) : 0;
+            const avgTarget = revenueGoals.reduce((sum, g) => sum + g.target_value, 0) / revenueGoals.length;
+            revenueScore = avgTarget > 0 ? Math.min(100, (totalMonthlyVolume / avgTarget) * 100) : 0;
             if (revenueScore >= 100) achievedGoals++;
           }
 
-          if (affiliationGoals.length > 0) {
-            const avgTarget = affiliationGoals.reduce((sum: number, g: any) => sum + g.target_value, 0) / affiliationGoals.length;
-            affiliationScore = avgTarget > 0 ? Math.min(100, (avgAffiliation / avgTarget) * 100) : 0;
-            if (affiliationScore >= 100) achievedGoals++;
-          }
-
           if (commissionGoals.length > 0) {
-            const avgTarget = commissionGoals.reduce((sum: number, g: any) => sum + g.target_value, 0) / commissionGoals.length;
+            const avgTarget = commissionGoals.reduce((sum, g) => sum + g.target_value, 0) / commissionGoals.length;
             commissionScore = avgTarget > 0 
               ? Math.min(100, Math.max(0, ((avgTarget - avgCommission) / avgTarget) * 100 + 100))
               : 0;
             if (commissionScore >= 100) achievedGoals++;
           }
 
-          const overallScore = (revenueScore + affiliationScore + commissionScore) / 3;
-          const totalGoals = [revenueGoals, affiliationGoals, commissionGoals].filter(arr => arr.length > 0).length;
+          const overallScore = (revenueScore + commissionScore) / 2;
+          const totalGoals = [revenueGoals, commissionGoals].filter(arr => arr.length > 0).length;
 
           return {
             gestorId: gestor.id,
@@ -155,12 +131,10 @@ export function TPVGestorRanking() {
             gestorEmail: gestor.email,
             avatarUrl: gestor.avatar_url,
             revenueScore,
-            affiliationScore,
             commissionScore,
             overallScore,
             totalTerminals: terminals?.length || 0,
-            totalRevenue,
-            avgAffiliation,
+            totalMonthlyVolume,
             avgCommission,
             achievedGoals,
             totalGoals,
@@ -172,7 +146,6 @@ export function TPVGestorRanking() {
       // Sort by selected metric and assign ranks
       const sortKey = selectedMetric === 'overall' ? 'overallScore' :
                       selectedMetric === 'revenue' ? 'revenueScore' :
-                      selectedMetric === 'affiliation' ? 'affiliationScore' :
                       'commissionScore';
 
       const sorted = performances
@@ -181,7 +154,7 @@ export function TPVGestorRanking() {
         .map((p, index) => ({ ...p, rank: index + 1 }));
 
       setRankings(sorted);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching rankings:', error);
       toast.error('Error al cargar ranking');
     } finally {
@@ -212,8 +185,7 @@ export function TPVGestorRanking() {
   const prepareComparisonChart = () => {
     return rankings.slice(0, 10).map(r => ({
       name: r.gestorName.split(' ')[0],
-      facturacion: r.revenueScore,
-      vinculacion: r.affiliationScore,
+      volumen: r.revenueScore,
       comision: r.commissionScore,
     }));
   };
@@ -222,8 +194,7 @@ export function TPVGestorRanking() {
     if (rankings.length === 0) return [];
     
     return [
-      { subject: 'Facturación', ...rankings.slice(0, 5).reduce((acc, r, i) => ({ ...acc, [`gestor${i + 1}`]: r.revenueScore }), {}) },
-      { subject: 'Vinculación', ...rankings.slice(0, 5).reduce((acc, r, i) => ({ ...acc, [`gestor${i + 1}`]: r.affiliationScore }), {}) },
+      { subject: 'Volumen', ...rankings.slice(0, 5).reduce((acc, r, i) => ({ ...acc, [`gestor${i + 1}`]: r.revenueScore }), {}) },
       { subject: 'Comisión', ...rankings.slice(0, 5).reduce((acc, r, i) => ({ ...acc, [`gestor${i + 1}`]: r.commissionScore }), {}) },
     ];
   };
@@ -260,14 +231,13 @@ export function TPVGestorRanking() {
               <SelectItem value="12">12 meses</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={selectedMetric} onValueChange={(v: any) => setSelectedMetric(v)}>
+          <Select value={selectedMetric} onValueChange={(v) => setSelectedMetric(v as typeof selectedMetric)}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="overall">Puntuación Global</SelectItem>
-              <SelectItem value="revenue">Facturación</SelectItem>
-              <SelectItem value="affiliation">Vinculación</SelectItem>
+              <SelectItem value="revenue">Volumen</SelectItem>
               <SelectItem value="commission">Comisión</SelectItem>
             </SelectContent>
           </Select>
@@ -326,8 +296,7 @@ export function TPVGestorRanking() {
                 <YAxis domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
                 <Legend />
-                <Bar dataKey="facturacion" fill="#22c55e" name="Facturación" />
-                <Bar dataKey="vinculacion" fill="#3b82f6" name="Vinculación" />
+                <Bar dataKey="volumen" fill="#22c55e" name="Volumen" />
                 <Bar dataKey="comision" fill="#f59e0b" name="Comisión" />
               </BarChart>
             </ResponsiveContainer>
@@ -391,18 +360,14 @@ export function TPVGestorRanking() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-xs text-muted-foreground">Global</p>
                     <p className="font-semibold">{gestor.overallScore.toFixed(1)}%</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Facturación</p>
+                    <p className="text-xs text-muted-foreground">Volumen</p>
                     <p className="font-semibold">{gestor.revenueScore.toFixed(1)}%</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Vinculación</p>
-                    <p className="font-semibold">{gestor.affiliationScore.toFixed(1)}%</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Comisión</p>

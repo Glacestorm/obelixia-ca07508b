@@ -11,42 +11,17 @@ import { toast } from 'sonner';
 interface TPVStats {
   terminal_id: string;
   terminal_identifier: string;
-  terminal_type: string;
-  bank_name: string;
+  provider: string;
   company_name: string;
-  annual_revenue: number;
-  affiliation_percentage: number;
-  active: boolean;
-  commissions: {
-    nacional: number;
-    propia: number;
-    internacional: number;
-  };
-}
-
-interface TPVTerminalRow {
-  id: string;
-  terminal_identifier: string;
-  terminal_type: string;
-  bank_name: string;
-  annual_revenue: number;
-  affiliation_percentage: number;
-  active: boolean;
-  company_id: string;
-}
-
-// NOTE: tpv_commission_rates is NOT in types.ts — as any retained for this table
-interface CommissionRow {
-  terminal_id: string;
-  card_type: string;
+  monthly_volume: number;
   commission_rate: number;
+  is_active: boolean;
 }
 
 export function TPVManager() {
   const [stats, setStats] = useState<TPVStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterBank, setFilterBank] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
+  const [filterProvider, setFilterProvider] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -57,28 +32,23 @@ export function TPVManager() {
     try {
       setLoading(true);
 
-      // NOTE: company_tpv_terminals schema in types.ts has different columns than what
-      // this component uses (terminal_type, bank_name, etc.) — as any required
       const { data: terminals, error: terminalsError } = await supabase
-        .from('company_tpv_terminals' as any)
+        .from('company_tpv_terminals')
         .select(`
           id,
-          terminal_identifier,
-          terminal_type,
-          bank_name,
-          annual_revenue,
-          affiliation_percentage,
-          active,
+          terminal_id,
+          provider,
+          monthly_volume,
+          commission_rate,
+          status,
           company_id
         `)
-        .order('annual_revenue', { ascending: false });
+        .order('monthly_volume', { ascending: false });
 
       if (terminalsError) throw terminalsError;
 
-      const typedTerminals = (terminals || []) as unknown as TPVTerminalRow[];
-
       // Fetch company names
-      const companyIds = [...new Set(typedTerminals.map(t => t.company_id))];
+      const companyIds = [...new Set((terminals || []).map(t => t.company_id))];
       const { data: companies, error: companiesError } = await supabase
         .from('companies')
         .select('id, name')
@@ -88,45 +58,15 @@ export function TPVManager() {
 
       const companiesMap = new Map(companies?.map(c => [c.id, c.name]));
 
-      // Fetch all commissions
-      // NOTE: tpv_commission_rates NOT in generated types — as any required
-      const terminalIds = typedTerminals.map(t => t.id);
-      const { data: commissions, error: commissionsError } = await supabase
-        .from('tpv_commission_rates' as any)
-        .select('*')
-        .in('terminal_id', terminalIds);
-
-      if (commissionsError) throw commissionsError;
-
-      // Group commissions by terminal
-      const commissionsMap = new Map<string, { nacional: number; propia: number; internacional: number }>();
-      (commissions as unknown as CommissionRow[] | null)?.forEach((comm) => {
-        if (!commissionsMap.has(comm.terminal_id)) {
-          commissionsMap.set(comm.terminal_id, {
-            nacional: 0,
-            propia: 0,
-            internacional: 0,
-          });
-        }
-        const terminalComm = commissionsMap.get(comm.terminal_id)!;
-        terminalComm[comm.card_type.toLowerCase() as 'nacional' | 'propia' | 'internacional'] = comm.commission_rate;
-      });
-
       // Combine data
-      const statsData: TPVStats[] = typedTerminals.map((terminal) => ({
+      const statsData: TPVStats[] = (terminals || []).map((terminal) => ({
         terminal_id: terminal.id,
-        terminal_identifier: terminal.terminal_identifier,
-        terminal_type: terminal.terminal_type,
-        bank_name: terminal.bank_name,
+        terminal_identifier: terminal.terminal_id || '',
+        provider: terminal.provider || '',
         company_name: companiesMap.get(terminal.company_id) || 'Desconocida',
-        annual_revenue: terminal.annual_revenue,
-        affiliation_percentage: terminal.affiliation_percentage,
-        active: terminal.active,
-        commissions: commissionsMap.get(terminal.id) || {
-          nacional: 0,
-          propia: 0,
-          internacional: 0,
-        },
+        monthly_volume: terminal.monthly_volume || 0,
+        commission_rate: terminal.commission_rate || 0,
+        is_active: terminal.status === 'active',
       }));
 
       setStats(statsData);
@@ -139,8 +79,7 @@ export function TPVManager() {
   };
 
   const filteredStats = stats.filter((stat) => {
-    if (filterBank !== 'all' && stat.bank_name !== filterBank) return false;
-    if (filterType !== 'all' && stat.terminal_type !== filterType) return false;
+    if (filterProvider !== 'all' && stat.provider !== filterProvider) return false;
     if (searchTerm && !stat.company_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
         !stat.terminal_identifier.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
@@ -148,16 +87,19 @@ export function TPVManager() {
     return true;
   });
 
-  const getTotalRevenue = () => {
-    return filteredStats.reduce((sum, stat) => sum + stat.annual_revenue, 0);
+  const getTotalMonthlyVolume = () => {
+    return filteredStats.reduce((sum, stat) => sum + stat.monthly_volume, 0);
   };
 
-  const getAverageCommission = (type: 'nacional' | 'propia' | 'internacional') => {
-    const activeTerminals = filteredStats.filter(s => s.active);
-    if (activeTerminals.length === 0) return 0;
-    const total = activeTerminals.reduce((sum, stat) => sum + stat.commissions[type], 0);
+  const getAverageCommission = () => {
+    const activeTerminals = filteredStats.filter(s => s.is_active);
+    if (activeTerminals.length === 0) return '0.00';
+    const total = activeTerminals.reduce((sum, stat) => sum + stat.commission_rate, 0);
     return (total / activeTerminals.length).toFixed(2);
   };
+
+  // Derive unique providers for filter
+  const uniqueProviders = [...new Set(stats.map(s => s.provider).filter(Boolean))];
 
   if (loading) {
     return (
@@ -179,25 +121,30 @@ export function TPVManager() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Facturación Total</CardDescription>
+            <CardDescription>Volumen Mensual Total</CardDescription>
             <CardTitle className="text-2xl">
-              {getTotalRevenue().toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+              {getTotalMonthlyVolume().toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Comisión Media Nacional</CardDescription>
-            <CardTitle className="text-3xl">{getAverageCommission('nacional')}%</CardTitle>
+            <CardDescription>Volumen Anual Estimado</CardDescription>
+            <CardTitle className="text-2xl">
+              {(getTotalMonthlyVolume() * 12).toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Terminales Activos</CardDescription>
-            <CardTitle className="text-3xl">
-              {filteredStats.filter(s => s.active).length}
-            </CardTitle>
+            <CardDescription>Comisión Media</CardDescription>
+            <CardTitle className="text-3xl">{getAverageCommission()}%</CardTitle>
           </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-xs text-muted-foreground">
+              Terminales activos: {filteredStats.filter(s => s.is_active).length}
+            </p>
+          </CardContent>
         </Card>
       </div>
 
@@ -218,27 +165,15 @@ export function TPVManager() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-xs"
             />
-            <Select value={filterBank} onValueChange={setFilterBank}>
+            <Select value={filterProvider} onValueChange={setFilterProvider}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Banco" />
+                <SelectValue placeholder="Proveedor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos los bancos</SelectItem>
-                <SelectItem value="Creand">Creand</SelectItem>
-                <SelectItem value="Morabanc">Morabanc</SelectItem>
-                <SelectItem value="Andbank">Andbank</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                <SelectItem value="Físico">Físico</SelectItem>
-                <SelectItem value="LINK">LINK</SelectItem>
-                <SelectItem value="Virtual">Virtual</SelectItem>
-                <SelectItem value="MONEI">MONEI</SelectItem>
+                <SelectItem value="all">Todos los proveedores</SelectItem>
+                {uniqueProviders.map((provider) => (
+                  <SelectItem key={provider} value={provider}>{provider}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -249,19 +184,16 @@ export function TPVManager() {
                 <TableHead>Estado</TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Terminal</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Banco</TableHead>
-                <TableHead className="text-right">Facturación</TableHead>
-                <TableHead className="text-right">% Vinc.</TableHead>
-                <TableHead className="text-right">Com. Nacional</TableHead>
-                <TableHead className="text-right">Com. Propia</TableHead>
-                <TableHead className="text-right">Com. Internac.</TableHead>
+                <TableHead>Proveedor</TableHead>
+                <TableHead className="text-right">Vol. Mensual</TableHead>
+                <TableHead className="text-right">Vol. Anual (est.)</TableHead>
+                <TableHead className="text-right">Comisión</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredStats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     No se encontraron terminales
                   </TableCell>
                 </TableRow>
@@ -269,23 +201,20 @@ export function TPVManager() {
                 filteredStats.map((stat) => (
                   <TableRow key={stat.terminal_id}>
                     <TableCell>
-                      <Badge variant={stat.active ? "default" : "secondary"}>
-                        {stat.active ? 'Activo' : 'Inactivo'}
+                      <Badge variant={stat.is_active ? "default" : "secondary"}>
+                        {stat.is_active ? 'Activo' : 'Inactivo'}
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">{stat.company_name}</TableCell>
                     <TableCell>{stat.terminal_identifier}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{stat.terminal_type}</Badge>
-                    </TableCell>
-                    <TableCell>{stat.bank_name}</TableCell>
+                    <TableCell>{stat.provider || 'N/A'}</TableCell>
                     <TableCell className="text-right font-mono">
-                      {stat.annual_revenue.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                      {stat.monthly_volume.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
                     </TableCell>
-                    <TableCell className="text-right">{stat.affiliation_percentage}%</TableCell>
-                    <TableCell className="text-right">{stat.commissions.nacional}%</TableCell>
-                    <TableCell className="text-right">{stat.commissions.propia}%</TableCell>
-                    <TableCell className="text-right">{stat.commissions.internacional}%</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">
+                      {(stat.monthly_volume * 12).toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                    </TableCell>
+                    <TableCell className="text-right">{stat.commission_rate}%</TableCell>
                   </TableRow>
                 ))
               )}
