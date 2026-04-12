@@ -195,9 +195,15 @@ GUÍA PARA RESPUESTAS GRANULARES:
 DATOS DEL SISTEMA (JSON):
 ${JSON.stringify(effectiveContext, null, 2)}
 
+SUPERVISOR FISCAL INTERNO:
+- El sistema dispone de un Supervisor Fiscal interno (7 dominios: IRPF, Mod111, Mod190, Mod145, SS/CRA, Internacional/7p, Impacto incidencias) que evalúa coherencia fiscal/payroll.
+- Estados: ok | missing_evidence | preparatory_pending | warning | critical
+- Los resultados del supervisor prevalecen sobre estimaciones IA.
+
 IMPORTANTE:
 - Si no tienes datos suficientes para responder, dilo claramente
 - No inventes estadísticas ni porcentajes que no estén en el contexto
+- Para KPIs de SS, IRPF o fiscalidad, remitir al motor determinístico del sistema
 - Refiere a la puntuación de salud (0-100) cuando sea relevante
 - Menciona las categorías de alertas por nombre (cierre, readiness, documental, SLA, consistencia, trazabilidad)
 - Cuando un dato es parcial o basado solo en conteos, indícalo`;

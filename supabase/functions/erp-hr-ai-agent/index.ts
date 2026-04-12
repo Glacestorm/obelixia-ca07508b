@@ -419,10 +419,10 @@ serve(async (req) => {
           : '0';
         
         const kpis = [
-          { label: 'Rotación anual', value: `${turnoverRate}%`, trend: 'down', target: '<10%', status: parseFloat(turnoverRate) < 10 ? 'good' : 'warning' },
-          { label: 'Absentismo', value: '3.2%', trend: 'up', target: '<3%', status: 'warning' },
-          { label: 'Satisfacción', value: '7.8/10', trend: 'up', target: '>8', status: 'good' },
-          { label: 'Formación h/emp', value: '24h', trend: 'up', target: '40h', status: 'neutral' }
+          { label: 'Rotación anual', value: `${turnoverRate}%`, trend: 'down', target: '<10%', status: parseFloat(turnoverRate) < 10 ? 'good' : 'warning', availability: 'real', provenance: 'db_query' },
+          { label: 'Absentismo', value: null, trend: null, target: '<3%', status: 'no_data', availability: 'not_available', provenance: 'not_available', display_label: 'Sin fuente de datos configurada' },
+          { label: 'Satisfacción', value: null, trend: null, target: '>8', status: 'no_data', availability: 'not_available', provenance: 'not_available', display_label: 'Sin fuente de datos configurada' },
+          { label: 'Formación h/emp', value: null, trend: null, target: '40h', status: 'no_data', availability: 'not_available', provenance: 'not_available', display_label: 'Sin fuente de datos configurada' }
         ];
         
         result = {
@@ -516,10 +516,24 @@ serve(async (req) => {
         let totalBases = 0;
         let totalContributions = 0;
         
+        // SS rates from canonical source (ssRules2026 / RDL 3/2026)
+        const SS_RATES = {
+          cc: { employer: 23.60, employee: 4.70 },
+          unemployment_indef: { employer: 5.50, employee: 1.55 },
+          unemployment_temp: { employer: 6.70, employee: 1.60 },
+          fogasa: { employer: 0.20 },
+          fp: { employer: 0.60, employee: 0.10 },
+          mei: { employer: 0.75, employee: 0.15 },
+          atep_ref: { employer: 1.50 },
+        };
+
+        const employerRateIndef = (SS_RATES.cc.employer + SS_RATES.unemployment_indef.employer +
+          SS_RATES.fogasa.employer + SS_RATES.fp.employer + SS_RATES.mei.employer +
+          SS_RATES.atep_ref.employer) / 100; // 32.15%
+
         (payrolls || []).forEach((p: any) => {
           totalBases += p.gross_salary || 0;
-          // Approximate SS contributions (around 30% of gross)
-          totalContributions += (p.gross_salary || 0) * 0.30;
+          totalContributions += (p.gross_salary || 0) * employerRateIndef;
         });
         
         result = {
@@ -529,10 +543,14 @@ serve(async (req) => {
             total_payrolls: totalPayrolls,
             total_bases: parseFloat(totalBases.toFixed(2)),
             total_contributions: parseFloat(totalContributions.toFixed(2)),
-            contingencias_comunes: parseFloat((totalBases * 0.283).toFixed(2)),
-            desempleo: parseFloat((totalBases * 0.07).toFixed(2)),
-            fogasa: parseFloat((totalBases * 0.002).toFixed(2)),
-            formacion: parseFloat((totalBases * 0.007).toFixed(2))
+            contingencias_comunes: parseFloat((totalBases * SS_RATES.cc.employer / 100).toFixed(2)),
+            desempleo: parseFloat((totalBases * SS_RATES.unemployment_indef.employer / 100).toFixed(2)),
+            fogasa: parseFloat((totalBases * SS_RATES.fogasa.employer / 100).toFixed(2)),
+            formacion: parseFloat((totalBases * SS_RATES.fp.employer / 100).toFixed(2)),
+            mei: parseFloat((totalBases * SS_RATES.mei.employer / 100).toFixed(2)),
+            atep_referencia: parseFloat((totalBases * SS_RATES.atep_ref.employer / 100).toFixed(2)),
+            rate_source: 'ssRules2026 (RDL 3/2026)',
+            employer_rate_total_pct: parseFloat((employerRateIndef * 100).toFixed(2)),
           },
           status: 'calculated',
           generated_at: new Date().toISOString()
@@ -554,7 +572,7 @@ serve(async (req) => {
         const fileType = (context as any)?.fileType || 'TC1';
         const period = (context as any)?.period || new Date().toISOString().slice(0, 7);
         
-        // Simulate SILTRA submission (in real world, this would connect to TGSS)
+        // Internal preparatory simulation — NOT an official TGSS submission
         result = {
           submission_id: `SILTRA-${Date.now()}`,
           file_type: fileType,
@@ -563,7 +581,11 @@ serve(async (req) => {
           response_code: '0000',
           response_message: 'Fichero recibido correctamente en cola de proceso',
           submitted_at: new Date().toISOString(),
-          expected_processing: 'Las próximas 24-48 horas'
+          expected_processing: 'Las próximas 24-48 horas',
+          simulated_internal: true,
+          official_submission: false,
+          readiness_only: true,
+          disclaimer: 'Simulación interna preparatoria. No constituye envío oficial a TGSS. Requiere firma electrónica y envío por SILTRA real.',
         };
         
         return new Response(JSON.stringify({
@@ -579,7 +601,7 @@ serve(async (req) => {
       case 'refresh_red_status': {
         console.log('[erp-hr-ai-agent] Refreshing RED status');
         
-        // Simulate Sistema RED status check
+        // Internal preparatory simulation — NOT a real Sistema RED connection
         result = {
           connection_status: 'connected',
           last_sync: new Date().toISOString(),
@@ -600,7 +622,11 @@ serve(async (req) => {
               date: new Date(Date.now() - 172800000).toISOString()
             }
           ],
-          certificate_valid_until: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString()
+          certificate_valid_until: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+          simulated_internal: true,
+          official_submission: false,
+          readiness_only: true,
+          disclaimer: 'Estado simulado interno. No representa una conexión real con Sistema RED de la TGSS.',
         };
         
         return new Response(JSON.stringify({
@@ -619,7 +645,7 @@ serve(async (req) => {
         const certificateType = (context as any)?.certificateType || 'empresa';
         const certEmployeeId = (context as any)?.employeeId;
         
-        // Simulate certificate request
+        // Internal preparatory simulation — NOT a real certificate request
         result = {
           request_id: `CERT-${Date.now()}`,
           certificate_type: certificateType,
@@ -627,7 +653,11 @@ serve(async (req) => {
           status: 'pending',
           request_date: new Date().toISOString(),
           estimated_delivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          message: 'Solicitud de certificado registrada. Recibirá una notificación cuando esté disponible.'
+          message: 'Solicitud de certificado registrada. Recibirá una notificación cuando esté disponible.',
+          simulated_internal: true,
+          official_submission: false,
+          readiness_only: true,
+          disclaimer: 'Registro interno preparatorio. La solicitud oficial requiere acceso a sede electrónica.',
         };
         
         return new Response(JSON.stringify({
@@ -707,6 +737,24 @@ CAPACIDADES:
 8. INFORMAR sobre quién está ausente HOY
 9. REPORTAR alertas activas de RRHH
 10. Consultar datos del maestro del empleado (DNI/NIE, categoría, jornada, etc.)
+11. Consultar estado del Supervisor Fiscal (7 dominios, 5 estados)
+12. Referenciar tipos SS con MEI (0.75%+0.15%) incluido
+
+SUPERVISOR FISCAL INTERNO (G1.2):
+El sistema dispone de un Supervisor Fiscal determinístico que evalúa 7 dominios de coherencia:
+- IRPF Coherence, Modelo 111 Prep, Modelo 190 Readiness, Modelo 145 Completeness
+- SS/CRA Coherence, International/IRNR/7p, Incident Impact
+Estados posibles: ok | missing_evidence | preparatory_pending | warning | critical
+Cuando el supervisor fiscal haya evaluado un dominio, sus resultados prevalecen sobre cualquier estimación IA.
+
+TIPOS SS 2026 (RDL 3/2026 — ssRules2026):
+- CC: 23.60% empresa / 4.70% trabajador
+- Desempleo indefinido: 5.50% / 1.55% | temporal: 6.70% / 1.60%
+- FOGASA: 0.20% empresa
+- FP: 0.60% / 0.10%
+- MEI: 0.75% / 0.15%
+- AT/EP: según CNAE (referencia ~1.50%)
+NOTA: Estos tipos provienen de ssRules2026 (RDL 3/2026). No aproximes ni redondees.
 
 REGLAS ESTRICTAS:
 - SIEMPRE citar la normativa laboral aplicable
@@ -714,9 +762,11 @@ REGLAS ESTRICTAS:
 - Priorizar derechos del trabajador
 - Alertar sobre incumplimientos de PRL
 - Usar terminología técnica laboral precisa
-- Calcular siempre con los tipos vigentes de SS e IRPF
+- Para cálculos de SS e IRPF, referir SIEMPRE al motor determinístico del sistema. No aproximar ni inventar tipos.
+- Cuando exista un motor determinístico (ssRules2026, irpfEngine, fiscalSupervisorEngine), SIEMPRE deferir al resultado del motor.
 - Cuando pregunten "¿quién está de vacaciones?" o similar, USAR los datos de AUSENCIAS ACTUALES
 - No exponer datos bancarios (IBAN) salvo en contexto de nómina/pagos
+- Los KPIs sin fuente real (absentismo, satisfacción, formación) deben indicarse como no disponibles, nunca inventar valores
 
 CONTEXTO ACTUAL:
 ${context ? JSON.stringify(context) : 'Sin contexto adicional'}
@@ -762,16 +812,19 @@ CONCEPTOS A CALCULAR:
    
 2. Deducciones:
    - Contingencias comunes (4.70%)
-   - Desempleo (1.55% o 1.60%)
+   - Desempleo (1.55% indefinido / 1.60% temporal)
    - Formación profesional (0.10%)
+   - MEI (0.15%)
    - IRPF (según tablas vigentes)
 
 3. Coste empresa:
    - Contingencias comunes (23.60%)
-   - Desempleo (5.50%)
+   - Desempleo (5.50% indefinido / 6.70% temporal)
    - FOGASA (0.20%)
    - Formación profesional (0.60%)
-   - Accidentes trabajo y EP (según CNAE)
+   - MEI (0.75%)
+   - Accidentes trabajo y EP (según CNAE, referencia ~1.50%)
+   NOTA: Tipos de ssRules2026 (RDL 3/2026). No aproximar.
 
 FORMATO DE RESPUESTA (JSON estricto):
 {

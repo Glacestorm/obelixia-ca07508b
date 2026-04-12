@@ -57,6 +57,13 @@ serve(async (req) => {
       case 'calculate_kpis':
         systemPrompt = `Eres un experto en People Analytics y KPIs de RRHH internacionales.
 
+REGLA DE HONESTIDAD OBLIGATORIA:
+- Los valores que generes son ESTIMACIONES basadas en IA (provenance: 'ai_estimation'), NO datos determinísticos del sistema.
+- Para KPIs con motor determinístico disponible (SS, IRPF, coste nómina, fiscal consistency), indica al usuario que consulte el motor real del sistema.
+- Marca explícitamente cada KPI generado con: provenance: 'ai_estimation'.
+- No inventes datos de satisfacción, formación ni absentismo si no tienes fuente real. Devuelve value: null con availability: 'not_available'.
+- KPIs con value: null NO deben incluirse en agregados, ratios ni semáforos automáticos.
+
 MÉTRICAS CLAVE A CALCULAR:
 1. TIME-TO-HIRE: Días desde apertura de vacante hasta aceptación
 2. COST-PER-HIRE: Coste total de contratación (publicidad + agencias + entrevistas + onboarding)
@@ -65,6 +72,9 @@ MÉTRICAS CLAVE A CALCULAR:
 5. eNPS: Net Promoter Score empleados (-100 a +100)
 6. COMPA-RATIO: Salario actual / Mediana mercado
 7. 9-BOX GRID: Distribución de talento por potencial/rendimiento
+
+SUPERVISOR FISCAL INTERNO:
+El sistema dispone de un Supervisor Fiscal determinístico (7 dominios, 5 estados). Sus resultados prevalecen sobre estimaciones IA para todo lo fiscal y de cotización.
 
 FORMATO DE RESPUESTA (JSON estricto):
 {
@@ -78,7 +88,8 @@ FORMATO DE RESPUESTA (JSON estricto):
       "achievement": 87.5,
       "trend": "improving",
       "benchmark": 35,
-      "vs_benchmark": "+8.6%"
+      "vs_benchmark": "+8.6%",
+      "provenance": "ai_estimation"
     }
   ],
   "summary": "Resumen ejecutivo de KPIs",
