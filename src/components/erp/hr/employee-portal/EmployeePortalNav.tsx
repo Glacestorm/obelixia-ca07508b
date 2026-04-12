@@ -11,6 +11,7 @@ import {
   Home,
   FileText,
   FolderOpen,
+  Award,
   Send,
   Clock,
   Palmtree,
@@ -25,6 +26,7 @@ export type PortalSection =
   | 'home'
   | 'payslips'
   | 'documents'
+  | 'certificates'
   | 'requests'
   | 'time'
   | 'leave'
@@ -43,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Inicio', icon: Home, description: 'Panel principal' },
   { id: 'payslips', label: 'Mis nóminas', icon: FileText, description: 'Recibos de nómina' },
   { id: 'documents', label: 'Mis documentos', icon: FolderOpen, description: 'Expediente personal' },
+  { id: 'certificates', label: 'Certificados', icon: Award, description: 'Certificados de empresa' },
   { id: 'requests', label: 'Mis solicitudes', icon: Send, description: 'Solicitudes y trámites' },
   { id: 'time', label: 'Mi tiempo', icon: Clock, description: 'Fichaje y horario' },
   { id: 'leave', label: 'Vacaciones y permisos', icon: Palmtree, description: 'Ausencias y licencias' },
