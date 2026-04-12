@@ -420,6 +420,8 @@ export interface S9ExecutiveSummaryData {
   salaryRegisterCoverage: number;
   /** Date of latest approved VPT (ISO string or null) */
   latestVPTApproval: string | null;
+  /** Version registry ID of the latest approved VPT (S9.10) */
+  latestVersionId: string | null;
   /** Overall readiness status */
   readiness: S9ModuleReadiness;
   /** Disclaimer — always present */

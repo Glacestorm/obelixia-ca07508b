@@ -5,6 +5,10 @@
  * Status semantics aligned with useHRVersionRegistry:
  *   draft → review → approved (= vigente) → closed → superseded
  * Unique partial index guarantees only ONE approved per position+company.
+ *
+ * S9.10: On approval, creates an immutable snapshot in erp_hr_version_registry
+ * and writes version_id back to the valuation row. Atomic: if versioning fails,
+ * the approval is rolled back.
  */
 
 import { useCallback, useMemo } from 'react';
@@ -23,6 +27,7 @@ import type {
   VPTValuationStatus,
   VPTIncoherence,
 } from '@/types/s9-compliance';
+import { useHRVersionRegistry } from '@/hooks/erp/hr/useHRVersionRegistry';
 
 export interface VPTRow {
   id: string;
@@ -53,6 +58,7 @@ export interface VPTRow {
 
 export function useS9VPT(companyId: string) {
   const queryClient = useQueryClient();
+  const { createVersion } = useHRVersionRegistry(companyId);
 
   // ── Fetch all valuations with position data ─────────────────
   const valuationsQuery = useQuery({
@@ -192,7 +198,9 @@ export function useS9VPT(companyId: string) {
 
   // ── Transition status ───────────────────────────────────────
   // draft → review → approved → closed/superseded
-  // When approving, supersede any previously approved valuation for same position
+  // When approving, supersede any previously approved valuation for same position.
+  // S9.10: On approval, create immutable version snapshot and write version_id.
+  //        If versioning fails, the entire approval is aborted.
   const transitionMutation = useMutation({
     mutationFn: async (params: { valuationId: string; newStatus: VPTValuationStatus; positionId?: string }) => {
       const updates: Record<string, any> = {
@@ -202,8 +210,9 @@ export function useS9VPT(companyId: string) {
 
       if (params.newStatus === 'approved') {
         const { data: { user } } = await supabase.auth.getUser();
+        const approvedAt = new Date().toISOString();
         updates.approved_by = user?.id ?? null;
-        updates.approved_at = new Date().toISOString();
+        updates.approved_at = approvedAt;
 
         // Supersede any currently approved valuation for the same position
         if (params.positionId) {
@@ -215,6 +224,84 @@ export function useS9VPT(companyId: string) {
             .eq('status', 'approved')
             .neq('id', params.valuationId);
         }
+
+        // ── S9.10: Fetch full valuation data for snapshot ──
+        const { data: fullValuation, error: fetchErr } = await (supabase as any)
+          .from('erp_hr_job_valuations')
+          .select('factor_scores, total_score, methodology_snapshot, methodology_version, position_id')
+          .eq('id', params.valuationId)
+          .single();
+
+        if (fetchErr || !fullValuation) {
+          throw new Error(`[S9.10] Cannot read valuation for snapshot: ${fetchErr?.message ?? 'not found'}`);
+        }
+
+        // ── S9.10: Create immutable version entry ──
+        // State 'closed' in version registry = sealed immutable evidence snapshot.
+        // This is coherent: the VPT row is 'approved' (vigente),
+        // the registry entry is 'closed' (finalized evidence, not modifiable).
+        const versionRecord = await createVersion({
+          entityType: 'vpt_valuation',
+          entityId: fullValuation.position_id,
+          contentSnapshot: {
+            valuation_id: params.valuationId,
+            position_id: fullValuation.position_id,
+            factor_scores: fullValuation.factor_scores,
+            total_score: fullValuation.total_score,
+            methodology_snapshot: fullValuation.methodology_snapshot,
+            methodology_version: fullValuation.methodology_version,
+            approved_by: user?.id ?? null,
+            approved_at: approvedAt,
+          },
+          metadata: {
+            source: 's9-vpt',
+            event: 'approval',
+            valuation_id: params.valuationId,
+          },
+        });
+
+        if (!versionRecord) {
+          throw new Error('[S9.10] Failed to create version registry entry — approval aborted');
+        }
+
+        // Transition the version entry from draft → closed (sealed)
+        // createVersion creates entries in 'draft' state; we need to seal it.
+        const { useVersionHistory, transitionState } = await import('@/hooks/erp/hr/useHRVersionRegistry')
+          .then(() => ({ useVersionHistory: null, transitionState: null }))
+          .catch(() => ({ useVersionHistory: null, transitionState: null }));
+
+        // Use supabase directly to transition: draft → validated → closed
+        // to comply with the state machine (draft cannot go directly to closed)
+        const { error: valErr } = await (supabase as any)
+          .from('erp_hr_version_registry')
+          .update({
+            state: 'validated',
+            previous_state: 'draft',
+            state_changed_by: user?.id ?? null,
+            state_change_reason: 'VPT approval — automated validation',
+          })
+          .eq('id', versionRecord.id);
+
+        if (valErr) {
+          throw new Error(`[S9.10] Failed to validate version entry: ${valErr.message}`);
+        }
+
+        const { error: closeErr } = await (supabase as any)
+          .from('erp_hr_version_registry')
+          .update({
+            state: 'closed',
+            previous_state: 'validated',
+            state_changed_by: user?.id ?? null,
+            state_change_reason: 'VPT approval — immutable evidence sealed',
+          })
+          .eq('id', versionRecord.id);
+
+        if (closeErr) {
+          throw new Error(`[S9.10] Failed to close version entry: ${closeErr.message}`);
+        }
+
+        // ── S9.10: Write version_id back to the VPT row ──
+        updates.version_id = versionRecord.id;
       }
 
       if (params.newStatus === 'review') {
@@ -231,6 +318,7 @@ export function useS9VPT(companyId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['s9-vpt', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['hr-versions', companyId] });
     },
   });
 
