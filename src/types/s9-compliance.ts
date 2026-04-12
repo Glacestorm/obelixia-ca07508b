@@ -397,3 +397,33 @@ export interface RetributiveSourceMetadata {
   /** VPT coverage ratio (0-1) */
   vptCoverage: number;
 }
+
+// ─── Executive Summary Data (S9.9) ──────────────────────────
+
+export const S9_EXECUTIVE_DISCLAIMER =
+  'DOCUMENTO INTERNO PREPARATORIO — No constituye registro retributivo oficial, ' +
+  'auditoria retributiva formal ni certificacion regulatoria. ' +
+  'Datos orientativos que requieren validacion profesional conforme al RD 902/2020 y Directiva UE 2023/970.';
+
+export interface S9ExecutiveSummaryData {
+  /** Period covered */
+  period: string;
+  /** Generation timestamp */
+  generatedAt: string;
+  /** VPT coverage: valued positions / total occupied positions */
+  vptCoverage: { valued: number; total: number; ratio: number };
+  /** Global gross wage gap from retributive audit */
+  globalGapPercent: number | null;
+  /** Number of VPT incoherences detected */
+  vptIncoherenceCount: number;
+  /** Salary register employee coverage */
+  salaryRegisterCoverage: number;
+  /** Date of latest approved VPT (ISO string or null) */
+  latestVPTApproval: string | null;
+  /** Overall readiness status */
+  readiness: S9ModuleReadiness;
+  /** Disclaimer — always present */
+  disclaimer: string;
+  /** Summary sentences (deterministic, observational) */
+  sentences: string[];
+}
