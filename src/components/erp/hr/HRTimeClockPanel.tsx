@@ -4,7 +4,7 @@
  * Registro obligatorio de jornada con geolocalización, anomalías y auditoría
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+
+const HRTimeClockInteropPanel = lazy(() => import('./HRTimeClockInteropPanel'));
 
 interface TimeClockEntry {
   id: string;
@@ -254,10 +256,6 @@ export function HRTimeClockPanel({ companyId }: HRTimeClockPanelProps) {
               <Button variant="outline" size="sm" onClick={() => fetchEntries(activeTab as any)}>
                 <RefreshCw className={cn("h-4 w-4 mr-1.5", loading && "animate-spin")} />
                 Actualizar
-              </Button>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-1.5" />
-                Exportar
               </Button>
             </div>
           </div>
