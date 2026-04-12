@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,16 +16,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { TransactionDetailDrawer } from './TransactionDetailDrawer';
+import type { TransactionDetail } from './TransactionDetailDrawer';
 
 interface Transaction {
   id: string;
   description: string | null;
   counterparty_name: string | null;
+  counterparty_account: string | null;
+  counterparty_bank: string | null;
   amount: number;
   transaction_date: string;
+  value_date: string | null;
   category_name: string | null;
+  category_code: string | null;
   status: string | null;
   currency: string | null;
+  reference: string | null;
+  external_id: string;
+  balance_after: number | null;
+  reconciled_at: string | null;
 }
 
 interface TransactionsListProps {
@@ -55,13 +65,15 @@ export function TransactionsList({ companyId }: TransactionsListProps) {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [selectedTx, setSelectedTx] = useState<TransactionDetail | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchTransactions = useCallback(async (pageNum: number, search: string) => {
     setIsLoading(true);
     try {
       let query = supabase
         .from('erp_bank_transactions')
-        .select('id, description, counterparty_name, amount, transaction_date, category_name, status, currency', { count: 'exact' })
+        .select('id, description, counterparty_name, counterparty_account, counterparty_bank, amount, transaction_date, value_date, category_name, category_code, status, currency, reference, external_id, balance_after, reconciled_at', { count: 'exact' })
         .eq('company_id', companyId)
         .order('transaction_date', { ascending: false })
         .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
@@ -181,7 +193,11 @@ export function TransactionsList({ companyId }: TransactionsListProps) {
               return (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between py-3 gap-4"
+                  className="flex items-center justify-between py-3 gap-4 cursor-pointer rounded-md px-2 -mx-2 hover:bg-muted/50 transition-colors"
+                  onClick={() => { setSelectedTx(tx as TransactionDetail); setDrawerOpen(true); }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { setSelectedTx(tx as TransactionDetail); setDrawerOpen(true); } }}
                 >
                   {/* Left: icon + text */}
                   <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -258,6 +274,12 @@ export function TransactionsList({ companyId }: TransactionsListProps) {
           </div>
         )}
       </CardContent>
+
+      <TransactionDetailDrawer
+        transaction={selectedTx}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+      />
     </Card>
   );
 }
