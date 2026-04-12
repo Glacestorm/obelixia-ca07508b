@@ -266,9 +266,7 @@ export function useS9VPT(companyId: string) {
 
         // Transition the version entry from draft → closed (sealed)
         // createVersion creates entries in 'draft' state; we need to seal it.
-        const { useVersionHistory, transitionState } = await import('@/hooks/erp/hr/useHRVersionRegistry')
-          .then(() => ({ useVersionHistory: null, transitionState: null }))
-          .catch(() => ({ useVersionHistory: null, transitionState: null }));
+        // Direct supabase calls used below (no dynamic import needed)
 
         // Use supabase directly to transition: draft → validated → closed
         // to comply with the state machine (draft cannot go directly to closed)
