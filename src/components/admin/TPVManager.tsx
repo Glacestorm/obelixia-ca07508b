@@ -61,6 +61,9 @@ export function TPVManager() {
       // this component uses (terminal_type, bank_name, etc.) — as any required
       const { data: terminals, error: terminalsError } = await supabase
         .from('company_tpv_terminals' as any)
+      const { data: terminals, error: terminalsError } = await supabase
+        .from('company_tpv_terminals' as any)
+        .select(`
           id,
           terminal_identifier,
           terminal_type,
