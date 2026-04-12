@@ -10,6 +10,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 import { mapAuthError, validationError, internalError, errorResponse } from '../_shared/error-contract.ts';
+import { CANONICAL_SS_RATES, CANONICAL_EMPLOYER_RATE_INDEF } from '../_shared/hr-payroll-kpi-catalog.ts';
 
 interface AgentRequest {
   action: 'chat' | 'calculate_payroll' | 'calculate_severance' | 'check_compliance' | 
@@ -516,20 +517,8 @@ serve(async (req) => {
         let totalBases = 0;
         let totalContributions = 0;
         
-        // SS rates from canonical source (ssRules2026 / RDL 3/2026)
-        const SS_RATES = {
-          cc: { employer: 23.60, employee: 4.70 },
-          unemployment_indef: { employer: 5.50, employee: 1.55 },
-          unemployment_temp: { employer: 6.70, employee: 1.60 },
-          fogasa: { employer: 0.20 },
-          fp: { employer: 0.60, employee: 0.10 },
-          mei: { employer: 0.75, employee: 0.15 },
-          atep_ref: { employer: 1.50 },
-        };
-
-        const employerRateIndef = (SS_RATES.cc.employer + SS_RATES.unemployment_indef.employer +
-          SS_RATES.fogasa.employer + SS_RATES.fp.employer + SS_RATES.mei.employer +
-          SS_RATES.atep_ref.employer) / 100; // 32.15%
+        // SS rates from canonical catalog (mirrors ssRules2026 / RDL 3/2026)
+        const employerRateIndef = CANONICAL_EMPLOYER_RATE_INDEF / 100; // 32.15% → 0.3215
 
         (payrolls || []).forEach((p: any) => {
           totalBases += p.gross_salary || 0;
@@ -543,14 +532,14 @@ serve(async (req) => {
             total_payrolls: totalPayrolls,
             total_bases: parseFloat(totalBases.toFixed(2)),
             total_contributions: parseFloat(totalContributions.toFixed(2)),
-            contingencias_comunes: parseFloat((totalBases * SS_RATES.cc.employer / 100).toFixed(2)),
-            desempleo: parseFloat((totalBases * SS_RATES.unemployment_indef.employer / 100).toFixed(2)),
-            fogasa: parseFloat((totalBases * SS_RATES.fogasa.employer / 100).toFixed(2)),
-            formacion: parseFloat((totalBases * SS_RATES.fp.employer / 100).toFixed(2)),
-            mei: parseFloat((totalBases * SS_RATES.mei.employer / 100).toFixed(2)),
-            atep_referencia: parseFloat((totalBases * SS_RATES.atep_ref.employer / 100).toFixed(2)),
-            rate_source: 'ssRules2026 (RDL 3/2026)',
-            employer_rate_total_pct: parseFloat((employerRateIndef * 100).toFixed(2)),
+            contingencias_comunes: parseFloat((totalBases * CANONICAL_SS_RATES.cc.employer / 100).toFixed(2)),
+            desempleo: parseFloat((totalBases * CANONICAL_SS_RATES.unemployment_indef.employer / 100).toFixed(2)),
+            fogasa: parseFloat((totalBases * CANONICAL_SS_RATES.fogasa.employer / 100).toFixed(2)),
+            formacion: parseFloat((totalBases * CANONICAL_SS_RATES.fp.employer / 100).toFixed(2)),
+            mei: parseFloat((totalBases * CANONICAL_SS_RATES.mei.employer / 100).toFixed(2)),
+            atep_referencia: parseFloat((totalBases * CANONICAL_SS_RATES.atep_ref.employer / 100).toFixed(2)),
+            rate_source: 'hr-payroll-kpi-catalog (mirror of ssRules2026 / RDL 3/2026)',
+            employer_rate_total_pct: parseFloat(CANONICAL_EMPLOYER_RATE_INDEF.toFixed(2)),
           },
           status: 'calculated',
           generated_at: new Date().toISOString()

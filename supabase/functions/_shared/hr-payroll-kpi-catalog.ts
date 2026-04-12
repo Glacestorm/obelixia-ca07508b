@@ -320,8 +320,17 @@ export function getUnavailableKpis(): KpiDefinition[] {
 }
 
 /**
- * Canonical SS rates from ssRules2026 (RDL 3/2026).
- * Inlined here for edge function consumption without cross-boundary imports.
+ * Canonical SS rates — Edge Function mirror of ssRules2026 (RDL 3/2026).
+ *
+ * CANONICAL FRONTEND SOURCE: src/shared/legal/rules/ssRules2026.ts
+ *   → SS_CONTRIBUTION_RATES_2026 (equivalent structure)
+ *
+ * This mirror exists because edge functions (Deno) cannot import from src/.
+ * ⚠️  MANDATORY SYNC: If rates change in ssRules2026.ts (new RDL, annual update),
+ *     this file MUST be updated in the same commit. Search for
+ *     "CANONICAL_SS_RATES" across the codebase to find all consumers.
+ *
+ * Last synced: 2026-04-12 — RDL 3/2026, Orden PJC/297/2026
  */
 export const CANONICAL_SS_RATES = {
   cc:                    { employer: 23.60, employee: 4.70, total: 28.30 },
