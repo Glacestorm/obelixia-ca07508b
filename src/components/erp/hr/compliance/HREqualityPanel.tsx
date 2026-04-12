@@ -51,6 +51,8 @@ import {
   Target,
   ClipboardList,
   ArrowRight,
+  Paperclip,
+  X,
   Circle,
   XCircle,
   Loader2,
@@ -188,6 +190,12 @@ export function HREqualityPanel({ companyId, className }: HREqualityPanelProps) 
       }
       return m;
     });
+    await saveMeasures(selectedPlan.id, updated);
+  }, [selectedPlan, measures, saveMeasures]);
+
+  const handleUpdateEvidence = useCallback(async (measureId: string, evidence: string[]) => {
+    if (!selectedPlan) return;
+    const updated = measures.map(m => m.id === measureId ? { ...m, evidence } : m);
     await saveMeasures(selectedPlan.id, updated);
   }, [selectedPlan, measures, saveMeasures]);
 
@@ -516,6 +524,11 @@ export function HREqualityPanel({ companyId, className }: HREqualityPanelProps) 
                                 <Badge variant="outline" className="text-[10px]">{areaLabel}</Badge>
                               </div>
                               {m.description && <p className="text-xs text-muted-foreground line-clamp-2">{m.description}</p>}
+                              {/* Evidence management */}
+                              <MeasureEvidenceEditor
+                                evidence={m.evidence || []}
+                                onChange={(ev) => handleUpdateEvidence(m.id, ev)}
+                              />
                             </div>
                             {transitions.length > 0 && (
                               <div className="flex gap-1 shrink-0">
