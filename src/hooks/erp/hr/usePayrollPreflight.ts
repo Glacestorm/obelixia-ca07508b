@@ -48,8 +48,8 @@ export function usePayrollPreflight(companyId: string): UsePayrollPreflightRetur
           .limit(1)
           .maybeSingle(),
         // erp_hr_incidents NOT in generated types — cast retained
-        supabase
-          .from('erp_hr_incidents' as any)
+        (supabase as any)
+          .from('erp_hr_incidents')
           .select('id, status')
           .eq('company_id', companyId)
           .limit(500),

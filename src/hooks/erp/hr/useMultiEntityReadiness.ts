@@ -165,7 +165,6 @@ export function useMultiEntityReadiness(companyId: string): UseMultiEntityReadin
     ).length;
     const contracts = (contRes.data || []) as Array<{ id: string; status: string; contract_type: string }>;
     const completeContracts = contracts.filter(c => c.contract_type && c.status === 'active').length;
-    const completeContracts = contracts.filter(c => c.contract_type && c.status === 'active').length;
 
     return {
       employeesWithCompleteData: complete,
