@@ -51,11 +51,9 @@ export function DocumentExpedientModule({ companyId, mvpMode = true }: Props) {
               <Clock className="h-3.5 w-3.5" /> Retención
             </TabsTrigger>
           )}
-          {showFull && (
-            <TabsTrigger value="audit" className="gap-1.5 text-xs">
-              <Eye className="h-3.5 w-3.5" /> Auditoría
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="audit" className="gap-1.5 text-xs">
+            <Eye className="h-3.5 w-3.5" /> Auditoría
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="employee">
@@ -78,11 +76,9 @@ export function DocumentExpedientModule({ companyId, mvpMode = true }: Props) {
           </TabsContent>
         )}
 
-        {showFull && (
-          <TabsContent value="audit">
-            <DocumentAuditPanel companyId={companyId} />
-          </TabsContent>
-        )}
+        <TabsContent value="audit">
+          <DocumentAuditPanel companyId={companyId} />
+        </TabsContent>
       </Tabs>
     </div>
   );
