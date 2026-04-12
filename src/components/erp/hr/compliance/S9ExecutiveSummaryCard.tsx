@@ -33,13 +33,13 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
   const { report: srReport, isLoading: loadSR, employeeCount: srEmployees } =
     useS9SalaryRegister(companyId, currentPeriod);
 
-  const { analytics, incoherences, isLoading: loadVPT } = useS9VPT(companyId);
+  const { analytics, incoherences, isLoading: loadVPT, valuations: vptValuations } = useS9VPT(companyId);
 
   const isLoading = loadAudit || loadSR || loadVPT;
 
   const summaryData = useMemo(() => {
     // S9.10: Find latest version_id from approved valuations
-    const approvedVals = (valuationsQuery ?? []).filter((v: any) => v.status === 'approved' && v.version_id);
+    const approvedVals = (vptValuations ?? []).filter((v: any) => v.status === 'approved' && v.version_id);
     const latestVersionId = approvedVals.length > 0 ? approvedVals[0]?.version_id ?? null : null;
 
     const input: ExecutiveSummaryInput = {
@@ -62,7 +62,7 @@ export const S9ExecutiveSummaryCard = memo(function S9ExecutiveSummaryCard({ com
       latestVersionId,
     };
     return generateExecutivePDFData(input);
-  }, [auditReport, analytics, incoherences, srReport, currentPeriod, hasVPTData, vptCount, vptCoverage, latestVPTApproval, srEmployees, valuationsQuery]);
+  }, [auditReport, analytics, incoherences, srReport, currentPeriod, hasVPTData, vptCount, vptCoverage, latestVPTApproval, srEmployees, vptValuations]);
 
   const handleExportPDF = useCallback(() => {
     try {
