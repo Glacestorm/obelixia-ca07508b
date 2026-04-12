@@ -229,33 +229,16 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {hasFile && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">Archivo adjunto</TooltipContent>
-                                </Tooltip>
-                              )}
-                              {vCount > 1 && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 bg-sky-500/10 text-sky-700 border-sky-500/20">
-                                      <History className="h-2.5 w-2.5" />v{vCount}
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">{vCount} versiones de archivo</TooltipContent>
-                                </Tooltip>
-                              )}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {/* Badges — read-only indicators */}
                               <DocGenerationBadge
                                 metadata={doc.metadata as Record<string, any> | null}
                                 source={doc.source}
                               />
                               {doc.integrity_verified ? (
-                                <span title="Integridad verificada"><CheckCircle2 className="h-4 w-4 text-emerald-500" /></span>
+                                <span title="Integridad verificada"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /></span>
                               ) : (
-                                <span title="No verificado"><XCircle className="h-4 w-4 text-muted-foreground/40" /></span>
+                                <span title="No verificado"><XCircle className="h-3.5 w-3.5 text-muted-foreground/40" /></span>
                               )}
                               <DocTrafficLightBadge
                                 documentType={doc.document_type}
@@ -263,10 +246,58 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               />
                               <DocStatusBadge status={doc.document_status} />
                               <DocumentOriginBadge relatedEntityType={doc.related_entity_type} />
-                              {doc.is_confidential && <Badge variant="outline" className="text-xs">Confidencial</Badge>}
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); }}>
-                                <Download className="h-3.5 w-3.5" />
-                              </Button>
+                              {doc.is_confidential && <Badge variant="outline" className="text-[9px]">Conf.</Badge>}
+
+                              {/* Quick actions — non-destructive */}
+                              <div className="flex items-center gap-0.5 ml-1 border-l pl-1.5">
+                                {hasFile && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          const url = doc.storage_path || doc.file_name;
+                                          if (url) window.open(url, '_blank');
+                                        }}
+                                      >
+                                        <Download className="h-3 w-3" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">Abrir archivo</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {vCount > 1 && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={e => { e.stopPropagation(); handleView(doc); }}
+                                      >
+                                        <History className="h-3 w-3" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">{vCount} versiones — ver detalle</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={e => { e.stopPropagation(); handleView(doc); }}
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">Ver detalle</TooltipContent>
+                                </Tooltip>
+                              </div>
                             </div>
                           </div>
                         );
