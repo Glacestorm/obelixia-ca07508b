@@ -21,11 +21,19 @@ interface Transaction {
   id: string;
   description: string | null;
   counterparty_name: string | null;
+  counterparty_account: string | null;
+  counterparty_bank: string | null;
   amount: number;
   transaction_date: string;
+  value_date: string | null;
   category_name: string | null;
+  category_code: string | null;
   status: string | null;
   currency: string | null;
+  reference: string | null;
+  external_id: string;
+  balance_after: number | null;
+  reconciled_at: string | null;
 }
 
 interface TransactionsListProps {
