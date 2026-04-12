@@ -25,6 +25,7 @@ export type PortalSection =
   | 'home'
   | 'payslips'
   | 'documents'
+  | 'certificates'
   | 'requests'
   | 'time'
   | 'leave'
