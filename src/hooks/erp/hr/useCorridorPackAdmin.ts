@@ -113,7 +113,8 @@ export function useCorridorPackAdmin(companyId?: string) {
 
     const { error } = await supabase
       .from('erp_hr_corridor_packs')
-      .update(updatePayload as Parameters<ReturnType<typeof supabase.from<'erp_hr_corridor_packs'>>['update']>[0])
+      // Safe cast: we've already converted Record<string,unknown> → Json above
+      .update(updatePayload as { [K in keyof typeof updatePayload]: typeof updatePayload[K] })
       .eq('id', packId);
 
     if (error) {
