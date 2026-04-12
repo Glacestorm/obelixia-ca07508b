@@ -28,6 +28,67 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
+// ── Typed shapes for pack_data sub-objects ──────────────────────────────────
+interface PackSourceItem {
+  type?: string;
+  label?: string;
+  url?: string;
+}
+
+interface PackDataSS {
+  regime?: string;
+  framework?: string;
+  maxMonths?: number;
+  certType?: string;
+  notes?: string;
+}
+
+interface PackDataCDI {
+  hasCDI?: boolean;
+  treatyRef?: string;
+  keyArticles?: string[];
+}
+
+interface PackDataTax {
+  residenceDaysThreshold?: number;
+  art7pApplicable?: boolean;
+  exitTax?: boolean;
+  beckhamEquivalent?: string;
+  notes?: string;
+}
+
+interface PackDataImmigration {
+  workPermitRequired?: boolean;
+  visaType?: string;
+  processingDays?: string;
+  notes?: string;
+}
+
+interface PackDataPayroll {
+  splitRecommended?: boolean;
+  shadowRecommended?: boolean;
+  taxEqRecommended?: boolean;
+}
+
+interface PackDataReviewTrigger {
+  id: string;
+  severity?: string;
+  affectedModule?: string;
+  evidenceRequired?: boolean;
+  reason?: string;
+  suggestedAction?: string;
+}
+
+interface PackDataBlob {
+  ss?: PackDataSS;
+  cdi?: PackDataCDI;
+  tax?: PackDataTax;
+  immigration?: PackDataImmigration;
+  payroll?: PackDataPayroll;
+  requiredDocuments?: string[];
+  reviewTriggers?: PackDataReviewTrigger[];
+}
+
 interface Props {
   companyId?: string;
 }
