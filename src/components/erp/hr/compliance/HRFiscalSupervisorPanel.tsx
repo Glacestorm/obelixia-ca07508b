@@ -7,6 +7,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   RefreshCw, AlertTriangle, CheckCircle, Clock, FileQuestion, AlertOctagon,
-  ChevronDown, Shield, Filter, Info
+  ChevronDown, Shield, Filter, Info, Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFiscalSupervisor, type FiscalSupervisorFilters } from '@/hooks/erp/hr/useFiscalSupervisor';
@@ -47,12 +48,14 @@ export function HRFiscalSupervisorPanel({ companyId }: HRFiscalSupervisorPanelPr
   const [periodYear, setPeriodYear] = useState(now.getFullYear());
   const [periodMonth, setPeriodMonth] = useState(now.getMonth() + 1);
   const [statusFilter, setStatusFilter] = useState<FiscalCheckStatus | 'all'>('all');
+  const [employeeFilter, setEmployeeFilter] = useState('');
   const [activeTab, setActiveTab] = useState('resumen');
 
   const filters: FiscalSupervisorFilters = {
     companyId,
     periodYear,
     periodMonth,
+    employeeId: employeeFilter.trim() || undefined,
     statusFilter: statusFilter === 'all' ? undefined : statusFilter,
   };
 
@@ -229,6 +232,16 @@ export function HRFiscalSupervisorPanel({ companyId }: HRFiscalSupervisorPanelPr
             <SelectItem value="ok">OK</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <Input
+            placeholder="Filtrar por empleado (ID)..."
+            value={employeeFilter}
+            onChange={e => setEmployeeFilter(e.target.value)}
+            className="h-8 w-[200px] pl-7 text-xs"
+          />
+        </div>
 
         <Button variant="ghost" size="sm" onClick={refetch} disabled={isLoading} className="h-8">
           <RefreshCw className={cn('h-3.5 w-3.5 mr-1', isLoading && 'animate-spin')} />
