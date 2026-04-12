@@ -609,12 +609,12 @@ function PackDetailView({
               </Card>
             )}
 
-            {pd?.requiredDocuments?.length > 0 && (
+            {(pd?.requiredDocuments?.length ?? 0) > 0 && (
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Documentos requeridos</CardTitle></CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-1">
-                    {pd.requiredDocuments.map((d: string) => (
+                    {(pd.requiredDocuments ?? []).map((d) => (
                       <Badge key={d} variant="outline" className="text-xs">{d.replace(/_/g, ' ')}</Badge>
                     ))}
                   </div>
