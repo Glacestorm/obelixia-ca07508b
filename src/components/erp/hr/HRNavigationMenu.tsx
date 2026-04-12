@@ -97,7 +97,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'mobility-international', 'stock-options',
     'official-submissions', 'compliance-evidence',
     // S9 Compliance
-    's9-lismi', 's9-salary-register', 's9-disconnection', 's9-remote-work', 's9-vpt', 's9-retributive-audit',
+    's9-lismi', 's9-salary-register', 's9-disconnection', 's9-remote-work', 's9-vpt', 's9-retributive-audit', 's9-executive-summary',
   ]);
 
   // Tier 2: visible_advanced — shown only to admin/advanced profiles in MVP mode
@@ -296,6 +296,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 's9-salary-register', label: 'Registro Retributivo', icon: Scale, description: 'RD 902/2020' },
             { id: 's9-vpt', label: 'Valoración de Puestos', icon: BarChart3, description: 'Directiva UE 2023/970' },
             { id: 's9-retributive-audit', label: 'Auditoría Retributiva', icon: Scale, description: 'Contextualización VPT + RD 902' },
+            { id: 's9-executive-summary', label: 'Resumen Ejecutivo S9', icon: FileText, description: 'Vista consolidada VPT' },
           ]
         },
       ]

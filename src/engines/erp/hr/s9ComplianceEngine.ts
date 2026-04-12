@@ -1085,6 +1085,101 @@ export function generateRetributiveExecutiveSummary(
   };
 }
 
+// ─── Executive Summary Data (S9.9) ─────────────────────────
+
+import type { S9ExecutiveSummaryData } from '@/types/s9-compliance';
+import { S9_EXECUTIVE_DISCLAIMER } from '@/types/s9-compliance';
+
+export interface ExecutiveSummaryInput {
+  period: string;
+  /** From useS9RetributiveAudit */
+  audit: {
+    globalGapPercent: number | null;
+    groupsWithAlert: number;
+    entries: number;
+  } | null;
+  /** From useS9VPT analytics */
+  vpt: {
+    positionsValued: number;
+    totalPositions: number;
+    incoherenceCount: number;
+    latestApproval: string | null;
+  } | null;
+  /** From useS9SalaryRegister */
+  salaryRegister: {
+    employeeCount: number;
+    hasVPTData: boolean;
+  } | null;
+}
+
+/**
+ * Composes executive summary data from existing hook outputs.
+ * Pure, deterministic, no AI. Observational language only.
+ */
+export function generateExecutivePDFData(input: ExecutiveSummaryInput): S9ExecutiveSummaryData {
+  const { period, audit, vpt, salaryRegister } = input;
+
+  const valued = vpt?.positionsValued ?? 0;
+  const total = vpt?.totalPositions ?? 0;
+  const ratio = total > 0 ? valued / total : 0;
+
+  const globalGap = audit?.globalGapPercent ?? null;
+  const incoherenceCount = vpt?.incoherenceCount ?? 0;
+  const srCoverage = salaryRegister?.employeeCount ?? 0;
+  const latestApproval = vpt?.latestApproval ?? null;
+
+  // Determine readiness
+  const hasAudit = audit != null && audit.entries > 0;
+  const hasVPT = valued > 0;
+  const hasSR = srCoverage > 0;
+  let readiness: 'internal_ready' | 'preparatory' | 'partial_controlled' = 'preparatory';
+  if (hasAudit && hasVPT && hasSR) readiness = 'internal_ready';
+  else if (hasAudit || hasVPT || hasSR) readiness = 'partial_controlled';
+
+  // Build deterministic sentences
+  const sentences: string[] = [];
+
+  sentences.push(
+    `Periodo analizado: ${period}. ` +
+    `Cobertura VPT: ${valued} de ${total} posiciones valoradas (${(ratio * 100).toFixed(0)}%).`
+  );
+
+  if (globalGap != null) {
+    sentences.push(
+      `Brecha retributiva bruta global observada: ${(globalGap * 100).toFixed(1)}%.`
+    );
+  } else {
+    sentences.push('No se dispone de datos suficientes para calcular la brecha retributiva global.');
+  }
+
+  if (incoherenceCount > 0) {
+    sentences.push(`Se detectan ${incoherenceCount} incoherencia(s) en la valoracion de puestos.`);
+  }
+
+  if (srCoverage > 0) {
+    sentences.push(`Registro retributivo: ${srCoverage} empleados cubiertos en el periodo.`);
+  }
+
+  if (audit?.groupsWithAlert && audit.groupsWithAlert > 0) {
+    sentences.push(
+      `${audit.groupsWithAlert} grupo(s) profesional(es) con brecha superior al 25% requieren atencion prioritaria.`
+    );
+  }
+
+  return {
+    period,
+    generatedAt: new Date().toISOString(),
+    vptCoverage: { valued, total, ratio },
+    globalGapPercent: globalGap,
+    vptIncoherenceCount: incoherenceCount,
+    salaryRegisterCoverage: srCoverage,
+    latestVPTApproval: latestApproval,
+    readiness,
+    disclaimer: S9_EXECUTIVE_DISCLAIMER,
+    sentences,
+  };
+}
+
 // ─── CSV Export (S9.6) ─────────────────────────────────────
 
 function escapeCSV(value: string | number | null | undefined): string {
