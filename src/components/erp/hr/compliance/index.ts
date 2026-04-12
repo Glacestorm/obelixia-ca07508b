@@ -20,3 +20,6 @@ export { HRInspectionCopilotPanel } from './HRInspectionCopilotPanel';
 
 // C1 - Motor de Convenios Colectivos
 export { HRCollectiveAgreementPanel } from './HRCollectiveAgreementPanel';
+
+// C2 - Simulador de Coste Laboral Total
+export { HRLaborCostSimulatorPanel } from './HRLaborCostSimulatorPanel';
