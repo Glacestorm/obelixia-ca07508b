@@ -44,6 +44,7 @@ import {
   LazyHRPayrollEntryDialog,
   LazyHRSocialSecurityPanel,
   LazyHRCNAEIntelligencePanel,
+  LazyHRFiscalSupervisorPanel,
   LazyHRSafetyPanel,
   LazyHRRegulatoryWatchPanel,
   LazyHRLegalComplianceDashboard,
@@ -519,6 +520,7 @@ function HRModuleInner() {
         {activeModule === 'labor-digital-twin' && <LazyHRLaborDigitalTwinPanel />}
         {activeModule === 'legal-engine' && <LazyHRLegalEnginePanel companyId={companyId} />}
         {activeModule === 'cnae-intelligence' && <LazyHRCNAEIntelligencePanel companyId={companyId} />}
+        {activeModule === 'fiscal-supervisor' && <LazyHRFiscalSupervisorPanel companyId={companyId} />}
         {activeModule === 'role-experience' && <LazyHRRoleExperiencePanel companyId={companyId} />}
 
         {/* Global HR Platform */}
