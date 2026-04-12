@@ -150,6 +150,7 @@ import {
   LazyS9RemoteWorkPanel,
   LazyS9VPTWorkspace,
   LazyS9RetributiveAuditPanel,
+  LazyS9ExecutiveSummaryCard,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -545,6 +546,7 @@ function HRModuleInner() {
         {activeModule === 's9-remote-work' && <LazyS9RemoteWorkPanel companyId={companyId} />}
         {activeModule === 's9-vpt' && <LazyS9VPTWorkspace companyId={companyId} />}
         {activeModule === 's9-retributive-audit' && <LazyS9RetributiveAuditPanel companyId={companyId} />}
+        {activeModule === 's9-executive-summary' && <LazyS9ExecutiveSummaryCard companyId={companyId} />}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
