@@ -627,9 +627,9 @@ function PackDetailView({
         <TabsContent value="triggers">
           <Card>
             <CardContent className="p-0">
-              {pd?.reviewTriggers?.length > 0 ? (
+              {(pd?.reviewTriggers?.length ?? 0) > 0 ? (
                 <div className="divide-y">
-                  {pd.reviewTriggers.map((t: any) => (
+                  {(pd.reviewTriggers ?? []).map((t) => (
                     <div key={t.id} className="px-4 py-3">
                       <div className="flex items-center gap-2 mb-1">
                         <TriggerSeverityIcon severity={t.severity} />
