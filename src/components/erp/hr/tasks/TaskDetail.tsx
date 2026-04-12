@@ -95,6 +95,26 @@ function useEntityNameResolver(task: HRTask) {
   return names;
 }
 
+/** Lightweight: fetch request_type for a linked admin_request (single field, single query) */
+function useLinkedRequestType(task: HRTask) {
+  const [requestType, setRequestType] = useState<string | null>(null);
+  const isLinked = task.related_entity_type === 'admin_request' && !!task.related_entity_id;
+
+  useEffect(() => {
+    if (!isLinked) return;
+    supabase
+      .from('erp_hr_admin_requests')
+      .select('request_type')
+      .eq('id', task.related_entity_id!)
+      .single()
+      .then(({ data }) => {
+        if (data?.request_type) setRequestType(data.request_type);
+      });
+  }, [isLinked, task.related_entity_id]);
+
+  return { requestType, isLinked };
+}
+
 function CopyableId({ label, id }: { label: string; id: string }) {
   return (
     <p className="text-muted-foreground flex items-center gap-1">
