@@ -274,6 +274,12 @@ export function TransactionsList({ companyId }: TransactionsListProps) {
           </div>
         )}
       </CardContent>
+
+      <TransactionDetailDrawer
+        transaction={selectedTx}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+      />
     </Card>
   );
 }
