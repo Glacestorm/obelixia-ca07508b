@@ -1110,6 +1110,8 @@ export interface ExecutiveSummaryInput {
     employeeCount: number;
     hasVPTData: boolean;
   } | null;
+  /** S9.10: version_id of the latest approved VPT */
+  latestVersionId?: string | null;
 }
 
 /**
@@ -1174,6 +1176,7 @@ export function generateExecutivePDFData(input: ExecutiveSummaryInput): S9Execut
     vptIncoherenceCount: incoherenceCount,
     salaryRegisterCoverage: srCoverage,
     latestVPTApproval: latestApproval,
+    latestVersionId: input.latestVersionId ?? null,
     readiness,
     disclaimer: S9_EXECUTIVE_DISCLAIMER,
     sentences,
