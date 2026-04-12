@@ -17,6 +17,7 @@ import { MobilityCompliancePanel } from './MobilityCompliancePanel';
 import { MobilityClassificationPanel } from './MobilityClassificationPanel';
 import { MobilityTaxImpactPanel } from './MobilityTaxImpactPanel';
 import { MobilityCorridorPanel } from './MobilityCorridorPanel';
+import { MobilityOperationalPanel } from './MobilityOperationalPanel';
 import { useExpatriateCase } from '@/hooks/erp/hr/useExpatriateCase';
 import type {
   MobilityAssignment, MobilityDocument, MobilityCostProjection, MobilityAuditEntry,
