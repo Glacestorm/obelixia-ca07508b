@@ -22,7 +22,8 @@ import {
   exportRetributiveAuditCSV,
   exportSalaryRegisterVPTCSV,
 } from '../s9ComplianceEngine';
-import { RETRIBUTIVE_AUDIT_DISCLAIMER, VPT_CONTEXT_DISCLAIMER, EXECUTIVE_SUMMARY_DISCLAIMER } from '@/types/s9-compliance';
+import { generateExecutivePDFData, type ExecutiveSummaryInput } from '../s9ComplianceEngine';
+import { RETRIBUTIVE_AUDIT_DISCLAIMER, VPT_CONTEXT_DISCLAIMER, EXECUTIVE_SUMMARY_DISCLAIMER, S9_EXECUTIVE_DISCLAIMER } from '@/types/s9-compliance';
 
 // ─── LISMI ───────────────────────────────────────────────────
 
@@ -803,6 +804,81 @@ describe('exportSalaryRegisterVPTCSV', () => {
   it('should include band summary section', () => {
     const csv = exportSalaryRegisterVPTCSV(vptReport);
     expect(csv).toContain('Resumen por Banda VPT');
+  });
+});
+
+// ─── S9.9: EXECUTIVE SUMMARY DATA ───────────────────────────
+
+describe('generateExecutivePDFData', () => {
+  const fullInput: ExecutiveSummaryInput = {
+    period: '2026-04',
+    audit: { globalGapPercent: 0.123, groupsWithAlert: 2, entries: 5 },
+    vpt: { positionsValued: 8, totalPositions: 12, incoherenceCount: 1, latestApproval: '2026-03-15T10:00:00Z' },
+    salaryRegister: { employeeCount: 45, hasVPTData: true },
+  };
+
+  it('should return correct structure with full data', () => {
+    const result = generateExecutivePDFData(fullInput);
+    expect(result.period).toBe('2026-04');
+    expect(result.vptCoverage.valued).toBe(8);
+    expect(result.vptCoverage.total).toBe(12);
+    expect(result.vptCoverage.ratio).toBeCloseTo(0.667, 2);
+    expect(result.globalGapPercent).toBe(0.123);
+    expect(result.vptIncoherenceCount).toBe(1);
+    expect(result.salaryRegisterCoverage).toBe(45);
+    expect(result.latestVPTApproval).toBe('2026-03-15T10:00:00Z');
+    expect(result.readiness).toBe('internal_ready');
+    expect(result.disclaimer).toBe(S9_EXECUTIVE_DISCLAIMER);
+    expect(result.sentences.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('should degrade gracefully with empty data', () => {
+    const emptyInput: ExecutiveSummaryInput = {
+      period: '2026-04',
+      audit: null,
+      vpt: null,
+      salaryRegister: null,
+    };
+    const result = generateExecutivePDFData(emptyInput);
+    expect(result.readiness).toBe('preparatory');
+    expect(result.vptCoverage.valued).toBe(0);
+    expect(result.globalGapPercent).toBeNull();
+    expect(result.salaryRegisterCoverage).toBe(0);
+    expect(result.disclaimer).toBe(S9_EXECUTIVE_DISCLAIMER);
+    expect(result.sentences.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should return partial_controlled with only some data', () => {
+    const partialInput: ExecutiveSummaryInput = {
+      period: '2026-04',
+      audit: { globalGapPercent: 0.05, groupsWithAlert: 0, entries: 2 },
+      vpt: null,
+      salaryRegister: null,
+    };
+    const result = generateExecutivePDFData(partialInput);
+    expect(result.readiness).toBe('partial_controlled');
+  });
+
+  it('should include disclaimer text that marks document as internal', () => {
+    const result = generateExecutivePDFData(fullInput);
+    expect(result.disclaimer).toContain('DOCUMENTO INTERNO PREPARATORIO');
+    expect(result.disclaimer).toContain('No constituye');
+  });
+
+  it('should not contain justificative language', () => {
+    const result = generateExecutivePDFData(fullInput);
+    const allText = result.sentences.join(' ') + ' ' + result.disclaimer;
+    expect(allText).not.toMatch(/justificad/i);
+    expect(allText).not.toMatch(/explicada completamente/i);
+    expect(allText).not.toMatch(/corregid/i);
+    expect(allText).not.toMatch(/resuelt/i);
+  });
+
+  it('should mention groups with alert when present', () => {
+    const result = generateExecutivePDFData(fullInput);
+    const text = result.sentences.join(' ');
+    expect(text).toContain('2 grupo(s)');
+    expect(text).toContain('atencion prioritaria');
   });
 });
 });
