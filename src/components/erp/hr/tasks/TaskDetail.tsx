@@ -1,6 +1,7 @@
 /**
  * TaskDetail — Slide-over detail panel for a task
  * H1.1: UUID→name lookups for employee, assigned_to; copy button for technical IDs
+ * S9.11-P3: ProcessDeadlinesSummary for tasks linked to admin requests
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { HRTask } from '@/hooks/erp/hr/useHRTasksEngine';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
+import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
