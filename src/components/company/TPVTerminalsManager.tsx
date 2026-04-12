@@ -69,17 +69,18 @@ export function TPVTerminalsManager({ companyId }: Props) {
     try {
       setLoading(true);
       const { data: terminalsData, error: terminalsError } = await supabase
-        .from('company_tpv_terminals' as any)
+        .from('company_tpv_terminals')
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
       if (terminalsError) throw terminalsError;
-      setTerminals(terminalsData as any || []);
+      setTerminals((terminalsData as unknown as TPVTerminal[]) || []);
 
       // Fetch commissions for all terminals
+      // NOTE: tpv_commission_rates NOT in generated types — as any required
       if (terminalsData && terminalsData.length > 0) {
-        const terminalIds = terminalsData.map((t: any) => t.id);
+        const terminalIds = terminalsData.map((t) => t.id);
         const { data: commissionsData, error: commissionsError } = await supabase
           .from('tpv_commission_rates' as any)
           .select('*')
@@ -88,7 +89,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
         if (commissionsError) throw commissionsError;
 
         const commissionsByTerminal: Record<string, CommissionRate[]> = {};
-        commissionsData?.forEach((comm: any) => {
+        (commissionsData as unknown as CommissionRate[] | null)?.forEach((comm) => {
           if (!commissionsByTerminal[comm.terminal_id]) {
             commissionsByTerminal[comm.terminal_id] = [];
           }
@@ -96,7 +97,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
         });
         setCommissions(commissionsByTerminal);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching terminals:', error);
       toast.error('Error al cargar terminales TPV');
     } finally {
@@ -112,7 +113,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
 
       if (editingTerminal) {
         const { error } = await supabase
-          .from('company_tpv_terminals' as any)
+          .from('company_tpv_terminals')
           .update({
             terminal_type: formData.terminal_type,
             terminal_identifier: formData.terminal_identifier,
@@ -128,7 +129,7 @@ export function TPVTerminalsManager({ companyId }: Props) {
         toast.success('Terminal actualizado');
       } else {
         const { data, error } = await supabase
-          .from('company_tpv_terminals' as any)
+          .from('company_tpv_terminals')
           .insert({
             company_id: companyId,
             terminal_type: formData.terminal_type,
@@ -142,11 +143,11 @@ export function TPVTerminalsManager({ companyId }: Props) {
           .single();
 
         if (error) throw error;
-        terminalId = (data as any).id;
+        terminalId = data.id;
         toast.success('Terminal añadido');
       }
 
-      // Save commissions
+      // Save commissions — tpv_commission_rates NOT in types.ts
       for (const [cardType, rate] of Object.entries(formData.commissions)) {
         await supabase
           .from('tpv_commission_rates' as any)
@@ -162,9 +163,9 @@ export function TPVTerminalsManager({ companyId }: Props) {
       setIsDialogOpen(false);
       resetForm();
       fetchTerminals();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving terminal:', error);
-      toast.error(error.message || 'Error al guardar terminal');
+      toast.error('Error al guardar terminal');
     }
   };
 
@@ -173,14 +174,14 @@ export function TPVTerminalsManager({ companyId }: Props) {
 
     try {
       const { error } = await supabase
-        .from('company_tpv_terminals' as any)
+        .from('company_tpv_terminals')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
       toast.success('Terminal eliminado');
       fetchTerminals();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting terminal:', error);
       toast.error('Error al eliminar terminal');
     }
@@ -189,7 +190,6 @@ export function TPVTerminalsManager({ companyId }: Props) {
   const handleEdit = async (terminal: TPVTerminal) => {
     setEditingTerminal(terminal);
     
-    // Load commissions for this terminal
     const terminalCommissions = commissions[terminal.id] || [];
     const commissionsObj = {
       'Nacional': terminalCommissions.find(c => c.card_type === 'Nacional')?.commission_rate || 0,

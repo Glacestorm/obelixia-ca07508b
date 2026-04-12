@@ -24,6 +24,24 @@ interface TPVStats {
   };
 }
 
+interface TPVTerminalRow {
+  id: string;
+  terminal_identifier: string;
+  terminal_type: string;
+  bank_name: string;
+  annual_revenue: number;
+  affiliation_percentage: number;
+  active: boolean;
+  company_id: string;
+}
+
+// NOTE: tpv_commission_rates is NOT in types.ts — as any retained for this table
+interface CommissionRow {
+  terminal_id: string;
+  card_type: string;
+  commission_rate: number;
+}
+
 export function TPVManager() {
   const [stats, setStats] = useState<TPVStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +59,7 @@ export function TPVManager() {
 
       // Fetch all terminals with company info
       const { data: terminals, error: terminalsError } = await supabase
-        .from('company_tpv_terminals' as any)
+        .from('company_tpv_terminals')
         .select(`
           id,
           terminal_identifier,
@@ -56,8 +74,10 @@ export function TPVManager() {
 
       if (terminalsError) throw terminalsError;
 
+      const typedTerminals = (terminals || []) as unknown as TPVTerminalRow[];
+
       // Fetch company names
-      const companyIds = [...new Set(terminals?.map((t: any) => t.company_id))];
+      const companyIds = [...new Set(typedTerminals.map(t => t.company_id))];
       const { data: companies, error: companiesError } = await supabase
         .from('companies')
         .select('id, name')
@@ -68,7 +88,8 @@ export function TPVManager() {
       const companiesMap = new Map(companies?.map(c => [c.id, c.name]));
 
       // Fetch all commissions
-      const terminalIds = terminals?.map((t: any) => t.id) || [];
+      // NOTE: tpv_commission_rates NOT in generated types — as any required
+      const terminalIds = typedTerminals.map(t => t.id);
       const { data: commissions, error: commissionsError } = await supabase
         .from('tpv_commission_rates' as any)
         .select('*')
@@ -77,8 +98,8 @@ export function TPVManager() {
       if (commissionsError) throw commissionsError;
 
       // Group commissions by terminal
-      const commissionsMap = new Map<string, any>();
-      commissions?.forEach((comm: any) => {
+      const commissionsMap = new Map<string, { nacional: number; propia: number; internacional: number }>();
+      (commissions as unknown as CommissionRow[] | null)?.forEach((comm) => {
         if (!commissionsMap.has(comm.terminal_id)) {
           commissionsMap.set(comm.terminal_id, {
             nacional: 0,
@@ -86,12 +107,12 @@ export function TPVManager() {
             internacional: 0,
           });
         }
-        const terminalComm = commissionsMap.get(comm.terminal_id);
-        terminalComm[comm.card_type.toLowerCase()] = comm.commission_rate;
+        const terminalComm = commissionsMap.get(comm.terminal_id)!;
+        terminalComm[comm.card_type.toLowerCase() as 'nacional' | 'propia' | 'internacional'] = comm.commission_rate;
       });
 
       // Combine data
-      const statsData: TPVStats[] = terminals?.map((terminal: any) => ({
+      const statsData: TPVStats[] = typedTerminals.map((terminal) => ({
         terminal_id: terminal.id,
         terminal_identifier: terminal.terminal_identifier,
         terminal_type: terminal.terminal_type,
@@ -105,10 +126,10 @@ export function TPVManager() {
           propia: 0,
           internacional: 0,
         },
-      })) || [];
+      }));
 
       setStats(statsData);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching TPV stats:', error);
       toast.error('Error al cargar estadísticas de TPV');
     } finally {

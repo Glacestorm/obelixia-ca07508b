@@ -37,6 +37,12 @@ interface MonthlyTarget {
   description: string;
 }
 
+interface VisitMetricRow {
+  visit_date: string;
+  result: string | null;
+  porcentaje_vinculacion: number | null;
+}
+
 export const PersonalKPIsDashboard = () => {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<KPIMetrics>({
@@ -72,7 +78,7 @@ export const PersonalKPIsDashboard = () => {
 
       // Fetch all visits for this month
       const { data: visitsData, error: visitsError } = await supabase
-        .from('visits' as any)
+        .from('visits')
         .select('visit_date, result, porcentaje_vinculacion')
         .eq('gestor_id', user.id)
         .gte('visit_date', monthStart)
@@ -80,19 +86,19 @@ export const PersonalKPIsDashboard = () => {
 
       if (visitsError) throw visitsError;
 
-      const visits = (visitsData as any) || [];
+      const visits: VisitMetricRow[] = visitsData || [];
 
       // Calculate metrics
       const visitsThisMonth = visits.length;
-      const visitsThisWeek = visits.filter((v: any) => 
+      const visitsThisWeek = visits.filter((v) => 
         v.visit_date >= weekStart && v.visit_date <= weekEnd
       ).length;
-      const visitsToday = visits.filter((v: any) => 
+      const visitsToday = visits.filter((v) => 
         v.visit_date.startsWith(todayStart)
       ).length;
 
-      // Calculate conversion rate (visits with positive result or >50% vinculación)
-      const successfulVisits = visits.filter((v: any) => 
+      // Calculate conversion rate
+      const successfulVisits = visits.filter((v) => 
         v.result === 'positivo' || 
         v.result === 'contrato' || 
         (v.porcentaje_vinculacion && v.porcentaje_vinculacion > 50)
@@ -103,9 +109,9 @@ export const PersonalKPIsDashboard = () => {
         : 0;
 
       // Calculate average vinculación
-      const visitsWithVinculacion = visits.filter((v: any) => v.porcentaje_vinculacion !== null);
+      const visitsWithVinculacion = visits.filter((v) => v.porcentaje_vinculacion !== null);
       const avgVinculacion = visitsWithVinculacion.length > 0
-        ? visitsWithVinculacion.reduce((sum: number, v: any) => sum + (v.porcentaje_vinculacion || 0), 0) / visitsWithVinculacion.length
+        ? visitsWithVinculacion.reduce((sum, v) => sum + (v.porcentaje_vinculacion || 0), 0) / visitsWithVinculacion.length
         : 0;
 
       setMetrics({
@@ -120,7 +126,7 @@ export const PersonalKPIsDashboard = () => {
 
       // Fetch monthly targets
       const { data: targetsData, error: targetsError } = await supabase
-        .from('goals' as any)
+        .from('goals')
         .select('*')
         .gte('period_end', now.toISOString())
         .lte('period_start', now.toISOString())
@@ -128,8 +134,8 @@ export const PersonalKPIsDashboard = () => {
 
       if (targetsError) throw targetsError;
 
-      setTargets((targetsData as any) || []);
-    } catch (error: any) {
+      setTargets((targetsData as MonthlyTarget[] | null) || []);
+    } catch (error) {
       console.error('Error fetching metrics:', error);
       toast.error('Error al cargar métricas');
     } finally {
