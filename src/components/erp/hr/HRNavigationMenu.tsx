@@ -198,6 +198,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 'irpf-motor', label: 'Motor IRPF', icon: Calculator, description: 'Mod. 111/190 · Certificados' },
             { id: 'symbolic-values', label: 'Valores Simbólicos', icon: Database, description: 'Editor por empleado' },
             { id: 'ss', label: 'Seguridad Social', icon: Landmark, description: 'Cotizaciones y expediente SS' },
+            { id: 'fiscal-supervisor', label: 'Supervisor Fiscal', icon: Shield, description: 'Control IRPF · SS · Internacional' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones y ceses' },
             { id: 'garnishment-simulator', label: 'Embargos Art. 607', icon: Scale, description: 'Simulador Art. 607-608 LEC' },

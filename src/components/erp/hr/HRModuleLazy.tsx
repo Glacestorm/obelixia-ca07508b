@@ -89,6 +89,7 @@ export const LazyHRPayrollEntryDialog = lazyPanel(() => import('./domains/payrol
 // ─── D4 Social-Fiscal ───────────────────────────────────────
 export const LazyHRSocialSecurityPanel = lazyPanel(() => import('./domains/social-fiscal'), 'HRSocialSecurityPanel');
 export const LazyHRCNAEIntelligencePanel = lazyPanel(() => import('./domains/social-fiscal'), 'HRCNAEIntelligencePanel');
+export const LazyHRFiscalSupervisorPanel = lazyPanel(() => import('./domains/social-fiscal'), 'HRFiscalSupervisorPanel');
 
 // ─── D5 Compliance ──────────────────────────────────────────
 export const LazyHRSafetyPanel = lazyPanel(() => import('./domains/compliance'), 'HRSafetyPanel');
