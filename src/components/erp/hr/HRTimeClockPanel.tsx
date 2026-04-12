@@ -410,6 +410,13 @@ export function HRTimeClockPanel({ companyId }: HRTimeClockPanelProps) {
                 </TableBody>
               </Table>
             </ScrollArea>
+
+            {/* ═══ INTEROP TAB ═══ */}
+            <TabsContent value="interop">
+              <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Cargando interoperabilidad…</div>}>
+                <HRTimeClockInteropPanel companyId={companyId} />
+              </Suspense>
+            </TabsContent>
           </Tabs>
 
           {/* Summary footer */}
