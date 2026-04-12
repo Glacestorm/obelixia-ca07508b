@@ -23,3 +23,6 @@ export { HRCollectiveAgreementPanel } from './HRCollectiveAgreementPanel';
 
 // C2 - Simulador de Coste Laboral Total
 export { HRLaborCostSimulatorPanel } from './HRLaborCostSimulatorPanel';
+
+// C4 - Onboarding Legal Automatizado
+export { HRLegalOnboardingPanel } from './HRLegalOnboardingPanel';
