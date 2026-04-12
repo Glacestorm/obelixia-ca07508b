@@ -284,6 +284,10 @@ export function HRTimeClockPanel({ companyId }: HRTimeClockPanelProps) {
                     <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">{anomalies}</Badge>
                   )}
                 </TabsTrigger>
+                <TabsTrigger value="interop" className="text-xs">
+                  <Shield className="h-3.5 w-3.5 mr-1" />
+                  Interoperabilidad
+                </TabsTrigger>
               </TabsList>
 
               <div className="flex items-center gap-2">
