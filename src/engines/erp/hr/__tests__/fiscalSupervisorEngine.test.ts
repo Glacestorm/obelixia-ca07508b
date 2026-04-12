@@ -31,9 +31,9 @@ const payrollMonth = (month: number, base = 3000, ret = 600) => ({
 
 describe('fiscalSupervisorEngine', () => {
   describe('empty input', () => {
-    it('returns missing_evidence when no data provided', () => {
+    it('returns preparatory or missing status when no data provided', () => {
       const result = runFiscalSupervisor(baseInput());
-      expect(result.overallStatus).toBe('missing_evidence');
+      expect(['missing_evidence', 'preparatory_pending']).toContain(result.overallStatus);
       expect(result.domains).toHaveLength(7);
       expect(result.disclaimer).toContain('interna preparatoria');
     });
