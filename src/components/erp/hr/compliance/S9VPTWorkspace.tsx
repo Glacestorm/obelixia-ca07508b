@@ -4,6 +4,8 @@
  *
  * Status semantics (aligned with useHRVersionRegistry):
  *   draft → review → approved (vigente) → closed / superseded
+ *
+ * S9.10: Includes version history panel for traceability.
  */
 
 import { memo, useState, useCallback, useMemo } from 'react';
@@ -27,6 +29,7 @@ import {
   FileCheck,
   XCircle,
   Info,
+  History,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useS9VPT, type VPTRow } from '@/hooks/erp/hr/useS9VPT';
@@ -38,6 +41,7 @@ import {
   VPT_SUBFACTOR_LABELS,
   VPT_FACTOR_LABELS,
 } from '@/engines/erp/hr/s9ComplianceEngine';
+import { VersionHistoryPanel } from '../ledger/VersionHistoryPanel';
 import type { VPTFactorScores, VPTFactor, VPTValuationStatus } from '@/types/s9-compliance';
 
 interface S9VPTWorkspaceProps {
