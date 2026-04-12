@@ -12,6 +12,9 @@
 
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json, Database } from '@/integrations/supabase/types';
+
+type HrVersionState = Database['public']['Enums']['hr_version_state'];
 import {
   buildLedgerRow,
   detectChangedFields,
@@ -94,9 +97,17 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
 
       const row = await buildLedgerRow(fullInput);
 
-      const { data, error } = await (supabase as any)
+      // Cast LedgerEventRow (Record<string, unknown> fields) to Json-compatible shape
+      const { data, error } = await supabase
         .from('erp_hr_ledger')
-        .insert(row)
+        .insert({
+          ...row,
+          before_snapshot: row.before_snapshot as unknown as Json,
+          after_snapshot: row.after_snapshot as unknown as Json,
+          financial_impact: row.financial_impact as unknown as Json,
+          compliance_impact: row.compliance_impact as unknown as Json,
+          metadata: row.metadata as unknown as Json,
+        })
         .select('id')
         .single();
 
@@ -135,9 +146,14 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
         })
       );
 
-      const { error } = await (supabase as any)
+      // Cast EvidenceRow (Record<string, unknown> fields) to Json-compatible shape
+      const { error } = await supabase
         .from('erp_hr_evidence')
-        .insert(rows);
+        .insert(rows.map(r => ({
+          ...r,
+          evidence_snapshot: r.evidence_snapshot as unknown as Json,
+          metadata: r.metadata as unknown as Json,
+        })));
 
       if (error) {
         console.error('[LedgerWriter] evidence insert error (non-blocking):', error);
@@ -162,7 +178,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
   }): Promise<string | null> => {
     try {
       // Get next version
-      const { data: existing } = await (supabase as any)
+      const { data: existing } = await supabase
         .from('erp_hr_version_registry')
         .select('id, version_number')
         .eq('company_id', companyId)
@@ -175,20 +191,20 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
       const nextVersion = existing ? (existing.version_number as number) + 1 : 1;
       const actorId = await getActorId();
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('erp_hr_version_registry')
-        .insert({
+        .insert([{
           company_id: companyId,
           entity_type: params.entityType,
           entity_id: params.entityId,
           version_number: nextVersion,
-          state: params.state ?? 'draft',
-          content_snapshot: params.contentSnapshot ?? null,
+          state: (params.state ?? 'draft') as HrVersionState,
+          content_snapshot: (params.contentSnapshot ?? null) as unknown as Json,
           content_hash: params.contentHash ?? null,
           parent_version_id: existing?.id ?? null,
           created_by: actorId,
-          metadata: params.metadata ?? {},
-        })
+          metadata: (params.metadata ?? {}) as unknown as Json,
+        }])
         .select('id')
         .single();
 
@@ -199,7 +215,7 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
 
       // Supersede previous version
       if (existing?.id) {
-        await (supabase as any)
+        await supabase
           .from('erp_hr_version_registry')
           .update({ superseded_by_id: data.id })
           .eq('id', existing.id);
