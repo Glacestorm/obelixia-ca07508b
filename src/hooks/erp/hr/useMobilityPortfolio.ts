@@ -26,12 +26,14 @@ export interface PortfolioFilters {
 // ── Batch fetch helpers ──
 
 async function fetchAllAssignments(companyId: string): Promise<MobilityAssignment[]> {
-  const { data, error } = await supabase
+  const query = supabase
     .from('hr_mobility_assignments')
     .select('*')
     .eq('company_id', companyId)
     .in('status', ['active', 'planned', 'pre_assignment', 'extending', 'repatriating', 'draft'])
     .order('start_date', { ascending: false });
+
+  const { data, error } = await query;
 
   if (error) {
     console.warn('[useMobilityPortfolio] assignments fetch error:', error.message);
@@ -41,11 +43,12 @@ async function fetchAllAssignments(companyId: string): Promise<MobilityAssignmen
 }
 
 async function fetchAllDocuments(companyId: string): Promise<MobilityDocument[]> {
-  // Batch: get all docs for company assignments in one query
-  const { data, error } = await supabase
+  const query = supabase
     .from('hr_mobility_documents')
     .select('*')
     .eq('company_id', companyId);
+
+  const { data, error } = await query;
 
   if (error) {
     console.warn('[useMobilityPortfolio] documents fetch error:', error.message);
