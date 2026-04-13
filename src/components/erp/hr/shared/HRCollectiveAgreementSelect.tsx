@@ -133,13 +133,15 @@ export function HRCollectiveAgreementSelect({
     if (open) loadAgreements();
   }, [open]);
 
-  // Sync selected agreement
+  // Sync selected agreement — must re-run when allAgreements finishes loading
   useEffect(() => {
     if (value && allAgreements.length > 0) {
       const found = allAgreements.find(a => a.id === value);
       setSelectedAgreement(found || null);
+    } else if (!value) {
+      setSelectedAgreement(null);
     }
-  }, [value]);
+  }, [value, allAgreements]);
 
   const loadAgreements = async () => {
     setLoading(true);
