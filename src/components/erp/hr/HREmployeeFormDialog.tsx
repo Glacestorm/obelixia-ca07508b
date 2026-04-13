@@ -470,35 +470,56 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
   const loadEsExtension = async (employeeId: string) => {
     try {
-      const { data } = await supabase
+      // Query all ES extensions to detect duplicates
+      const { data: rows, error } = await supabase
         .from('hr_employee_extensions')
         .select('*')
         .eq('employee_id', employeeId)
-        .eq('country_code', 'ES')
-        .maybeSingle();
-      if (data) {
-        const ext = (data.extension_data || {}) as Record<string, any>;
-        setEsFields({
-          naf: data.social_security_number || '',
-          contribution_group: ext.contribution_group || '',
-          contract_type_rd: ext.contract_type_rd || '',
-          collective_agreement: ext.collective_agreement || '',
-          autonomous_community: ext.autonomous_community || '',
-          cno_code: ext.cno_code || '',
-          irpf_percentage: ext.irpf_percentage || '',
-          ocupacion_ss: ext.ocupacion_ss || '',
-          ccc: ext.ccc || '',
-          empresa_fiscal_nif: ext.empresa_fiscal_nif || '',
-          empresa_fiscal_nombre: ext.empresa_fiscal_nombre || '',
-        });
-        if (ext.modelo145) {
-          setModelo145({ ...EMPTY_MODELO145, ...ext.modelo145 });
-        } else {
-          setModelo145({ ...EMPTY_MODELO145 });
-        }
+        .eq('country_code', 'ES');
+
+      if (error) {
+        console.error('[ES Extension] load query error:', error);
+        toast.error('Error al cargar datos ES del empleado');
+        return;
+      }
+
+      if (!rows || rows.length === 0) {
+        // No ES extension — clean state
+        return;
+      }
+
+      if (rows.length > 1) {
+        console.warn(`[ES Extension] Duplicados detectados: ${rows.length} filas ES para employee_id=${employeeId}`);
+        toast.warning(`Se detectaron ${rows.length} registros ES duplicados para este empleado. Se usará el más reciente.`, { duration: 6000 });
+      }
+
+      // Use the most recent row (by updated_at or created_at)
+      const data = rows.length === 1
+        ? rows[0]
+        : rows.sort((a, b) => (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || ''))[0];
+
+      const ext = (data.extension_data || {}) as Record<string, any>;
+      setEsFields({
+        naf: data.social_security_number || '',
+        contribution_group: ext.contribution_group || '',
+        contract_type_rd: ext.contract_type_rd || '',
+        collective_agreement: ext.collective_agreement || '',
+        autonomous_community: ext.autonomous_community || '',
+        cno_code: ext.cno_code || '',
+        irpf_percentage: ext.irpf_percentage || '',
+        ocupacion_ss: ext.ocupacion_ss || '',
+        ccc: ext.ccc || '',
+        empresa_fiscal_nif: ext.empresa_fiscal_nif || '',
+        empresa_fiscal_nombre: ext.empresa_fiscal_nombre || '',
+      });
+      if (ext.modelo145) {
+        setModelo145({ ...EMPTY_MODELO145, ...ext.modelo145 });
+      } else {
+        setModelo145({ ...EMPTY_MODELO145 });
       }
     } catch (err) {
       console.error('[ES Extension] load error:', err);
+      toast.error('Error inesperado al cargar extensión ES');
     }
   };
 
