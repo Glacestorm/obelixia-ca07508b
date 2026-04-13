@@ -23,6 +23,7 @@ import { HRCockpitHeader } from './HRCockpitHeader';
 import { HREnvironmentProvider, useHREnvironment } from '@/contexts/HREnvironmentContext';
 import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
 import { HRCommandPalette } from './shared/HRCommandPalette';
+import { EmployeeSearchDialog } from './shared/EmployeeSearchDialog';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Loader2 as Spin, AlertCircle as AlertC, Play } from 'lucide-react';
