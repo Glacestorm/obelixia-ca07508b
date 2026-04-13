@@ -5,7 +5,7 @@
  * REFACTOR: All domain panels lazy-loaded to prevent 503 chunk failures
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -23,6 +23,7 @@ import { HRCockpitHeader } from './HRCockpitHeader';
 import { HREnvironmentProvider, useHREnvironment } from '@/contexts/HREnvironmentContext';
 import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
 import { HRCommandPalette } from './shared/HRCommandPalette';
+import { EmployeeSearchDialog } from './shared/EmployeeSearchDialog';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Loader2 as Spin, AlertCircle as AlertC, Play } from 'lucide-react';
@@ -194,7 +195,9 @@ function PremiumReseedPanel({ companyId }: { companyId?: string }) {
 function HRModuleInner() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string | null>(null);
   const [navigationContext, setNavigationContext] = useState<Record<string, any> | null>(null);
+  const [showEmployeeSearchDialog, setShowEmployeeSearchDialog] = useState(false);
 
   const handleNavigateWithContext = useCallback((module: string, context?: Record<string, any>) => {
     setNavigationContext(context || null);
@@ -204,6 +207,26 @@ function HRModuleInner() {
   const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
   const [companyCNAE, setCompanyCNAE] = useState<string | undefined>();
+
+  // Resolve employee name when selectedEmployeeId changes
+  useEffect(() => {
+    if (!selectedEmployeeId || !companyId) {
+      setSelectedEmployeeName(null);
+      return;
+    }
+    supabase
+      .from('erp_hr_employees')
+      .select('first_name, last_name')
+      .eq('id', selectedEmployeeId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setSelectedEmployeeName(`${data.first_name} ${data.last_name}`.trim());
+        } else {
+          setSelectedEmployeeName(null);
+        }
+      });
+  }, [selectedEmployeeId, companyId]);
 
   // Fetch primary CNAE for the company
   useEffect(() => {
@@ -349,6 +372,8 @@ function HRModuleInner() {
       <HRCockpitHeader
         companyName={currentCompany?.name}
         companyId={companyId}
+        employeeName={selectedEmployeeName || undefined}
+        employeeId={selectedEmployeeId || undefined}
         onSearch={() => {
           // Trigger command palette via Cmd+K simulation
           document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
@@ -366,6 +391,7 @@ function HRModuleInner() {
       <HRCommandPalette
         onNavigate={(moduleId) => setActiveModule(moduleId)}
         onAction={(actionId) => {
+          if (actionId === 'search-employee') setShowEmployeeSearchDialog(true);
           if (actionId === 'new-payroll') setShowPayrollDialog(true);
           if (actionId === 'request-vacation') setShowVacationDialog(true);
         }}
@@ -648,6 +674,20 @@ function HRModuleInner() {
         onOpenChange={setShowIndemnizationDialog}
         companyId={companyId}
       />
+
+      {/* Employee Quick Search Dialog */}
+      {showEmployeeSearchDialog && companyId && (
+        <EmployeeSearchDialog
+          open={showEmployeeSearchDialog}
+          onOpenChange={setShowEmployeeSearchDialog}
+          companyId={companyId}
+          selectedEmployeeId={selectedEmployeeId || ''}
+          onSelect={(empId) => {
+            setSelectedEmployeeId(empId || null);
+            setShowEmployeeSearchDialog(false);
+          }}
+        />
+      )}
     </div>
   );
 }

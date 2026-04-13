@@ -26,7 +26,7 @@ interface QuickAction {
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { id: 'search-employee', label: 'Buscar empleado', description: 'Directorio de empleados', icon: Search, group: 'Búsqueda', module: 'employees' },
+  { id: 'search-employee', label: 'Buscar empleado', description: 'Directorio de empleados', icon: Search, group: 'Búsqueda' },
   { id: 'new-employee', label: 'Alta empleado', description: 'Registrar nuevo empleado', icon: UserPlus, group: 'Core HR', module: 'employees' },
   { id: 'new-contract', label: 'Nuevo contrato', description: 'Crear contrato de trabajo', icon: FileText, group: 'Core HR', module: 'contracts' },
   { id: 'new-payroll', label: 'Nueva nómina', description: 'Procesar nómina mensual', icon: DollarSign, group: 'Payroll' },
