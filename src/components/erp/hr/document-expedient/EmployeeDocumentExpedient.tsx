@@ -335,7 +335,11 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
         <DocumentDetailPanel
           companyId={companyId}
           documentId={selectedDocumentId}
-          onClose={() => setSelectedDocumentId(null)}
+          initialTab={detailInitialTab}
+          onClose={() => {
+            setSelectedDocumentId(null);
+            setDetailInitialTab('info');
+          }}
         />
       )}
     </>
