@@ -20,6 +20,7 @@ import {
 import { useERPContext } from '@/hooks/erp';
 import { supabase } from '@/integrations/supabase/client';
 import { HRNavigationMenu } from './HRNavigationMenu';
+import { HREmployeeCopilotSheet } from './shared/HREmployeeCopilotSheet';
 import { HRCockpitHeader } from './HRCockpitHeader';
 import { HREnvironmentProvider, useHREnvironment } from '@/contexts/HREnvironmentContext';
 import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
@@ -385,7 +386,6 @@ function HRModuleInner() {
         employeeName={selectedEmployeeName || undefined}
         employeeId={selectedEmployeeId || undefined}
         onSearch={() => {
-          // Trigger command palette via Cmd+K simulation
           document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
         }}
         onClear={() => {
@@ -395,7 +395,23 @@ function HRModuleInner() {
         onRefresh={() => window.location.reload()}
         onHelp={() => setActiveModule('help')}
         onViewRecents={() => setShowRecentsPopover(true)}
+        onAskAI={() => setShowEmployeeCopilot(true)}
+        onViewExpedient={() => {
+          if (selectedEmployeeId) setActiveModule('employee-expedient');
+        }}
       />
+
+      {/* Copiloto contextual del empleado (S9.11-H5++) */}
+      {selectedEmployeeId && selectedEmployeeName && (
+        <HREmployeeCopilotSheet
+          open={showEmployeeCopilot}
+          onClose={() => setShowEmployeeCopilot(false)}
+          companyId={companyId}
+          employeeId={selectedEmployeeId}
+          employeeName={selectedEmployeeName}
+          activeModule={activeModule}
+        />
+      )}
 
       {/* Command Palette (Cmd+K) */}
       <HRCommandPalette
