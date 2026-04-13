@@ -4,7 +4,7 @@
  * Incluye Convenio Colectivo obligatorio (Art. 8.5 ET)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter
@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale } from 'lucide-react';
+import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
@@ -62,6 +62,10 @@ export function HRContractFormDialog({
 }: HRContractFormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [selectedAgreement, setSelectedAgreement] = useState<AgreementData | null>(null);
+  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [useCustomGroup, setUseCustomGroup] = useState(false);
+  const [groupMismatchWarning, setGroupMismatchWarning] = useState(false);
   const [formData, setFormData] = useState({
     employee_id: employeeId || '',
     contract_type: 'indefinido',
@@ -79,6 +83,66 @@ export function HRContractFormDialog({
     collective_agreement_id: '',
     notes: ''
   });
+
+  // Fetch professional groups when agreement changes
+  const fetchProfessionalGroups = useCallback(async (agreementCode: string) => {
+    if (!agreementCode) {
+      setAvailableGroups([]);
+      return;
+    }
+    setLoadingGroups(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_agreement_salary_tables')
+        .select('professional_group')
+        .eq('agreement_code', agreementCode)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('[HRContractFormDialog] Error fetching groups:', error);
+        setAvailableGroups([]);
+        return;
+      }
+
+      const groups = [...new Set(
+        (data ?? [])
+          .map(r => (r.professional_group ?? '').trim())
+          .filter(g => g.length > 0)
+      )].sort((a, b) => a.localeCompare(b, 'es'));
+
+      setAvailableGroups(groups);
+    } catch (err) {
+      console.error('[HRContractFormDialog] Unexpected error fetching groups:', err);
+      setAvailableGroups([]);
+    } finally {
+      setLoadingGroups(false);
+    }
+  }, []);
+
+  // Prefill agreement from ES extension for new contracts
+  const prefillFromESExtension = useCallback(async (empId: string) => {
+    if (!empId || contractId) return; // Only for new contracts
+    try {
+      const { data: ext } = await supabase
+        .from('hr_employee_extensions')
+        .select('extension_data')
+        .eq('employee_id', empId)
+        .eq('country_code', 'ES')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (ext?.extension_data) {
+        const extData = ext.extension_data as Record<string, unknown>;
+        const agreementId = extData.collective_agreement as string | undefined;
+        if (agreementId && !formData.collective_agreement_id) {
+          setFormData(prev => ({ ...prev, collective_agreement_id: agreementId }));
+        }
+      }
+    } catch (err) {
+      console.error('[HRContractFormDialog] Prefill from ES extension error:', err);
+    }
+  }, [contractId, formData.collective_agreement_id]);
 
   useEffect(() => {
     if (open) {
@@ -139,7 +203,42 @@ export function HRContractFormDialog({
       notes: ''
     });
     setSelectedAgreement(null);
+    setAvailableGroups([]);
+    setUseCustomGroup(false);
+    setGroupMismatchWarning(false);
   };
+
+  // When employee changes on new contract, try prefill
+  useEffect(() => {
+    if (formData.employee_id && !contractId && open) {
+      prefillFromESExtension(formData.employee_id);
+    }
+  }, [formData.employee_id, contractId, open, prefillFromESExtension]);
+
+  // When agreement changes, fetch groups and validate current value
+  useEffect(() => {
+    if (selectedAgreement?.code) {
+      fetchProfessionalGroups(selectedAgreement.code);
+    } else {
+      setAvailableGroups([]);
+    }
+  }, [selectedAgreement?.code, fetchProfessionalGroups]);
+
+  // Validate professional_group against available groups when groups load
+  useEffect(() => {
+    if (availableGroups.length > 0 && formData.professional_group) {
+      const isValid = availableGroups.includes(formData.professional_group);
+      if (!isValid) {
+        setGroupMismatchWarning(true);
+        setUseCustomGroup(true);
+      } else {
+        setGroupMismatchWarning(false);
+        setUseCustomGroup(false);
+      }
+    } else {
+      setGroupMismatchWarning(false);
+    }
+  }, [availableGroups, formData.professional_group]);
 
   const handleSubmit = async () => {
     if (!formData.employee_id || !formData.start_date) {
@@ -406,12 +505,92 @@ export function HRContractFormDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Grupo Profesional</Label>
-                <Input
-                  value={formData.professional_group}
-                  onChange={(e) => setFormData(prev => ({ ...prev, professional_group: e.target.value }))}
-                  placeholder="Ej: 2"
-                />
+                <div className="flex items-center gap-1.5">
+                  <Label>Grupo Profesional</Label>
+                  {selectedAgreement && availableGroups.length > 0 && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-primary border-primary/30">
+                      <Info className="h-2.5 w-2.5 mr-0.5" />
+                      Nómina
+                    </Badge>
+                  )}
+                </div>
+                {loadingGroups ? (
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-background text-sm text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Cargando grupos...
+                  </div>
+                ) : availableGroups.length > 0 && !useCustomGroup ? (
+                  <>
+                    <Select
+                      value={availableGroups.includes(formData.professional_group) ? formData.professional_group : ''}
+                      onValueChange={(v) => {
+                        if (v === '__custom__') {
+                          setUseCustomGroup(true);
+                          setGroupMismatchWarning(true);
+                        } else {
+                          setFormData(prev => ({ ...prev, professional_group: v }));
+                          setGroupMismatchWarning(false);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar grupo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableGroups.map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                        <SelectItem value="__custom__">
+                          <span className="text-muted-foreground italic">Otro (texto libre)</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      Requerido para resolución automática de convenio en nómina
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      value={formData.professional_group}
+                      onChange={(e) => setFormData(prev => ({ ...prev, professional_group: e.target.value }))}
+                      placeholder={availableGroups.length > 0 ? 'Valor personalizado...' : 'Ej: Grupo I'}
+                    />
+                    {availableGroups.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 text-[11px] text-primary"
+                          onClick={() => {
+                            setUseCustomGroup(false);
+                            setGroupMismatchWarning(false);
+                          }}
+                        >
+                          ← Volver a selección guiada
+                        </Button>
+                      </div>
+                    )}
+                    {groupMismatchWarning && (
+                      <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        Este valor no coincide con la tabla salarial del convenio. La nómina no resolverá automáticamente.
+                      </p>
+                    )}
+                    {!selectedAgreement && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Seleccione un convenio para ver grupos disponibles
+                      </p>
+                    )}
+                    {selectedAgreement && availableGroups.length === 0 && !loadingGroups && (
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Sin tabla salarial para este convenio. Introduzca manualmente.
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
