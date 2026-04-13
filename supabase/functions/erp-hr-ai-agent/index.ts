@@ -80,7 +80,7 @@ serve(async (req) => {
     if (isAuthError(authResult)) {
       return mapAuthError(authResult, corsHeaders);
     }
-    const { userClient } = authResult;
+    const { userId, adminClient, userClient } = authResult;
     // --- END AUTH + TENANT VALIDATION ---
 
     console.log(`[erp-hr-ai-agent] Processing action: ${action}`);
