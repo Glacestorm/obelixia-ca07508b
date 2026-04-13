@@ -13,12 +13,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   Building2, CalendarDays, UserCircle, Eraser,
   Search, History, HelpCircle, RefreshCw,
-  Brain, FolderOpen, ChevronDown
+  Brain, FolderOpen, ChevronDown,
+  FileText, AlertCircle, ScrollText, Banknote
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +36,10 @@ interface HRCockpitHeaderProps {
   onViewRecents?: () => void;
   onAskAI?: () => void;
   onViewExpedient?: () => void;
+  onViewDocuments?: () => void;
+  onViewIncidents?: () => void;
+  onViewContract?: () => void;
+  onViewPayroll?: () => void;
   className?: string;
 }
 
@@ -49,6 +55,10 @@ export function HRCockpitHeader({
   onViewRecents,
   onAskAI,
   onViewExpedient,
+  onViewDocuments,
+  onViewIncidents,
+  onViewContract,
+  onViewPayroll,
   className,
 }: HRCockpitHeaderProps) {
   const currentPeriod = useMemo(() => {
@@ -113,6 +123,23 @@ export function HRCockpitHeader({
               <DropdownMenuItem onClick={onViewExpedient} className="gap-2">
                 <FolderOpen className="h-4 w-4" />
                 Ver expediente
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onViewDocuments} className="gap-2">
+                <FileText className="h-4 w-4" />
+                Ver documentos
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onViewIncidents} className="gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Ver incidencias
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onViewContract} className="gap-2">
+                <ScrollText className="h-4 w-4" />
+                Ver contrato
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onViewPayroll} className="gap-2">
+                <Banknote className="h-4 w-4" />
+                Ver nómina
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
