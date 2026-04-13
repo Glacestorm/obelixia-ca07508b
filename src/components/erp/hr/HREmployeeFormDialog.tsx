@@ -470,35 +470,56 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
   const loadEsExtension = async (employeeId: string) => {
     try {
-      const { data } = await supabase
+      // Query all ES extensions to detect duplicates
+      const { data: rows, error } = await supabase
         .from('hr_employee_extensions')
         .select('*')
         .eq('employee_id', employeeId)
-        .eq('country_code', 'ES')
-        .maybeSingle();
-      if (data) {
-        const ext = (data.extension_data || {}) as Record<string, any>;
-        setEsFields({
-          naf: data.social_security_number || '',
-          contribution_group: ext.contribution_group || '',
-          contract_type_rd: ext.contract_type_rd || '',
-          collective_agreement: ext.collective_agreement || '',
-          autonomous_community: ext.autonomous_community || '',
-          cno_code: ext.cno_code || '',
-          irpf_percentage: ext.irpf_percentage || '',
-          ocupacion_ss: ext.ocupacion_ss || '',
-          ccc: ext.ccc || '',
-          empresa_fiscal_nif: ext.empresa_fiscal_nif || '',
-          empresa_fiscal_nombre: ext.empresa_fiscal_nombre || '',
-        });
-        if (ext.modelo145) {
-          setModelo145({ ...EMPTY_MODELO145, ...ext.modelo145 });
-        } else {
-          setModelo145({ ...EMPTY_MODELO145 });
-        }
+        .eq('country_code', 'ES');
+
+      if (error) {
+        console.error('[ES Extension] load query error:', error);
+        toast.error('Error al cargar datos ES del empleado');
+        return;
+      }
+
+      if (!rows || rows.length === 0) {
+        // No ES extension — clean state
+        return;
+      }
+
+      if (rows.length > 1) {
+        console.warn(`[ES Extension] Duplicados detectados: ${rows.length} filas ES para employee_id=${employeeId}`);
+        toast.warning(`Se detectaron ${rows.length} registros ES duplicados para este empleado. Se usará el más reciente.`, { duration: 6000 });
+      }
+
+      // Use the most recent row (by updated_at or created_at)
+      const data = rows.length === 1
+        ? rows[0]
+        : rows.sort((a, b) => (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || ''))[0];
+
+      const ext = (data.extension_data || {}) as Record<string, any>;
+      setEsFields({
+        naf: data.social_security_number || '',
+        contribution_group: ext.contribution_group || '',
+        contract_type_rd: ext.contract_type_rd || '',
+        collective_agreement: ext.collective_agreement || '',
+        autonomous_community: ext.autonomous_community || '',
+        cno_code: ext.cno_code || '',
+        irpf_percentage: ext.irpf_percentage || '',
+        ocupacion_ss: ext.ocupacion_ss || '',
+        ccc: ext.ccc || '',
+        empresa_fiscal_nif: ext.empresa_fiscal_nif || '',
+        empresa_fiscal_nombre: ext.empresa_fiscal_nombre || '',
+      });
+      if (ext.modelo145) {
+        setModelo145({ ...EMPTY_MODELO145, ...ext.modelo145 });
+      } else {
+        setModelo145({ ...EMPTY_MODELO145 });
       }
     } catch (err) {
       console.error('[ES Extension] load error:', err);
+      toast.error('Error inesperado al cargar extensión ES');
     }
   };
 
@@ -752,34 +773,66 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           await supabase.from('erp_hr_employee_module_access').insert(accessRecords);
         }
 
-        // Save ES localization extension
+        // Save ES localization extension — hardened with explicit error handling
         if (formData.country_code === 'ES') {
-          const extensionPayload = {
-            company_id: companyId,
-            employee_id: employeeId,
-            country_code: 'ES',
-            social_security_number: esFields.naf || null,
-            extension_data: {
-              contribution_group: esFields.contribution_group || null,
-              contract_type_rd: esFields.contract_type_rd || null,
-              collective_agreement: esFields.collective_agreement || null,
-              autonomous_community: esFields.autonomous_community || null,
-              cno_code: esFields.cno_code || null,
-              irpf_percentage: esFields.irpf_percentage || null,
-              ocupacion_ss: esFields.ocupacion_ss || null,
-              ccc: esFields.ccc || null,
-              empresa_fiscal_nif: esFields.empresa_fiscal_nif || null,
-              empresa_fiscal_nombre: esFields.empresa_fiscal_nombre || null,
-              modelo145: JSON.parse(JSON.stringify(modelo145)),
-            },
-          };
-          const { data: existing } = await supabase
-            .from('hr_employee_extensions').select('id')
-            .eq('employee_id', employeeId).eq('country_code', 'ES').maybeSingle();
-          if (existing) {
-            await supabase.from('hr_employee_extensions').update(extensionPayload).eq('id', existing.id);
-          } else {
-            await supabase.from('hr_employee_extensions').insert([extensionPayload]);
+          try {
+            const extensionPayload = {
+              company_id: companyId,
+              employee_id: employeeId,
+              country_code: 'ES' as const,
+              social_security_number: esFields.naf || null,
+              extension_data: {
+                contribution_group: esFields.contribution_group || null,
+                contract_type_rd: esFields.contract_type_rd || null,
+                collective_agreement: esFields.collective_agreement || null,
+                autonomous_community: esFields.autonomous_community || null,
+                cno_code: esFields.cno_code || null,
+                irpf_percentage: esFields.irpf_percentage || null,
+                ocupacion_ss: esFields.ocupacion_ss || null,
+                ccc: esFields.ccc || null,
+                empresa_fiscal_nif: esFields.empresa_fiscal_nif || null,
+                empresa_fiscal_nombre: esFields.empresa_fiscal_nombre || null,
+                modelo145: JSON.parse(JSON.stringify(modelo145)),
+              },
+            };
+
+            // Check for existing rows — detect duplicates
+            const { data: existingRows, error: selectError } = await supabase
+              .from('hr_employee_extensions').select('id')
+              .eq('employee_id', employeeId!).eq('country_code', 'ES');
+
+            if (selectError) {
+              console.error('[ES Extension] select error:', selectError);
+              saveErrors.push('Error al verificar extensión ES existente');
+            } else if (existingRows && existingRows.length > 1) {
+              // Duplicates detected — update the first, warn user
+              console.warn(`[ES Extension] ${existingRows.length} duplicados detectados al guardar. Actualizando el primero.`);
+              toast.warning(`Se detectaron ${existingRows.length} registros ES duplicados. Se actualizó el primero.`, { duration: 5000 });
+              const { error: updateError } = await supabase
+                .from('hr_employee_extensions').update(extensionPayload).eq('id', existingRows[0].id);
+              if (updateError) {
+                console.error('[ES Extension] update error:', updateError);
+                saveErrors.push('Error al guardar datos ES del empleado');
+              }
+            } else if (existingRows && existingRows.length === 1) {
+              const { error: updateError } = await supabase
+                .from('hr_employee_extensions').update(extensionPayload).eq('id', existingRows[0].id);
+              if (updateError) {
+                console.error('[ES Extension] update error:', updateError);
+                saveErrors.push('Error al guardar datos ES del empleado');
+              }
+            } else {
+              // No existing row — insert
+              const { error: insertError } = await supabase
+                .from('hr_employee_extensions').insert([extensionPayload]);
+              if (insertError) {
+                console.error('[ES Extension] insert error:', insertError);
+                saveErrors.push('Error al crear extensión ES del empleado');
+              }
+            }
+          } catch (err) {
+            console.error('[ES Extension] save error:', err);
+            saveErrors.push('Error inesperado al guardar datos ES');
           }
         }
 
