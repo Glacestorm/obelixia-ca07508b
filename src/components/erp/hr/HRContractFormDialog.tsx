@@ -4,7 +4,7 @@
  * Incluye Convenio Colectivo obligatorio (Art. 8.5 ET)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter
@@ -18,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale } from 'lucide-react';
+import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
