@@ -305,21 +305,21 @@ export function HRPayrollEntryDialog({
         // Fetch agreement_code from erp_hr_collective_agreements
         const { data: agreement } = await supabase
           .from('erp_hr_collective_agreements')
-          .select('agreement_code, name')
+          .select('code, name')
           .eq('id', agreementId)
           .single();
 
-        if (agreement?.agreement_code) {
+        if (agreement?.code) {
           const resolution = await resolveEmployeeSalary(
             companyId,
-            agreement.agreement_code,
+            agreement.code,
             professionalGroup,
             periodYear,
             salarioPactado
           );
 
           setAgreementResolution(resolution);
-          setAgreementName(agreement.name || agreement.agreement_code);
+          setAgreementName(agreement.name || agreement.code);
 
           if (resolution.tableEntry) {
             // Auto-resolved from agreement tables
