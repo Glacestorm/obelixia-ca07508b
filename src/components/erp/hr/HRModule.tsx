@@ -5,9 +5,10 @@
  * REFACTOR: All domain panels lazy-loaded to prevent 503 chunk failures
  */
 
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   Users, 
   Calendar, 
@@ -198,6 +199,8 @@ function HRModuleInner() {
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string | null>(null);
   const [navigationContext, setNavigationContext] = useState<Record<string, any> | null>(null);
   const [showEmployeeSearchDialog, setShowEmployeeSearchDialog] = useState(false);
+  const [recentEmployees, setRecentEmployees] = useState<Array<{ id: string; name: string }>>([]);
+  const [showRecentsPopover, setShowRecentsPopover] = useState(false);
 
   const handleNavigateWithContext = useCallback((module: string, context?: Record<string, any>) => {
     setNavigationContext(context || null);
@@ -208,7 +211,7 @@ function HRModuleInner() {
   const companyId = currentCompany?.id;
   const [companyCNAE, setCompanyCNAE] = useState<string | undefined>();
 
-  // Resolve employee name when selectedEmployeeId changes
+  // Resolve employee name when selectedEmployeeId changes + track recents
   useEffect(() => {
     if (!selectedEmployeeId || !companyId) {
       setSelectedEmployeeName(null);
@@ -221,7 +224,13 @@ function HRModuleInner() {
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setSelectedEmployeeName(`${data.first_name} ${data.last_name}`.trim());
+          const fullName = `${data.first_name} ${data.last_name}`.trim();
+          setSelectedEmployeeName(fullName);
+          // Add to recents (max 5, no duplicates, most recent first)
+          setRecentEmployees(prev => {
+            const filtered = prev.filter(e => e.id !== selectedEmployeeId);
+            return [{ id: selectedEmployeeId, name: fullName }, ...filtered].slice(0, 5);
+          });
         } else {
           setSelectedEmployeeName(null);
         }
@@ -384,7 +393,7 @@ function HRModuleInner() {
         }}
         onRefresh={() => window.location.reload()}
         onHelp={() => setActiveModule('help')}
-        onViewHistory={() => setActiveModule('audit-trail')}
+        onViewRecents={() => setShowRecentsPopover(true)}
       />
 
       {/* Command Palette (Cmd+K) */}
@@ -688,6 +697,42 @@ function HRModuleInner() {
           }}
         />
       )}
+
+      {/* Recents Popover */}
+      <Popover open={showRecentsPopover} onOpenChange={setShowRecentsPopover}>
+        <PopoverTrigger asChild>
+          <span className="hidden" />
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-0" align="end">
+          <div className="px-3 py-2 border-b">
+            <p className="text-sm font-medium text-foreground">Recientes</p>
+          </div>
+          {recentEmployees.length === 0 ? (
+            <div className="px-3 py-6 text-center">
+              <p className="text-sm text-muted-foreground">Sin empleados recientes en esta sesión</p>
+            </div>
+          ) : (
+            <div className="py-1">
+              {recentEmployees.map((emp) => (
+                <button
+                  key={emp.id}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-left"
+                  onClick={() => {
+                    setSelectedEmployeeId(emp.id);
+                    setShowRecentsPopover(false);
+                  }}
+                >
+                  <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate text-foreground">{emp.name}</span>
+                  {selectedEmployeeId === emp.id && (
+                    <span className="ml-auto text-xs text-primary font-medium">Activo</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
