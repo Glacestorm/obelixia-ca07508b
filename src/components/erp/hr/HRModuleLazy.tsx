@@ -93,6 +93,7 @@ export const LazyHRFiscalSupervisorPanel = lazyPanel(() => import('./domains/soc
 
 // ─── D5 Compliance ──────────────────────────────────────────
 export const LazyHRSafetyPanel = lazyPanel(() => import('./domains/compliance'), 'HRSafetyPanel');
+export const LazyHRCollectiveAgreementPanel = lazyPanel(() => import('./compliance'), 'HRCollectiveAgreementPanel');
 export const LazyHRRegulatoryWatchPanel = lazyPanel(() => import('./domains/compliance'), 'HRRegulatoryWatchPanel');
 export const LazyHRLegalComplianceDashboard = lazyPanel(() => import('./domains/compliance'), 'HRLegalComplianceDashboard');
 export const LazyHRLegalEnginePanel = lazyPanel(() => import('./domains/compliance'), 'HRLegalEnginePanel');

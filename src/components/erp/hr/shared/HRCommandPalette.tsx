@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/command';
 import {
   Users, FileText, DollarSign, Calendar, Globe, AlertTriangle,
-  UserPlus, ClipboardList, Send, Briefcase, Search
+  UserPlus, ClipboardList, Send, Briefcase, Search, Gavel
 } from 'lucide-react';
 
 interface QuickAction {
@@ -36,6 +36,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { id: 'send-milena', label: 'Enviar Milena PA', description: 'Alta/baja/variación a TGSS', icon: Send, group: 'Integraciones', module: 'official-submissions' },
   { id: 'mobility', label: 'Movilidad internacional', description: 'Asignaciones y KPIs globales', icon: Globe, group: 'Global Mobility', module: 'mobility-international' },
   { id: 'admin-request', label: 'Solicitud administrativa', description: 'Certificados, cambios de datos', icon: Briefcase, group: 'Laboral', module: 'admin-requests' },
+  { id: 'collective-agreements', label: 'Convenios colectivos', description: 'Tablas salariales, convenio colectivo y condiciones', icon: Gavel, group: 'Oficial & Compliance', module: 'collective-agreements' },
 ];
 
 interface Props {
