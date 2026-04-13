@@ -54,6 +54,10 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterOrigin, setFilterOrigin] = useState<OriginFilterValue>('all');
+  const [detailInitialTab, setDetailInitialTab] = useState<string>('info');
+
+  // Storage hook for signed URL generation (on-demand, no extra fetches)
+  const { getDownloadUrl } = useHRDocumentStorage(companyId);
 
   // Calendar label for executive summary
   const { calendarLabel } = useHRHolidayCalendar();
