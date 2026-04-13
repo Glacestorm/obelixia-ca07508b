@@ -80,7 +80,7 @@ serve(async (req) => {
     if (isAuthError(authResult)) {
       return mapAuthError(authResult, corsHeaders);
     }
-    const { userClient } = authResult;
+    const { userId, adminClient, userClient } = authResult;
     // --- END AUTH + TENANT VALIDATION ---
 
     console.log(`[erp-hr-ai-agent] Processing action: ${action}`);
@@ -668,6 +668,134 @@ serve(async (req) => {
         const currentAbsences = await fetchCurrentAbsences(effectiveCompanyId);
         const activeAlerts = await fetchActiveAlerts(effectiveCompanyId);
 
+        // === RESOLVE USER CAPABILITIES (S9.11-H5.3) ===
+        interface UserCapabilities {
+          can_view_employee_core: boolean;
+          can_view_documents: boolean;
+          can_view_incidents: boolean;
+          can_view_contracts: boolean;
+          can_view_payroll: boolean;
+          can_prepare_hr_actions: boolean;
+          is_hr_admin: boolean;
+          resolved: boolean; // false = degraded/prudent mode
+        }
+
+        let userCaps: UserCapabilities = {
+          can_view_employee_core: false,
+          can_view_documents: false,
+          can_view_incidents: false,
+          can_view_contracts: false,
+          can_view_payroll: false,
+          can_prepare_hr_actions: false,
+          is_hr_admin: false,
+          resolved: false,
+        };
+
+        try {
+          // Server-side resolution using adminClient (legitimate exception: reading role/permissions for prompt conditioning)
+          const { data: ucData } = await adminClient
+            .from('erp_user_companies')
+            .select(`
+              role:erp_roles(
+                erp_role_permissions(
+                  permission:erp_permissions(key)
+                )
+              )
+            `)
+            .eq('user_id', userId)
+            .eq('company_id', effectiveCompanyId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          const permKeys: string[] = (ucData as any)?.role?.erp_role_permissions
+            ?.map((rp: any) => rp.permission?.key)
+            .filter((k: unknown): k is string => typeof k === 'string') ?? [];
+
+          if (permKeys.length > 0) {
+            const has = (prefix: string) => permKeys.some(k => k === 'admin.all' || k.startsWith(prefix));
+            userCaps = {
+              can_view_employee_core: has('hr.') || has('employees.'),
+              can_view_documents: has('hr.') || has('documents.'),
+              can_view_incidents: has('hr.') || has('incidents.') || has('leave.'),
+              can_view_contracts: has('hr.') || has('contracts.'),
+              can_view_payroll: has('payroll.'),
+              can_prepare_hr_actions: has('hr.write') || has('hr.manage') || permKeys.includes('admin.all'),
+              is_hr_admin: permKeys.includes('admin.all') || has('hr.admin'),
+              resolved: true,
+            };
+          } else {
+            // Fallback: try frontend-sent permissions as hint
+            const frontendPerms = (context?.current_user_permissions as string[]) || [];
+            if (frontendPerms.length > 0) {
+              const has = (prefix: string) => frontendPerms.some(k => k === 'admin.all' || k.startsWith(prefix));
+              userCaps = {
+                can_view_employee_core: has('hr.') || has('employees.'),
+                can_view_documents: has('hr.') || has('documents.'),
+                can_view_incidents: has('hr.') || has('incidents.') || has('leave.'),
+                can_view_contracts: has('hr.') || has('contracts.'),
+                can_view_payroll: has('payroll.'),
+                can_prepare_hr_actions: has('hr.write') || has('hr.manage') || frontendPerms.includes('admin.all'),
+                is_hr_admin: frontendPerms.includes('admin.all') || has('hr.admin'),
+                resolved: true,
+              };
+            }
+            // else: resolved stays false → prudent mode
+          }
+        } catch (capErr) {
+          console.error('[erp-hr-ai-agent] Capability resolution failed, using prudent mode:', capErr);
+          // userCaps stays with resolved=false
+        }
+
+        // Build capability prompt block
+        let capabilityPromptBlock = '';
+        if (!userCaps.resolved) {
+          capabilityPromptBlock = `
+=== CAPACIDADES DEL USUARIO ACTUAL ===
+No se pudieron resolver los permisos del usuario actual. Aplica MODO PRUDENTE:
+- Responde solo con información general no sensible.
+- No reveles datos salariales, contractuales detallados ni datos bancarios.
+- No prepares acciones asistidas sensibles.
+- Indica al usuario que su perfil no tiene permisos verificados y que contacte con el administrador si necesita más acceso.
+=== FIN CAPACIDADES ===`;
+        } else {
+          const capLines = [
+            `can_view_employee_core: ${userCaps.can_view_employee_core}`,
+            `can_view_documents: ${userCaps.can_view_documents}`,
+            `can_view_incidents: ${userCaps.can_view_incidents}`,
+            `can_view_contracts: ${userCaps.can_view_contracts}`,
+            `can_view_payroll: ${userCaps.can_view_payroll}`,
+            `can_prepare_hr_actions: ${userCaps.can_prepare_hr_actions}`,
+            `is_hr_admin: ${userCaps.is_hr_admin}`,
+          ];
+
+          const restrictions: string[] = [];
+          if (!userCaps.can_view_payroll) {
+            restrictions.push('- No reveles datos de nómina, salario, costes salariales ni IBAN. Indica que el usuario necesita permisos de nómina para esa información.');
+          }
+          if (!userCaps.can_view_contracts) {
+            restrictions.push('- No muestres datos contractuales detallados ni sugieras acciones contractuales. Indica que se requieren permisos de contratos.');
+          }
+          if (!userCaps.can_view_documents) {
+            restrictions.push('- No detalles contenido de documentos del expediente. Indica que se requieren permisos de documentos.');
+          }
+          if (!userCaps.can_view_incidents) {
+            restrictions.push('- No detalles incidencias ni ausencias individuales. Indica que se requieren permisos de incidencias.');
+          }
+          if (!userCaps.can_prepare_hr_actions) {
+            restrictions.push('- No prepares borradores, propuestas ni acciones asistidas sensibles. Indica que el perfil actual es de solo consulta.');
+          }
+          if (!userCaps.is_hr_admin) {
+            restrictions.push('- Limita las respuestas al ámbito de las capacidades listadas. No asumas acceso total.');
+          }
+
+          capabilityPromptBlock = `
+=== CAPACIDADES DEL USUARIO ACTUAL ===
+${capLines.join('\n')}
+${restrictions.length > 0 ? '\nRESTRICCIONES ACTIVAS:\n' + restrictions.join('\n') : 'Sin restricciones especiales (perfil con acceso amplio).'}
+Cuando el usuario pregunte por un área para la que no tiene permisos, explica de forma clara y honesta que su perfil actual no tiene acceso a esa información y sugiere contactar con el administrador o solicitar los permisos adecuados.
+=== FIN CAPACIDADES ===`;
+        }
+
         // === EMPLOYEE CONTEXTUAL FETCH (S9.11-H5++) ===
         let employeeContextBlock = '';
         let employeeContextDegraded = false;
@@ -711,6 +839,7 @@ MODO CONSULTA CONTEXTUAL:
 - No inventes datos ausentes. Di claramente "no dispongo de ese dato" cuando falte información.
 - No presentes asesoramiento legal vinculante.
 - Prioriza datos reales del sistema sobre generalidades.
+- Respeta las CAPACIDADES DEL USUARIO ACTUAL. Si el usuario no tiene permiso para ver un área, dilo con claridad.
 ${employeeContextDegraded ? '- NOTA: No se pudieron recuperar datos estructurados del empleado. Responde con contexto limitado e indícalo al usuario.' : ''}`;
         } else if (assistantMode === 'assisted_action') {
           assistantModeInstructions = `
@@ -720,6 +849,8 @@ MODO ACCIONES ASISTIDAS:
 - Indica siempre la necesidad de validación humana.
 - Resume lo que has entendido antes de preparar la propuesta.
 - Si existe un módulo o flujo correspondiente, indica cuál usar.
+- IMPORTANTE: Si el usuario no tiene can_prepare_hr_actions, indica que su perfil no permite preparar acciones asistidas y sugiere contactar con un administrador.
+- Si el usuario no tiene permisos sobre el área de la acción (ej. payroll, contracts), no prepares la propuesta e indícalo.
 ${employeeContextDegraded ? '- NOTA: Contexto del empleado limitado. Indica al usuario que los datos estructurados no están disponibles.' : ''}`;
         } else if (assistantMode === 'demo_guided') {
           assistantModeInstructions = `
@@ -735,6 +866,7 @@ MODO DEMO GUIADA:
 - No vender como "ejecución oficial real" lo que depende de credenciales, certificados o UAT externos.
 - Distingue claramente entre lo que el sistema resuelve internamente y lo que queda preparado/handoff-ready.
 - Orienta la demo de forma comercial, clara y vendible.
+- IMPORTANTE: Indica qué fases requieren permisos que el usuario actual no tiene según sus CAPACIDADES. Por ejemplo, si no tiene can_view_payroll, señala que las fases de nómina requerirían un perfil con más permisos.
 ${employeeContextDegraded ? '- NOTA: Contexto del empleado limitado. Usa datos genéricos de ejemplo para la demo.' : ''}`;
         }
 
@@ -767,6 +899,7 @@ El sistema gestiona planes de stock options con vesting schedules, cliff periods
 PREFLIGHT COCKPIT:
 El ciclo laboral incluye un cockpit de preflight para validar completitud de datos antes de activar procesos críticos (nómina, altas SS, etc.).
 ${employeeContextBlock}
+${capabilityPromptBlock}
 ${assistantModeInstructions}
 
 AUSENCIAS ACTUALES (${currentAbsences.length} empleados ausentes):

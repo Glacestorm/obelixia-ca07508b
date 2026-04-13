@@ -34,6 +34,7 @@ interface HREmployeeCopilotSheetProps {
   employeeId: string;
   employeeName: string;
   activeModule?: string;
+  userPermissions?: string[];
 }
 
 type AssistantMode = 'consult' | 'assisted_action' | 'demo_guided';
@@ -100,6 +101,7 @@ export function HREmployeeCopilotSheet({
   employeeId,
   employeeName,
   activeModule,
+  userPermissions,
 }: HREmployeeCopilotSheetProps) {
   const [activeTab, setActiveTab] = useState<AssistantMode>('consult');
   const [messages, setMessages] = useState<Record<AssistantMode, Message[]>>({
@@ -164,6 +166,7 @@ export function HREmployeeCopilotSheet({
             copilot_mode: 'employee_contextual',
             active_module: activeModule || 'hr',
             assistant_mode: effectiveMode,
+            current_user_permissions: userPermissions || [],
           },
           history: recentHistory,
         },
@@ -197,7 +200,7 @@ export function HREmployeeCopilotSheet({
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, isLoading, messages, companyId, employeeId, employeeName, activeModule]);
+  }, [activeTab, isLoading, messages, companyId, employeeId, employeeName, activeModule, userPermissions]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

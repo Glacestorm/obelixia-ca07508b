@@ -208,7 +208,7 @@ function HRModuleInner() {
     setNavigationContext(context || null);
     setActiveModule(module);
   }, []);
-  const { currentCompany } = useERPContext();
+  const { currentCompany, userPermissions } = useERPContext();
   const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
   const [companyCNAE, setCompanyCNAE] = useState<string | undefined>();
@@ -422,6 +422,7 @@ function HRModuleInner() {
           employeeId={selectedEmployeeId}
           employeeName={selectedEmployeeName}
           activeModule={activeModule}
+          userPermissions={userPermissions}
         />
       )}
 
