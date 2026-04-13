@@ -15,6 +15,7 @@ import {
   Eye, Download, CheckCircle2, XCircle, Clock, Paperclip, History
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentCategory, type EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useHRDocumentStorage } from '@/hooks/erp/hr/useHRDocumentStorage';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
 import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type OriginFilterValue } from '../shared/DocumentOriginBadge';
 import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
