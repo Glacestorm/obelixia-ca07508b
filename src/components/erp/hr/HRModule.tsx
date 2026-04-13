@@ -371,6 +371,8 @@ function HRModuleInner() {
       <HRCockpitHeader
         companyName={currentCompany?.name}
         companyId={companyId}
+        employeeName={selectedEmployeeName || undefined}
+        employeeId={selectedEmployeeId || undefined}
         onSearch={() => {
           // Trigger command palette via Cmd+K simulation
           document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
@@ -388,6 +390,7 @@ function HRModuleInner() {
       <HRCommandPalette
         onNavigate={(moduleId) => setActiveModule(moduleId)}
         onAction={(actionId) => {
+          if (actionId === 'search-employee') setShowEmployeeSearchDialog(true);
           if (actionId === 'new-payroll') setShowPayrollDialog(true);
           if (actionId === 'request-vacation') setShowVacationDialog(true);
         }}
