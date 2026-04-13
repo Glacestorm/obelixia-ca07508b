@@ -249,11 +249,18 @@ export async function resolveEmployeeSalary(
   salarioPactado: number,
   level?: string,
 ): Promise<SalaryResolutionResult> {
-  const tableEntry = await fetchAgreementSalaryTable(
+  const { entry: tableEntry, ambiguous } = await fetchAgreementSalaryTable(
     companyId, agreementCode, professionalGroup, year, level
   );
 
-  return resolveSalaryFromAgreement(
+  const result = resolveSalaryFromAgreement(
     salarioPactado, tableEntry, agreementCode, professionalGroup, year
   );
+
+  // Propagate ambiguity flag
+  if (ambiguous && !tableEntry) {
+    result.trace.formula = 'Resolución ambigua: múltiples tablas salariales para el grupo profesional sin especificar nivel. Degradación a salario manual.';
+  }
+
+  return result;
 }
