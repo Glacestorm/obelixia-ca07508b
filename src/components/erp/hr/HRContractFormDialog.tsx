@@ -505,12 +505,92 @@ export function HRContractFormDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Grupo Profesional</Label>
-                <Input
-                  value={formData.professional_group}
-                  onChange={(e) => setFormData(prev => ({ ...prev, professional_group: e.target.value }))}
-                  placeholder="Ej: 2"
-                />
+                <div className="flex items-center gap-1.5">
+                  <Label>Grupo Profesional</Label>
+                  {selectedAgreement && availableGroups.length > 0 && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-primary border-primary/30">
+                      <Info className="h-2.5 w-2.5 mr-0.5" />
+                      Nómina
+                    </Badge>
+                  )}
+                </div>
+                {loadingGroups ? (
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-background text-sm text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Cargando grupos...
+                  </div>
+                ) : availableGroups.length > 0 && !useCustomGroup ? (
+                  <>
+                    <Select
+                      value={availableGroups.includes(formData.professional_group) ? formData.professional_group : ''}
+                      onValueChange={(v) => {
+                        if (v === '__custom__') {
+                          setUseCustomGroup(true);
+                          setGroupMismatchWarning(true);
+                        } else {
+                          setFormData(prev => ({ ...prev, professional_group: v }));
+                          setGroupMismatchWarning(false);
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar grupo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableGroups.map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                        <SelectItem value="__custom__">
+                          <span className="text-muted-foreground italic">Otro (texto libre)</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      Requerido para resolución automática de convenio en nómina
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Input
+                      value={formData.professional_group}
+                      onChange={(e) => setFormData(prev => ({ ...prev, professional_group: e.target.value }))}
+                      placeholder={availableGroups.length > 0 ? 'Valor personalizado...' : 'Ej: Grupo I'}
+                    />
+                    {availableGroups.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 text-[11px] text-primary"
+                          onClick={() => {
+                            setUseCustomGroup(false);
+                            setGroupMismatchWarning(false);
+                          }}
+                        >
+                          ← Volver a selección guiada
+                        </Button>
+                      </div>
+                    )}
+                    {groupMismatchWarning && (
+                      <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        Este valor no coincide con la tabla salarial del convenio. La nómina no resolverá automáticamente.
+                      </p>
+                    )}
+                    {!selectedAgreement && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Seleccione un convenio para ver grupos disponibles
+                      </p>
+                    )}
+                    {selectedAgreement && availableGroups.length === 0 && !loadingGroups && (
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Sin tabla salarial para este convenio. Introduzca manualmente.
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
