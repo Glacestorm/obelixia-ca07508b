@@ -399,6 +399,18 @@ function HRModuleInner() {
         onViewExpedient={() => {
           if (selectedEmployeeId) setActiveModule('employee-expedient');
         }}
+        onViewDocuments={() => {
+          if (selectedEmployeeId) setActiveModule('document-expedient');
+        }}
+        onViewIncidents={() => {
+          if (selectedEmployeeId) setActiveModule('leave-incidents');
+        }}
+        onViewContract={() => {
+          if (selectedEmployeeId) setActiveModule('contracts');
+        }}
+        onViewPayroll={() => {
+          if (selectedEmployeeId) setActiveModule('payroll-engine');
+        }}
       />
 
       {/* Copiloto contextual del empleado (S9.11-H5++) */}
