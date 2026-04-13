@@ -4,11 +4,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Flag, Calculator, Landmark, FileText, Calendar, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Flag, Calculator, Landmark, FileText, Calendar, Users, ArrowRight } from 'lucide-react';
 
-interface Props { companyId: string; }
+interface Props { companyId: string; onNavigate?: (module: string) => void; }
 
-export function HRESLocalizationPanel({ companyId }: Props) {
+export function HRESLocalizationPanel({ companyId, onNavigate }: Props) {
   return (
     <div className="space-y-4">
       <div>
@@ -60,7 +61,19 @@ export function HRESLocalizationPanel({ companyId }: Props) {
           <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">Permisos ET y convenio — Próximamente</CardContent></Card>
         </TabsContent>
         <TabsContent value="agreements">
-          <Card><CardContent className="py-6 text-center text-sm text-muted-foreground">Convenios colectivos — Próximamente</CardContent></Card>
+          <Card>
+            <CardContent className="py-8 text-center space-y-3">
+              <Users className="h-10 w-10 mx-auto text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">Motor de convenios colectivos con tablas salariales, resolución de condiciones y detección de conflictos.</p>
+              {onNavigate ? (
+                <Button variant="outline" size="sm" onClick={() => onNavigate('collective-agreements')}>
+                  Abrir Convenios Colectivos <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground">Accede desde Global → Oficial & Compliance → Convenios Colectivos</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

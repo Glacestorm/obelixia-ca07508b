@@ -148,6 +148,7 @@ import {
   LazyPayrollPreflightCockpit,
   LazyStockOptionsPanel,
   // S9 Compliance
+  LazyHRCollectiveAgreementPanel,
   LazyS9LISMIDashboard,
   LazyS9SalaryRegisterPanel,
   LazyS9DisconnectionPanel,
@@ -614,6 +615,7 @@ function HRModuleInner() {
         {activeModule === 's9-vpt' && <LazyS9VPTWorkspace companyId={companyId} />}
         {activeModule === 's9-retributive-audit' && <LazyS9RetributiveAuditPanel companyId={companyId} />}
         {activeModule === 's9-executive-summary' && <LazyS9ExecutiveSummaryCard companyId={companyId} />}
+        {activeModule === 'collective-agreements' && <LazyHRCollectiveAgreementPanel />}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
