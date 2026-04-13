@@ -5,7 +5,7 @@
  * REFACTOR: All domain panels lazy-loaded to prevent 503 chunk failures
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
