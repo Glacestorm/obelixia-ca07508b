@@ -899,6 +899,7 @@ El sistema gestiona planes de stock options con vesting schedules, cliff periods
 PREFLIGHT COCKPIT:
 El ciclo laboral incluye un cockpit de preflight para validar completitud de datos antes de activar procesos críticos (nómina, altas SS, etc.).
 ${employeeContextBlock}
+${capabilityPromptBlock}
 ${assistantModeInstructions}
 
 AUSENCIAS ACTUALES (${currentAbsences.length} empleados ausentes):
