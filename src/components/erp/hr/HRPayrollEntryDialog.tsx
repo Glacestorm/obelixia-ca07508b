@@ -49,7 +49,7 @@ interface HRPayrollEntryDialogProps {
   onSave?: () => void;
 }
 
-type AgreementResolutionMode = 'auto' | 'manual' | null;
+type AgreementResolutionMode = 'auto' | 'manual' | 'missing_group' | null;
 
 const SS_RATES = {
   cc_company: 23.60,
