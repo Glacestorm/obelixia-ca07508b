@@ -194,7 +194,9 @@ function PremiumReseedPanel({ companyId }: { companyId?: string }) {
 function HRModuleInner() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState<string | null>(null);
   const [navigationContext, setNavigationContext] = useState<Record<string, any> | null>(null);
+  const [showEmployeeSearchDialog, setShowEmployeeSearchDialog] = useState(false);
 
   const handleNavigateWithContext = useCallback((module: string, context?: Record<string, any>) => {
     setNavigationContext(context || null);
@@ -204,6 +206,26 @@ function HRModuleInner() {
   const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
   const [companyCNAE, setCompanyCNAE] = useState<string | undefined>();
+
+  // Resolve employee name when selectedEmployeeId changes
+  useEffect(() => {
+    if (!selectedEmployeeId || !companyId) {
+      setSelectedEmployeeName(null);
+      return;
+    }
+    supabase
+      .from('erp_hr_employees')
+      .select('first_name, last_name')
+      .eq('id', selectedEmployeeId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setSelectedEmployeeName(`${data.first_name} ${data.last_name}`.trim());
+        } else {
+          setSelectedEmployeeName(null);
+        }
+      });
+  }, [selectedEmployeeId, companyId]);
 
   // Fetch primary CNAE for the company
   useEffect(() => {
