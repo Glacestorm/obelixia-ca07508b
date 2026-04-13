@@ -673,6 +673,20 @@ function HRModuleInner() {
         onOpenChange={setShowIndemnizationDialog}
         companyId={companyId}
       />
+
+      {/* Employee Quick Search Dialog */}
+      {showEmployeeSearchDialog && companyId && (
+        <EmployeeSearchDialog
+          open={showEmployeeSearchDialog}
+          onOpenChange={setShowEmployeeSearchDialog}
+          companyId={companyId}
+          selectedEmployeeId={selectedEmployeeId || ''}
+          onSelect={(empId) => {
+            setSelectedEmployeeId(empId || null);
+            setShowEmployeeSearchDialog(false);
+          }}
+        />
+      )}
     </div>
   );
 }
