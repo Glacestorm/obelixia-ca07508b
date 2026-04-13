@@ -133,13 +133,6 @@ export function HRCollectiveAgreementSelect({
     if (open) loadAgreements();
   }, [open]);
 
-  // Sync selected agreement
-  useEffect(() => {
-    if (value && allAgreements.length > 0) {
-      const found = allAgreements.find(a => a.id === value);
-      setSelectedAgreement(found || null);
-    }
-  }, [value]);
 
   const loadAgreements = async () => {
     setLoading(true);
@@ -214,7 +207,17 @@ export function HRCollectiveAgreementSelect({
     return [...dbAgreements, ...uniqueLocal];
   }, [dbAgreements]);
 
-  // Get CNAE codes for an agreement (DB or local)
+  // Sync selected agreement — re-runs when value OR allAgreements changes
+  useEffect(() => {
+    if (value && allAgreements.length > 0) {
+      const found = allAgreements.find(a => a.id === value);
+      setSelectedAgreement(found || null);
+    } else if (!value) {
+      setSelectedAgreement(null);
+    }
+  }, [value, allAgreements]);
+
+
   const getCnaesForAgreement = useCallback((agreement: AgreementData): string[] => {
     if (dbAgreementCnaes[agreement.id]) return dbAgreementCnaes[agreement.id];
     const localCode = agreement.id.replace('local_', '');
