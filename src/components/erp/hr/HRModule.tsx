@@ -196,6 +196,7 @@ function PremiumReseedPanel({ companyId }: { companyId?: string }) {
 function HRModuleInner() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [showEmployeeCopilot, setShowEmployeeCopilot] = useState(false);
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string | null>(null);
   const [navigationContext, setNavigationContext] = useState<Record<string, any> | null>(null);
   const [showEmployeeSearchDialog, setShowEmployeeSearchDialog] = useState(false);
