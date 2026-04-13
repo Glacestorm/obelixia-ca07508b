@@ -62,6 +62,10 @@ export function HRContractFormDialog({
 }: HRContractFormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [selectedAgreement, setSelectedAgreement] = useState<AgreementData | null>(null);
+  const [availableGroups, setAvailableGroups] = useState<string[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [useCustomGroup, setUseCustomGroup] = useState(false);
+  const [groupMismatchWarning, setGroupMismatchWarning] = useState(false);
   const [formData, setFormData] = useState({
     employee_id: employeeId || '',
     contract_type: 'indefinido',
@@ -79,6 +83,66 @@ export function HRContractFormDialog({
     collective_agreement_id: '',
     notes: ''
   });
+
+  // Fetch professional groups when agreement changes
+  const fetchProfessionalGroups = useCallback(async (agreementCode: string) => {
+    if (!agreementCode) {
+      setAvailableGroups([]);
+      return;
+    }
+    setLoadingGroups(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_agreement_salary_tables')
+        .select('professional_group')
+        .eq('agreement_code', agreementCode)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('[HRContractFormDialog] Error fetching groups:', error);
+        setAvailableGroups([]);
+        return;
+      }
+
+      const groups = [...new Set(
+        (data ?? [])
+          .map(r => (r.professional_group ?? '').trim())
+          .filter(g => g.length > 0)
+      )].sort((a, b) => a.localeCompare(b, 'es'));
+
+      setAvailableGroups(groups);
+    } catch (err) {
+      console.error('[HRContractFormDialog] Unexpected error fetching groups:', err);
+      setAvailableGroups([]);
+    } finally {
+      setLoadingGroups(false);
+    }
+  }, []);
+
+  // Prefill agreement from ES extension for new contracts
+  const prefillFromESExtension = useCallback(async (empId: string) => {
+    if (!empId || contractId) return; // Only for new contracts
+    try {
+      const { data: ext } = await supabase
+        .from('hr_employee_extensions')
+        .select('extension_data')
+        .eq('employee_id', empId)
+        .eq('country_code', 'ES')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (ext?.extension_data) {
+        const extData = ext.extension_data as Record<string, unknown>;
+        const agreementId = extData.collective_agreement as string | undefined;
+        if (agreementId && !formData.collective_agreement_id) {
+          setFormData(prev => ({ ...prev, collective_agreement_id: agreementId }));
+        }
+      }
+    } catch (err) {
+      console.error('[HRContractFormDialog] Prefill from ES extension error:', err);
+    }
+  }, [contractId, formData.collective_agreement_id]);
 
   useEffect(() => {
     if (open) {
