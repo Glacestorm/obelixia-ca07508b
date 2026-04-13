@@ -93,10 +93,22 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
     return count;
   }, [versionCounts]);
 
-  const handleView = (doc: EmployeeDocument) => {
+  const handleView = useCallback((doc: EmployeeDocument, tab: string = 'info') => {
+    setDetailInitialTab(tab);
     setSelectedDocumentId(doc.id);
     logAccess.mutate({ document_id: doc.id, action: 'view' });
-  };
+  }, [setSelectedDocumentId, logAccess]);
+
+  const handleOpenFile = useCallback(async (storagePath: string | null | undefined) => {
+    if (!storagePath) return;
+    const result = await getDownloadUrl(storagePath);
+    if (result.ok) {
+      window.open(result.data, '_blank');
+    } else {
+      const { toast } = await import('sonner');
+      toast.error('No se pudo obtener el enlace del archivo');
+    }
+  }, [getDownloadUrl]);
 
   const statsRow = (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -255,7 +267,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
 
                               {/* Quick actions — non-destructive */}
                               <div className="flex items-center gap-0.5 ml-1 border-l pl-1.5">
-                                {hasFile && (
+                                {!!doc.storage_path && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
@@ -264,8 +276,9 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                                         className="h-6 w-6"
                                         onClick={e => {
                                           e.stopPropagation();
-                                          const url = doc.storage_path || doc.file_name;
-                                          if (url) window.open(url, '_blank');
+                                          if (doc.storage_path) {
+                                            handleOpenFile(doc.storage_path);
+                                          }
                                         }}
                                       >
                                         <Download className="h-3 w-3" />
@@ -281,7 +294,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6"
-                                        onClick={e => { e.stopPropagation(); handleView(doc); }}
+                                        onClick={e => { e.stopPropagation(); handleView(doc, 'versions'); }}
                                       >
                                         <History className="h-3 w-3" />
                                       </Button>
