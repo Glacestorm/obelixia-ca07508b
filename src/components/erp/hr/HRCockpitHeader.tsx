@@ -23,7 +23,7 @@ interface HRCockpitHeaderProps {
   onClear?: () => void;
   onRefresh?: () => void;
   onHelp?: () => void;
-  onViewHistory?: () => void;
+  onViewRecents?: () => void;
   className?: string;
 }
 
@@ -36,7 +36,7 @@ export function HRCockpitHeader({
   onClear,
   onRefresh,
   onHelp,
-  onViewHistory,
+  onViewRecents,
   className,
 }: HRCockpitHeaderProps) {
   const currentPeriod = useMemo(() => {
@@ -119,9 +119,9 @@ export function HRCockpitHeader({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onViewHistory}
+            onClick={onViewRecents}
             className="h-7 px-2 text-xs gap-1"
-            title="Historial"
+            title="Recientes"
           >
             <History className="h-3.5 w-3.5" />
           </Button>

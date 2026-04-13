@@ -5,7 +5,7 @@
  * REFACTOR: All domain panels lazy-loaded to prevent 503 chunk failures
  */
 
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -198,6 +198,8 @@ function HRModuleInner() {
   const [selectedEmployeeName, setSelectedEmployeeName] = useState<string | null>(null);
   const [navigationContext, setNavigationContext] = useState<Record<string, any> | null>(null);
   const [showEmployeeSearchDialog, setShowEmployeeSearchDialog] = useState(false);
+  const [recentEmployees, setRecentEmployees] = useState<Array<{ id: string; name: string }>>([]);
+  const [showRecentsPopover, setShowRecentsPopover] = useState(false);
 
   const handleNavigateWithContext = useCallback((module: string, context?: Record<string, any>) => {
     setNavigationContext(context || null);
@@ -208,7 +210,7 @@ function HRModuleInner() {
   const companyId = currentCompany?.id;
   const [companyCNAE, setCompanyCNAE] = useState<string | undefined>();
 
-  // Resolve employee name when selectedEmployeeId changes
+  // Resolve employee name when selectedEmployeeId changes + track recents
   useEffect(() => {
     if (!selectedEmployeeId || !companyId) {
       setSelectedEmployeeName(null);
@@ -221,7 +223,13 @@ function HRModuleInner() {
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          setSelectedEmployeeName(`${data.first_name} ${data.last_name}`.trim());
+          const fullName = `${data.first_name} ${data.last_name}`.trim();
+          setSelectedEmployeeName(fullName);
+          // Add to recents (max 5, no duplicates, most recent first)
+          setRecentEmployees(prev => {
+            const filtered = prev.filter(e => e.id !== selectedEmployeeId);
+            return [{ id: selectedEmployeeId, name: fullName }, ...filtered].slice(0, 5);
+          });
         } else {
           setSelectedEmployeeName(null);
         }
@@ -384,7 +392,7 @@ function HRModuleInner() {
         }}
         onRefresh={() => window.location.reload()}
         onHelp={() => setActiveModule('help')}
-        onViewHistory={() => setActiveModule('audit-trail')}
+        onViewRecents={() => setShowRecentsPopover(true)}
       />
 
       {/* Command Palette (Cmd+K) */}
