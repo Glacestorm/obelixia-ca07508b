@@ -1,6 +1,13 @@
 /**
  * HRPayrollEntryDialog - Dialog para crear/editar nóminas con conceptos
  * Persiste datos reales en erp_hr_payrolls
+ * 
+ * S9.13: Conectado al motor de convenios colectivos (agreementSalaryResolver)
+ *   - Resuelve contrato vigente para el periodo de nómina
+ *   - Prioriza salario contractual sobre erp_hr_employees.base_salary
+ *   - Valida mínimo de convenio sobre bloque salarial fijo
+ *   - Persiste conceptos con códigos ES_SAL_BASE, ES_COMP_CONVENIO, ES_MEJORA_VOLUNTARIA
+ *   - Trazabilidad completa del convenio aplicado
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,11 +20,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2 } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
+import { resolveEmployeeSalary, type SalaryResolutionResult } from '@/engines/erp/hr/agreementSalaryResolver';
 
 interface PayrollConcept {
   id: string;
@@ -41,6 +49,8 @@ interface HRPayrollEntryDialogProps {
   onSave?: () => void;
 }
 
+type AgreementResolutionMode = 'auto' | 'manual' | null;
+
 const SS_RATES = {
   cc_company: 23.60,
   cc_worker: 4.70,
@@ -55,6 +65,7 @@ const SS_RATES = {
 const DEFAULT_EARNINGS: Omit<PayrollConcept, 'id'>[] = [
   { code: 'BASE', name: 'Salario base', type: 'earning', category: 'fixed', amount: 0, isPercentage: false, cotizaSS: true, tributaIRPF: true, isEditable: true },
   { code: 'PLUS_CONV', name: 'Plus convenio', type: 'earning', category: 'fixed', amount: 0, isPercentage: false, cotizaSS: true, tributaIRPF: true, isEditable: true },
+  { code: 'MEJORA_VOL', name: 'Mejora voluntaria', type: 'earning', category: 'fixed', amount: 0, isPercentage: false, cotizaSS: true, tributaIRPF: true, isEditable: true },
   { code: 'PLUS_ANT', name: 'Plus antigüedad', type: 'earning', category: 'fixed', amount: 0, isPercentage: false, cotizaSS: true, tributaIRPF: true, isEditable: true },
   { code: 'HORAS_EXTRA', name: 'Horas extraordinarias', type: 'earning', category: 'variable', amount: 0, isPercentage: false, cotizaSS: true, tributaIRPF: true, isEditable: true },
   { code: 'COMISIONES', name: 'Comisiones', type: 'earning', category: 'variable', amount: 0, isPercentage: false, cotizaSS: true, tributaIRPF: true, isEditable: true },
@@ -68,6 +79,13 @@ const DEFAULT_DEDUCTIONS: Omit<PayrollConcept, 'id'>[] = [
   { code: 'ANTICIPO', name: 'Anticipo', type: 'deduction', category: 'other', amount: 0, isPercentage: false, cotizaSS: false, tributaIRPF: false, isEditable: true },
   { code: 'CUOTA_SIND', name: 'Cuota sindical', type: 'deduction', category: 'other', amount: 0, isPercentage: false, cotizaSS: false, tributaIRPF: false, isEditable: true },
 ];
+
+/** Map UI codes to persistence codes for agreement-resolved concepts */
+const PERSISTENCE_CODE_MAP: Record<string, string> = {
+  'BASE': 'ES_SAL_BASE',
+  'PLUS_CONV': 'ES_COMP_CONVENIO',
+  'MEJORA_VOL': 'ES_MEJORA_VOLUNTARIA',
+};
 
 export function HRPayrollEntryDialog({
   open,
@@ -85,6 +103,12 @@ export function HRPayrollEntryDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('earnings');
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // S9.13: Agreement resolution state
+  const [agreementResolution, setAgreementResolution] = useState<SalaryResolutionResult | null>(null);
+  const [agreementName, setAgreementName] = useState('');
+  const [resolutionMode, setResolutionMode] = useState<AgreementResolutionMode>(null);
+  const [resolutionLoading, setResolutionLoading] = useState(false);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
@@ -133,7 +157,7 @@ export function HRPayrollEntryDialog({
         // Restore complements as earnings
         const complements = Array.isArray(data.complements) ? data.complements as any[] : [];
         const restoredEarnings = DEFAULT_EARNINGS.map((e, i) => {
-          const saved = complements.find((c: any) => c.code === e.code);
+          const saved = complements.find((c: any) => c.code === e.code || c.code === PERSISTENCE_CODE_MAP[e.code]);
           return {
             ...e,
             id: `earning-${i}`,
@@ -141,6 +165,12 @@ export function HRPayrollEntryDialog({
           };
         });
         setEarnings(restoredEarnings);
+
+        // Check if there's agreement trace in complements
+        const agreementTrace = complements.find((c: any) => c.code === '__agreement_trace');
+        if (agreementTrace) {
+          setResolutionMode('auto');
+        }
 
         // Restore deductions
         const otherDeds = Array.isArray(data.other_deductions) ? data.other_deductions as any[] : [];
@@ -156,6 +186,9 @@ export function HRPayrollEntryDialog({
       setSelectedEmployeeId('');
       setSelectedEmployeeName('');
       setSelectedEmployeeCategory('');
+      setAgreementResolution(null);
+      setAgreementName('');
+      setResolutionMode(null);
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
@@ -193,24 +226,146 @@ export function HRPayrollEntryDialog({
     }
   };
 
+  /**
+   * S9.13: Resolve the applicable contract for the payroll period.
+   * Ajuste 1: Not just status='active' — find the contract effective for the period.
+   * Ajuste 2: Prioritize contract salary over erp_hr_employees.base_salary.
+   */
+  const resolveContractForPeriod = async (employeeId: string): Promise<{
+    contractSalary: number | null;
+    agreementId: string | null;
+    professionalGroup: string | null;
+  }> => {
+    // Build period boundaries
+    const periodStart = `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`;
+    const periodEnd = `${periodYear}-${String(periodMonth).padStart(2, '0')}-28`; // safe last day approx
+
+    // Query: contract whose start_date <= periodEnd AND (end_date IS NULL OR end_date >= periodStart)
+    // Order by start_date desc to get most recent applicable contract
+    const { data: contracts, error } = await supabase
+      .from('erp_hr_contracts')
+      .select('base_salary, annual_salary, collective_agreement_id, professional_group, start_date, end_date')
+      .eq('employee_id', employeeId)
+      .lte('start_date', periodEnd)
+      .or(`end_date.is.null,end_date.gte.${periodStart}`)
+      .order('start_date', { ascending: false })
+      .limit(1);
+
+    if (error || !contracts || contracts.length === 0) {
+      return { contractSalary: null, agreementId: null, professionalGroup: null };
+    }
+
+    const contract = contracts[0] as any;
+
+    // Resolve monthly salary: prefer base_salary (monthly), fallback annual_salary/12
+    let contractSalary: number | null = null;
+    if (contract.base_salary && Number(contract.base_salary) > 0) {
+      contractSalary = Number(contract.base_salary);
+    } else if (contract.annual_salary && Number(contract.annual_salary) > 0) {
+      contractSalary = Math.round((Number(contract.annual_salary) / 12) * 100) / 100;
+    }
+
+    return {
+      contractSalary,
+      agreementId: contract.collective_agreement_id || null,
+      professionalGroup: contract.professional_group || null,
+    };
+  };
+
   const handleEmployeeSelect = async (employeeId: string, employee?: EmployeeOption) => {
     setSelectedEmployeeId(employeeId);
+    setAgreementResolution(null);
+    setAgreementName('');
+    setResolutionMode(null);
 
-    if (employee) {
-      setSelectedEmployeeName(`${employee.first_name} ${employee.last_name}`);
-      setSelectedEmployeeCategory(employee.job_title || 'Sin categoría');
+    if (!employee) return;
 
-      const { data } = await supabase
+    setSelectedEmployeeName(`${employee.first_name} ${employee.last_name}`);
+    setSelectedEmployeeCategory(employee.job_title || 'Sin categoría');
+    setResolutionLoading(true);
+
+    try {
+      // Step 1: Get employee base_salary as fallback
+      const { data: empData } = await supabase
         .from('erp_hr_employees')
         .select('base_salary')
         .eq('id', employeeId)
         .single();
 
-      const rawSalary = data?.base_salary ? Number(data.base_salary) : 0;
-      const baseSalary = rawSalary / 12; // Annual → monthly
-      resetConcepts(Math.round(baseSalary * 100) / 100, 15);
+      const empBaseSalaryAnnual = empData?.base_salary ? Number(empData.base_salary) : 0;
+
+      // Step 2: Resolve contract for this period (Ajuste 1 & 2)
+      const { contractSalary, agreementId, professionalGroup } = await resolveContractForPeriod(employeeId);
+
+      // Ajuste 2: Prioritize contract salary, fallback to employee base_salary / 12
+      const salarioPactado = contractSalary ?? (empBaseSalaryAnnual > 0 ? Math.round((empBaseSalaryAnnual / 12) * 100) / 100 : 0);
+
+      // Step 3: Try agreement resolution if we have agreement + group
+      if (agreementId && professionalGroup) {
+        // Fetch agreement_code from erp_hr_collective_agreements
+        const { data: agreement } = await supabase
+          .from('erp_hr_collective_agreements')
+          .select('code, name')
+          .eq('id', agreementId)
+          .single();
+
+        if (agreement?.code) {
+          const resolution = await resolveEmployeeSalary(
+            companyId,
+            agreement.code,
+            professionalGroup,
+            periodYear,
+            salarioPactado
+          );
+
+          setAgreementResolution(resolution);
+          setAgreementName(agreement.name || agreement.code);
+
+          if (resolution.tableEntry) {
+            // Auto-resolved from agreement tables
+            setResolutionMode('auto');
+
+            // Pre-fill earnings with resolved amounts
+            setEarnings(DEFAULT_EARNINGS.map((e, i) => {
+              let amount = 0;
+              if (e.code === 'BASE') amount = resolution.salarioBaseConvenio;
+              else if (e.code === 'PLUS_CONV') amount = resolution.plusConvenioTabla;
+              else if (e.code === 'MEJORA_VOL') amount = resolution.mejoraVoluntaria;
+              return { ...e, id: `earning-${i}`, amount };
+            }));
+            setDeductions(DEFAULT_DEDUCTIONS.map((d, i) => ({
+              ...d, id: `deduction-${i}`, amount: d.code === 'IRPF' ? 15 : 0
+            })));
+            return; // Done — agreement resolved
+          } else {
+            // No table found — resolution returned fallback
+            setResolutionMode('manual');
+          }
+        }
+      }
+
+      // Fallback: no agreement or no table → manual mode
+      if (!resolutionMode) setResolutionMode('manual');
+      resetConcepts(salarioPactado, 15);
+    } catch (err) {
+      console.error('[HRPayrollEntryDialog] agreement resolution error:', err);
+      setResolutionMode('manual');
+      resetConcepts(0, 15);
+    } finally {
+      setResolutionLoading(false);
     }
   };
+
+  /**
+   * S9.13 Ajuste 3: Validate fixed salary block against agreement minimum.
+   * Only BASE + PLUS_CONV + MEJORA_VOL count — not bonus/horas extra.
+   */
+  const getFixedSalaryBlock = useCallback(() => {
+    const fixedCodes = ['BASE', 'PLUS_CONV', 'MEJORA_VOL'];
+    return earnings
+      .filter(e => fixedCodes.includes(e.code))
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
+  }, [earnings]);
 
   const handleSave = async () => {
     if (!selectedEmployeeId) {
@@ -224,11 +379,43 @@ export function HRPayrollEntryDialog({
       return;
     }
 
+    // Ajuste 3: Validate agreement minimum against fixed salary block
+    if (agreementResolution?.tableEntry) {
+      const minimoConvenio = agreementResolution.trace.totalMinimoConvenio;
+      const fixedBlock = getFixedSalaryBlock();
+      if (fixedBlock < minimoConvenio) {
+        toast.error(
+          `El bloque salarial fijo (${fixedBlock.toFixed(2)}€) es inferior al mínimo de convenio (${minimoConvenio.toFixed(2)}€). Ajuste BASE + Plus Convenio + Mejora Voluntaria.`,
+          { duration: 6000 }
+        );
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
+      // Ajuste 4: Use persistence codes (ES_SAL_BASE, ES_COMP_CONVENIO, ES_MEJORA_VOLUNTARIA)
       const complements = earnings
         .filter(e => e.code !== 'BASE' && e.amount > 0)
-        .map(e => ({ code: e.code, name: e.name, amount: e.amount, cotizaSS: e.cotizaSS, tributaIRPF: e.tributaIRPF }));
+        .map(e => ({
+          code: PERSISTENCE_CODE_MAP[e.code] || e.code,
+          name: e.name,
+          amount: e.amount,
+          cotizaSS: e.cotizaSS,
+          tributaIRPF: e.tributaIRPF,
+        }));
+
+      // Ajuste 5 & trazabilidad: Include agreement trace if resolved
+      if (agreementResolution?.trace) {
+        complements.push({
+          code: '__agreement_trace',
+          name: 'Traza de convenio',
+          amount: 0,
+          cotizaSS: false,
+          tributaIRPF: false,
+          ...({ trace: agreementResolution.trace, mode: resolutionMode } as any),
+        });
+      }
 
       const otherDeds = deductions
         .filter(d => d.category === 'other' && d.amount > 0)
@@ -284,6 +471,84 @@ export function HRPayrollEntryDialog({
     }
   };
 
+  // S9.13: Agreement resolution card
+  const renderAgreementCard = () => {
+    if (!selectedEmployeeId || resolutionLoading) return null;
+    if (resolutionMode === null) return null;
+
+    if (resolutionMode === 'auto' && agreementResolution) {
+      const r = agreementResolution;
+      const trace = r.trace;
+      return (
+        <Card className="mb-4 border-primary/30 bg-primary/5">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Scale className="h-4 w-4 text-primary" />
+              Convenio aplicado
+              <Badge variant="default" className="text-[10px] h-5 bg-green-600">
+                <CheckCircle className="h-3 w-3 mr-0.5" />
+                Automático
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">Convenio</span>
+                <p className="font-medium truncate" title={agreementName}>{agreementName}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Grupo profesional</span>
+                <p className="font-medium">{trace.professionalGroup}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Año/Tabla</span>
+                <p className="font-medium">{trace.year}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Mínimo convenio</span>
+                <p className="font-medium text-primary">{trace.totalMinimoConvenio.toFixed(2)}€</p>
+              </div>
+            </div>
+            <Separator className="my-2" />
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="p-1.5 bg-background rounded border">
+                <span className="text-muted-foreground">Base convenio</span>
+                <p className="font-semibold">{r.salarioBaseConvenio.toFixed(2)}€</p>
+              </div>
+              <div className="p-1.5 bg-background rounded border">
+                <span className="text-muted-foreground">Plus convenio</span>
+                <p className="font-semibold">{r.plusConvenioTabla.toFixed(2)}€</p>
+              </div>
+              <div className={cn("p-1.5 rounded border", r.hasMejoraVoluntaria ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800" : "bg-background")}>
+                <span className="text-muted-foreground">Mejora voluntaria</span>
+                <p className="font-semibold">
+                  {r.hasMejoraVoluntaria ? `${r.mejoraVoluntaria.toFixed(2)}€` : '—'}
+                </p>
+              </div>
+            </div>
+            {trace.formula && (
+              <p className="text-[10px] text-muted-foreground mt-2 italic">
+                <Info className="h-3 w-3 inline mr-0.5" />
+                {trace.formula}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Manual / degradation mode
+    return (
+      <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/30">
+        <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+        <p className="text-xs text-amber-800 dark:text-amber-300">
+          Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.
+        </p>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
@@ -322,6 +587,16 @@ export function HRPayrollEntryDialog({
             </div>
           </div>
 
+          {/* S9.13: Agreement resolution card */}
+          {resolutionLoading ? (
+            <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+              <Calculator className="h-4 w-4 animate-spin text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">Resolviendo convenio colectivo...</p>
+            </div>
+          ) : (
+            renderAgreementCard()
+          )}
+
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="earnings" className="gap-1">
@@ -344,8 +619,20 @@ export function HRPayrollEntryDialog({
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
                   {earnings.map(concept => (
-                    <div key={concept.id} className={cn("flex items-center gap-2 p-2 rounded-lg border", concept.amount > 0 ? "bg-background" : "bg-muted/30")}>
-                      <div className="flex-1"><span className="text-sm">{concept.name}</span></div>
+                    <div key={concept.id} className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg border",
+                      concept.amount > 0 ? "bg-background" : "bg-muted/30",
+                      // Highlight agreement-resolved concepts
+                      resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0
+                        ? "border-primary/30 bg-primary/5"
+                        : ""
+                    )}>
+                      <div className="flex-1">
+                        <span className="text-sm">{concept.name}</span>
+                        {resolutionMode === 'auto' && PERSISTENCE_CODE_MAP[concept.code] && concept.amount > 0 && (
+                          <Badge variant="outline" className="ml-1 text-[9px] h-4 text-primary border-primary/30">Convenio</Badge>
+                        )}
+                      </div>
                       <div className="w-24">
                         <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" step="0.01" />
                       </div>
