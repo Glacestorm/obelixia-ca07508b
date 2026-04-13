@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   Users, 
   Calendar, 
@@ -696,6 +697,42 @@ function HRModuleInner() {
           }}
         />
       )}
+
+      {/* Recents Popover */}
+      <Popover open={showRecentsPopover} onOpenChange={setShowRecentsPopover}>
+        <PopoverTrigger asChild>
+          <span className="hidden" />
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-0" align="end">
+          <div className="px-3 py-2 border-b">
+            <p className="text-sm font-medium text-foreground">Recientes</p>
+          </div>
+          {recentEmployees.length === 0 ? (
+            <div className="px-3 py-6 text-center">
+              <p className="text-sm text-muted-foreground">Sin empleados recientes en esta sesión</p>
+            </div>
+          ) : (
+            <div className="py-1">
+              {recentEmployees.map((emp) => (
+                <button
+                  key={emp.id}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50 transition-colors text-left"
+                  onClick={() => {
+                    setSelectedEmployeeId(emp.id);
+                    setShowRecentsPopover(false);
+                  }}
+                >
+                  <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="truncate text-foreground">{emp.name}</span>
+                  {selectedEmployeeId === emp.id && (
+                    <span className="ml-auto text-xs text-primary font-medium">Activo</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
