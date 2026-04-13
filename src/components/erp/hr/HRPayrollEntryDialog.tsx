@@ -338,10 +338,20 @@ export function HRPayrollEntryDialog({
             })));
             return; // Done — agreement resolved
           } else {
-            // No table found — resolution returned fallback
+            // No table found or ambiguous — resolution returned fallback
             setResolutionMode('manual');
           }
         }
+      } else if (agreementId && !professionalGroup) {
+        // Ajuste S9.14-4: Contract has agreement but missing professional_group
+        // Show explicit warning, degrade to manual — do NOT attempt auto-resolution
+        setResolutionMode('missing_group');
+        const { data: agreement } = await supabase
+          .from('erp_hr_collective_agreements')
+          .select('name')
+          .eq('id', agreementId)
+          .single();
+        setAgreementName(agreement?.name || '');
       }
 
       // Fallback: no agreement or no table → manual mode
