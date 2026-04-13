@@ -782,7 +782,7 @@ export function useESPayrollBridge(companyId?: string) {
           if (agreementCode && professionalGroup && companyId) {
             try {
               const { resolveSalaryFromAgreement, fetchAgreementSalaryTable } = await import('@/engines/erp/hr/agreementSalaryResolver');
-              const tableEntry = await fetchAgreementSalaryTable(companyId, agreementCode, professionalGroup, currentYear);
+              const { entry: tableEntry } = await fetchAgreementSalaryTable(companyId, agreementCode, professionalGroup, currentYear);
               if (tableEntry) {
                 const resolution = resolveSalaryFromAgreement(salarioBase, tableEntry, agreementCode, professionalGroup, currentYear);
                 salaryResolution = {
