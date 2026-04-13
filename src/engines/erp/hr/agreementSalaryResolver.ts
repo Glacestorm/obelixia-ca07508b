@@ -75,11 +75,12 @@ export async function fetchAgreementSalaryTable(
   professionalGroup: string,
   year: number,
   level?: string,
-): Promise<AgreementSalaryTable | null> {
+): Promise<{ entry: AgreementSalaryTable | null; ambiguous: boolean }> {
+  // Fix A: Prefer company-specific table, fallback to sectoral (company_id IS NULL)
+  // Try company-specific first
   let query = supabase
     .from('erp_hr_agreement_salary_tables')
     .select('*')
-    .eq('company_id', companyId)
     .eq('agreement_code', agreementCode)
     .eq('professional_group', professionalGroup)
     .eq('year', year)
@@ -87,18 +88,50 @@ export async function fetchAgreementSalaryTable(
 
   if (level) {
     query = query.eq('level', level);
-  } else {
-    query = query.eq('level', '');
   }
+  // Fix B: When no level specified, don't filter by level at all
 
-  const { data, error } = await query.maybeSingle();
+  // Prefer company-specific rows, then sectoral (null)
+  query = query.or(`company_id.eq.${companyId},company_id.is.null`)
+    .order('company_id', { ascending: false, nullsFirst: false }); // company-specific first
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[agreementSalaryResolver] fetchTable error:', error);
-    return null;
+    return { entry: null, ambiguous: false };
   }
 
-  return data as AgreementSalaryTable | null;
+  if (!data || data.length === 0) {
+    return { entry: null, ambiguous: false };
+  }
+
+  // If level was specified or only one result, return directly
+  if (level || data.length === 1) {
+    return { entry: data[0] as AgreementSalaryTable, ambiguous: false };
+  }
+
+  // Fix B: Multiple rows without level filter — check if ambiguous
+  // If there's a company-specific entry, prefer it
+  const companySpecific = data.filter((r: any) => r.company_id === companyId);
+  if (companySpecific.length === 1) {
+    return { entry: companySpecific[0] as AgreementSalaryTable, ambiguous: false };
+  }
+  if (companySpecific.length > 1) {
+    // Multiple company-specific entries for same group without level — ambiguous
+    console.warn('[agreementSalaryResolver] Ambiguous: multiple company-specific entries for group', professionalGroup);
+    return { entry: null, ambiguous: true };
+  }
+
+  // Only sectoral entries
+  const sectoralEntries = data.filter((r: any) => r.company_id === null);
+  if (sectoralEntries.length === 1) {
+    return { entry: sectoralEntries[0] as AgreementSalaryTable, ambiguous: false };
+  }
+
+  // Multiple sectoral entries — ambiguous
+  console.warn('[agreementSalaryResolver] Ambiguous: multiple sectoral entries for group', professionalGroup);
+  return { entry: null, ambiguous: true };
 }
 
 /**
@@ -109,10 +142,11 @@ export async function fetchAllAgreementSalaryTables(
   agreementCode: string,
   year: number,
 ): Promise<AgreementSalaryTable[]> {
+  // Fix A: Include sectoral tables (company_id IS NULL)
   const { data, error } = await supabase
     .from('erp_hr_agreement_salary_tables')
     .select('*')
-    .eq('company_id', companyId)
+    .or(`company_id.eq.${companyId},company_id.is.null`)
     .eq('agreement_code', agreementCode)
     .eq('year', year)
     .eq('is_active', true)
@@ -215,11 +249,18 @@ export async function resolveEmployeeSalary(
   salarioPactado: number,
   level?: string,
 ): Promise<SalaryResolutionResult> {
-  const tableEntry = await fetchAgreementSalaryTable(
+  const { entry: tableEntry, ambiguous } = await fetchAgreementSalaryTable(
     companyId, agreementCode, professionalGroup, year, level
   );
 
-  return resolveSalaryFromAgreement(
+  const result = resolveSalaryFromAgreement(
     salarioPactado, tableEntry, agreementCode, professionalGroup, year
   );
+
+  // Propagate ambiguity flag
+  if (ambiguous && !tableEntry) {
+    result.trace.formula = 'Resolución ambigua: múltiples tablas salariales para el grupo profesional sin especificar nivel. Degradación a salario manual.';
+  }
+
+  return result;
 }

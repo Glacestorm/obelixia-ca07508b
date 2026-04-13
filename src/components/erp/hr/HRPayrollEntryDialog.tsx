@@ -49,7 +49,7 @@ interface HRPayrollEntryDialogProps {
   onSave?: () => void;
 }
 
-type AgreementResolutionMode = 'auto' | 'manual' | null;
+type AgreementResolutionMode = 'auto' | 'manual' | 'missing_group' | null;
 
 const SS_RATES = {
   cc_company: 23.60,
@@ -338,10 +338,20 @@ export function HRPayrollEntryDialog({
             })));
             return; // Done — agreement resolved
           } else {
-            // No table found — resolution returned fallback
+            // No table found or ambiguous — resolution returned fallback
             setResolutionMode('manual');
           }
         }
+      } else if (agreementId && !professionalGroup) {
+        // Ajuste S9.14-4: Contract has agreement but missing professional_group
+        // Show explicit warning, degrade to manual — do NOT attempt auto-resolution
+        setResolutionMode('missing_group');
+        const { data: agreement } = await supabase
+          .from('erp_hr_collective_agreements')
+          .select('name')
+          .eq('id', agreementId)
+          .single();
+        setAgreementName(agreement?.name || '');
       }
 
       // Fallback: no agreement or no table → manual mode
@@ -538,13 +548,28 @@ export function HRPayrollEntryDialog({
       );
     }
 
+    // Missing professional_group — specific warning
+    if (resolutionMode === 'missing_group') {
+      return (
+        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/30">
+          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-800 dark:text-amber-300">
+            <p className="font-medium">Convenio asignado{agreementName ? ` (${agreementName})` : ''} pero falta grupo profesional en el contrato.</p>
+            <p className="mt-1">No se puede resolver la tabla salarial automáticamente. Complete el campo "Grupo profesional" en el contrato del empleado para activar la resolución de convenio.</p>
+            <Badge variant="outline" className="mt-1.5 text-[10px] border-amber-400/50 text-amber-700 dark:text-amber-400">Salario manual</Badge>
+          </div>
+        </div>
+      );
+    }
+
     // Manual / degradation mode
     return (
       <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/30">
         <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
-        <p className="text-xs text-amber-800 dark:text-amber-300">
-          Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.
-        </p>
+        <div className="text-xs text-amber-800 dark:text-amber-300">
+          <p>Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.</p>
+          <Badge variant="outline" className="mt-1 text-[10px] border-amber-400/50 text-amber-700 dark:text-amber-400">Salario manual</Badge>
+        </div>
       </div>
     );
   };
