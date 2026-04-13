@@ -32,15 +32,17 @@ interface Props {
   companyId: string;
   documentId: string;
   onClose: () => void;
+  /** Optional tab to open on mount (default: 'info') */
+  initialTab?: string;
 }
 
-export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
+export function DocumentDetailPanel({ companyId, documentId, onClose, initialTab = 'info' }: Props) {
   const { documents, fetchVersions, fetchComments, fetchAccessLog, addComment, verifyIntegrity } = useHRDocumentExpedient(companyId);
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   const [accessLog, setAccessLog] = useState<DocumentAccessLog[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [tab, setTab] = useState('info');
+  const [tab, setTab] = useState(initialTab);
 
   const doc = documents.find(d => d.id === documentId);
 

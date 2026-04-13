@@ -3,7 +3,7 @@
  * Categorías: Personal, Contratos, Nómina, Compliance, Médicos, Formación, Legal, Movilidad
  * V2-ES.4 Paso 6+: Incluye resumen ejecutivo, indicadores de archivo/versión y generación
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import {
   Eye, Download, CheckCircle2, XCircle, Clock, Paperclip, History
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentCategory, type EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useHRDocumentStorage } from '@/hooks/erp/hr/useHRDocumentStorage';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
 import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type OriginFilterValue } from '../shared/DocumentOriginBadge';
 import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
@@ -53,6 +54,10 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterOrigin, setFilterOrigin] = useState<OriginFilterValue>('all');
+  const [detailInitialTab, setDetailInitialTab] = useState<string>('info');
+
+  // Storage hook for signed URL generation (on-demand, no extra fetches)
+  const { getDownloadUrl } = useHRDocumentStorage(companyId);
 
   // Calendar label for executive summary
   const { calendarLabel } = useHRHolidayCalendar();
@@ -88,10 +93,22 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
     return count;
   }, [versionCounts]);
 
-  const handleView = (doc: EmployeeDocument) => {
+  const handleView = useCallback((doc: EmployeeDocument, tab: string = 'info') => {
+    setDetailInitialTab(tab);
     setSelectedDocumentId(doc.id);
     logAccess.mutate({ document_id: doc.id, action: 'view' });
-  };
+  }, [setSelectedDocumentId, logAccess]);
+
+  const handleOpenFile = useCallback(async (storagePath: string | null | undefined) => {
+    if (!storagePath) return;
+    const result = await getDownloadUrl(storagePath);
+    if (result.ok) {
+      window.open(result.data, '_blank');
+    } else {
+      const { toast } = await import('sonner');
+      toast.error('No se pudo obtener el enlace del archivo');
+    }
+  }, [getDownloadUrl]);
 
   const statsRow = (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -250,7 +267,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
 
                               {/* Quick actions — non-destructive */}
                               <div className="flex items-center gap-0.5 ml-1 border-l pl-1.5">
-                                {hasFile && (
+                                {!!doc.storage_path && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
@@ -259,8 +276,9 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                                         className="h-6 w-6"
                                         onClick={e => {
                                           e.stopPropagation();
-                                          const url = doc.storage_path || doc.file_name;
-                                          if (url) window.open(url, '_blank');
+                                          if (doc.storage_path) {
+                                            handleOpenFile(doc.storage_path);
+                                          }
                                         }}
                                       >
                                         <Download className="h-3 w-3" />
@@ -276,7 +294,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6"
-                                        onClick={e => { e.stopPropagation(); handleView(doc); }}
+                                        onClick={e => { e.stopPropagation(); handleView(doc, 'versions'); }}
                                       >
                                         <History className="h-3 w-3" />
                                       </Button>
@@ -317,7 +335,11 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
         <DocumentDetailPanel
           companyId={companyId}
           documentId={selectedDocumentId}
-          onClose={() => setSelectedDocumentId(null)}
+          initialTab={detailInitialTab}
+          onClose={() => {
+            setSelectedDocumentId(null);
+            setDetailInitialTab('info');
+          }}
         />
       )}
     </>
