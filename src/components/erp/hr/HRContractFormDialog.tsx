@@ -203,7 +203,42 @@ export function HRContractFormDialog({
       notes: ''
     });
     setSelectedAgreement(null);
+    setAvailableGroups([]);
+    setUseCustomGroup(false);
+    setGroupMismatchWarning(false);
   };
+
+  // When employee changes on new contract, try prefill
+  useEffect(() => {
+    if (formData.employee_id && !contractId && open) {
+      prefillFromESExtension(formData.employee_id);
+    }
+  }, [formData.employee_id, contractId, open, prefillFromESExtension]);
+
+  // When agreement changes, fetch groups and validate current value
+  useEffect(() => {
+    if (selectedAgreement?.code) {
+      fetchProfessionalGroups(selectedAgreement.code);
+    } else {
+      setAvailableGroups([]);
+    }
+  }, [selectedAgreement?.code, fetchProfessionalGroups]);
+
+  // Validate professional_group against available groups when groups load
+  useEffect(() => {
+    if (availableGroups.length > 0 && formData.professional_group) {
+      const isValid = availableGroups.includes(formData.professional_group);
+      if (!isValid) {
+        setGroupMismatchWarning(true);
+        setUseCustomGroup(true);
+      } else {
+        setGroupMismatchWarning(false);
+        setUseCustomGroup(false);
+      }
+    } else {
+      setGroupMismatchWarning(false);
+    }
+  }, [availableGroups, formData.professional_group]);
 
   const handleSubmit = async () => {
     if (!formData.employee_id || !formData.start_date) {
