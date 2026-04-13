@@ -2,15 +2,23 @@
  * HRCockpitHeader — Cabecera contextual tipo ERP clásico
  * Inspirada en los layouts de nómina profesional (Meta4/A3Equipo/Sage)
  * Muestra: Entidad, Período, Empleado activo, toolbar de acciones
+ * S9.11-H5++: menú contextual del empleado con acceso a copiloto IA
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
-  Building2, CalendarDays, UserCircle, Eye, Eraser,
-  Search, History, HelpCircle, RefreshCw, ChevronRight
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Building2, CalendarDays, UserCircle, Eraser,
+  Search, History, HelpCircle, RefreshCw,
+  Brain, FolderOpen, ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +32,8 @@ interface HRCockpitHeaderProps {
   onRefresh?: () => void;
   onHelp?: () => void;
   onViewRecents?: () => void;
+  onAskAI?: () => void;
+  onViewExpedient?: () => void;
   className?: string;
 }
 
@@ -37,12 +47,25 @@ export function HRCockpitHeader({
   onRefresh,
   onHelp,
   onViewRecents,
+  onAskAI,
+  onViewExpedient,
   className,
 }: HRCockpitHeaderProps) {
   const currentPeriod = useMemo(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }, []);
+
+  const employeeBlock = (
+    <div className="flex items-center gap-2 min-w-0">
+      <UserCircle className="h-4 w-4 text-primary shrink-0" />
+      <span className="text-xs text-muted-foreground">Empleado</span>
+      <span className="text-sm font-medium text-foreground truncate max-w-[180px]">
+        {employeeName || '— Sin seleccionar —'}
+      </span>
+      {employeeId && <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />}
+    </div>
+  );
 
   return (
     <div className={cn(
@@ -74,14 +97,28 @@ export function HRCockpitHeader({
 
         <Separator orientation="vertical" className="h-5 hidden sm:block" />
 
-        {/* Empleado */}
-        <div className="flex items-center gap-2 min-w-0">
-          <UserCircle className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-xs text-muted-foreground">Empleado</span>
-          <span className="text-sm font-medium text-foreground truncate max-w-[180px]">
-            {employeeName || '— Sin seleccionar —'}
-          </span>
-        </div>
+        {/* Empleado — con menú contextual si hay empleado seleccionado */}
+        {employeeId ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 min-w-0 rounded-md px-1.5 py-1 -mx-1.5 -my-1 hover:bg-accent/50 transition-colors cursor-pointer">
+                {employeeBlock}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuItem onClick={onAskAI} className="gap-2">
+                <Brain className="h-4 w-4" />
+                Preguntar a IA sobre este empleado
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onViewExpedient} className="gap-2">
+                <FolderOpen className="h-4 w-4" />
+                Ver expediente
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          employeeBlock
+        )}
 
         {/* Spacer */}
         <div className="flex-1" />

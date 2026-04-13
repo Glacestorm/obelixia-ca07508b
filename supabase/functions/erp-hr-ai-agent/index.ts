@@ -668,6 +668,76 @@ serve(async (req) => {
         const currentAbsences = await fetchCurrentAbsences(effectiveCompanyId);
         const activeAlerts = await fetchActiveAlerts(effectiveCompanyId);
 
+        // === EMPLOYEE CONTEXTUAL FETCH (S9.11-H5++) ===
+        let employeeContextBlock = '';
+        let employeeContextDegraded = false;
+        if (context?.employee_id) {
+          try {
+            const { data: empData, error: empError } = await userClient
+              .from('erp_hr_employees')
+              .select('first_name, last_name, job_title, category, contract_type, hire_date, weekly_hours, status, work_schedule')
+              .eq('id', context.employee_id)
+              .maybeSingle();
+
+            if (!empError && empData) {
+              employeeContextBlock = `
+=== DATOS DEL EMPLEADO SELECCIONADO ===
+Nombre: ${empData.first_name || ''} ${empData.last_name || ''}
+Puesto: ${empData.job_title || 'No especificado'}
+Categoría: ${empData.category || 'No especificada'}
+Contrato: ${empData.contract_type || 'No especificado'}
+Alta: ${empData.hire_date || 'No especificada'}
+Jornada: ${empData.weekly_hours ? empData.weekly_hours + 'h/sem' : 'No especificada'}
+Horario: ${empData.work_schedule || 'No especificado'}
+Estado: ${empData.status || 'No especificado'}
+=== FIN DATOS EMPLEADO ===`;
+            } else {
+              employeeContextDegraded = true;
+              console.log(`[erp-hr-ai-agent] Employee fetch degraded for ${context.employee_id}: ${empError?.message || 'no data'}`);
+            }
+          } catch (fetchErr) {
+            employeeContextDegraded = true;
+            console.error(`[erp-hr-ai-agent] Employee context fetch error:`, fetchErr);
+          }
+        }
+
+        // === ASSISTANT MODE INSTRUCTIONS (S9.11-H5++) ===
+        let assistantModeInstructions = '';
+        const assistantMode = context?.assistant_mode;
+        if (assistantMode === 'consult') {
+          assistantModeInstructions = `
+MODO CONSULTA CONTEXTUAL:
+- Responde prioritariamente sobre el empleado seleccionado.
+- No inventes datos ausentes. Di claramente "no dispongo de ese dato" cuando falte información.
+- No presentes asesoramiento legal vinculante.
+- Prioriza datos reales del sistema sobre generalidades.
+${employeeContextDegraded ? '- NOTA: No se pudieron recuperar datos estructurados del empleado. Responde con contexto limitado e indícalo al usuario.' : ''}`;
+        } else if (assistantMode === 'assisted_action') {
+          assistantModeInstructions = `
+MODO ACCIONES ASISTIDAS:
+- NO ejecutes automáticamente acciones sensibles (pagos, transferencias, envíos oficiales, cambios contractuales efectivos, finiquitos reales).
+- Prepara propuestas, borradores o simulaciones.
+- Indica siempre la necesidad de validación humana.
+- Resume lo que has entendido antes de preparar la propuesta.
+- Si existe un módulo o flujo correspondiente, indica cuál usar.
+${employeeContextDegraded ? '- NOTA: Contexto del empleado limitado. Indica al usuario que los datos estructurados no están disponibles.' : ''}`;
+        } else if (assistantMode === 'demo_guided') {
+          assistantModeInstructions = `
+MODO DEMO GUIADA:
+- Estructura SIEMPRE la respuesta por fases/pasos numerados.
+- Para CADA fase usa este formato fijo:
+  **Fase N: [Título]**
+  - Qué demostrar: ...
+  - Pantalla/módulo: ...
+  - Inputs relevantes: ...
+  - Outputs/artefactos: ...
+  - Clasificación: interno_real | simulación | preparación_oficial | handoff_ready
+- No vender como "ejecución oficial real" lo que depende de credenciales, certificados o UAT externos.
+- Distingue claramente entre lo que el sistema resuelve internamente y lo que queda preparado/handoff-ready.
+- Orienta la demo de forma comercial, clara y vendible.
+${employeeContextDegraded ? '- NOTA: Contexto del empleado limitado. Usa datos genéricos de ejemplo para la demo.' : ''}`;
+        }
+
         systemPrompt = `Eres un Agente IA de Recursos Humanos ultraespecializado en normativa laboral española y europea.
 
 TU ROL:
@@ -696,6 +766,8 @@ El sistema gestiona planes de stock options con vesting schedules, cliff periods
 
 PREFLIGHT COCKPIT:
 El ciclo laboral incluye un cockpit de preflight para validar completitud de datos antes de activar procesos críticos (nómina, altas SS, etc.).
+${employeeContextBlock}
+${assistantModeInstructions}
 
 AUSENCIAS ACTUALES (${currentAbsences.length} empleados ausentes):
 ${currentAbsences.length > 0 ? currentAbsences.map((a: any) => `- Empleado ${a.employee_id}: ${a.start_date} a ${a.end_date} (${a.leave_type_code})`).join('\n') : 'Ningún empleado ausente hoy'}
