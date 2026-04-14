@@ -117,6 +117,8 @@ export function HRPayrollEntryDialog({
   // Phase 2A: dynamic agreement concepts
   const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
+  // S9.18: Flex plan state
+  const [flexPlanOpen, setFlexPlanOpen] = useState(false);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
