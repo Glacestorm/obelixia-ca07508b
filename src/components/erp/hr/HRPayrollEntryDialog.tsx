@@ -717,7 +717,10 @@ export function HRPayrollEntryDialog({
               </CollapsibleContent>
             </Collapsible>
           )}
+        </div>
 
+        {/* S9.18-H2: Scrollable bottom section — tabs + concepts */}
+        <div className="flex-1 overflow-y-auto min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="earnings" className="gap-1">
