@@ -351,6 +351,11 @@ export function HRCollectiveAgreementPanel() {
                 )}
               </TabsContent>
 
+              {/* ── Concepts Mapping (Phase 2A) ── */}
+              <TabsContent value="concepts" className="mt-0">
+                <AgreementConceptsMapping agreementId={selectedId!} />
+              </TabsContent>
+
               {/* ── Conflicts ── */}
               <TabsContent value="conflicts" className="mt-0">
                 {resolution.conflicts.length === 0 ? (
