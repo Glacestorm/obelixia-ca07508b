@@ -1,40 +1,60 @@
 
 
-## S9.11-P6 — Evaluación de tabs ocultas en MVP
+## S9.18 — Retribución Flexible ES: Plan Final para Build
 
-### Evaluacion
+### Verificación previa completada
 
-| Tab | Madurez | Riesgo | Valor inmediato | Veredicto |
-|-----|---------|--------|-----------------|-----------|
-| **Auditoría documental** | Alta — componente completo, read-only, con filtros y resumen por tipo de accion | Muy bajo — solo lectura, sin escritura, sin side effects | Alto — visibilidad de compliance sin salir del expediente | **Activar** |
-| Consentimientos | Media — funcional pero con operaciones de escritura (registrar, revocar) | Medio — acciones destructivas (revocar), formulario con UUID manual | Medio — valioso pero requiere flujo supervisado | Dejar oculta |
-| Retención documental | Media — funcional pero con crear/eliminar politicas | Alto — acciones destructivas (eliminar política), configuracion regulatoria sensible | Bajo en MVP — es config avanzada, no consulta diaria | Dejar oculta |
+**Ajuste 1 — `contributable` del exceso**: Se documenta como decisión operativa pendiente. El concepto `ES_RETRIB_FLEX_SEGURO_EXCESO` se crea con `contributable: false` / `is_ss_contributable: false` pero con un comentario explícito indicando que la cotización SS del exceso depende del criterio operativo de cada empresa y debe validarse antes de activar.
 
-### Decision
+**Ajuste 2 — Restaurante / guardería**: Verificado que `ticketRestaurante` y `chequeGuarderia` NO son consumidos por ningún componente UI ni demo data. Solo existen en el bridge (líneas 326-327 para cálculo, 811-812 para batch). La desactivación es segura y no rompe nada visible. Se desactivan con comentario explícito en el código.
 
-Activar **solo Auditoría documental**. Es la unica tab que es 100% read-only, no genera falsas expectativas de edicion, y aporta valor de compliance inmediato.
+---
 
-### Implementacion
+### Bloques de implementación
 
-**Archivo**: `src/components/erp/hr/document-expedient/DocumentExpedientModule.tsx`
+#### Bloque 1: Migración
+Añadir a `hr_es_flexible_remuneration_plans`:
+- `num_beneficiarios INTEGER DEFAULT 1`
+- `num_beneficiarios_discapacidad INTEGER DEFAULT 0`
 
-Cambio minimo: mostrar la tab "Auditoría" incluso en `mvpMode`, manteniendo Consentimientos y Retención ocultas.
+#### Bloque 2: Bridge (`useESPayrollBridge.ts`)
+- Línea 325: Reemplazar `addEarning('ES_RETRIB_FLEX_SEGURO', ...)` por lógica de split exento/exceso con límite dinámico
+- Líneas 326-327: Comentar `ticketRestaurante` y `chequeGuarderia` forzándolos a `0` con comentario `// S9.18: Desactivado — pendiente de reglas avanzadas (Art. 45.2 RIRPF / centro autorizado)`
+- Líneas 811-812: Forzar a `0` en batch, añadir `numBeneficiarios` y `numBeneficiariosDiscapacidad` desde plan
+- Catálogo inline (~línea 141): Añadir `ES_RETRIB_FLEX_SEGURO_EXCESO` con `taxable: true, contributable: false`
+- `ESPayrollInput`: Añadir `numBeneficiarios?: number` y `numBeneficiariosDiscapacidad?: number`
 
-```text
-Antes:  {showFull && <TabsTrigger value="audit">...}
-Despues: <TabsTrigger value="audit">...  (siempre visible)
+#### Bloque 3: Catálogo (`payrollConceptCatalog.ts`)
+- Después de línea 116: Añadir `ES_RETRIB_FLEX_SEGURO_EXCESO` con `is_taxable: true, is_ss_contributable: false` y comentario sobre decisión pendiente de cotización
 
-Antes:  {showFull && <TabsContent value="audit">...}
-Despues: <TabsContent value="audit">...  (siempre renderizado)
-```
+#### Bloque 4: Nuevo componente `HRFlexibleRemunerationPanel.tsx`
+Card component con:
+- Año selector
+- Seguro médico: importe + num_beneficiarios + num_beneficiarios_discapacidad + indicador de límite + badge verde/naranja
+- Restaurante/Guardería/Transporte: importe + badge ámbar "Pendiente de reglas avanzadas"
+- Estado (active/suspended/cancelled)
+- Upsert por `(company_id, employee_id, plan_year)`
+- Toast feedback
 
-Las otras dos tabs (`consents`, `retention`) siguen controladas por `showFull`.
+#### Bloque 5: Integración en `HRPayrollEntryDialog.tsx`
+- Después del bloque de agreement card (~línea 695) y antes de Tabs (~línea 697)
+- Fetch plan flexible activo del empleado
+- Card informativa colapsable "Retribución Flexible ES"
+- Editor inline embebido
+- NO inyectar líneas duplicadas — el bridge ya maneja seguro médico
 
-### Checklist de regresion
+---
 
-- Expediente documental sigue siendo ligero (solo 1 tab nueva, read-only)
-- No se crean falsas expectativas regulatorias (auditoría es solo consulta)
-- Modo MVP no se rompe (Consentimientos y Retención siguen ocultas)
-- No hay cambios de backend, SQL, RLS ni auth
-- DocumentAuditPanel ya tiene estados de loading y vacio implementados
+### Archivos
+
+| Archivo | Acción |
+|---|---|
+| `supabase/migrations/new.sql` | Crear — 2 columnas |
+| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Crear |
+| `src/hooks/erp/hr/useESPayrollBridge.ts` | Modificar — split seguro, desactivar restaurante/guardería, concepto exceso |
+| `src/engines/erp/hr/payrollConceptCatalog.ts` | Modificar — añadir exceso |
+| `src/components/erp/hr/HRPayrollEntryDialog.tsx` | Modificar — card informativa + editor inline |
+
+### No se toca
+`payroll-calculation-engine.ts`, S9/VPT, última milla, G1.2/G2.2, auth, edge functions, RLS, agreement resolution, mapping engine, stock options, módulo general de beneficios
 
