@@ -1,60 +1,80 @@
 
 
-## S9.18 — Retribución Flexible ES: Plan Final para Build
+## S9.19 — Corregir desalineación UI ↔ BD en ficha de empleado
 
-### Verificación previa completada
+### Causa raíz
 
-**Ajuste 1 — `contributable` del exceso**: Se documenta como decisión operativa pendiente. El concepto `ES_RETRIB_FLEX_SEGURO_EXCESO` se crea con `contributable: false` / `is_ss_contributable: false` pero con un comentario explícito indicando que la cotización SS del exceso depende del criterio operativo de cada empresa y debe validarse antes de activar.
+La BD tiene CHECK constraints que restringen valores de `gender` y `status` en `erp_hr_employees`:
 
-**Ajuste 2 — Restaurante / guardería**: Verificado que `ticketRestaurante` y `chequeGuarderia` NO son consumidos por ningún componente UI ni demo data. Solo existen en el bridge (líneas 326-327 para cálculo, 811-812 para batch). La desactivación es segura y no rompe nada visible. Se desactivan con comentario explícito en el código.
+- **gender**: `CHECK (gender IN ('M', 'F', 'other'))` — UI envía `masculino`, `femenino`, `no_binario`, `no_especificado`
+- **status**: `CHECK (status IN ('active', 'inactive', 'on_leave', 'terminated'))` — UI ofrece 7 valores (`candidate`, `onboarding`, `temporary_leave`, `excedencia`, `offboarding` no existen en BD)
 
----
+No hay constraints en `work_schedule`, `category` ni `nationality` — esos campos son `text` libre sin CHECK.
 
-### Bloques de implementación
+### Solución
 
-#### Bloque 1: Migración
-Añadir a `hr_es_flexible_remuneration_plans`:
-- `num_beneficiarios INTEGER DEFAULT 1`
-- `num_beneficiarios_discapacidad INTEGER DEFAULT 0`
+#### 1. Gender — Mapping bidireccional (sin tocar BD)
 
-#### Bloque 2: Bridge (`useESPayrollBridge.ts`)
-- Línea 325: Reemplazar `addEarning('ES_RETRIB_FLEX_SEGURO', ...)` por lógica de split exento/exceso con límite dinámico
-- Líneas 326-327: Comentar `ticketRestaurante` y `chequeGuarderia` forzándolos a `0` con comentario `// S9.18: Desactivado — pendiente de reglas avanzadas (Art. 45.2 RIRPF / centro autorizado)`
-- Líneas 811-812: Forzar a `0` en batch, añadir `numBeneficiarios` y `numBeneficiariosDiscapacidad` desde plan
-- Catálogo inline (~línea 141): Añadir `ES_RETRIB_FLEX_SEGURO_EXCESO` con `taxable: true, contributable: false`
-- `ESPayrollInput`: Añadir `numBeneficiarios?: number` y `numBeneficiariosDiscapacidad?: number`
+En `HREmployeeFormDialog.tsx`:
 
-#### Bloque 3: Catálogo (`payrollConceptCatalog.ts`)
-- Después de línea 116: Añadir `ES_RETRIB_FLEX_SEGURO_EXCESO` con `is_taxable: true, is_ss_contributable: false` y comentario sobre decisión pendiente de cotización
+**Constantes de mapping:**
+```typescript
+const GENDER_TO_DB: Record<string, string> = {
+  masculino: 'M', femenino: 'F', no_binario: 'other', no_especificado: 'other'
+};
+const GENDER_FROM_DB: Record<string, string> = {
+  M: 'masculino', F: 'femenino', other: 'no_binario'
+};
+```
 
-#### Bloque 4: Nuevo componente `HRFlexibleRemunerationPanel.tsx`
-Card component con:
-- Año selector
-- Seguro médico: importe + num_beneficiarios + num_beneficiarios_discapacidad + indicador de límite + badge verde/naranja
-- Restaurante/Guardería/Transporte: importe + badge ámbar "Pendiente de reglas avanzadas"
-- Estado (active/suspended/cancelled)
-- Upsert por `(company_id, employee_id, plan_year)`
-- Toast feedback
+**En `handleSave` (línea ~736):** mapear antes de enviar:
+```typescript
+gender: formData.gender ? (GENDER_TO_DB[formData.gender] || formData.gender) : null,
+```
 
-#### Bloque 5: Integración en `HRPayrollEntryDialog.tsx`
-- Después del bloque de agreement card (~línea 695) y antes de Tabs (~línea 697)
-- Fetch plan flexible activo del empleado
-- Card informativa colapsable "Retribución Flexible ES"
-- Editor inline embebido
-- NO inyectar líneas duplicadas — el bridge ya maneja seguro médico
+**Al cargar empleado existente:** reverse map del valor de BD a valor UI.
 
----
+#### 2. Status — Ampliar CHECK constraint en BD (migración)
+
+La UI modela una máquina de estados real de RRHH que la BD no soporta. La solución correcta es ampliar el constraint:
+
+```sql
+ALTER TABLE erp_hr_employees DROP CONSTRAINT erp_hr_employees_status_check;
+ALTER TABLE erp_hr_employees ADD CONSTRAINT erp_hr_employees_status_check 
+  CHECK (status = ANY (ARRAY[
+    'candidate', 'onboarding', 'active', 'inactive',
+    'on_leave', 'temporary_leave', 'excedencia',
+    'offboarding', 'terminated'
+  ]));
+```
+
+Esto es preferible a mapping porque:
+- Los estados UI tienen semántica operativa real (onboarding ≠ active, excedencia ≠ on_leave genérico)
+- Un mapping perdería información de negocio
+- No rompe datos existentes (los 3 valores actuales en BD — `active`, `on_leave`, `terminated` — están incluidos)
+
+#### 3. Otros campos verificados — Sin conflicto
+
+`work_schedule`, `category`, `nationality`, `bank_account`, `national_id`: todos `text` sin CHECK constraint. No hay riesgo.
+
+`fiscal_jurisdiction` tiene CHECK pero no se envía desde el formulario de empleado.
 
 ### Archivos
 
 | Archivo | Acción |
 |---|---|
-| `supabase/migrations/new.sql` | Crear — 2 columnas |
-| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Crear |
-| `src/hooks/erp/hr/useESPayrollBridge.ts` | Modificar — split seguro, desactivar restaurante/guardería, concepto exceso |
-| `src/engines/erp/hr/payrollConceptCatalog.ts` | Modificar — añadir exceso |
-| `src/components/erp/hr/HRPayrollEntryDialog.tsx` | Modificar — card informativa + editor inline |
+| `src/components/erp/hr/HREmployeeFormDialog.tsx` | Modificar — mapping gender (save + load) |
+| `supabase/migrations/new.sql` | Crear — ampliar CHECK de status |
+
+### Verificaciones
+
+1. Guardar empleado con cualquier género → no falla
+2. Reabrir empleado → género correcto en UI
+3. Guardar con cualquier status de la UI → no falla
+4. Datos existentes (`active`, `on_leave`, `terminated`) siguen válidos
+5. TypeScript limpio, compilación limpia
 
 ### No se toca
-`payroll-calculation-engine.ts`, S9/VPT, última milla, G1.2/G2.2, auth, edge functions, RLS, agreement resolution, mapping engine, stock options, módulo general de beneficios
+
+Payroll, bridge, S9/VPT, última milla, G1.2/G2.2, RLS, auth, edge functions.
 
