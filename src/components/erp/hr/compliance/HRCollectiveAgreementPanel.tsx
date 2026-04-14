@@ -542,6 +542,8 @@ function AgreementConceptsMapping({ agreementId }: { agreementId: string }) {
               <TableHead className="text-xs">Nombre CC</TableHead>
               <TableHead className="text-xs">Tipo</TableHead>
               <TableHead className="text-xs">→ Código ERP</TableHead>
+              <TableHead className="text-xs">Grupo</TableHead>
+              <TableHead className="text-xs">Vigencia</TableHead>
               <TableHead className="text-xs text-center">SS</TableHead>
               <TableHead className="text-xs text-center">IRPF</TableHead>
               <TableHead className="text-xs">Estado</TableHead>
@@ -568,6 +570,19 @@ function AgreementConceptsMapping({ agreementId }: { agreementId: string }) {
                     }}
                     onBlur={(e) => handleErpCodeChange(c.id, e.target.value)}
                   />
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {c.professional_group || <span className="italic">Todos</span>}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  {!c.effective_from && !c.effective_to
+                    ? <span className="italic">Siempre</span>
+                    : <>
+                        {c.effective_from ? new Date(c.effective_from).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'Inicio'}
+                        {' → '}
+                        {c.effective_to ? new Date(c.effective_to).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' }) : 'Vigente'}
+                      </>
+                  }
                 </TableCell>
                 <TableCell className="text-center">
                   {c.cotiza_ss ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}
