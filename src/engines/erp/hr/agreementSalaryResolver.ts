@@ -264,3 +264,142 @@ export async function resolveEmployeeSalary(
 
   return result;
 }
+
+// ── Agreement Concept Resolution (Phase 2A) ──
+
+export interface ResolvedConceptForPayroll {
+  sourceId: string;
+  agreementConceptCode: string;
+  agreementConceptName: string;
+  erpConceptCode: string | null;
+  unmapped: boolean;
+  type: 'earning' | 'deduction';
+  nature: string;
+  amount: number;
+  isPercentage: boolean;
+  cotizaSS: boolean;
+  tributaIRPF: boolean;
+  embargable: boolean;
+  orderIndex: number;
+  isMandatory: boolean;
+  source: 'company' | 'global';
+}
+
+/**
+ * Resolves agreement-specific concepts for a given payroll context.
+ * Uses useAgreementConceptMapping logic but as a standalone async function
+ * for use in the resolver engine (non-React context).
+ * 
+ * Returns empty array if no concepts found → caller falls back to classic trio.
+ */
+export async function resolveAgreementConcepts(
+  agreementId: string,
+  companyId: string | null,
+  professionalGroup: string | null,
+  level: string | null,
+  payrollDate: Date,
+): Promise<ResolvedConceptForPayroll[]> {
+  const dateStr = payrollDate.toISOString().slice(0, 10);
+
+  let query = supabase
+    .from('erp_hr_agreement_salary_concepts')
+    .select('*')
+    .eq('agreement_id', agreementId)
+    .eq('is_active', true);
+
+  if (companyId) {
+    query = query.or(`company_id.eq.${companyId},company_id.is.null`);
+  } else {
+    query = query.is('company_id', null);
+  }
+
+  query = query.order('order_index', { ascending: true });
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('[resolveAgreementConcepts] query error:', error);
+    return [];
+  }
+
+  if (!data || data.length === 0) return [];
+
+  // Filter by date validity
+  const validRows = (data as any[]).filter((r: any) => {
+    if (r.effective_from && r.effective_from > dateStr) return false;
+    if (r.effective_to && r.effective_to < dateStr) return false;
+    return true;
+  });
+
+  // Filter by group/level applicability
+  const applicableRows = validRows.filter((r: any) => {
+    if (!r.professional_group) return true;
+    if (professionalGroup && r.professional_group.trim().toLowerCase() === professionalGroup.trim().toLowerCase()) {
+      if (r.level && level) {
+        return r.level.trim().toLowerCase() === level.trim().toLowerCase();
+      }
+      if (!r.level) return true;
+      return true;
+    }
+    return false;
+  });
+
+  // Score & deduplicate by concept_code
+  const byCode = new Map<string, { row: any; specificity: number; source: 'company' | 'global' }>();
+  for (const r of applicableRows) {
+    let specificity = 1;
+    if (r.professional_group) {
+      specificity = 2;
+      if (r.level && level && r.level.trim().toLowerCase() === level.trim().toLowerCase()) {
+        specificity = 3;
+      }
+    }
+    const source: 'company' | 'global' = r.company_id ? 'company' : 'global';
+    const key = r.concept_code;
+    const existing = byCode.get(key);
+    if (!existing || compareConceptPriority({ source, specificity, row: r }, existing) > 0) {
+      byCode.set(key, { row: r, specificity, source });
+    }
+  }
+
+  // Build results
+  const results: ResolvedConceptForPayroll[] = [];
+  for (const { row, specificity, source } of byCode.values()) {
+    const isPercentage = row.calculation_type === 'percentage';
+    const amount = isPercentage ? (Number(row.percentage) || 0) : (Number(row.base_amount) || 0);
+
+    results.push({
+      sourceId: row.id,
+      agreementConceptCode: row.concept_code,
+      agreementConceptName: row.concept_name,
+      erpConceptCode: row.erp_concept_code?.trim() || null,
+      unmapped: !row.erp_concept_code?.trim(),
+      type: row.concept_type === 'deduction' ? 'deduction' : 'earning',
+      nature: row.nature || 'salarial',
+      amount,
+      isPercentage,
+      cotizaSS: row.cotiza_ss ?? true,
+      tributaIRPF: row.tributa_irpf ?? true,
+      embargable: row.embargable ?? true,
+      orderIndex: row.order_index ?? 0,
+      isMandatory: row.is_mandatory ?? false,
+      source,
+    });
+  }
+
+  results.sort((a, b) => a.orderIndex - b.orderIndex);
+  return results;
+}
+
+function compareConceptPriority(
+  a: { source: 'company' | 'global'; specificity: number; row: any },
+  b: { source: 'company' | 'global'; specificity: number; row: any },
+): number {
+  if (a.source === 'company' && b.source === 'global') return 1;
+  if (a.source === 'global' && b.source === 'company') return -1;
+  if (a.specificity !== b.specificity) return a.specificity - b.specificity;
+  const aFrom = a.row.effective_from || '0000-01-01';
+  const bFrom = b.row.effective_from || '0000-01-01';
+  if (aFrom !== bFrom) return aFrom > bFrom ? 1 : -1;
+  return (b.row.order_index ?? 0) - (a.row.order_index ?? 0);
+}
