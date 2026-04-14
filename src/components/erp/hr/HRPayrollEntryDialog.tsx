@@ -652,7 +652,7 @@ export function HRPayrollEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />
@@ -663,7 +663,7 @@ export function HRPayrollEntryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -736,7 +736,7 @@ export function HRPayrollEntryDialog({
             </TabsList>
 
             <TabsContent value="earnings" className="mt-4">
-              <ScrollArea className="h-[300px] pr-4">
+              <div className="pr-4 pb-4">
                 <div className="space-y-2">
                   {earnings.map(concept => {
                     const isDynamic = concept.id.startsWith('dyn-');
@@ -788,11 +788,11 @@ export function HRPayrollEntryDialog({
                     </>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </TabsContent>
 
             <TabsContent value="deductions" className="mt-4">
-              <ScrollArea className="h-[300px] pr-4">
+              <div className="pr-4 pb-4">
                 <div className="space-y-2">
                   <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Seguridad Social (automático)</h4>
                   <div className="space-y-1 text-sm">
@@ -815,7 +815,7 @@ export function HRPayrollEntryDialog({
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             </TabsContent>
 
             <TabsContent value="summary" className="mt-4">
