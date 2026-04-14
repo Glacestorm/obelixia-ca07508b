@@ -60323,6 +60323,8 @@ export type Database = {
           id: string
           max_porcentaje_salario: number | null
           metadata: Json | null
+          num_beneficiarios: number | null
+          num_beneficiarios_discapacidad: number | null
           plan_year: number
           seguro_medico_mensual: number | null
           status: string
@@ -60342,6 +60344,8 @@ export type Database = {
           id?: string
           max_porcentaje_salario?: number | null
           metadata?: Json | null
+          num_beneficiarios?: number | null
+          num_beneficiarios_discapacidad?: number | null
           plan_year?: number
           seguro_medico_mensual?: number | null
           status?: string
@@ -60361,6 +60365,8 @@ export type Database = {
           id?: string
           max_porcentaje_salario?: number | null
           metadata?: Json | null
+          num_beneficiarios?: number | null
+          num_beneficiarios_discapacidad?: number | null
           plan_year?: number
           seguro_medico_mensual?: number | null
           status?: string

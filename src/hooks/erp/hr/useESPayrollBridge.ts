@@ -43,6 +43,8 @@ export interface ESPayrollInput {
   seguroMedico?: number;
   ticketRestaurante?: number;
   chequeGuarderia?: number;
+  numBeneficiarios?: number;
+  numBeneficiariosDiscapacidad?: number;
   stockOptions?: number;
   embargo?: number;
   pensionCompensatoria?: number;
@@ -139,6 +141,8 @@ const ES_CONCEPT_CATALOG: ESPayrollConceptDef[] = [
   { code: 'ES_PAGA_EXTRA', name: 'Paga extraordinaria', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 60, legal_reference: 'ET Art. 31' },
   { code: 'ES_VACACIONES', name: 'Vacaciones retribuidas', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 61 },
   { code: 'ES_RETRIB_FLEX_SEGURO', name: 'Seguro médico empresa', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 70, legal_reference: 'LIRPF Art. 42.3.c' },
+  // S9.18: Exceso sobre límite exento — taxable: true; contributable: false (decisión operativa pendiente de validación — la cotización SS del exceso depende del criterio de cada empresa)
+  { code: 'ES_RETRIB_FLEX_SEGURO_EXCESO', name: 'Seguro médico (exceso gravado)', line_type: 'earning', category: 'flexible_remuneration', taxable: true, contributable: false, is_percentage: false, sort_order: 70, legal_reference: 'LIRPF Art. 42.3.c — exceso sobre 500€/1.500€ por asegurado' },
   { code: 'ES_RETRIB_FLEX_GUARDERIA', name: 'Cheque guardería', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 71 },
   { code: 'ES_RETRIB_FLEX_FORMACION', name: 'Formación', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 72 },
   { code: 'ES_RETRIB_FLEX_RESTAURANTE', name: 'Ticket restaurante', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 73, legal_reference: 'RIRPF Art. 45.2' },
@@ -322,9 +326,25 @@ export function useESPayrollBridge(companyId?: string) {
       if (input.comisiones) addEarning('ES_COMISION', 'Comisiones', input.comisiones, 'commission', true, true, 41);
       if (input.dietas) addEarning('ES_DIETAS', 'Dietas y gastos viaje', input.dietas, 'allowance', false, false, 50);
       if (input.pagaExtra) addEarning('ES_PAGA_EXTRA', 'Paga extraordinaria', input.pagaExtra, 'fixed', true, true, 60);
-      if (input.seguroMedico) addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', input.seguroMedico, 'flexible_remuneration', false, false, 70);
-      if (input.ticketRestaurante) addEarning('ES_RETRIB_FLEX_RESTAURANTE', 'Ticket restaurante', input.ticketRestaurante, 'flexible_remuneration', false, false, 73);
-      if (input.chequeGuarderia) addEarning('ES_RETRIB_FLEX_GUARDERIA', 'Cheque guardería', input.chequeGuarderia, 'flexible_remuneration', false, false, 71);
+      // S9.18: Seguro médico — split exento / exceso (LIRPF Art. 42.3.c)
+      if (input.seguroMedico && input.seguroMedico > 0) {
+        const nBen = Math.max(input.numBeneficiarios ?? 1, 1);
+        const nDis = Math.min(Math.max(input.numBeneficiariosDiscapacidad ?? 0, 0), nBen);
+        const limiteAnual = (nBen - nDis) * 500 + nDis * 1500;
+        const limiteMensual = r(limiteAnual / 12);
+        if (input.seguroMedico <= limiteMensual) {
+          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', input.seguroMedico, 'flexible_remuneration', false, false, 70);
+        } else {
+          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa (exento)', limiteMensual, 'flexible_remuneration', false, false, 70);
+          const exceso = r(input.seguroMedico - limiteMensual);
+          // S9.18: contributable false — decisión operativa pendiente de validación SS
+          addEarning('ES_RETRIB_FLEX_SEGURO_EXCESO', 'Seguro médico (exceso gravado)', exceso, 'flexible_remuneration', true, false, 70);
+        }
+      }
+      // S9.18: Desactivado — pendiente de reglas avanzadas (Art. 45.2 RIRPF / centro autorizado)
+      // ticketRestaurante y chequeGuarderia se persisten en hr_es_flexible_remuneration_plans pero NO se aplican a nómina
+      // if (input.ticketRestaurante) addEarning('ES_RETRIB_FLEX_RESTAURANTE', ...);
+      // if (input.chequeGuarderia) addEarning('ES_RETRIB_FLEX_GUARDERIA', ...);
       if (input.stockOptions) addEarning('ES_STOCK_OPTIONS', 'Stock options', input.stockOptions, 'variable', true, true, 80);
       if (input.regularizacion) addEarning('ES_REGULARIZACION', 'Regularización / atrasos', input.regularizacion, 'regularization', true, true, 95);
       if (input.itCCDias && input.itCCDias > 0) {
@@ -808,8 +828,11 @@ export function useESPayrollBridge(companyId?: string) {
             salarioBase,
             salaryResolution,
             seguroMedico: flexPlan ? Number((flexPlan as any).seguro_medico_mensual || 0) : 0,
-            ticketRestaurante: flexPlan ? Number((flexPlan as any).ticket_restaurante_mensual || 0) : 0,
-            chequeGuarderia: flexPlan ? Number((flexPlan as any).cheque_guarderia_mensual || 0) : 0,
+            // S9.18: Desactivado — pendiente de reglas avanzadas
+            ticketRestaurante: 0,
+            chequeGuarderia: 0,
+            numBeneficiarios: flexPlan ? Number((flexPlan as any).num_beneficiarios || 1) : 1,
+            numBeneficiariosDiscapacidad: flexPlan ? Number((flexPlan as any).num_beneficiarios_discapacidad || 0) : 0,
           };
 
           const calculation = calculateESPayroll(input, laborData as any, ssBase, esLoc.irpfTables);

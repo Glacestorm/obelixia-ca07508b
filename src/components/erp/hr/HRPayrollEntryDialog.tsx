@@ -20,12 +20,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
 import { resolveEmployeeSalary, resolveAgreementConcepts, type SalaryResolutionResult, type ResolvedConceptForPayroll } from '@/engines/erp/hr/agreementSalaryResolver';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { HRFlexibleRemunerationPanel } from './HRFlexibleRemunerationPanel';
 
 interface PayrollConcept {
   id: string;
@@ -115,6 +117,8 @@ export function HRPayrollEntryDialog({
   // Phase 2A: dynamic agreement concepts
   const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
+  // S9.18: Flex plan state
+  const [flexPlanOpen, setFlexPlanOpen] = useState(false);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
@@ -692,6 +696,25 @@ export function HRPayrollEntryDialog({
             </div>
           ) : (
             renderAgreementCard()
+          )}
+
+          {/* S9.18: Flexible remuneration card */}
+          {selectedEmployeeId && companyId && (
+            <Collapsible open={flexPlanOpen} onOpenChange={setFlexPlanOpen} className="mb-4">
+              <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors text-xs">
+                <Shield className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium">Retribución Flexible ES</span>
+                <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform", flexPlanOpen && "rotate-180")} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <HRFlexibleRemunerationPanel
+                  employeeId={selectedEmployeeId}
+                  companyId={companyId}
+                  year={periodYear}
+                  compact
+                />
+              </CollapsibleContent>
+            </Collapsible>
           )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
