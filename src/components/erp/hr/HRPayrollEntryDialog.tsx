@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
-import { resolveEmployeeSalary, type SalaryResolutionResult } from '@/engines/erp/hr/agreementSalaryResolver';
+import { resolveEmployeeSalary, resolveAgreementConcepts, type SalaryResolutionResult, type ResolvedConceptForPayroll } from '@/engines/erp/hr/agreementSalaryResolver';
 
 interface PayrollConcept {
   id: string;
@@ -50,6 +50,9 @@ interface HRPayrollEntryDialogProps {
 }
 
 type AgreementResolutionMode = 'auto' | 'manual' | 'missing_group' | null;
+
+/** Classic trio ERP codes — excluded from dynamic concept injection to prevent duplication */
+const CLASSIC_TRIO_ERP_CODES = new Set(['ES_SAL_BASE', 'ES_COMP_CONVENIO', 'ES_MEJORA_VOLUNTARIA']);
 
 const SS_RATES = {
   cc_company: 23.60,
