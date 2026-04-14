@@ -698,6 +698,25 @@ export function HRPayrollEntryDialog({
             renderAgreementCard()
           )}
 
+          {/* S9.18: Flexible remuneration card */}
+          {selectedEmployeeId && companyId && (
+            <Collapsible open={flexPlanOpen} onOpenChange={setFlexPlanOpen} className="mb-4">
+              <CollapsibleTrigger className="flex items-center gap-2 w-full p-2 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors text-xs">
+                <Shield className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium">Retribución Flexible ES</span>
+                <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform", flexPlanOpen && "rotate-180")} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <HRFlexibleRemunerationPanel
+                  employeeId={selectedEmployeeId}
+                  companyId={companyId}
+                  year={periodYear}
+                  compact
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="earnings" className="gap-1">
