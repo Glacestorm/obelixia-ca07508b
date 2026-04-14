@@ -663,7 +663,8 @@ export function HRPayrollEntryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
+        {/* S9.18-H2: Fixed top section — no scroll */}
+        <div className="shrink-0">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
