@@ -26836,63 +26836,96 @@ export type Database = {
           applies_to_categories: string[] | null
           base_amount: number | null
           calculation_type: string
+          company_id: string | null
           concept_code: string
           concept_name: string
           concept_type: string
           conditions: Json | null
           cotiza_ss: boolean | null
           created_at: string | null
+          created_by: string | null
+          effective_from: string | null
+          effective_to: string | null
+          embargable: boolean
+          erp_concept_code: string | null
           formula: string | null
           frequency: string
           id: string
           is_active: boolean | null
           is_mandatory: boolean | null
+          level: string | null
+          mapping_version: number
+          nature: string
           order_index: number | null
           percentage: number | null
+          professional_group: string | null
           tributa_irpf: boolean | null
           updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           agreement_id: string
           applies_to_categories?: string[] | null
           base_amount?: number | null
           calculation_type: string
+          company_id?: string | null
           concept_code: string
           concept_name: string
           concept_type: string
           conditions?: Json | null
           cotiza_ss?: boolean | null
           created_at?: string | null
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          embargable?: boolean
+          erp_concept_code?: string | null
           formula?: string | null
           frequency: string
           id?: string
           is_active?: boolean | null
           is_mandatory?: boolean | null
+          level?: string | null
+          mapping_version?: number
+          nature?: string
           order_index?: number | null
           percentage?: number | null
+          professional_group?: string | null
           tributa_irpf?: boolean | null
           updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           agreement_id?: string
           applies_to_categories?: string[] | null
           base_amount?: number | null
           calculation_type?: string
+          company_id?: string | null
           concept_code?: string
           concept_name?: string
           concept_type?: string
           conditions?: Json | null
           cotiza_ss?: boolean | null
           created_at?: string | null
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          embargable?: boolean
+          erp_concept_code?: string | null
           formula?: string | null
           frequency?: string
           id?: string
           is_active?: boolean | null
           is_mandatory?: boolean | null
+          level?: string | null
+          mapping_version?: number
+          nature?: string
           order_index?: number | null
           percentage?: number | null
+          professional_group?: string | null
           tributa_irpf?: boolean | null
           updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {

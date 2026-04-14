@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { ChangeEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -219,15 +220,18 @@ export function HRCollectiveAgreementPanel() {
                   <RefreshCw className={cn("h-4 w-4 mr-1", loading && "animate-spin")} /> Actualizar
                 </Button>
               </div>
-              <TabsList className="grid w-full grid-cols-5 mt-2">
-                <TabsTrigger value="overview" className="text-xs">Condiciones</TabsTrigger>
-                <TabsTrigger value="salary" className="text-xs">Tablas salariales</TabsTrigger>
-                <TabsTrigger value="conflicts" className="text-xs">
-                  Conflictos {resolution.conflicts.length > 0 && <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">{resolution.conflicts.length}</Badge>}
-                </TabsTrigger>
-                <TabsTrigger value="trace" className="text-xs">Trazabilidad</TabsTrigger>
-                <TabsTrigger value="permits" className="text-xs">Permisos</TabsTrigger>
-              </TabsList>
+               <TabsList className="grid w-full grid-cols-6 mt-2">
+                 <TabsTrigger value="overview" className="text-xs">Condiciones</TabsTrigger>
+                 <TabsTrigger value="salary" className="text-xs">Tablas salariales</TabsTrigger>
+                 <TabsTrigger value="concepts" className="text-xs">
+                   Conceptos
+                 </TabsTrigger>
+                 <TabsTrigger value="conflicts" className="text-xs">
+                   Conflictos {resolution.conflicts.length > 0 && <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">{resolution.conflicts.length}</Badge>}
+                 </TabsTrigger>
+                 <TabsTrigger value="trace" className="text-xs">Trazabilidad</TabsTrigger>
+                 <TabsTrigger value="permits" className="text-xs">Permisos</TabsTrigger>
+               </TabsList>
             </CardHeader>
 
             <CardContent>
@@ -347,6 +351,11 @@ export function HRCollectiveAgreementPanel() {
                 )}
               </TabsContent>
 
+              {/* ── Concepts Mapping (Phase 2A) ── */}
+              <TabsContent value="concepts" className="mt-0">
+                <AgreementConceptsMapping agreementId={selectedId!} />
+              </TabsContent>
+
               {/* ── Conflicts ── */}
               <TabsContent value="conflicts" className="mt-0">
                 {resolution.conflicts.length === 0 ? (
@@ -443,6 +452,141 @@ export function HRCollectiveAgreementPanel() {
           </Tabs>
         </Card>
       )}
+    </div>
+  );
+}
+
+// ── Agreement Concepts Mapping (Phase 2A) ──
+
+function AgreementConceptsMapping({ agreementId }: { agreementId: string }) {
+  const [concepts, setConcepts] = useState<any[]>([]);
+  const [loadingConcepts, setLoadingConcepts] = useState(false);
+
+  const fetchConcepts = useCallback(async () => {
+    setLoadingConcepts(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_agreement_salary_concepts')
+        .select('*')
+        .eq('agreement_id', agreementId)
+        .eq('is_active', true)
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+      setConcepts(data || []);
+    } catch (err) {
+      console.error('[ConceptsMapping] fetch error:', err);
+    } finally {
+      setLoadingConcepts(false);
+    }
+  }, [agreementId]);
+
+  useEffect(() => { fetchConcepts(); }, [fetchConcepts]);
+
+  const handleErpCodeChange = async (conceptId: string, newCode: string) => {
+    const trimmed = newCode.trim() || null;
+    const { error } = await supabase
+      .from('erp_hr_agreement_salary_concepts')
+      .update({
+        erp_concept_code: trimmed,
+        mapping_version: concepts.find(c => c.id === conceptId)?.mapping_version + 1 || 1,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq('id', conceptId);
+
+    if (error) {
+      toast.error('Error al actualizar mapping');
+      return;
+    }
+    setConcepts(prev => prev.map(c => c.id === conceptId ? { ...c, erp_concept_code: trimmed } : c));
+    toast.success('Mapping actualizado');
+  };
+
+  if (loadingConcepts) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <RefreshCw className="h-6 w-6 mx-auto mb-2 animate-spin" />
+        <p className="text-sm">Cargando conceptos...</p>
+      </div>
+    );
+  }
+
+  if (concepts.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <FileText className="h-8 w-8 mx-auto mb-2 opacity-40" />
+        <p className="text-sm">No hay conceptos retributivos definidos para este convenio.</p>
+        <p className="text-xs mt-1">Los conceptos se configuran desde la administración del convenio.</p>
+      </div>
+    );
+  }
+
+  const mapped = concepts.filter(c => c.erp_concept_code?.trim());
+  const unmapped = concepts.filter(c => !c.erp_concept_code?.trim());
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <Badge variant="default" className="text-[10px]">{mapped.length} mapeados</Badge>
+        {unmapped.length > 0 && (
+          <Badge variant="outline" className="text-[10px] border-amber-400/50 text-amber-600 dark:text-amber-400">
+            {unmapped.length} sin mapping
+          </Badge>
+        )}
+      </div>
+      <ScrollArea className="max-h-[400px]">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-xs">Código CC</TableHead>
+              <TableHead className="text-xs">Nombre CC</TableHead>
+              <TableHead className="text-xs">Tipo</TableHead>
+              <TableHead className="text-xs">→ Código ERP</TableHead>
+              <TableHead className="text-xs text-center">SS</TableHead>
+              <TableHead className="text-xs text-center">IRPF</TableHead>
+              <TableHead className="text-xs">Estado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {concepts.map(c => (
+              <TableRow key={c.id} className={!c.erp_concept_code?.trim() ? 'bg-amber-50/30 dark:bg-amber-950/10' : ''}>
+                <TableCell className="font-mono text-xs">{c.concept_code}</TableCell>
+                <TableCell className="text-xs">{c.concept_name}</TableCell>
+                <TableCell className="text-xs">
+                  <Badge variant={c.concept_type === 'earning' ? 'default' : 'secondary'} className="text-[10px]">
+                    {c.concept_type === 'earning' ? 'Devengo' : 'Deducción'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-xs">
+                  <input
+                    type="text"
+                    className="w-full rounded border px-2 py-1 text-xs bg-background font-mono"
+                    value={c.erp_concept_code || ''}
+                    placeholder="ES_..."
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      setConcepts(prev => prev.map(cc => cc.id === c.id ? { ...cc, erp_concept_code: e.target.value } : cc));
+                    }}
+                    onBlur={(e) => handleErpCodeChange(c.id, e.target.value)}
+                  />
+                </TableCell>
+                <TableCell className="text-center">
+                  {c.cotiza_ss ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}
+                </TableCell>
+                <TableCell className="text-center">
+                  {c.tributa_irpf ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600 mx-auto" /> : <span className="text-muted-foreground">—</span>}
+                </TableCell>
+                <TableCell>
+                  {c.erp_concept_code?.trim() ? (
+                    <Badge variant="default" className="text-[10px] bg-green-600">Mapeado</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] border-amber-400/50 text-amber-600 dark:text-amber-400">Pendiente</Badge>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ScrollArea>
     </div>
   );
 }

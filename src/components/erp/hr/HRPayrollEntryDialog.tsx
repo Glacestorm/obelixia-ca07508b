@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
-import { resolveEmployeeSalary, type SalaryResolutionResult } from '@/engines/erp/hr/agreementSalaryResolver';
+import { resolveEmployeeSalary, resolveAgreementConcepts, type SalaryResolutionResult, type ResolvedConceptForPayroll } from '@/engines/erp/hr/agreementSalaryResolver';
 
 interface PayrollConcept {
   id: string;
@@ -50,6 +50,9 @@ interface HRPayrollEntryDialogProps {
 }
 
 type AgreementResolutionMode = 'auto' | 'manual' | 'missing_group' | null;
+
+/** Classic trio ERP codes — excluded from dynamic concept injection to prevent duplication */
+const CLASSIC_TRIO_ERP_CODES = new Set(['ES_SAL_BASE', 'ES_COMP_CONVENIO', 'ES_MEJORA_VOLUNTARIA']);
 
 const SS_RATES = {
   cc_company: 23.60,
@@ -109,6 +112,9 @@ export function HRPayrollEntryDialog({
   const [agreementName, setAgreementName] = useState('');
   const [resolutionMode, setResolutionMode] = useState<AgreementResolutionMode>(null);
   const [resolutionLoading, setResolutionLoading] = useState(false);
+  // Phase 2A: dynamic agreement concepts
+  const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
+  const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
@@ -189,6 +195,8 @@ export function HRPayrollEntryDialog({
       setAgreementResolution(null);
       setAgreementName('');
       setResolutionMode(null);
+      setAgreementConcepts([]);
+      setUnmappedConcepts([]);
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
@@ -277,6 +285,8 @@ export function HRPayrollEntryDialog({
     setAgreementResolution(null);
     setAgreementName('');
     setResolutionMode(null);
+    setAgreementConcepts([]);
+    setUnmappedConcepts([]);
 
     if (!employee) return;
 
@@ -325,17 +335,79 @@ export function HRPayrollEntryDialog({
             // Auto-resolved from agreement tables
             setResolutionMode('auto');
 
-            // Pre-fill earnings with resolved amounts
-            setEarnings(DEFAULT_EARNINGS.map((e, i) => {
+            // Pre-fill earnings with classic trio
+            const classicEarnings = DEFAULT_EARNINGS.map((e, i) => {
               let amount = 0;
               if (e.code === 'BASE') amount = resolution.salarioBaseConvenio;
               else if (e.code === 'PLUS_CONV') amount = resolution.plusConvenioTabla;
               else if (e.code === 'MEJORA_VOL') amount = resolution.mejoraVoluntaria;
               return { ...e, id: `earning-${i}`, amount };
-            }));
-            setDeductions(DEFAULT_DEDUCTIONS.map((d, i) => ({
+            });
+            const classicDeductions = DEFAULT_DEDUCTIONS.map((d, i) => ({
               ...d, id: `deduction-${i}`, amount: d.code === 'IRPF' ? 15 : 0
-            })));
+            }));
+
+            // Phase 2A: Resolve dynamic agreement concepts
+            try {
+              const payrollDate = new Date(periodYear, periodMonth - 1, 1);
+              const dynConcepts = await resolveAgreementConcepts(
+                agreementId, companyId || null, professionalGroup, null, payrollDate
+              );
+
+              // Separate mapped (non-classic-trio) from unmapped
+              const mapped: ResolvedConceptForPayroll[] = [];
+              const unmappedList: ResolvedConceptForPayroll[] = [];
+              for (const c of dynConcepts) {
+                if (c.unmapped) {
+                  unmappedList.push(c);
+                } else if (c.erpConceptCode && CLASSIC_TRIO_ERP_CODES.has(c.erpConceptCode)) {
+                  // Skip — already handled by classic trio resolution
+                } else {
+                  mapped.push(c);
+                }
+              }
+
+              // Inject mapped concepts as additional earnings/deductions
+              const dynamicEarnings = mapped
+                .filter(c => c.type === 'earning')
+                .map((c, i) => ({
+                  id: `dyn-earning-${i}`,
+                  code: c.erpConceptCode || c.agreementConceptCode,
+                  name: c.agreementConceptName,
+                  type: 'earning' as const,
+                  category: 'variable' as const,
+                  amount: c.amount,
+                  isPercentage: c.isPercentage,
+                  cotizaSS: c.cotizaSS,
+                  tributaIRPF: c.tributaIRPF,
+                  isEditable: true,
+                }));
+
+              const dynamicDeductions = mapped
+                .filter(c => c.type === 'deduction')
+                .map((c, i) => ({
+                  id: `dyn-deduction-${i}`,
+                  code: c.erpConceptCode || c.agreementConceptCode,
+                  name: c.agreementConceptName,
+                  type: 'deduction' as const,
+                  category: 'other' as const,
+                  amount: c.amount,
+                  isPercentage: c.isPercentage,
+                  cotizaSS: c.cotizaSS,
+                  tributaIRPF: c.tributaIRPF,
+                  isEditable: true,
+                }));
+
+              setEarnings([...classicEarnings, ...dynamicEarnings]);
+              setDeductions([...classicDeductions, ...dynamicDeductions]);
+              setAgreementConcepts(mapped);
+              setUnmappedConcepts(unmappedList);
+            } catch (conceptErr) {
+              console.warn('[HRPayrollEntryDialog] concept resolution error (non-fatal):', conceptErr);
+              setEarnings(classicEarnings);
+              setDeductions(classicDeductions);
+            }
+
             return; // Done — agreement resolved
           } else {
             // No table found or ambiguous — resolution returned fallback
@@ -643,19 +715,23 @@ export function HRPayrollEntryDialog({
             <TabsContent value="earnings" className="mt-4">
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
-                  {earnings.map(concept => (
+                  {earnings.map(concept => {
+                    const isDynamic = concept.id.startsWith('dyn-');
+                    const isClassicResolved = resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0;
+                    return (
                     <div key={concept.id} className={cn(
                       "flex items-center gap-2 p-2 rounded-lg border",
                       concept.amount > 0 ? "bg-background" : "bg-muted/30",
-                      // Highlight agreement-resolved concepts
-                      resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0
-                        ? "border-primary/30 bg-primary/5"
-                        : ""
+                      isClassicResolved ? "border-primary/30 bg-primary/5" : "",
+                      isDynamic && concept.amount > 0 ? "border-accent/30 bg-accent/5" : "",
                     )}>
                       <div className="flex-1">
                         <span className="text-sm">{concept.name}</span>
-                        {resolutionMode === 'auto' && PERSISTENCE_CODE_MAP[concept.code] && concept.amount > 0 && (
+                        {isClassicResolved && (
                           <Badge variant="outline" className="ml-1 text-[9px] h-4 text-primary border-primary/30">Convenio</Badge>
+                        )}
+                        {isDynamic && (
+                          <Badge variant="outline" className="ml-1 text-[9px] h-4 text-accent-foreground border-accent/30 bg-accent/10">Convenio</Badge>
                         )}
                       </div>
                       <div className="w-24">
@@ -666,7 +742,28 @@ export function HRPayrollEntryDialog({
                         {concept.tributaIRPF && <Badge variant="outline" className="text-[10px] h-5">IRPF</Badge>}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
+                  {/* Phase 2A: Unmapped agreement concepts */}
+                  {unmappedConcepts.length > 0 && (
+                    <>
+                      <Separator className="my-2" />
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase mb-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 text-amber-500" />
+                        Conceptos de convenio pendientes de mapping ({unmappedConcepts.length})
+                      </h4>
+                      {unmappedConcepts.map((c, i) => (
+                        <div key={`unmapped-${i}`} className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-amber-300/50 bg-amber-50/30 dark:bg-amber-950/10">
+                          <div className="flex-1">
+                            <span className="text-sm text-muted-foreground">{c.agreementConceptName}</span>
+                            <Badge variant="outline" className="ml-1 text-[9px] h-4 border-amber-400/50 text-amber-600 dark:text-amber-400">Sin mapping</Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground font-mono">{c.agreementConceptCode}</span>
+                          <span className="text-xs text-muted-foreground">{c.amount > 0 ? `${c.amount}${c.isPercentage ? '%' : '€'}` : '—'}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </TabsContent>
