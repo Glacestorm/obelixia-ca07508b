@@ -112,6 +112,9 @@ export function HRPayrollEntryDialog({
   const [agreementName, setAgreementName] = useState('');
   const [resolutionMode, setResolutionMode] = useState<AgreementResolutionMode>(null);
   const [resolutionLoading, setResolutionLoading] = useState(false);
+  // Phase 2A: dynamic agreement concepts
+  const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
+  const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
