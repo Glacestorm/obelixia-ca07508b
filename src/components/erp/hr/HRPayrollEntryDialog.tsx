@@ -851,7 +851,7 @@ export function HRPayrollEntryDialog({
           </Tabs>
         </div>
 
-        <DialogFooter className="mt-4">
+        <DialogFooter className="shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
             {isSaving ? (
