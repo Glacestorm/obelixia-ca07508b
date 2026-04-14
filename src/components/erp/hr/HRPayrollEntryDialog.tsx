@@ -285,6 +285,8 @@ export function HRPayrollEntryDialog({
     setAgreementResolution(null);
     setAgreementName('');
     setResolutionMode(null);
+    setAgreementConcepts([]);
+    setUnmappedConcepts([]);
 
     if (!employee) return;
 
