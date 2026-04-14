@@ -20,12 +20,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
 import { resolveEmployeeSalary, resolveAgreementConcepts, type SalaryResolutionResult, type ResolvedConceptForPayroll } from '@/engines/erp/hr/agreementSalaryResolver';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { HRFlexibleRemunerationPanel } from './HRFlexibleRemunerationPanel';
 
 interface PayrollConcept {
   id: string;
