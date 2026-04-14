@@ -663,7 +663,7 @@ export function HRPayrollEntryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 pb-2">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -847,7 +847,7 @@ export function HRPayrollEntryDialog({
           </Tabs>
         </div>
 
-        <DialogFooter className="mt-4">
+        <DialogFooter className="mt-4 flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
             {isSaving ? (
