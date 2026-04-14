@@ -715,19 +715,23 @@ export function HRPayrollEntryDialog({
             <TabsContent value="earnings" className="mt-4">
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
-                  {earnings.map(concept => (
+                  {earnings.map(concept => {
+                    const isDynamic = concept.id.startsWith('dyn-');
+                    const isClassicResolved = resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0;
+                    return (
                     <div key={concept.id} className={cn(
                       "flex items-center gap-2 p-2 rounded-lg border",
                       concept.amount > 0 ? "bg-background" : "bg-muted/30",
-                      // Highlight agreement-resolved concepts
-                      resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0
-                        ? "border-primary/30 bg-primary/5"
-                        : ""
+                      isClassicResolved ? "border-primary/30 bg-primary/5" : "",
+                      isDynamic && concept.amount > 0 ? "border-accent/30 bg-accent/5" : "",
                     )}>
                       <div className="flex-1">
                         <span className="text-sm">{concept.name}</span>
-                        {resolutionMode === 'auto' && PERSISTENCE_CODE_MAP[concept.code] && concept.amount > 0 && (
+                        {isClassicResolved && (
                           <Badge variant="outline" className="ml-1 text-[9px] h-4 text-primary border-primary/30">Convenio</Badge>
+                        )}
+                        {isDynamic && (
+                          <Badge variant="outline" className="ml-1 text-[9px] h-4 text-accent-foreground border-accent/30 bg-accent/10">Convenio</Badge>
                         )}
                       </div>
                       <div className="w-24">
@@ -738,7 +742,28 @@ export function HRPayrollEntryDialog({
                         {concept.tributaIRPF && <Badge variant="outline" className="text-[10px] h-5">IRPF</Badge>}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
+                  {/* Phase 2A: Unmapped agreement concepts */}
+                  {unmappedConcepts.length > 0 && (
+                    <>
+                      <Separator className="my-2" />
+                      <h4 className="text-xs font-medium text-muted-foreground uppercase mb-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3 text-amber-500" />
+                        Conceptos de convenio pendientes de mapping ({unmappedConcepts.length})
+                      </h4>
+                      {unmappedConcepts.map((c, i) => (
+                        <div key={`unmapped-${i}`} className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-amber-300/50 bg-amber-50/30 dark:bg-amber-950/10">
+                          <div className="flex-1">
+                            <span className="text-sm text-muted-foreground">{c.agreementConceptName}</span>
+                            <Badge variant="outline" className="ml-1 text-[9px] h-4 border-amber-400/50 text-amber-600 dark:text-amber-400">Sin mapping</Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground font-mono">{c.agreementConceptCode}</span>
+                          <span className="text-xs text-muted-foreground">{c.amount > 0 ? `${c.amount}${c.isPercentage ? '%' : '€'}` : '—'}</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </TabsContent>
