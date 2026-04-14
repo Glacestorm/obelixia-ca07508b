@@ -220,15 +220,18 @@ export function HRCollectiveAgreementPanel() {
                   <RefreshCw className={cn("h-4 w-4 mr-1", loading && "animate-spin")} /> Actualizar
                 </Button>
               </div>
-              <TabsList className="grid w-full grid-cols-5 mt-2">
-                <TabsTrigger value="overview" className="text-xs">Condiciones</TabsTrigger>
-                <TabsTrigger value="salary" className="text-xs">Tablas salariales</TabsTrigger>
-                <TabsTrigger value="conflicts" className="text-xs">
-                  Conflictos {resolution.conflicts.length > 0 && <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">{resolution.conflicts.length}</Badge>}
-                </TabsTrigger>
-                <TabsTrigger value="trace" className="text-xs">Trazabilidad</TabsTrigger>
-                <TabsTrigger value="permits" className="text-xs">Permisos</TabsTrigger>
-              </TabsList>
+               <TabsList className="grid w-full grid-cols-6 mt-2">
+                 <TabsTrigger value="overview" className="text-xs">Condiciones</TabsTrigger>
+                 <TabsTrigger value="salary" className="text-xs">Tablas salariales</TabsTrigger>
+                 <TabsTrigger value="concepts" className="text-xs">
+                   Conceptos
+                 </TabsTrigger>
+                 <TabsTrigger value="conflicts" className="text-xs">
+                   Conflictos {resolution.conflicts.length > 0 && <Badge variant="destructive" className="ml-1 h-4 px-1 text-[10px]">{resolution.conflicts.length}</Badge>}
+                 </TabsTrigger>
+                 <TabsTrigger value="trace" className="text-xs">Trazabilidad</TabsTrigger>
+                 <TabsTrigger value="permits" className="text-xs">Permisos</TabsTrigger>
+               </TabsList>
             </CardHeader>
 
             <CardContent>
