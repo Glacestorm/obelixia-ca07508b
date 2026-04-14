@@ -335,17 +335,79 @@ export function HRPayrollEntryDialog({
             // Auto-resolved from agreement tables
             setResolutionMode('auto');
 
-            // Pre-fill earnings with resolved amounts
-            setEarnings(DEFAULT_EARNINGS.map((e, i) => {
+            // Pre-fill earnings with classic trio
+            const classicEarnings = DEFAULT_EARNINGS.map((e, i) => {
               let amount = 0;
               if (e.code === 'BASE') amount = resolution.salarioBaseConvenio;
               else if (e.code === 'PLUS_CONV') amount = resolution.plusConvenioTabla;
               else if (e.code === 'MEJORA_VOL') amount = resolution.mejoraVoluntaria;
               return { ...e, id: `earning-${i}`, amount };
-            }));
-            setDeductions(DEFAULT_DEDUCTIONS.map((d, i) => ({
+            });
+            const classicDeductions = DEFAULT_DEDUCTIONS.map((d, i) => ({
               ...d, id: `deduction-${i}`, amount: d.code === 'IRPF' ? 15 : 0
-            })));
+            }));
+
+            // Phase 2A: Resolve dynamic agreement concepts
+            try {
+              const payrollDate = new Date(periodYear, periodMonth - 1, 1);
+              const dynConcepts = await resolveAgreementConcepts(
+                agreementId, companyId || null, professionalGroup, null, payrollDate
+              );
+
+              // Separate mapped (non-classic-trio) from unmapped
+              const mapped: ResolvedConceptForPayroll[] = [];
+              const unmappedList: ResolvedConceptForPayroll[] = [];
+              for (const c of dynConcepts) {
+                if (c.unmapped) {
+                  unmappedList.push(c);
+                } else if (c.erpConceptCode && CLASSIC_TRIO_ERP_CODES.has(c.erpConceptCode)) {
+                  // Skip — already handled by classic trio resolution
+                } else {
+                  mapped.push(c);
+                }
+              }
+
+              // Inject mapped concepts as additional earnings/deductions
+              const dynamicEarnings = mapped
+                .filter(c => c.type === 'earning')
+                .map((c, i) => ({
+                  id: `dyn-earning-${i}`,
+                  code: c.erpConceptCode || c.agreementConceptCode,
+                  name: c.agreementConceptName,
+                  type: 'earning' as const,
+                  category: 'variable' as const,
+                  amount: c.amount,
+                  isPercentage: c.isPercentage,
+                  cotizaSS: c.cotizaSS,
+                  tributaIRPF: c.tributaIRPF,
+                  isEditable: true,
+                }));
+
+              const dynamicDeductions = mapped
+                .filter(c => c.type === 'deduction')
+                .map((c, i) => ({
+                  id: `dyn-deduction-${i}`,
+                  code: c.erpConceptCode || c.agreementConceptCode,
+                  name: c.agreementConceptName,
+                  type: 'deduction' as const,
+                  category: 'other' as const,
+                  amount: c.amount,
+                  isPercentage: c.isPercentage,
+                  cotizaSS: c.cotizaSS,
+                  tributaIRPF: c.tributaIRPF,
+                  isEditable: true,
+                }));
+
+              setEarnings([...classicEarnings, ...dynamicEarnings]);
+              setDeductions([...classicDeductions, ...dynamicDeductions]);
+              setAgreementConcepts(mapped);
+              setUnmappedConcepts(unmappedList);
+            } catch (conceptErr) {
+              console.warn('[HRPayrollEntryDialog] concept resolution error (non-fatal):', conceptErr);
+              setEarnings(classicEarnings);
+              setDeductions(classicDeductions);
+            }
+
             return; // Done — agreement resolved
           } else {
             // No table found or ambiguous — resolution returned fallback
