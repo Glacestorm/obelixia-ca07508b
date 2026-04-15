@@ -145,6 +145,8 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
         .select(`
           id, first_name, last_name, email, employee_number, job_title, department_id,
           hire_date, termination_date, status, phone, country_code, legal_entity_id, work_center_id, reports_to, base_salary,
+          gender, nationality, secondary_nationality, national_id, birth_date,
+          bank_account, category, work_schedule, weekly_hours, address, ss_number,
           erp_hr_departments!erp_hr_employees_department_id_fkey(name)
         `)
         .eq('company_id', companyId)
