@@ -176,10 +176,34 @@ export function HRPayrollEntryDialog({
         });
         setEarnings(restoredEarnings);
 
-        // Check if there's agreement trace in complements
+        // S9.18-H3: Rehydrate agreement context from stored trace for edit mode
         const agreementTrace = complements.find((c: any) => c.code === '__agreement_trace');
-        if (agreementTrace) {
+        if (agreementTrace?.trace) {
+          const trace = agreementTrace.trace as SalaryResolutionResult['trace'];
+          const baseAmount = Number(data.base_salary) || 0;
+          const plusConv = complements.find((c: any) => c.code === 'ES_COMP_CONVENIO')?.amount || 0;
+          const mejoraVol = complements.find((c: any) => c.code === 'ES_MEJORA_VOLUNTARIA')?.amount || 0;
+          setAgreementResolution({
+            salarioBaseConvenio: trace.salarioBaseConvenio ?? baseAmount,
+            plusConvenioTabla: trace.plusConvenioTabla ?? plusConv,
+            mejoraVoluntaria: trace.mejoraVoluntaria ?? mejoraVol,
+            hasMejoraVoluntaria: (trace.mejoraVoluntaria ?? mejoraVol) > 0,
+            tableEntry: {} as any, // non-null to satisfy renderAgreementCard guard
+            trace,
+          });
           setResolutionMode('auto');
+          // Fetch agreement name from trace code
+          if (trace.agreementCode) {
+            supabase
+              .from('erp_hr_collective_agreements')
+              .select('name')
+              .eq('code', trace.agreementCode)
+              .limit(1)
+              .single()
+              .then(({ data: agr }) => {
+                setAgreementName(agr?.name || trace.agreementCode);
+              });
+          }
         }
 
         // Restore deductions
