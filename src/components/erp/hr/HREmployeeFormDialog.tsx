@@ -40,6 +40,22 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HRContractVoiceCopilot } from './copilot/HRContractVoiceCopilot';
 
+/**
+ * Gender mapping UI ↔ BD
+ * BD CHECK: 'M' | 'F' | 'other'
+ * UI values: 'masculino' | 'femenino' | 'no_binario' | 'no_especificado'
+ *
+ * Limitación: BD colapsa no_binario y no_especificado → 'other'.
+ * En recarga, 'other' se muestra como 'no_especificado' ("Prefiero no indicar")
+ * porque no es posible distinguir el valor original.
+ */
+const GENDER_TO_DB: Record<string, string> = {
+  masculino: 'M', femenino: 'F', no_binario: 'other', no_especificado: 'other'
+};
+const GENDER_FROM_DB: Record<string, string> = {
+  M: 'masculino', F: 'femenino', other: 'no_especificado'
+};
+
 interface Employee {
   id: string;
   first_name: string;
@@ -420,7 +436,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         // H2.0 fields
         national_id: emp.national_id || '',
         birth_date: emp.birth_date || '',
-        gender: emp.gender || '',
+        gender: GENDER_FROM_DB[emp.gender] || emp.gender || '',
         nationality: emp.nationality || '',
         secondary_nationality: emp.secondary_nationality || '',
         bank_account: emp.bank_account || '',
@@ -733,7 +749,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         // H2.0 new fields
         national_id: formData.national_id || null,
         birth_date: formData.birth_date || null,
-        gender: formData.gender || null,
+        gender: formData.gender ? (GENDER_TO_DB[formData.gender] || formData.gender) : null,
         nationality: formData.nationality || null,
         secondary_nationality: formData.secondary_nationality || null,
         bank_account: formData.bank_account || null,
