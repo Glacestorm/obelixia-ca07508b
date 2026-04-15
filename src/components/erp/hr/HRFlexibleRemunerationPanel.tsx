@@ -287,6 +287,18 @@ export function HRFlexibleRemunerationPanel({
                 Límite exento: {insuranceLimits.limiteAnual.toFixed(0)}€/año ({insuranceLimits.limiteMensual.toFixed(2)}€/mes)
                 — 500€/beneficiario, 1.500€ si discapacidad (Art. 42.3.c LIRPF)
               </p>
+              {/* S9.18-H4: Estado fiscal/SS/CRA */}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  IRPF: {insuranceLimits.excedeLimit ? 'Exento + Exceso sujeto' : 'Exento'}
+                </span>
+                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                  SS: Cotiza (LGSS Art. 147)
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  CRA: pendiente separación 0039/0040
+                </span>
+              </div>
             </div>
 
             {/* Ticket restaurante — pendiente */}

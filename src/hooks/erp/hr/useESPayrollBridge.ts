@@ -140,9 +140,9 @@ const ES_CONCEPT_CATALOG: ESPayrollConceptDef[] = [
   { code: 'ES_PLUS_TRANSPORTE', name: 'Plus transporte', line_type: 'earning', category: 'allowance', taxable: false, contributable: false, is_percentage: false, sort_order: 51 },
   { code: 'ES_PAGA_EXTRA', name: 'Paga extraordinaria', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 60, legal_reference: 'ET Art. 31' },
   { code: 'ES_VACACIONES', name: 'Vacaciones retribuidas', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 61 },
-  { code: 'ES_RETRIB_FLEX_SEGURO', name: 'Seguro médico empresa', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 70, legal_reference: 'LIRPF Art. 42.3.c' },
-  // S9.18: Exceso sobre límite exento — taxable: true; contributable: false (decisión operativa pendiente de validación — la cotización SS del exceso depende del criterio de cada empresa)
-  { code: 'ES_RETRIB_FLEX_SEGURO_EXCESO', name: 'Seguro médico (exceso gravado)', line_type: 'earning', category: 'flexible_remuneration', taxable: true, contributable: false, is_percentage: false, sort_order: 70, legal_reference: 'LIRPF Art. 42.3.c — exceso sobre 500€/1.500€ por asegurado' },
+  // S9.18-H4: Seguro médico — ambos tramos cotizan SS (LGSS Art. 147)
+  { code: 'ES_RETRIB_FLEX_SEGURO', name: 'Seguro médico empresa', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: true, is_percentage: false, sort_order: 70, legal_reference: 'LIRPF Art. 42.3.c — exento IRPF, cotiza SS (LGSS Art. 147)' },
+  { code: 'ES_RETRIB_FLEX_SEGURO_EXCESO', name: 'Seguro médico (exceso gravado)', line_type: 'earning', category: 'flexible_remuneration', taxable: true, contributable: true, is_percentage: false, sort_order: 70, legal_reference: 'LIRPF Art. 42.3.c — exceso, cotiza SS' },
   { code: 'ES_RETRIB_FLEX_GUARDERIA', name: 'Cheque guardería', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 71 },
   { code: 'ES_RETRIB_FLEX_FORMACION', name: 'Formación', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 72 },
   { code: 'ES_RETRIB_FLEX_RESTAURANTE', name: 'Ticket restaurante', line_type: 'earning', category: 'flexible_remuneration', taxable: false, contributable: false, is_percentage: false, sort_order: 73, legal_reference: 'RIRPF Art. 45.2' },
@@ -326,19 +326,51 @@ export function useESPayrollBridge(companyId?: string) {
       if (input.comisiones) addEarning('ES_COMISION', 'Comisiones', input.comisiones, 'commission', true, true, 41);
       if (input.dietas) addEarning('ES_DIETAS', 'Dietas y gastos viaje', input.dietas, 'allowance', false, false, 50);
       if (input.pagaExtra) addEarning('ES_PAGA_EXTRA', 'Paga extraordinaria', input.pagaExtra, 'fixed', true, true, 60);
-      // S9.18: Seguro médico — split exento / exceso (LIRPF Art. 42.3.c)
+      // S9.18-H4: Seguro médico — split exento/exceso, ambos cotizan SS (LGSS Art. 147), CRA
       if (input.seguroMedico && input.seguroMedico > 0) {
         const nBen = Math.max(input.numBeneficiarios ?? 1, 1);
         const nDis = Math.min(Math.max(input.numBeneficiariosDiscapacidad ?? 0, 0), nBen);
         const limiteAnual = (nBen - nDis) * 500 + nDis * 1500;
         const limiteMensual = r(limiteAnual / 12);
-        if (input.seguroMedico <= limiteMensual) {
-          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', input.seguroMedico, 'flexible_remuneration', false, false, 70);
+        const parteExenta = Math.min(input.seguroMedico, limiteMensual);
+        const parteExceso = r(Math.max(0, input.seguroMedico - limiteMensual));
+
+        // Trace CRA 0039/0040 alignment
+        const traceSeguro = {
+          prima_mensual_total: input.seguroMedico,
+          num_beneficiarios: nBen,
+          num_beneficiarios_discapacidad: nDis,
+          desglose_asegurados: {
+            trabajador: { count: 1, limite_anual: nDis > 0 ? 1500 : 500 },
+            familiares: {
+              count: Math.max(nBen - 1, 0),
+              con_discapacidad: Math.max(nDis - 1, 0),
+              sin_discapacidad: Math.max(nBen - 1 - Math.max(nDis - 1, 0), 0),
+            },
+          },
+          limite_anual: limiteAnual,
+          limite_mensual: limiteMensual,
+          parte_exenta: parteExenta,
+          parte_exceso: parteExceso,
+          flags: {
+            exento_irpf: true,
+            ss_contributable: true,
+            impacts_cra: true,
+            cra_nota: 'Pendiente separación CRA 0039 (trabajador) / 0040 (familiares) en líneas individuales',
+          },
+        };
+
+        if (parteExceso === 0) {
+          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', input.seguroMedico, 'flexible_remuneration', false, true, 70,
+            'LGSS_Art147_seguro_medico_exento', traceSeguro as any,
+            `Prima ${input.seguroMedico}€ ≤ límite ${limiteMensual}€/mes → 100% exento IRPF, cotiza SS`);
         } else {
-          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa (exento)', limiteMensual, 'flexible_remuneration', false, false, 70);
-          const exceso = r(input.seguroMedico - limiteMensual);
-          // S9.18: contributable false — decisión operativa pendiente de validación SS
-          addEarning('ES_RETRIB_FLEX_SEGURO_EXCESO', 'Seguro médico (exceso gravado)', exceso, 'flexible_remuneration', true, false, 70);
+          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa (exento)', parteExenta, 'flexible_remuneration', false, true, 70,
+            'LGSS_Art147_seguro_medico_exento', traceSeguro as any,
+            `Tramo exento: ${parteExenta}€ (límite ${limiteMensual}€/mes) — exento IRPF, cotiza SS`);
+          addEarning('ES_RETRIB_FLEX_SEGURO_EXCESO', 'Seguro médico (exceso gravado)', parteExceso, 'flexible_remuneration', true, true, 70,
+            'LGSS_Art147_seguro_medico_exceso', traceSeguro as any,
+            `Exceso: ${parteExceso}€ — sujeto IRPF + cotiza SS`);
         }
       }
       // S9.18: Desactivado — pendiente de reglas avanzadas (Art. 45.2 RIRPF / centro autorizado)
