@@ -1,80 +1,49 @@
 
 
-## S9.19 — Corregir desalineación UI ↔ BD en ficha de empleado
+## S9.19b — Alinear campos select/closed-value del formulario de empleado ✅
 
 ### Causa raíz
 
-La BD tiene CHECK constraints que restringen valores de `gender` y `status` en `erp_hr_employees`:
+El query de `HREmployeesPanel.tsx` no seleccionaba los campos H2.0 (`gender`, `nationality`, `secondary_nationality`, `national_id`, `birth_date`, `bank_account`, `category`, `work_schedule`, `weekly_hours`, `address`, `ss_number`). El mapping de gender (S9.19) era correcto pero `emp.gender` llegaba como `undefined`.
 
-- **gender**: `CHECK (gender IN ('M', 'F', 'other'))` — UI envía `masculino`, `femenino`, `no_binario`, `no_especificado`
-- **status**: `CHECK (status IN ('active', 'inactive', 'on_leave', 'terminated'))` — UI ofrece 7 valores (`candidate`, `onboarding`, `temporary_leave`, `excedencia`, `offboarding` no existen en BD)
+### Solución aplicada
 
-No hay constraints en `work_schedule`, `category` ni `nationality` — esos campos son `text` libre sin CHECK.
+#### 1. `HREmployeesPanel.tsx` — Query SELECT ampliado
+Añadidos 11 campos H2.0 al SELECT. El `onSave()` callback ya dispara `fetchEmployees()` → los datos se refrescan al cerrar el diálogo.
 
-### Solución
+#### 2. `HREmployeeFormDialog.tsx` — `normalizeCountryCode()`
+Función de normalización para `nationality` y `secondary_nationality`:
+- Código ISO válido → lo usa
+- Nombre de país legacy → convierte a ISO
+- Valor desconocido → devuelve `''` + `console.warn` (no muestra valor fantasma en Select)
 
-#### 1. Gender — Mapping bidireccional (sin tocar BD)
+### Inventario de campos Select revisados
 
-En `HREmployeeFormDialog.tsx`:
+| Campo | Tipo UI | Tipo BD | ¿Desalineación? | Corrección |
+|---|---|---|---|---|
+| `gender` | Select (4 opciones UI) | CHECK (M/F/other) | Sí — mapping S9.19 | Faltaba en query → añadido |
+| `nationality` | Select (COUNTRIES.code) | text libre | Posible legacy | Query + normalizeCountryCode() |
+| `secondary_nationality` | Select (COUNTRIES.code) | text libre | Posible legacy | Query + normalizeCountryCode() |
+| `status` | Select (7 estados) | CHECK (9 post-S9.19) | No | OK |
+| `country_code` | Select (COUNTRIES.code) | text libre | No | Ya estaba en query |
+| `work_schedule` | Select (3 opciones) | text libre | No | Faltaba en query → añadido |
+| `category` | Select | text libre | No | Faltaba en query → añadido |
 
-**Constantes de mapping:**
-```typescript
-const GENDER_TO_DB: Record<string, string> = {
-  masculino: 'M', femenino: 'F', no_binario: 'other', no_especificado: 'other'
-};
-const GENDER_FROM_DB: Record<string, string> = {
-  M: 'masculino', F: 'femenino', other: 'no_binario'
-};
-```
+### Archivos tocados
 
-**En `handleSave` (línea ~736):** mapear antes de enviar:
-```typescript
-gender: formData.gender ? (GENDER_TO_DB[formData.gender] || formData.gender) : null,
-```
-
-**Al cargar empleado existente:** reverse map del valor de BD a valor UI.
-
-#### 2. Status — Ampliar CHECK constraint en BD (migración)
-
-La UI modela una máquina de estados real de RRHH que la BD no soporta. La solución correcta es ampliar el constraint:
-
-```sql
-ALTER TABLE erp_hr_employees DROP CONSTRAINT erp_hr_employees_status_check;
-ALTER TABLE erp_hr_employees ADD CONSTRAINT erp_hr_employees_status_check 
-  CHECK (status = ANY (ARRAY[
-    'candidate', 'onboarding', 'active', 'inactive',
-    'on_leave', 'temporary_leave', 'excedencia',
-    'offboarding', 'terminated'
-  ]));
-```
-
-Esto es preferible a mapping porque:
-- Los estados UI tienen semántica operativa real (onboarding ≠ active, excedencia ≠ on_leave genérico)
-- Un mapping perdería información de negocio
-- No rompe datos existentes (los 3 valores actuales en BD — `active`, `on_leave`, `terminated` — están incluidos)
-
-#### 3. Otros campos verificados — Sin conflicto
-
-`work_schedule`, `category`, `nationality`, `bank_account`, `national_id`: todos `text` sin CHECK constraint. No hay riesgo.
-
-`fiscal_jurisdiction` tiene CHECK pero no se envía desde el formulario de empleado.
-
-### Archivos
-
-| Archivo | Acción |
+| Archivo | Cambio |
 |---|---|
-| `src/components/erp/hr/HREmployeeFormDialog.tsx` | Modificar — mapping gender (save + load) |
-| `supabase/migrations/new.sql` | Crear — ampliar CHECK de status |
+| `src/components/erp/hr/HREmployeesPanel.tsx` | +11 campos en SELECT |
+| `src/components/erp/hr/HREmployeeFormDialog.tsx` | +`normalizeCountryCode()` + aplicada en carga de nationality/secondary_nationality |
 
 ### Verificaciones
 
-1. Guardar empleado con cualquier género → no falla
-2. Reabrir empleado → género correcto en UI
-3. Guardar con cualquier status de la UI → no falla
-4. Datos existentes (`active`, `on_leave`, `terminated`) siguen válidos
-5. TypeScript limpio, compilación limpia
+- ✅ TypeScript limpio (tsc --noEmit = 0 errores)
+- ✅ Gender: mapping S9.19 + dato ahora llega al formulario
+- ✅ Nationality: normalizada con fallback seguro
+- ✅ Status: sin cambios, alineado post-S9.19
+- ✅ Refresh post-save: `onSave()` → `fetchEmployees()` ya existente
 
-### No se toca
+### Veredicto
 
-Payroll, bridge, S9/VPT, última milla, G1.2/G2.2, RLS, auth, edge functions.
-
+**"Formulario empleado alineado en campos select — causa raíz: query incompleto en panel padre"**
