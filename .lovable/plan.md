@@ -1,49 +1,44 @@
 
 
-## S9.19b — Alinear campos select/closed-value del formulario de empleado ✅
+## S9.18-H4 — Seguro médico ES: tratamiento fiscal/SS completo ✅
 
 ### Causa raíz
 
-El query de `HREmployeesPanel.tsx` no seleccionaba los campos H2.0 (`gender`, `nationality`, `secondary_nationality`, `national_id`, `birth_date`, `bank_account`, `category`, `work_schedule`, `weekly_hours`, `address`, `ss_number`). El mapping de gender (S9.19) era correcto pero `emp.gender` llegaba como `undefined`.
+Ambos conceptos de seguro médico (`ES_RETRIB_FLEX_SEGURO` y `ES_RETRIB_FLEX_SEGURO_EXCESO`) tenían `is_ss_contributable: false` y `impacts_cra: false`, lo que incumplía LGSS Art. 147 (la retribución en especie del seguro médico forma parte de la base de cotización SS).
 
-### Solución aplicada
+### Tratamiento final
 
-#### 1. `HREmployeesPanel.tsx` — Query SELECT ampliado
-Añadidos 11 campos H2.0 al SELECT. El `onSave()` callback ya dispara `fetchEmployees()` → los datos se refrescan al cerrar el diálogo.
-
-#### 2. `HREmployeeFormDialog.tsx` — `normalizeCountryCode()`
-Función de normalización para `nationality` y `secondary_nationality`:
-- Código ISO válido → lo usa
-- Nombre de país legacy → convierte a ISO
-- Valor desconocido → devuelve `''` + `console.warn` (no muestra valor fantasma en Select)
-
-### Inventario de campos Select revisados
-
-| Campo | Tipo UI | Tipo BD | ¿Desalineación? | Corrección |
+| Concepto | `is_taxable` | `is_ss_contributable` | `impacts_cra` | `impacts_irpf` |
 |---|---|---|---|---|
-| `gender` | Select (4 opciones UI) | CHECK (M/F/other) | Sí — mapping S9.19 | Faltaba en query → añadido |
-| `nationality` | Select (COUNTRIES.code) | text libre | Posible legacy | Query + normalizeCountryCode() |
-| `secondary_nationality` | Select (COUNTRIES.code) | text libre | Posible legacy | Query + normalizeCountryCode() |
-| `status` | Select (7 estados) | CHECK (9 post-S9.19) | No | OK |
-| `country_code` | Select (COUNTRIES.code) | text libre | No | Ya estaba en query |
-| `work_schedule` | Select (3 opciones) | text libre | No | Faltaba en query → añadido |
-| `category` | Select | text libre | No | Faltaba en query → añadido |
+| `ES_RETRIB_FLEX_SEGURO` (exento) | false | **true** | **true** | false |
+| `ES_RETRIB_FLEX_SEGURO_EXCESO` | true | **true** | **true** | true |
 
 ### Archivos tocados
 
 | Archivo | Cambio |
 |---|---|
-| `src/components/erp/hr/HREmployeesPanel.tsx` | +11 campos en SELECT |
-| `src/components/erp/hr/HREmployeeFormDialog.tsx` | +`normalizeCountryCode()` + aplicada en carga de nationality/secondary_nationality |
+| `src/engines/erp/hr/payrollConceptCatalog.ts` | `is_ss_contributable: true`, `impacts_cra: true` en ambos conceptos |
+| `src/hooks/erp/hr/useESPayrollBridge.ts` | Catálogo local `contributable: true` + addEarning con SS + trace CRA con desglose trabajador/familiares |
+| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Indicadores IRPF/SS/CRA compactos |
+
+### Trazabilidad CRA
+
+Cada línea de seguro médico incluye `traceInputs` con:
+- prima mensual, nº beneficiarios, nº con discapacidad
+- desglose_asegurados: trabajador (con límite) + familiares (con/sin discapacidad)
+- límite anual/mensual, parte exenta, parte exceso
+- flags: exento_irpf, ss_contributable, impacts_cra
+- cra_nota: pendiente separación 0039/0040
 
 ### Verificaciones
 
 - ✅ TypeScript limpio (tsc --noEmit = 0 errores)
-- ✅ Gender: mapping S9.19 + dato ahora llega al formulario
-- ✅ Nationality: normalizada con fallback seguro
-- ✅ Status: sin cambios, alineado post-S9.19
-- ✅ Refresh post-save: `onSave()` → `fetchEmployees()` ya existente
+- ✅ Ambos tramos cotizan SS (`contributable: true` en catálogo + addEarning)
+- ✅ Ambos tramos impactan CRA (`impacts_cra: true`)
+- ✅ Split exento/exceso mantenido sin regresión
+- ✅ Trace con desglose trabajador/familiares para CRA 0039/0040
+- ✅ Panel flex muestra estado IRPF + SS + CRA
 
 ### Veredicto
 
-**"Formulario empleado alineado en campos select — causa raíz: query incompleto en panel padre"**
+**"Seguro médico ES corregido con tratamiento fiscal/SS completo (ambos tramos cotizan)"**
