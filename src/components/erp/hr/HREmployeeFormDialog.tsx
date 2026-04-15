@@ -40,6 +40,22 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HRContractVoiceCopilot } from './copilot/HRContractVoiceCopilot';
 
+/**
+ * Gender mapping UI ↔ BD
+ * BD CHECK: 'M' | 'F' | 'other'
+ * UI values: 'masculino' | 'femenino' | 'no_binario' | 'no_especificado'
+ *
+ * Limitación: BD colapsa no_binario y no_especificado → 'other'.
+ * En recarga, 'other' se muestra como 'no_especificado' ("Prefiero no indicar")
+ * porque no es posible distinguir el valor original.
+ */
+const GENDER_TO_DB: Record<string, string> = {
+  masculino: 'M', femenino: 'F', no_binario: 'other', no_especificado: 'other'
+};
+const GENDER_FROM_DB: Record<string, string> = {
+  M: 'masculino', F: 'femenino', other: 'no_especificado'
+};
+
 interface Employee {
   id: string;
   first_name: string;
