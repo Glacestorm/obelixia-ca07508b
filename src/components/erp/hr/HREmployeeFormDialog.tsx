@@ -169,6 +169,26 @@ const COUNTRIES = [
   { code: 'AD', flag: '🇦🇩', name: 'Andorra' },
 ];
 
+/**
+ * Normaliza un valor de nacionalidad a código ISO válido del catálogo COUNTRIES.
+ * - Si ya es código ISO conocido → lo devuelve tal cual.
+ * - Si es nombre de país (legacy) → convierte a código ISO.
+ * - Si no matchea → devuelve '' y emite warning (el Select no mostrará valor fantasma).
+ */
+function normalizeCountryCode(value: string | null | undefined): string {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  // Already a valid ISO code in our catalogue
+  if (COUNTRIES.some(c => c.code === trimmed)) return trimmed;
+  // Try matching by country name (case-insensitive)
+  const match = COUNTRIES.find(c => c.name.toLowerCase() === trimmed.toLowerCase());
+  if (match) return match.code;
+  // Unknown legacy value — don't show phantom selection
+  console.warn(`[HREmployee] nationality/country value "${trimmed}" does not match any known ISO code — resetting to empty`);
+  return '';
+}
+
 const GENDER_OPTIONS = [
   { value: 'masculino', label: 'Masculino' },
   { value: 'femenino', label: 'Femenino' },
@@ -437,8 +457,8 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         national_id: emp.national_id || '',
         birth_date: emp.birth_date || '',
         gender: GENDER_FROM_DB[emp.gender] || emp.gender || '',
-        nationality: emp.nationality || '',
-        secondary_nationality: emp.secondary_nationality || '',
+        nationality: normalizeCountryCode(emp.nationality),
+        secondary_nationality: normalizeCountryCode(emp.secondary_nationality),
         bank_account: emp.bank_account || '',
         category: emp.category || '',
         work_schedule: emp.work_schedule || '',
