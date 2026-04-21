@@ -213,3 +213,44 @@ Cubrir casuística avanzada del PDF de "procesos entre fechas":
 ### Veredicto parcial
 
 **"Casuística avanzada (nacimiento por tramos, atrasos IT trazables, reducción jornada combinable con período) operativa y prudente"**
+
+---
+
+## S9.21d Bloque D — Vigilancia normativa visible en UI de nómina ✅
+
+### Objetivo
+
+Hacer visible la vigilancia normativa directamente en el flujo de entrada de nómina, sin autoaplicar cambios. Permitir verificación manual desde la cabecera del diálogo.
+
+### Cambios técnicos
+
+1. **Nuevo componente `HRPayrollNormativeWatchBadge.tsx`** (compacto, reutilizable):
+   - Badge con estado: "al día" (verde/primary) | "N pendientes" (destructive)
+   - Filtra `items` por `approval_status='pending'` Y (`requires_payroll_recalc` OR impacto high/critical)
+   - Tooltip con: última revisión (relativa), modo (auto/manual + frecuencia), nº pendientes
+   - Botón circular "Verificar ahora" (`runManualCheck` del hook existente)
+   - Aviso explícito: "Los cambios normativos NO se autoaplican. Requieren validación humana."
+
+2. **Integración en `HRPayrollEntryDialog`**:
+   - Header del diálogo reorganizado a flex con `justify-between`
+   - Badge a la derecha del título, responsive (`flex-wrap`)
+   - No interfiere con resto del flujo
+
+### Garantías
+
+- ✅ Reutiliza `useRegulatoryWatch` existente (sin duplicar lógica)
+- ✅ Nunca autoaplica cambios — solo informa y dispara verificación manual
+- ✅ Tokens semánticos del design system (sin colores hardcodeados)
+- ✅ TypeScript limpio
+- ✅ Backward compat: si no hay `companyId` el badge no se renderiza
+
+### Archivos tocados
+
+| Archivo | Cambio |
+|---|---|
+| `src/components/erp/hr/HRPayrollNormativeWatchBadge.tsx` | **NUEVO** — badge compacto con tooltip + botón verificar |
+| `src/components/erp/hr/HRPayrollEntryDialog.tsx` | Import + integración en `DialogTitle` (header reorganizado) |
+
+### Veredicto parcial
+
+**"Vigilancia normativa visible y accionable desde la nómina, sin riesgo de autoaplicación"**

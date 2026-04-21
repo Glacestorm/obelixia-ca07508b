@@ -28,6 +28,7 @@ import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearc
 import { resolveEmployeeSalary, resolveAgreementConcepts, type SalaryResolutionResult, type ResolvedConceptForPayroll } from '@/engines/erp/hr/agreementSalaryResolver';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { HRFlexibleRemunerationPanel } from './HRFlexibleRemunerationPanel';
+import { HRPayrollNormativeWatchBadge } from './HRPayrollNormativeWatchBadge';
 
 interface PayrollConcept {
   id: string;
@@ -678,9 +679,15 @@ export function HRPayrollEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-primary" />
-            {isEditMode ? 'Editar Nómina' : 'Nueva Nómina'} — {new Date(periodYear, periodMonth - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+          <DialogTitle className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <DollarSign className="h-5 w-5 text-primary shrink-0" />
+              <span className="truncate">
+                {isEditMode ? 'Editar Nómina' : 'Nueva Nómina'} — {new Date(periodYear, periodMonth - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+            {/* S9.21d Bloque D: Indicador compacto de vigilancia normativa */}
+            <HRPayrollNormativeWatchBadge companyId={companyId} className="shrink-0" />
           </DialogTitle>
           <DialogDescription>
             {isEditMode ? 'Modifica los conceptos salariales' : 'Selecciona un empleado y configura los conceptos'}
