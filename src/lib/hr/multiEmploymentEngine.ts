@@ -15,8 +15,9 @@ export const BASE_MAX_MENSUAL_2026 = 5101.20;
 /** Base mínima mensual grupo 1 (referencia general) */
 export const BASE_MIN_MENSUAL_G1_2026 = 1847.40;
 
-/** SMI mensual 2026 (14 pagas) */
-export const SMI_MENSUAL_2026 = 1184.00; // SMI 2026 — RD 87/2025, de 11 de febrero
+/** SMI mensual 2026 (14 pagas) — re-export desde shared/legal/rules/smiRules */
+import { SMI_MENSUAL_2026 as SMI_2026_CANONICAL } from '@/shared/legal/rules/smiRules';
+export const SMI_MENSUAL_2026 = SMI_2026_CANONICAL;
 
 // ============================================
 // SOLIDARITY CONTRIBUTION (Cotización de Solidaridad)

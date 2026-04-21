@@ -130,7 +130,8 @@ const SS_EMPLOYER_RATES_2026 = {
   atep: 1.50, // reference rate
 };
 
-const DEFAULT_SMI_2026 = 1184.00;
+import { SMI_MENSUAL_2026 as SMI_2026_CANONICAL } from '@/shared/legal/rules/smiRules';
+const DEFAULT_SMI_2026 = SMI_2026_CANONICAL;
 
 export const SIMULATOR_DISCLAIMER =
   'Las proyecciones son estimaciones basadas en hipótesis explícitas configurables. ' +
