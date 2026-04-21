@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useESLocalization, type ESEmployeeLaborData, type ESSSBase, type IRPFCalculationParams, type SSContributionResult, type IRPFResult } from './useESLocalization';
 import { isTemporaryForSS } from '@/engines/erp/hr/contractTypeEngine';
+import { SMI_MENSUAL_2026 } from '@/shared/legal/rules/smiRules';
 
 // ── Types ──
 
