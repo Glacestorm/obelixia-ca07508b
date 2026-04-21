@@ -98,6 +98,7 @@ export function HRFlexibleRemunerationPanel({
     num_beneficiarios_discapacidad: 0,
     status: 'active',
     seguro_medico_source: 'manual',
+    concept_config: DEFAULT_FLEX_CONFIG,
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -128,6 +129,14 @@ export function HRFlexibleRemunerationPanel({
         const anualMeta = Number(meta.seguro_medico_anual_total ?? 0);
         const anualEfectivo = anualMeta > 0 ? anualMeta : Math.round(mensual * 12 * 100) / 100;
         const sourceMeta = (meta.seguro_medico_source as FlexPlan['seguro_medico_source']) || 'manual';
+        // S9.20: leer concept_config desde metadata; merge con defaults para forward-compat
+        const cfgMeta = (meta.concept_config as Partial<FlexConceptConfig>) || {};
+        const conceptCfg: FlexConceptConfig = {
+          seguro_medico: { ...DEFAULT_FLEX_CONFIG.seguro_medico, ...(cfgMeta.seguro_medico || {}) },
+          ticket_restaurante: { ...DEFAULT_FLEX_CONFIG.ticket_restaurante, ...(cfgMeta.ticket_restaurante || {}) },
+          cheque_guarderia: { ...DEFAULT_FLEX_CONFIG.cheque_guarderia, ...(cfgMeta.cheque_guarderia || {}) },
+          transporte: { ...DEFAULT_FLEX_CONFIG.transporte, ...(cfgMeta.transporte || {}) },
+        };
         setPlan({
           company_id: companyId,
           employee_id: employeeId,
@@ -141,6 +150,7 @@ export function HRFlexibleRemunerationPanel({
           num_beneficiarios_discapacidad: Number((data as any).num_beneficiarios_discapacidad || 0),
           status: (data as any).status || 'active',
           seguro_medico_source: sourceMeta,
+          concept_config: conceptCfg,
         });
       } else {
         setExistingId(null);
@@ -158,6 +168,7 @@ export function HRFlexibleRemunerationPanel({
           num_beneficiarios_discapacidad: 0,
           status: 'active',
           seguro_medico_source: 'manual',
+          concept_config: DEFAULT_FLEX_CONFIG,
         }));
       }
     } catch (err) {
@@ -241,7 +252,9 @@ export function HRFlexibleRemunerationPanel({
             ? plan.seguro_medico_anual_total
             : Math.round(mensualDerivado * 12 * 100) / 100,
           seguro_medico_source: plan.seguro_medico_source,
-          schema_version: 'h5',
+          // S9.20: persistir configuración por concepto (Modelo A/B + datos restaurante/transporte)
+          concept_config: plan.concept_config,
+          schema_version: 's9.20',
         },
       };
 
