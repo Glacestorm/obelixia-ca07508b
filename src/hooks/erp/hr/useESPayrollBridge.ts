@@ -659,6 +659,39 @@ export function useESPayrollBridge(companyId?: string) {
       const totalDevengosContribuibles = lines
         .filter(l => l.line_type === 'earning' && l.is_ss_contributable)
         .reduce((s, l) => s + l.amount, 0);
+
+      // ── S9.21d Bloque B: Línea informativa de cobertura del período ──
+      if (aplicarProrrateo && pc) {
+        lines.push({
+          concept_code: 'ES_PERIOD_COVERAGE_INFO',
+          concept_name: 'Cobertura del período',
+          line_type: 'informative',
+          category: 'informative',
+          amount: 0,
+          is_taxable: false,
+          is_ss_contributable: false,
+          is_percentage: false,
+          sort_order: 305,
+          source: 'rule_engine',
+          calculation_trace: {
+            rule: 'S9.21d_period_coverage',
+            inputs: {
+              fecha_desde: pc.fechaDesde,
+              fecha_hasta: pc.fechaHasta,
+              dias_naturales_periodo: pc.diasNaturalesPeriodo,
+              dias_efectivos: pc.diasEfectivos,
+              factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+              motivo: pc.motivo ?? 'otro',
+              descripcion: pc.descripcion ?? null,
+              alcance_prorrateo: 'Salario base, plus convenio, mejora voluntaria, paga extra, seguro médico mensual, ticket restaurante (cap por días efectivos)',
+              no_prorrateado: 'Bonus, comisiones, horas extra, dietas, complementos IT (ya por días), prestaciones INSS, regularizaciones',
+            },
+            formula: `Días efectivos ${pc.diasEfectivos} / ${pc.diasNaturalesPeriodo} = ${factorProrrateo.toFixed(4)}`,
+            timestamp: ts,
+          },
+        });
+      }
+
       const totalDevengosImponibles = lines
         .filter(l => l.line_type === 'earning' && l.is_taxable)
         .reduce((s, l) => s + l.amount, 0);
