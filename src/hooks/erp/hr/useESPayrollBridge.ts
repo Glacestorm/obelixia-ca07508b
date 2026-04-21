@@ -25,6 +25,25 @@ export interface ESPayrollConceptDef {
   legal_reference?: string;
 }
 
+// ── S9.20: Modelo A (benefit_additional) vs Modelo B (salary_sacrifice) ──
+
+export type FlexApplicationMode = 'benefit_additional' | 'salary_sacrifice';
+
+export interface ESFlexConceptConfig {
+  seguro_medico?: { application_mode: FlexApplicationMode };
+  ticket_restaurante?: {
+    application_mode: FlexApplicationMode;
+    importe_dia: number;
+    dias_mes: number;
+    modalidad: 'comedor' | 'tarjeta_vale' | null;
+  };
+  cheque_guarderia?: { application_mode: FlexApplicationMode };
+  transporte?: {
+    application_mode: FlexApplicationMode;
+    modalidad: 'publico_colectivo' | 'otro' | null;
+  };
+}
+
 export interface ESPayrollInput {
   employeeId: string;
   periodId: string;
