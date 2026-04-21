@@ -572,6 +572,80 @@ export function useESPayrollBridge(companyId?: string) {
           `(${input.salarioBase}/30) × ${input.itATDias} × 75% = ${complementoAT}`);
       }
 
+      // ── S9.21d Bloque C: Tramos nacimiento/cuidado (LGSS Art. 177-183) ──
+      // Prestación INSS: no taxable, no SS, no IRPF. Visualiza por tramos para trazabilidad.
+      if (Array.isArray(input.nacimientoTramos) && input.nacimientoTramos.length > 0) {
+        input.nacimientoTramos.forEach((tramo, idx) => {
+          if (!tramo || tramo.importe <= 0) return;
+          const code =
+            tramo.tipo === 'maternidad' ? 'ES_NACIMIENTO_MATERNIDAD' :
+            tramo.tipo === 'paternidad' ? 'ES_NACIMIENTO_PATERNIDAD' :
+            tramo.tipo === 'corresponsabilidad' ? 'ES_NACIMIENTO_CORRESPONSABILIDAD' :
+            'ES_NACIMIENTO';
+          const name =
+            tramo.tipo === 'maternidad' ? 'Prestación nacimiento (maternidad)' :
+            tramo.tipo === 'paternidad' ? 'Prestación nacimiento (paternidad)' :
+            tramo.tipo === 'corresponsabilidad' ? 'Corresponsabilidad cuidado lactante' :
+            'Prestación nacimiento/cuidado';
+          const sortOrder = code === 'ES_NACIMIENTO_PATERNIDAD' ? 93 + idx * 0.01
+                           : code === 'ES_NACIMIENTO_CORRESPONSABILIDAD' ? 94 + idx * 0.01
+                           : 92 + idx * 0.01;
+          addEarning(code, name, r(tramo.importe), 'variable', false, false, sortOrder,
+            'LGSS_Art177_182_nacimiento_tramo',
+            {
+              tipo: tramo.tipo,
+              fecha_desde: tramo.fechaDesde,
+              fecha_hasta: tramo.fechaHasta,
+              obligatorio: tramo.obligatorio ?? false,
+              descripcion: tramo.descripcion ?? null,
+              indice_tramo: idx,
+            },
+            `Tramo ${tramo.tipo} ${tramo.fechaDesde} → ${tramo.fechaHasta} = ${r(tramo.importe)}€ (prestación INSS, no salario)`);
+        });
+      }
+
+      // ── S9.21d Bloque C: Atrasos por IT no reflejada (LGSS Art. 109) ──
+      // Concepto separado de ES_REGULARIZACION para trazabilidad fiscal/contable.
+      if (input.atrasosIT && input.atrasosIT.importe > 0) {
+        addEarning('ES_ATRASOS_IT', 'Atrasos por IT no reflejada', r(input.atrasosIT.importe),
+          'regularization', true, true, 96,
+          'LGSS_Art109_atrasos_IT',
+          {
+            periodo_origen: input.atrasosIT.periodoOrigen,
+            motivo: input.atrasosIT.motivo,
+            descripcion: input.atrasosIT.descripcion ?? null,
+          },
+          `Atrasos IT período ${input.atrasosIT.periodoOrigen} = ${r(input.atrasosIT.importe)}€ (sujeto IRPF + cotiza SS)`);
+      }
+
+      // ── S9.21d Bloque C: Línea informativa reducción jornada por guarda legal ──
+      if (redJornadaPct > 0) {
+        lines.push({
+          concept_code: 'ES_RED_JORNADA_INFO',
+          concept_name: `Reducción jornada ${redJornadaPct}% (guarda legal)`,
+          line_type: 'informative',
+          category: 'info',
+          amount: 0,
+          is_taxable: false,
+          is_ss_contributable: false,
+          is_percentage: true,
+          sort_order: 306,
+          source: 'rule_engine',
+          calculation_trace: {
+            rule: 'ET_Art37_6_reduccion_jornada',
+            inputs: {
+              reduccion_jornada_pct: redJornadaPct,
+              factor_reduccion: Number(factorReduccion.toFixed(4)),
+              combinado_con_periodo: !!pc,
+              factor_periodo: Number(factorPeriodo.toFixed(4)),
+              factor_total_aplicado: Number(factorProrrateo.toFixed(4)),
+            },
+            formula: `Reducción ${redJornadaPct}% → factor ${factorReduccion.toFixed(4)} aplicado a conceptos fijos`,
+            timestamp: ts,
+          },
+        });
+      }
+
       // ── S9.20: Aplicar Modelo B (salary_sacrifice) ──
       // Para cada concepto flex en modo 'salary_sacrifice', restar su importe de
       // ES_MEJORA_VOLUNTARIA. NUNCA tocar ES_SAL_BASE ni ES_COMP_CONVENIO.
