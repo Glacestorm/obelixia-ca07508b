@@ -1,6 +1,8 @@
 /**
  * HRFlexibleRemunerationPanel — Editor de plan de retribución flexible ES
  * S9.18: Seguro médico end-to-end con split exento/exceso.
+ * S9.18-H5: Soporte de importe anual total (entrada principal) + mensual derivado.
+ *           Fuente: manual (única en esta fase). Convenio: pendiente de fuente real.
  * Restaurante, guardería y transporte: persistidos, pendientes de reglas avanzadas.
  * Fuente operativa: hr_es_flexible_remuneration_plans
  */
@@ -12,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info, Building2, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -23,12 +25,18 @@ interface FlexPlan {
   employee_id: string;
   plan_year: number;
   seguro_medico_mensual: number;
+  seguro_medico_anual_total: number; // S9.18-H5: derivado o introducido
   ticket_restaurante_mensual: number;
   cheque_guarderia_mensual: number;
   transporte_mensual: number;
   num_beneficiarios: number;
   num_beneficiarios_discapacidad: number;
   status: string;
+  // S9.18-H5: Fuente del dato del seguro médico
+  // 'manual' = empresa lo introduce a mano
+  // 'convenio' = vendría de tabla de convenio (no existe fuente real aún)
+  // 'manual_overrides_convenio' = ambas fuentes y manual prevalece
+  seguro_medico_source: 'manual' | 'convenio' | 'manual_overrides_convenio';
 }
 
 interface HRFlexibleRemunerationPanelProps {
