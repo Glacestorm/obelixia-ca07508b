@@ -289,7 +289,13 @@ export function HRFlexibleRemunerationPanel({
             {/* Seguro médico — end-to-end */}
             <div className="space-y-2 p-3 rounded-lg border bg-muted/20">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Seguro médico</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-medium">Seguro médico</Label>
+                  <Badge variant={sourceLabel.variant} className="text-[10px] gap-1">
+                    <sourceLabel.icon className="h-2.5 w-2.5" />
+                    {sourceLabel.label}
+                  </Badge>
+                </div>
                 {plan.status === 'active' ? (
                   insuranceLimits.excedeLimit ? (
                     <Badge variant="warning" className="text-[10px]">
@@ -306,16 +312,31 @@ export function HRFlexibleRemunerationPanel({
                   <Badge variant="muted" className="text-[10px]">No activo</Badge>
                 )}
               </div>
+              {/* S9.18-H5: Importe anual total como entrada principal */}
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label className="text-[10px] text-muted-foreground">Importe mensual (€)</Label>
+                  <Label className="text-[10px] text-muted-foreground">Importe ANUAL total (€)</Label>
                   <Input
                     type="number"
                     min={0}
                     step={0.01}
-                    value={plan.seguro_medico_mensual || ''}
-                    onChange={e => setPlan(p => ({ ...p, seguro_medico_mensual: Number(e.target.value) || 0 }))}
+                    value={plan.seguro_medico_anual_total || ''}
+                    onChange={e => {
+                      const anual = Number(e.target.value) || 0;
+                      const mensual = Math.round((anual / 12) * 100) / 100;
+                      setPlan(p => ({
+                        ...p,
+                        seguro_medico_anual_total: anual,
+                        seguro_medico_mensual: mensual,
+                        // Si hay convenio y el manual difiere, marcamos override
+                        seguro_medico_source:
+                          convenioValue !== null && anual > 0 && anual !== convenioValue
+                            ? 'manual_overrides_convenio'
+                            : 'manual',
+                      }));
+                    }}
                     className="h-8 text-xs"
+                    placeholder="p.ej. 1200"
                   />
                 </div>
                 <div>
@@ -351,17 +372,55 @@ export function HRFlexibleRemunerationPanel({
                   />
                 </div>
               </div>
+              {/* S9.18-H5: Desglose visible anual / mensual / exento / no exento */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 p-2 rounded-md bg-background/60 border border-border/40">
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Mensual</span>
+                  <span className="text-xs font-semibold tabular-nums">{insuranceLimits.importeMensual.toFixed(2)}€</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Límite/mes</span>
+                  <span className="text-xs font-semibold tabular-nums">{insuranceLimits.limiteMensual.toFixed(2)}€</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Exento/mes</span>
+                  <span className="text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+                    {insuranceLimits.parteExentaMensual.toFixed(2)}€
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className={cn(
+                    "text-[9px] uppercase tracking-wide",
+                    insuranceLimits.parteNoExentaMensual > 0
+                      ? "text-amber-700 dark:text-amber-400"
+                      : "text-muted-foreground"
+                  )}>No exento/mes</span>
+                  <span className={cn(
+                    "text-xs font-semibold tabular-nums",
+                    insuranceLimits.parteNoExentaMensual > 0
+                      ? "text-amber-700 dark:text-amber-400"
+                      : "text-muted-foreground"
+                  )}>
+                    {insuranceLimits.parteNoExentaMensual.toFixed(2)}€
+                  </span>
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                 <Info className="h-2.5 w-2.5" />
                 Límite exento: {insuranceLimits.limiteAnual.toFixed(0)}€/año ({insuranceLimits.limiteMensual.toFixed(2)}€/mes)
                 — 500€/beneficiario, 1.500€ si discapacidad (Art. 42.3.c LIRPF)
               </p>
+              {convenioValue === null && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Sin fuente de convenio disponible — origen efectivo: manual empresa.
+                </p>
+              )}
               {/* S9.18-H4: Estado fiscal/SS/CRA */}
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
                   IRPF: {insuranceLimits.excedeLimit ? 'Exento + Exceso sujeto' : 'Exento'}
                 </span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                <span className="text-[10px] font-medium text-primary">
                   SS: Cotiza (LGSS Art. 147)
                 </span>
                 <span className="text-[10px] text-muted-foreground">
