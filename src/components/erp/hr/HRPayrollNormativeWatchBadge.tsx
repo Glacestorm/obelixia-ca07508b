@@ -75,7 +75,7 @@ export function HRPayrollNormativeWatchBadge({
               variant={hasPending ? 'destructive' : 'secondary'}
               className={cn(
                 'h-6 gap-1 px-2 text-[11px] font-medium',
-                hasPending ? '' : 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 border-emerald-500/30',
+                hasPending ? '' : 'bg-primary/10 text-primary hover:bg-primary/20 border-primary/30',
               )}
             >
               {hasPending ? (
@@ -108,7 +108,7 @@ export function HRPayrollNormativeWatchBadge({
                 {pendingPayrollImpact.length} cambio(s) con impacto en nómina pendientes de aprobación.
               </p>
             ) : (
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-primary">
                 Sin cambios pendientes con impacto en nómina.
               </p>
             )}
