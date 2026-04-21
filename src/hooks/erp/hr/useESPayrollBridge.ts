@@ -84,6 +84,30 @@ export interface ESPayrollInput {
     agreementCode: string;
     professionalGroup: string;
   };
+  /**
+   * S9.21d Bloque B — Casuística temporal (cobertura del período).
+   * Si se proporciona, los conceptos fijos y de retribución en especie se prorratean
+   * por días efectivos. Backward compat: sin `periodCoverage` → mes completo (sin prorrateo).
+   *
+   * NO se prorratean: variables (bonus, comisiones, horas extra), prestaciones INSS
+   * (ES_NACIMIENTO), regularización, ni complementos IT (ya calculados por días).
+   */
+  periodCoverage?: {
+    fechaDesde: string;            // 'YYYY-MM-DD'
+    fechaHasta: string;            // 'YYYY-MM-DD'
+    diasNaturalesPeriodo: number;  // típicamente 30
+    diasEfectivos: number;         // días realmente trabajados/cubiertos
+    motivo?:
+      | 'alta_intramensual'
+      | 'baja_intramensual'
+      | 'cambio_contractual'
+      | 'cambio_salarial'
+      | 'suspension_parcial'
+      | 'excedencia'
+      | 'mes_completo'
+      | 'otro';
+    descripcion?: string;
+  };
 }
 
 export interface ESPayrollCalculation {
