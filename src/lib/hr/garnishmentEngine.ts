@@ -4,20 +4,21 @@
  * 
  * Lógica pura, sin dependencias de UI ni Supabase.
  */
+import {
+  SMI_MENSUAL_2026 as SMI_2026_CANONICAL,
+  SMI_PRORRATEADO_2026 as SMI_PRORR_2026_CANONICAL,
+} from '@/shared/legal/rules/smiRules';
 
 // ============================================
 // CONSTANTS
 // ============================================
 
-/** SMI 2026 — RD 87/2025, de 11 de febrero. 1.184€/mes × 14 pagas = 16.576€/año */
-export const SMI_MENSUAL_2026 = 1184.00;
-/** SMI 2026 en 12 pagas prorrateadas: 16.576 / 12 = 1.381,33€/mes (STS 1340/2022) */
-export const SMI_2026_12_PAGAS = 1381.33;
-/** SMI mensual en cómputo de 12 pagas (conversión anual ÷ 12)
- *  Siempre derivado de SMI_MENSUAL_2026 para garantizar consistencia.
- *  Norma: STS (Sala 3ª) 1340/2022, de 20 oct. — SMI anual incluye pagas extras
- */
-export const SMI_PRORRATEADO_2026 = (SMI_MENSUAL_2026 * 14) / 12;
+/** SMI 2026 — re-export desde shared/legal/rules/smiRules (single source of truth). */
+export const SMI_MENSUAL_2026 = SMI_2026_CANONICAL;
+/** SMI 2026 en 12 pagas prorrateadas — derivado del oficial */
+export const SMI_2026_12_PAGAS = Math.round(SMI_PRORR_2026_CANONICAL * 100) / 100;
+/** SMI mensual en cómputo de 12 pagas (STS 1340/2022) */
+export const SMI_PRORRATEADO_2026 = SMI_PRORR_2026_CANONICAL;
 
 /**
  * Tramos de embargabilidad — Art. 607.1 LEC

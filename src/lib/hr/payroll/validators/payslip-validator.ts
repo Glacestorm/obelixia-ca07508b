@@ -16,15 +16,19 @@
 
 import { SS_BASE_MAX_2026, SS_GROUP_MIN_BASES_2026 } from '../rules/ss-contributions';
 import { IRPF_MIN_RATE } from '../rules/irpf-withholding';
+import {
+  SMI_MENSUAL_2026 as SMI_2026_CANONICAL,
+  SMI_ANUAL_2026 as SMI_ANUAL_2026_CANONICAL,
+} from '@/shared/legal/rules/smiRules';
 
 // ============================================
 // CONSTANTS
 // ============================================
 
-/** SMI 2026 mensual (14 pagas) — BOE RD */
-export const SMI_MONTHLY_2026 = 1184.00;
-/** SMI 2026 anual */
-export const SMI_ANNUAL_2026 = 16576.00;
+/** SMI 2026 mensual (14 pagas) — re-export desde shared/legal/rules/smiRules */
+export const SMI_MONTHLY_2026 = SMI_2026_CANONICAL;
+/** SMI 2026 anual — re-export desde shared/legal/rules/smiRules */
+export const SMI_ANNUAL_2026 = SMI_ANUAL_2026_CANONICAL;
 /** Máximo horas extras anuales (ET Art. 35.2) */
 export const MAX_OVERTIME_HOURS_YEAR = 80;
 

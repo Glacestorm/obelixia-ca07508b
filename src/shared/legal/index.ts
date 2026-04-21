@@ -89,3 +89,14 @@ export {
   computeEffectiveIRPF,
   applyShortContractMinimum,
 } from './rules/irpfRules';
+
+// Rules — SMI 2026
+export {
+  SMI_MENSUAL_2026,
+  SMI_ANUAL_2026,
+  SMI_PRORRATEADO_2026,
+  SMI_DIARIO_2026,
+  getSMIMensual,
+  getSMIAnual,
+  getSMIProrrateadoMensual,
+} from './rules/smiRules';
