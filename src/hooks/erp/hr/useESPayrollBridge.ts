@@ -923,6 +923,29 @@ export function useESPayrollBridge(companyId?: string) {
         tipoIRPF: irpfResult.tipoEfectivo,
         ssContributions: ssResult,
         irpfResult,
+        // ── S9.21d Bloque F: Desglose de bases para trazabilidad recibo oficial ──
+        bases: {
+          devengosSalariales: r(
+            lines
+              .filter(l => l.line_type === 'earning' && l.is_taxable && l.category !== 'allowance')
+              .reduce((s, l) => s + l.amount, 0),
+          ),
+          devengosNoSalariales: r(
+            lines
+              .filter(l => l.line_type === 'earning' && !l.is_taxable && !l.is_ss_contributable)
+              .reduce((s, l) => s + l.amount, 0),
+          ),
+          devengosContribuibles: r(totalDevengosContribuibles),
+          devengosImponibles: r(totalDevengosImponibles),
+          horasExtraImporte: r(input.horasExtraImporte || 0),
+          baseCotizacionCC: r(baseCotizacionCC),
+          baseCotizacionAT: r(baseCotizacionAT),
+          baseIRPF: r(baseIRPF),
+          topeMinimoCC: r(ssBase.base_minima_mensual),
+          topeMaximoCC: r(ssBase.base_maxima_mensual),
+          aplicoTopeMinimo: totalDevengosContribuibles < ssBase.base_minima_mensual,
+          aplicoTopeMaximo: totalDevengosContribuibles > ssBase.base_maxima_mensual,
+        },
       };
 
       const calculation = { lines, summary };
