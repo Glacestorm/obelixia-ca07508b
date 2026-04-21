@@ -1,6 +1,8 @@
 /**
  * HRFlexibleRemunerationPanel — Editor de plan de retribución flexible ES
  * S9.18: Seguro médico end-to-end con split exento/exceso.
+ * S9.18-H5: Soporte de importe anual total (entrada principal) + mensual derivado.
+ *           Fuente: manual (única en esta fase). Convenio: pendiente de fuente real.
  * Restaurante, guardería y transporte: persistidos, pendientes de reglas avanzadas.
  * Fuente operativa: hr_es_flexible_remuneration_plans
  */
@@ -12,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info, Building2, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -23,12 +25,18 @@ interface FlexPlan {
   employee_id: string;
   plan_year: number;
   seguro_medico_mensual: number;
+  seguro_medico_anual_total: number; // S9.18-H5: derivado o introducido
   ticket_restaurante_mensual: number;
   cheque_guarderia_mensual: number;
   transporte_mensual: number;
   num_beneficiarios: number;
   num_beneficiarios_discapacidad: number;
   status: string;
+  // S9.18-H5: Fuente del dato del seguro médico
+  // 'manual' = empresa lo introduce a mano
+  // 'convenio' = vendría de tabla de convenio (no existe fuente real aún)
+  // 'manual_overrides_convenio' = ambas fuentes y manual prevalece
+  seguro_medico_source: 'manual' | 'convenio' | 'manual_overrides_convenio';
 }
 
 interface HRFlexibleRemunerationPanelProps {
@@ -55,16 +63,20 @@ export function HRFlexibleRemunerationPanel({
     employee_id: employeeId,
     plan_year: planYear,
     seguro_medico_mensual: 0,
+    seguro_medico_anual_total: 0,
     ticket_restaurante_mensual: 0,
     cheque_guarderia_mensual: 0,
     transporte_mensual: 0,
     num_beneficiarios: 1,
     num_beneficiarios_discapacidad: 0,
     status: 'active',
+    seguro_medico_source: 'manual',
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [existingId, setExistingId] = useState<string | null>(null);
+  // S9.18-H5: Valor de convenio (si existiera). En esta fase, no hay fuente real.
+  const [convenioValue, setConvenioValue] = useState<number | null>(null);
 
   // Fetch existing plan
   const fetchPlan = useCallback(async () => {
@@ -83,17 +95,25 @@ export function HRFlexibleRemunerationPanel({
 
       if (data) {
         setExistingId((data as any).id);
+        // S9.18-H5: leer anual desde metadata si existe; si no, derivarlo del mensual
+        const meta = ((data as any).metadata ?? {}) as Record<string, unknown>;
+        const mensual = Number((data as any).seguro_medico_mensual || 0);
+        const anualMeta = Number(meta.seguro_medico_anual_total ?? 0);
+        const anualEfectivo = anualMeta > 0 ? anualMeta : Math.round(mensual * 12 * 100) / 100;
+        const sourceMeta = (meta.seguro_medico_source as FlexPlan['seguro_medico_source']) || 'manual';
         setPlan({
           company_id: companyId,
           employee_id: employeeId,
           plan_year: planYear,
-          seguro_medico_mensual: Number((data as any).seguro_medico_mensual || 0),
+          seguro_medico_mensual: mensual,
+          seguro_medico_anual_total: anualEfectivo,
           ticket_restaurante_mensual: Number((data as any).ticket_restaurante_mensual || 0),
           cheque_guarderia_mensual: Number((data as any).cheque_guarderia_mensual || 0),
           transporte_mensual: Number((data as any).transporte_mensual || 0),
           num_beneficiarios: Number((data as any).num_beneficiarios || 1),
           num_beneficiarios_discapacidad: Number((data as any).num_beneficiarios_discapacidad || 0),
           status: (data as any).status || 'active',
+          seguro_medico_source: sourceMeta,
         });
       } else {
         setExistingId(null);
@@ -103,12 +123,14 @@ export function HRFlexibleRemunerationPanel({
           employee_id: employeeId,
           plan_year: planYear,
           seguro_medico_mensual: 0,
+          seguro_medico_anual_total: 0,
           ticket_restaurante_mensual: 0,
           cheque_guarderia_mensual: 0,
           transporte_mensual: 0,
           num_beneficiarios: 1,
           num_beneficiarios_discapacidad: 0,
           status: 'active',
+          seguro_medico_source: 'manual',
         }));
       }
     } catch (err) {
@@ -120,33 +142,80 @@ export function HRFlexibleRemunerationPanel({
 
   useEffect(() => { fetchPlan(); }, [fetchPlan]);
 
+  // S9.18-H5: Buscar fuente de seguro médico en convenio (placeholder honesto).
+  // En esta fase NO existe fuente real en convenio/mapping/tablas para seguro médico.
+  // Se deja preparado: si en el futuro se añade, reemplazar este efecto por la
+  // consulta correspondiente y setConvenioValue con el importe anual total.
+  useEffect(() => {
+    setConvenioValue(null); // Sin fuente real: siempre null en esta fase
+  }, [employeeId, companyId, planYear]);
+
   // Insurance limit calculation
   const insuranceLimits = useMemo(() => {
     const nBen = Math.max(plan.num_beneficiarios, 1);
     const nDis = Math.min(Math.max(plan.num_beneficiarios_discapacidad, 0), nBen);
     const limiteAnual = (nBen - nDis) * 500 + nDis * 1500;
     const limiteMensual = Math.round((limiteAnual / 12) * 100) / 100;
-    const importeAnual = plan.seguro_medico_mensual * 12;
+    // S9.18-H5: anual total es la fuente principal; si está vacío, usar mensual*12 (compat)
+    const importeAnual = plan.seguro_medico_anual_total > 0
+      ? plan.seguro_medico_anual_total
+      : Math.round(plan.seguro_medico_mensual * 12 * 100) / 100;
+    const importeMensual = Math.round((importeAnual / 12) * 100) / 100;
     const excedeLimit = importeAnual > limiteAnual;
-    const excesoMensual = excedeLimit ? Math.round((plan.seguro_medico_mensual - limiteMensual) * 100) / 100 : 0;
-    return { limiteAnual, limiteMensual, importeAnual, excedeLimit, excesoMensual };
-  }, [plan.seguro_medico_mensual, plan.num_beneficiarios, plan.num_beneficiarios_discapacidad]);
+    const parteExentaMensual = Math.min(importeMensual, limiteMensual);
+    const parteNoExentaMensual = excedeLimit ? Math.round((importeMensual - limiteMensual) * 100) / 100 : 0;
+    return {
+      limiteAnual,
+      limiteMensual,
+      importeAnual,
+      importeMensual,
+      excedeLimit,
+      excesoMensual: parteNoExentaMensual,
+      parteExentaMensual,
+      parteNoExentaMensual,
+    };
+  }, [plan.seguro_medico_anual_total, plan.seguro_medico_mensual, plan.num_beneficiarios, plan.num_beneficiarios_discapacidad]);
+
+  // S9.18-H5: Etiqueta de fuente para badge
+  const sourceLabel = useMemo(() => {
+    if (convenioValue !== null && plan.seguro_medico_anual_total > 0 && plan.seguro_medico_anual_total !== convenioValue) {
+      return { label: 'Manual sobreescribe convenio', icon: Building2, variant: 'warning' as const };
+    }
+    if (convenioValue !== null && plan.seguro_medico_anual_total === 0) {
+      return { label: 'Desde convenio', icon: Building2, variant: 'secondary' as const };
+    }
+    return { label: 'Manual empresa', icon: User, variant: 'outline' as const };
+  }, [convenioValue, plan.seguro_medico_anual_total]);
 
   // Save / upsert
   const handleSave = async () => {
     setSaving(true);
     try {
+      // S9.18-H5: derivar mensual desde anual total para mantener compatibilidad con
+      // bridge actual (que sigue leyendo seguro_medico_mensual).
+      const mensualDerivado = plan.seguro_medico_anual_total > 0
+        ? Math.round((plan.seguro_medico_anual_total / 12) * 100) / 100
+        : plan.seguro_medico_mensual;
+
       const payload: any = {
         company_id: companyId,
         employee_id: employeeId,
         plan_year: planYear,
-        seguro_medico_mensual: plan.seguro_medico_mensual,
+        seguro_medico_mensual: mensualDerivado,
         ticket_restaurante_mensual: plan.ticket_restaurante_mensual,
         cheque_guarderia_mensual: plan.cheque_guarderia_mensual,
         transporte_mensual: plan.transporte_mensual,
         num_beneficiarios: plan.num_beneficiarios,
         num_beneficiarios_discapacidad: plan.num_beneficiarios_discapacidad,
         status: plan.status,
+        // S9.18-H5: persistir anual total + fuente en metadata (sin migración SQL)
+        metadata: {
+          seguro_medico_anual_total: plan.seguro_medico_anual_total > 0
+            ? plan.seguro_medico_anual_total
+            : Math.round(mensualDerivado * 12 * 100) / 100,
+          seguro_medico_source: plan.seguro_medico_source,
+          schema_version: 'h5',
+        },
       };
 
       if (existingId) {
@@ -220,7 +289,13 @@ export function HRFlexibleRemunerationPanel({
             {/* Seguro médico — end-to-end */}
             <div className="space-y-2 p-3 rounded-lg border bg-muted/20">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium">Seguro médico</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-medium">Seguro médico</Label>
+                  <Badge variant={sourceLabel.variant} className="text-[10px] gap-1">
+                    <sourceLabel.icon className="h-2.5 w-2.5" />
+                    {sourceLabel.label}
+                  </Badge>
+                </div>
                 {plan.status === 'active' ? (
                   insuranceLimits.excedeLimit ? (
                     <Badge variant="warning" className="text-[10px]">
@@ -237,16 +312,31 @@ export function HRFlexibleRemunerationPanel({
                   <Badge variant="muted" className="text-[10px]">No activo</Badge>
                 )}
               </div>
+              {/* S9.18-H5: Importe anual total como entrada principal */}
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <Label className="text-[10px] text-muted-foreground">Importe mensual (€)</Label>
+                  <Label className="text-[10px] text-muted-foreground">Importe ANUAL total (€)</Label>
                   <Input
                     type="number"
                     min={0}
                     step={0.01}
-                    value={plan.seguro_medico_mensual || ''}
-                    onChange={e => setPlan(p => ({ ...p, seguro_medico_mensual: Number(e.target.value) || 0 }))}
+                    value={plan.seguro_medico_anual_total || ''}
+                    onChange={e => {
+                      const anual = Number(e.target.value) || 0;
+                      const mensual = Math.round((anual / 12) * 100) / 100;
+                      setPlan(p => ({
+                        ...p,
+                        seguro_medico_anual_total: anual,
+                        seguro_medico_mensual: mensual,
+                        // Si hay convenio y el manual difiere, marcamos override
+                        seguro_medico_source:
+                          convenioValue !== null && anual > 0 && anual !== convenioValue
+                            ? 'manual_overrides_convenio'
+                            : 'manual',
+                      }));
+                    }}
                     className="h-8 text-xs"
+                    placeholder="p.ej. 1200"
                   />
                 </div>
                 <div>
@@ -282,17 +372,55 @@ export function HRFlexibleRemunerationPanel({
                   />
                 </div>
               </div>
+              {/* S9.18-H5: Desglose visible anual / mensual / exento / no exento */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 p-2 rounded-md bg-background/60 border border-border/40">
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Mensual</span>
+                  <span className="text-xs font-semibold tabular-nums">{insuranceLimits.importeMensual.toFixed(2)}€</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Límite/mes</span>
+                  <span className="text-xs font-semibold tabular-nums">{insuranceLimits.limiteMensual.toFixed(2)}€</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Exento/mes</span>
+                  <span className="text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+                    {insuranceLimits.parteExentaMensual.toFixed(2)}€
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className={cn(
+                    "text-[9px] uppercase tracking-wide",
+                    insuranceLimits.parteNoExentaMensual > 0
+                      ? "text-amber-700 dark:text-amber-400"
+                      : "text-muted-foreground"
+                  )}>No exento/mes</span>
+                  <span className={cn(
+                    "text-xs font-semibold tabular-nums",
+                    insuranceLimits.parteNoExentaMensual > 0
+                      ? "text-amber-700 dark:text-amber-400"
+                      : "text-muted-foreground"
+                  )}>
+                    {insuranceLimits.parteNoExentaMensual.toFixed(2)}€
+                  </span>
+                </div>
+              </div>
               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                 <Info className="h-2.5 w-2.5" />
                 Límite exento: {insuranceLimits.limiteAnual.toFixed(0)}€/año ({insuranceLimits.limiteMensual.toFixed(2)}€/mes)
                 — 500€/beneficiario, 1.500€ si discapacidad (Art. 42.3.c LIRPF)
               </p>
+              {convenioValue === null && (
+                <p className="text-[10px] text-muted-foreground italic">
+                  Sin fuente de convenio disponible — origen efectivo: manual empresa.
+                </p>
+              )}
               {/* S9.18-H4: Estado fiscal/SS/CRA */}
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
                   IRPF: {insuranceLimits.excedeLimit ? 'Exento + Exceso sujeto' : 'Exento'}
                 </span>
-                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                <span className="text-[10px] font-medium text-primary">
                   SS: Cotiza (LGSS Art. 147)
                 </span>
                 <span className="text-[10px] text-muted-foreground">

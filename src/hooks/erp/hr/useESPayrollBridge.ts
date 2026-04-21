@@ -338,6 +338,9 @@ export function useESPayrollBridge(companyId?: string) {
         // Trace CRA 0039/0040 alignment
         const traceSeguro = {
           prima_mensual_total: input.seguroMedico,
+          // S9.18-H5: anual derivado para trazabilidad
+          prima_anual_total_derivada: r(input.seguroMedico * 12),
+          fuente_dato: 'manual_o_derivado_anual',
           num_beneficiarios: nBen,
           num_beneficiarios_discapacidad: nDis,
           desglose_asegurados: {
