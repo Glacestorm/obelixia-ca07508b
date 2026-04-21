@@ -404,16 +404,21 @@ export function useESPayrollBridge(companyId?: string) {
       if (input.pagaExtra) addEarning('ES_PAGA_EXTRA', 'Paga extraordinaria', prorratea(input.pagaExtra), 'fixed', true, true, 60);
       // S9.18-H4: Seguro médico — split exento/exceso, ambos cotizan SS (LGSS Art. 147), CRA
       if (input.seguroMedico && input.seguroMedico > 0) {
+        // S9.21d Bloque B: prorratear prima mensual por cobertura del período
+        const primaProrrateada = aplicarProrrateo ? r(input.seguroMedico * factorProrrateo) : input.seguroMedico;
         const nBen = Math.max(input.numBeneficiarios ?? 1, 1);
         const nDis = Math.min(Math.max(input.numBeneficiariosDiscapacidad ?? 0, 0), nBen);
         const limiteAnual = (nBen - nDis) * 500 + nDis * 1500;
         const limiteMensual = r(limiteAnual / 12);
-        const parteExenta = Math.min(input.seguroMedico, limiteMensual);
-        const parteExceso = r(Math.max(0, input.seguroMedico - limiteMensual));
+        const parteExenta = Math.min(primaProrrateada, limiteMensual);
+        const parteExceso = r(Math.max(0, primaProrrateada - limiteMensual));
 
         // Trace CRA 0039/0040 alignment
         const traceSeguro = {
-          prima_mensual_total: input.seguroMedico,
+          prima_mensual_total: primaProrrateada,
+          prima_mensual_origen: input.seguroMedico,
+          prorrateo_aplicado: aplicarProrrateo,
+          factor_prorrateo: aplicarProrrateo ? Number(factorProrrateo.toFixed(4)) : 1,
           // S9.18-H5: anual derivado para trazabilidad
           prima_anual_total_derivada: r(input.seguroMedico * 12),
           fuente_dato: 'manual_o_derivado_anual',
@@ -440,9 +445,9 @@ export function useESPayrollBridge(companyId?: string) {
         };
 
         if (parteExceso === 0) {
-          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', input.seguroMedico, 'flexible_remuneration', false, true, 70,
+          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', primaProrrateada, 'flexible_remuneration', false, true, 70,
             'LGSS_Art147_seguro_medico_exento', traceSeguro as any,
-            `Prima ${input.seguroMedico}€ ≤ límite ${limiteMensual}€/mes → 100% exento IRPF, cotiza SS`);
+            `Prima ${primaProrrateada}€ ≤ límite ${limiteMensual}€/mes → 100% exento IRPF, cotiza SS`);
         } else {
           addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa (exento)', parteExenta, 'flexible_remuneration', false, true, 70,
             'LGSS_Art147_seguro_medico_exento', traceSeguro as any,
