@@ -316,6 +316,25 @@ export function useESPayrollBridge(companyId?: string) {
       const r = (n: number) => Math.round(n * 100) / 100;
       const ts = new Date().toISOString();
 
+      // ── S9.21d Bloque B: Helper de prorrateo por días efectivos ──
+      // Backward compat: sin periodCoverage → factor = 1 (mes completo)
+      const pc = input.periodCoverage;
+      const factorProrrateo = (pc && pc.diasNaturalesPeriodo > 0)
+        ? Math.min(1, Math.max(0, pc.diasEfectivos / pc.diasNaturalesPeriodo))
+        : 1;
+      const aplicarProrrateo = factorProrrateo < 1;
+      const prorratea = (monto: number) => aplicarProrrateo ? r(monto * factorProrrateo) : monto;
+      const traceProrrateo = aplicarProrrateo
+        ? {
+            factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+            dias_efectivos: pc!.diasEfectivos,
+            dias_naturales_periodo: pc!.diasNaturalesPeriodo,
+            motivo: pc!.motivo ?? 'otro',
+            fecha_desde: pc!.fechaDesde,
+            fecha_hasta: pc!.fechaHasta,
+          }
+        : null;
+
       // ── 1. Devengos ──
       const addEarning = (code: string, name: string, amount: number, category: string, taxable: boolean, contributable: boolean, sortOrder: number, traceRule?: string, traceInputs?: Record<string, unknown>, traceFormula?: string) => {
         if (amount === 0) return;
@@ -325,7 +344,9 @@ export function useESPayrollBridge(companyId?: string) {
           is_percentage: false, sort_order: sortOrder, source: 'rule_engine',
           calculation_trace: {
             rule: traceRule || code,
-            inputs: traceInputs || { amount },
+            inputs: traceProrrateo
+              ? { ...(traceInputs || { amount }), prorrateo: traceProrrateo }
+              : (traceInputs || { amount }),
             formula: traceFormula || `${name} = ${r(amount)}`,
             timestamp: ts,
           },
