@@ -14,10 +14,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info, Building2, User } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info, Building2, User, ArrowRightLeft, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+// S9.20: Modelo A (beneficio adicional) vs Modelo B (salary sacrifice)
+type FlexApplicationMode = 'benefit_additional' | 'salary_sacrifice';
+
+interface FlexConceptConfig {
+  seguro_medico: { application_mode: FlexApplicationMode };
+  ticket_restaurante: {
+    application_mode: FlexApplicationMode;
+    importe_dia: number;
+    dias_mes: number;
+    modalidad: 'comedor' | 'tarjeta_vale' | null;
+  };
+  cheque_guarderia: { application_mode: FlexApplicationMode };
+  transporte: {
+    application_mode: FlexApplicationMode;
+    modalidad: 'publico_colectivo' | 'otro' | null;
+  };
+}
+
+const DEFAULT_FLEX_CONFIG: FlexConceptConfig = {
+  seguro_medico: { application_mode: 'benefit_additional' },
+  ticket_restaurante: { application_mode: 'benefit_additional', importe_dia: 0, dias_mes: 0, modalidad: null },
+  cheque_guarderia: { application_mode: 'benefit_additional' },
+  transporte: { application_mode: 'benefit_additional', modalidad: null },
+};
 
 interface FlexPlan {
   id?: string;
@@ -37,6 +62,8 @@ interface FlexPlan {
   // 'convenio' = vendría de tabla de convenio (no existe fuente real aún)
   // 'manual_overrides_convenio' = ambas fuentes y manual prevalece
   seguro_medico_source: 'manual' | 'convenio' | 'manual_overrides_convenio';
+  // S9.20: configuración por concepto (Modelo A/B + datos específicos)
+  concept_config: FlexConceptConfig;
 }
 
 interface HRFlexibleRemunerationPanelProps {
