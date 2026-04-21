@@ -229,6 +229,12 @@ const ES_CONCEPT_CATALOG: ESPayrollConceptDef[] = [
   { code: 'ES_IT_AT_EMPRESA', name: 'Complemento IT acc. trabajo', line_type: 'earning', category: 'variable', taxable: true, contributable: false, is_percentage: false, sort_order: 91 },
   { code: 'ES_NACIMIENTO', name: 'Prestación nacimiento/cuidado', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 92, legal_reference: 'LGSS Art. 177-182' },
   { code: 'ES_REGULARIZACION', name: 'Regularización / atrasos', line_type: 'earning', category: 'regularization', taxable: true, contributable: true, is_percentage: false, sort_order: 95 },
+  // S9.21d Bloque C — Conceptos avanzados (tramos, atrasos IT, reducción jornada)
+  { code: 'ES_NACIMIENTO_MATERNIDAD', name: 'Prestación nacimiento (maternidad)', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 92, legal_reference: 'LGSS Art. 177-182' },
+  { code: 'ES_NACIMIENTO_PATERNIDAD', name: 'Prestación nacimiento (paternidad)', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 93, legal_reference: 'LGSS Art. 177-182' },
+  { code: 'ES_NACIMIENTO_CORRESPONSABILIDAD', name: 'Corresponsabilidad cuidado lactante', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 94, legal_reference: 'LGSS Art. 183' },
+  { code: 'ES_ATRASOS_IT', name: 'Atrasos por IT no reflejada', line_type: 'earning', category: 'regularization', taxable: true, contributable: true, is_percentage: false, sort_order: 96, legal_reference: 'LGSS Art. 109' },
+  { code: 'ES_RED_JORNADA_INFO', name: 'Reducción jornada (informativo)', line_type: 'informative', category: 'info', taxable: false, contributable: false, is_percentage: false, sort_order: 306, legal_reference: 'ET Art. 37.6' },
   // Deducciones
   { code: 'ES_IRPF', name: 'Retención IRPF', line_type: 'deduction', category: 'withholding', taxable: false, contributable: false, is_percentage: true, percentage_base: 'base_irpf', sort_order: 100, legal_reference: 'LIRPF Art. 99-101' },
   { code: 'ES_SS_CC_TRAB', name: 'Cotización CC trabajador', line_type: 'deduction', category: 'social_contribution', taxable: false, contributable: false, is_percentage: true, default_percentage: 4.70, percentage_base: 'base_cc', sort_order: 110, legal_reference: 'LGSS Art. 19' },
