@@ -95,17 +95,25 @@ export function HRFlexibleRemunerationPanel({
 
       if (data) {
         setExistingId((data as any).id);
+        // S9.18-H5: leer anual desde metadata si existe; si no, derivarlo del mensual
+        const meta = ((data as any).metadata ?? {}) as Record<string, unknown>;
+        const mensual = Number((data as any).seguro_medico_mensual || 0);
+        const anualMeta = Number(meta.seguro_medico_anual_total ?? 0);
+        const anualEfectivo = anualMeta > 0 ? anualMeta : Math.round(mensual * 12 * 100) / 100;
+        const sourceMeta = (meta.seguro_medico_source as FlexPlan['seguro_medico_source']) || 'manual';
         setPlan({
           company_id: companyId,
           employee_id: employeeId,
           plan_year: planYear,
-          seguro_medico_mensual: Number((data as any).seguro_medico_mensual || 0),
+          seguro_medico_mensual: mensual,
+          seguro_medico_anual_total: anualEfectivo,
           ticket_restaurante_mensual: Number((data as any).ticket_restaurante_mensual || 0),
           cheque_guarderia_mensual: Number((data as any).cheque_guarderia_mensual || 0),
           transporte_mensual: Number((data as any).transporte_mensual || 0),
           num_beneficiarios: Number((data as any).num_beneficiarios || 1),
           num_beneficiarios_discapacidad: Number((data as any).num_beneficiarios_discapacidad || 0),
           status: (data as any).status || 'active',
+          seguro_medico_source: sourceMeta,
         });
       } else {
         setExistingId(null);
@@ -115,12 +123,14 @@ export function HRFlexibleRemunerationPanel({
           employee_id: employeeId,
           plan_year: planYear,
           seguro_medico_mensual: 0,
+          seguro_medico_anual_total: 0,
           ticket_restaurante_mensual: 0,
           cheque_guarderia_mensual: 0,
           transporte_mensual: 0,
           num_beneficiarios: 1,
           num_beneficiarios_discapacidad: 0,
           status: 'active',
+          seguro_medico_source: 'manual',
         }));
       }
     } catch (err) {
