@@ -356,25 +356,29 @@ export function useESPayrollBridge(companyId?: string) {
       // ── 1a. Salary resolution: split salarioBase into convention base + mejora voluntaria ──
       if (input.salaryResolution?.hasMejoraVoluntaria) {
         const sr = input.salaryResolution;
-        addEarning('ES_SAL_BASE', 'Salario base (convenio)', sr.salarioBaseConvenio, 'fixed', true, true, 10,
+        addEarning('ES_SAL_BASE', 'Salario base (convenio)', prorratea(sr.salarioBaseConvenio), 'fixed', true, true, 10,
           'agreement_salary_table', 
           { agreementCode: sr.agreementCode, professionalGroup: sr.professionalGroup, salarioPactado: input.salarioBase },
-          `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€`
+          aplicarProrrateo
+            ? `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€ × ${factorProrrateo.toFixed(4)} = ${prorratea(sr.salarioBaseConvenio)}€`
+            : `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€`
         );
         if (sr.plusConvenioTabla > 0) {
-          addEarning('ES_COMP_CONVENIO', 'Plus convenio (tabla)', sr.plusConvenioTabla, 'fixed', true, true, 20,
+          addEarning('ES_COMP_CONVENIO', 'Plus convenio (tabla)', prorratea(sr.plusConvenioTabla), 'fixed', true, true, 20,
             'agreement_salary_table',
             { agreementCode: sr.agreementCode },
-            `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€`
+            aplicarProrrateo
+              ? `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€ × ${factorProrrateo.toFixed(4)} = ${prorratea(sr.plusConvenioTabla)}€`
+              : `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€`
           );
         }
-        addEarning('ES_MEJORA_VOLUNTARIA', 'Mejora voluntaria', sr.mejoraVoluntaria, 'fixed', true, true, 15,
+        addEarning('ES_MEJORA_VOLUNTARIA', 'Mejora voluntaria', prorratea(sr.mejoraVoluntaria), 'fixed', true, true, 15,
           'salary_resolution',
           { salarioPactado: input.salarioBase, totalConvenio: sr.salarioBaseConvenio + sr.plusConvenioTabla },
           `Mejora vol. = Pactado (${r(input.salarioBase)}€) - Convenio (${r(sr.salarioBaseConvenio + sr.plusConvenioTabla)}€) = ${r(sr.mejoraVoluntaria)}€ [ET Art. 26.5]`
         );
       } else {
-        addEarning('ES_SAL_BASE', 'Salario base', input.salarioBase, 'fixed', true, true, 10);
+        addEarning('ES_SAL_BASE', 'Salario base', prorratea(input.salarioBase), 'fixed', true, true, 10);
       }
       
       // Complementos (skip ES_COMP_CONVENIO if already injected by salary resolution)
@@ -384,7 +388,9 @@ export function useESPayrollBridge(companyId?: string) {
           if (key === 'ES_COMP_CONVENIO' && input.salaryResolution?.plusConvenioTabla) return;
           const def = ES_CONCEPT_CATALOG.find(c => c.code === key);
           if (def && val > 0) {
-            addEarning(key, def.name, val, def.category, def.taxable, def.contributable, def.sort_order);
+            // Prorratear sólo conceptos fijos. Variables (overtime, bonus, commission) se mantienen íntegros.
+            const aplicar = def.category === 'fixed';
+            addEarning(key, def.name, aplicar ? prorratea(val) : val, def.category, def.taxable, def.contributable, def.sort_order);
           } else if (val > 0) {
             addEarning(`ES_COMP_${key}`, key, val, 'variable', true, true, 25 + idx);
           }
@@ -395,7 +401,7 @@ export function useESPayrollBridge(companyId?: string) {
       if (input.bonus) addEarning('ES_BONUS', 'Bonus / Gratificación', input.bonus, 'bonus', true, true, 40);
       if (input.comisiones) addEarning('ES_COMISION', 'Comisiones', input.comisiones, 'commission', true, true, 41);
       if (input.dietas) addEarning('ES_DIETAS', 'Dietas y gastos viaje', input.dietas, 'allowance', false, false, 50);
-      if (input.pagaExtra) addEarning('ES_PAGA_EXTRA', 'Paga extraordinaria', input.pagaExtra, 'fixed', true, true, 60);
+      if (input.pagaExtra) addEarning('ES_PAGA_EXTRA', 'Paga extraordinaria', prorratea(input.pagaExtra), 'fixed', true, true, 60);
       // S9.18-H4: Seguro médico — split exento/exceso, ambos cotizan SS (LGSS Art. 147), CRA
       if (input.seguroMedico && input.seguroMedico > 0) {
         const nBen = Math.max(input.numBeneficiarios ?? 1, 1);
