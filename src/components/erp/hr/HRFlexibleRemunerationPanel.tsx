@@ -63,16 +63,20 @@ export function HRFlexibleRemunerationPanel({
     employee_id: employeeId,
     plan_year: planYear,
     seguro_medico_mensual: 0,
+    seguro_medico_anual_total: 0,
     ticket_restaurante_mensual: 0,
     cheque_guarderia_mensual: 0,
     transporte_mensual: 0,
     num_beneficiarios: 1,
     num_beneficiarios_discapacidad: 0,
     status: 'active',
+    seguro_medico_source: 'manual',
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [existingId, setExistingId] = useState<string | null>(null);
+  // S9.18-H5: Valor de convenio (si existiera). En esta fase, no hay fuente real.
+  const [convenioValue, setConvenioValue] = useState<number | null>(null);
 
   // Fetch existing plan
   const fetchPlan = useCallback(async () => {
