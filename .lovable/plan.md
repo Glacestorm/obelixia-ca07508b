@@ -157,3 +157,59 @@ Nueva configuración `concept_config` guardada en `metadata` jsonb existente (si
 ### Veredicto parcial
 
 **"Modelo B con guardrails legales (ET 26.1 + SMI 2026) operativos y trazables"**
+
+---
+
+## S9.21d Bloque C — Conceptos avanzados (AT/Nacimiento/Atrasos IT/Reducción jornada) ✅
+
+### Objetivo
+
+Cubrir casuística avanzada del PDF de "procesos entre fechas":
+- Tramos de nacimiento/paternidad/maternidad/corresponsabilidad (LGSS Art. 177-183)
+- Atrasos por IT no reflejada como concepto separado y trazable (LGSS Art. 109)
+- Reducción de jornada por guarda legal (ET Art. 37.6)
+- AT 75% (ya existía, mantenido)
+
+### Cambios técnicos en `useESPayrollBridge.ts`
+
+1. **`ESPayrollInput` ampliado (backward compatible)** con tres campos opcionales:
+   - `nacimientoTramos: Array<{ tipo, fechaDesde, fechaHasta, importe, obligatorio?, descripcion? }>`
+   - `atrasosIT: { importe, periodoOrigen, motivo, descripcion? }`
+   - `reduccionJornadaPct: number` (1-99)
+
+2. **Catálogo de conceptos ampliado** (5 nuevos):
+   - `ES_NACIMIENTO_MATERNIDAD` (sort 92)
+   - `ES_NACIMIENTO_PATERNIDAD` (sort 93)
+   - `ES_NACIMIENTO_CORRESPONSABILIDAD` (sort 94)
+   - `ES_ATRASOS_IT` (sort 96)
+   - `ES_RED_JORNADA_INFO` (sort 306, informativo)
+
+3. **Factor de prorrateo combinado:**
+   - `factorPeriodo` (Bloque B) × `factorReduccion` (Bloque C) = `factorProrrateo` final
+   - Reducción jornada se compone multiplicativamente y se refleja en trace
+   - Si sólo hay reducción (sin periodCoverage), la trace incluye motivo "reduccion_jornada_guarda_legal"
+
+4. **Procesamiento de tramos nacimiento:**
+   - Cada tramo genera línea separada con código específico por tipo
+   - Marcadas como prestación INSS: `taxable=false`, `contributable=false`
+   - Trace incluye fechas, obligatoriedad y descripción
+
+5. **Atrasos IT separados de regularización genérica:**
+   - `ES_ATRASOS_IT` con trace de período origen y motivo (`IT_no_reflejada` | `IT_recalculo` | `IT_correccion`)
+   - Sujeto IRPF + cotiza SS según LGSS Art. 109
+
+6. **Línea informativa reducción jornada:**
+   - `ES_RED_JORNADA_INFO` con amount=0 y trace completa
+   - Útil para recibo y auditoría aunque no sume al líquido
+
+### Garantías
+
+- ✅ Backward compat: sin estos campos, comportamiento idéntico (factor=1, sin nuevas líneas)
+- ✅ Conceptos opcionales se ocultan si no se proporcionan o importe=0 (regla `if (amount === 0) return`)
+- ✅ TypeScript limpio (`tsc --noEmit` exit 0)
+- ✅ Sin tocar `payroll-calculation-engine.ts`
+- ✅ Sin romper Bloques A/B previos
+
+### Veredicto parcial
+
+**"Casuística avanzada (nacimiento por tramos, atrasos IT trazables, reducción jornada combinable con período) operativa y prudente"**

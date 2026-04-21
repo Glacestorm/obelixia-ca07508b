@@ -108,6 +108,35 @@ export interface ESPayrollInput {
       | 'otro';
     descripcion?: string;
   };
+  /**
+   * S9.21d Bloque C — Tramos de nacimiento/cuidado de menor (LGSS Art. 177-182).
+   * Permite reflejar prestaciones por tramos cuando el período se solapa con la baja.
+   * Importes son prestación INSS (no salario): no taxable, no SS, no IRPF.
+   */
+  nacimientoTramos?: Array<{
+    tipo: 'maternidad' | 'paternidad' | 'corresponsabilidad' | 'lactancia';
+    fechaDesde: string;            // 'YYYY-MM-DD'
+    fechaHasta: string;            // 'YYYY-MM-DD'
+    importe: number;               // € en el período
+    obligatorio?: boolean;         // tramo obligatorio (6 sem post-parto)
+    descripcion?: string;
+  }>;
+  /**
+   * S9.21d Bloque C — Atrasos IT (regularización de baja médica no introducida).
+   * Se persiste como concepto separado del genérico ES_REGULARIZACION para trazabilidad.
+   */
+  atrasosIT?: {
+    importe: number;
+    periodoOrigen: string;         // 'YYYY-MM' al que corresponden los atrasos
+    motivo: 'IT_no_reflejada' | 'IT_recalculo' | 'IT_correccion';
+    descripcion?: string;
+  };
+  /**
+   * S9.21d Bloque C — Reducción de jornada por guarda legal (ET Art. 37.6).
+   * Porcentaje de reducción 1-99. Aplica a conceptos fijos salariales.
+   * Se combina multiplicativamente con factorProrrateo si ambos coexisten.
+   */
+  reduccionJornadaPct?: number;
 }
 
 export interface ESPayrollCalculation {
@@ -200,6 +229,12 @@ const ES_CONCEPT_CATALOG: ESPayrollConceptDef[] = [
   { code: 'ES_IT_AT_EMPRESA', name: 'Complemento IT acc. trabajo', line_type: 'earning', category: 'variable', taxable: true, contributable: false, is_percentage: false, sort_order: 91 },
   { code: 'ES_NACIMIENTO', name: 'Prestación nacimiento/cuidado', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 92, legal_reference: 'LGSS Art. 177-182' },
   { code: 'ES_REGULARIZACION', name: 'Regularización / atrasos', line_type: 'earning', category: 'regularization', taxable: true, contributable: true, is_percentage: false, sort_order: 95 },
+  // S9.21d Bloque C — Conceptos avanzados (tramos, atrasos IT, reducción jornada)
+  { code: 'ES_NACIMIENTO_MATERNIDAD', name: 'Prestación nacimiento (maternidad)', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 92, legal_reference: 'LGSS Art. 177-182' },
+  { code: 'ES_NACIMIENTO_PATERNIDAD', name: 'Prestación nacimiento (paternidad)', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 93, legal_reference: 'LGSS Art. 177-182' },
+  { code: 'ES_NACIMIENTO_CORRESPONSABILIDAD', name: 'Corresponsabilidad cuidado lactante', line_type: 'earning', category: 'variable', taxable: false, contributable: false, is_percentage: false, sort_order: 94, legal_reference: 'LGSS Art. 183' },
+  { code: 'ES_ATRASOS_IT', name: 'Atrasos por IT no reflejada', line_type: 'earning', category: 'regularization', taxable: true, contributable: true, is_percentage: false, sort_order: 96, legal_reference: 'LGSS Art. 109' },
+  { code: 'ES_RED_JORNADA_INFO', name: 'Reducción jornada (informativo)', line_type: 'informative', category: 'info', taxable: false, contributable: false, is_percentage: false, sort_order: 306, legal_reference: 'ET Art. 37.6' },
   // Deducciones
   { code: 'ES_IRPF', name: 'Retención IRPF', line_type: 'deduction', category: 'withholding', taxable: false, contributable: false, is_percentage: true, percentage_base: 'base_irpf', sort_order: 100, legal_reference: 'LIRPF Art. 99-101' },
   { code: 'ES_SS_CC_TRAB', name: 'Cotización CC trabajador', line_type: 'deduction', category: 'social_contribution', taxable: false, contributable: false, is_percentage: true, default_percentage: 4.70, percentage_base: 'base_cc', sort_order: 110, legal_reference: 'LGSS Art. 19' },
@@ -319,21 +354,40 @@ export function useESPayrollBridge(companyId?: string) {
       // ── S9.21d Bloque B: Helper de prorrateo por días efectivos ──
       // Backward compat: sin periodCoverage → factor = 1 (mes completo)
       const pc = input.periodCoverage;
-      const factorProrrateo = (pc && pc.diasNaturalesPeriodo > 0)
+      const factorPeriodo = (pc && pc.diasNaturalesPeriodo > 0)
         ? Math.min(1, Math.max(0, pc.diasEfectivos / pc.diasNaturalesPeriodo))
         : 1;
+      // ── S9.21d Bloque C: Reducción jornada por guarda legal (ET Art. 37.6) ──
+      // Se combina multiplicativamente con factor de período. Backward compat: sin reducción → 1.
+      const redJornadaPct = (typeof input.reduccionJornadaPct === 'number' && input.reduccionJornadaPct > 0 && input.reduccionJornadaPct < 100)
+        ? input.reduccionJornadaPct
+        : 0;
+      const factorReduccion = redJornadaPct > 0 ? (1 - redJornadaPct / 100) : 1;
+      const factorProrrateo = Math.min(1, Math.max(0, factorPeriodo * factorReduccion));
       const aplicarProrrateo = factorProrrateo < 1;
       const prorratea = (monto: number) => aplicarProrrateo ? r(monto * factorProrrateo) : monto;
       const traceProrrateo = aplicarProrrateo
         ? {
             factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+            factor_periodo: Number(factorPeriodo.toFixed(4)),
+            factor_reduccion_jornada: Number(factorReduccion.toFixed(4)),
+            reduccion_jornada_pct: redJornadaPct,
             dias_efectivos: pc!.diasEfectivos,
             dias_naturales_periodo: pc!.diasNaturalesPeriodo,
             motivo: pc!.motivo ?? 'otro',
             fecha_desde: pc!.fechaDesde,
             fecha_hasta: pc!.fechaHasta,
           }
-        : null;
+        : (redJornadaPct > 0
+            ? {
+                factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+                factor_periodo: 1,
+                factor_reduccion_jornada: Number(factorReduccion.toFixed(4)),
+                reduccion_jornada_pct: redJornadaPct,
+                motivo: 'reduccion_jornada_guarda_legal',
+                legal_reference: 'ET Art. 37.6',
+              }
+            : null);
 
       // ── 1. Devengos ──
       const addEarning = (code: string, name: string, amount: number, category: string, taxable: boolean, contributable: boolean, sortOrder: number, traceRule?: string, traceInputs?: Record<string, unknown>, traceFormula?: string) => {
@@ -516,6 +570,80 @@ export function useESPayrollBridge(companyId?: string) {
         addEarning('ES_IT_AT_EMPRESA', 'Complemento IT acc. trabajo', complementoAT, 'variable', true, false, 91,
           'IT_AT_complement', { salarioBase: input.salarioBase, dias: input.itATDias, pct: 0.75 },
           `(${input.salarioBase}/30) × ${input.itATDias} × 75% = ${complementoAT}`);
+      }
+
+      // ── S9.21d Bloque C: Tramos nacimiento/cuidado (LGSS Art. 177-183) ──
+      // Prestación INSS: no taxable, no SS, no IRPF. Visualiza por tramos para trazabilidad.
+      if (Array.isArray(input.nacimientoTramos) && input.nacimientoTramos.length > 0) {
+        input.nacimientoTramos.forEach((tramo, idx) => {
+          if (!tramo || tramo.importe <= 0) return;
+          const code =
+            tramo.tipo === 'maternidad' ? 'ES_NACIMIENTO_MATERNIDAD' :
+            tramo.tipo === 'paternidad' ? 'ES_NACIMIENTO_PATERNIDAD' :
+            tramo.tipo === 'corresponsabilidad' ? 'ES_NACIMIENTO_CORRESPONSABILIDAD' :
+            'ES_NACIMIENTO';
+          const name =
+            tramo.tipo === 'maternidad' ? 'Prestación nacimiento (maternidad)' :
+            tramo.tipo === 'paternidad' ? 'Prestación nacimiento (paternidad)' :
+            tramo.tipo === 'corresponsabilidad' ? 'Corresponsabilidad cuidado lactante' :
+            'Prestación nacimiento/cuidado';
+          const sortOrder = code === 'ES_NACIMIENTO_PATERNIDAD' ? 93 + idx * 0.01
+                           : code === 'ES_NACIMIENTO_CORRESPONSABILIDAD' ? 94 + idx * 0.01
+                           : 92 + idx * 0.01;
+          addEarning(code, name, r(tramo.importe), 'variable', false, false, sortOrder,
+            'LGSS_Art177_182_nacimiento_tramo',
+            {
+              tipo: tramo.tipo,
+              fecha_desde: tramo.fechaDesde,
+              fecha_hasta: tramo.fechaHasta,
+              obligatorio: tramo.obligatorio ?? false,
+              descripcion: tramo.descripcion ?? null,
+              indice_tramo: idx,
+            },
+            `Tramo ${tramo.tipo} ${tramo.fechaDesde} → ${tramo.fechaHasta} = ${r(tramo.importe)}€ (prestación INSS, no salario)`);
+        });
+      }
+
+      // ── S9.21d Bloque C: Atrasos por IT no reflejada (LGSS Art. 109) ──
+      // Concepto separado de ES_REGULARIZACION para trazabilidad fiscal/contable.
+      if (input.atrasosIT && input.atrasosIT.importe > 0) {
+        addEarning('ES_ATRASOS_IT', 'Atrasos por IT no reflejada', r(input.atrasosIT.importe),
+          'regularization', true, true, 96,
+          'LGSS_Art109_atrasos_IT',
+          {
+            periodo_origen: input.atrasosIT.periodoOrigen,
+            motivo: input.atrasosIT.motivo,
+            descripcion: input.atrasosIT.descripcion ?? null,
+          },
+          `Atrasos IT período ${input.atrasosIT.periodoOrigen} = ${r(input.atrasosIT.importe)}€ (sujeto IRPF + cotiza SS)`);
+      }
+
+      // ── S9.21d Bloque C: Línea informativa reducción jornada por guarda legal ──
+      if (redJornadaPct > 0) {
+        lines.push({
+          concept_code: 'ES_RED_JORNADA_INFO',
+          concept_name: `Reducción jornada ${redJornadaPct}% (guarda legal)`,
+          line_type: 'informative',
+          category: 'info',
+          amount: 0,
+          is_taxable: false,
+          is_ss_contributable: false,
+          is_percentage: true,
+          sort_order: 306,
+          source: 'rule_engine',
+          calculation_trace: {
+            rule: 'ET_Art37_6_reduccion_jornada',
+            inputs: {
+              reduccion_jornada_pct: redJornadaPct,
+              factor_reduccion: Number(factorReduccion.toFixed(4)),
+              combinado_con_periodo: !!pc,
+              factor_periodo: Number(factorPeriodo.toFixed(4)),
+              factor_total_aplicado: Number(factorProrrateo.toFixed(4)),
+            },
+            formula: `Reducción ${redJornadaPct}% → factor ${factorReduccion.toFixed(4)} aplicado a conceptos fijos`,
+            timestamp: ts,
+          },
+        });
       }
 
       // ── S9.20: Aplicar Modelo B (salary_sacrifice) ──
