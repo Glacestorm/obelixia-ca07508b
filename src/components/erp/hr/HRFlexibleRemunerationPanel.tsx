@@ -335,6 +335,16 @@ export function HRFlexibleRemunerationPanel({
                     <sourceLabel.icon className="h-2.5 w-2.5" />
                     {sourceLabel.label}
                   </Badge>
+                  <ModelToggle
+                    value={plan.concept_config.seguro_medico.application_mode}
+                    onChange={(mode) => setPlan(p => ({
+                      ...p,
+                      concept_config: {
+                        ...p.concept_config,
+                        seguro_medico: { application_mode: mode },
+                      },
+                    }))}
+                  />
                 </div>
                 {plan.status === 'active' ? (
                   insuranceLimits.excedeLimit ? (
@@ -469,31 +479,71 @@ export function HRFlexibleRemunerationPanel({
               </div>
             </div>
 
-            {/* Ticket restaurante — pendiente */}
-            <ConceptRow
-              label="Ticket restaurante"
-              value={plan.ticket_restaurante_mensual}
-              onChange={v => setPlan(p => ({ ...p, ticket_restaurante_mensual: v }))}
-              status="pending"
-              hint="11€/día laborable (Art. 45.2 RIRPF) — Pendiente de reglas avanzadas"
+            {/* S9.20: Ticket restaurante — automatizado si datos completos */}
+            <RestauranteCard
+              importeDia={plan.concept_config.ticket_restaurante.importe_dia}
+              diasMes={plan.concept_config.ticket_restaurante.dias_mes}
+              modalidad={plan.concept_config.ticket_restaurante.modalidad}
+              applicationMode={plan.concept_config.ticket_restaurante.application_mode}
+              fallbackMensual={plan.ticket_restaurante_mensual}
+              onChangeMode={(mode) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, application_mode: mode },
+                },
+              }))}
+              onChangeImporteDia={(v) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, importe_dia: v },
+                },
+              }))}
+              onChangeDiasMes={(v) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, dias_mes: v },
+                },
+              }))}
+              onChangeModalidad={(v) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, modalidad: v },
+                },
+              }))}
+              onChangeFallbackMensual={(v) => setPlan(p => ({ ...p, ticket_restaurante_mensual: v }))}
             />
 
-            {/* Guardería — pendiente */}
-            <ConceptRow
+            {/* Guardería — persistido + visible, NO automatizado en S9.20 */}
+            <SimpleFlexCard
               label="Cheque guardería"
               value={plan.cheque_guarderia_mensual}
-              onChange={v => setPlan(p => ({ ...p, cheque_guarderia_mensual: v }))}
-              status="pending"
-              hint="Requiere validación de centro autorizado — Pendiente de reglas avanzadas"
+              applicationMode={plan.concept_config.cheque_guarderia.application_mode}
+              onChangeValue={v => setPlan(p => ({ ...p, cheque_guarderia_mensual: v }))}
+              onChangeMode={(mode) => setPlan(p => ({
+                ...p,
+                concept_config: { ...p.concept_config, cheque_guarderia: { application_mode: mode } },
+              }))}
+              hint="Requiere validación de centro autorizado — Persistido pero no automatizado en esta fase"
             />
 
-            {/* Transporte — pendiente */}
-            <ConceptRow
+            {/* Transporte — persistido + visible, NO automatizado en S9.20 */}
+            <SimpleFlexCard
               label="Transporte"
               value={plan.transporte_mensual}
-              onChange={v => setPlan(p => ({ ...p, transporte_mensual: v }))}
-              status="pending"
-              hint="1.500€/año transporte público colectivo — Pendiente de reglas avanzadas"
+              applicationMode={plan.concept_config.transporte.application_mode}
+              onChangeValue={v => setPlan(p => ({ ...p, transporte_mensual: v }))}
+              onChangeMode={(mode) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  transporte: { ...p.concept_config.transporte, application_mode: mode },
+                },
+              }))}
+              hint="1.500€/año transporte público colectivo — Persistido pero no automatizado en esta fase"
             />
 
             {/* Total + Save */}
