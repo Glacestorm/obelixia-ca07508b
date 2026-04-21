@@ -294,3 +294,78 @@ Aprovechar monitores ≥1280px (XL) reorganizando el diálogo de nómina en 2 co
 ### Pendiente
 
 - **Bloque F**: Auditoría de campos de recibo oficial (CRA, trazabilidad de bases)
+
+---
+
+## S9.21d Bloque F — Auditoría campos recibo oficial (CRA + bases) ✅
+
+### Auditoría previa
+
+| Aspecto | Estado |
+|---|---|
+| Catálogo conceptos con `impacts_cra`, `is_ss_contributable`, `legal_reference` | ✅ existente en `payrollConceptCatalog.ts` |
+| Engines RLC / RNT / CRA (TGSS pre-real) | ✅ `rlcRntCraArtifactEngine.ts` |
+| Bases CC / AT / IRPF en summary | ✅ ya expuestas |
+| `base_amount`, `percentage`, `percentage_base`, `calculation_trace` por línea | ✅ ya existían |
+| Desglose bases agrupado para recibo oficial | ❌ faltaba |
+| `impacts_cra` y `legal_reference` declarados a nivel `ESPayrollLine` | ❌ faltaba |
+
+### Cambios técnicos (sin tocar lógica de cálculo)
+
+1. **`ESPayrollLine` ampliado**:
+   - Campo opcional `impacts_cra?: boolean` para marcar líneas que entran al Cuadro Resumen de Aportaciones (TGSS).
+   - Campo opcional `legal_reference?: string` para trazabilidad jurídica del concepto en cada nómina (no sólo en el catálogo estático).
+
+2. **`ESPayrollSummary.bases` (nuevo)** — desglose oficial recibo:
+   - `devengosSalariales` (ET Art. 26)
+   - `devengosNoSalariales` (dietas, plus transporte, seguro flex…)
+   - `devengosContribuibles` y `devengosImponibles`
+   - `horasExtraImporte`
+   - `baseCotizacionCC`, `baseCotizacionAT`, `baseIRPF`
+   - `topeMinimoCC`, `topeMaximoCC` (para detección visible de topes)
+   - `aplicoTopeMinimo`, `aplicoTopeMaximo` (booleans informativos)
+
+3. **Backward compatibility**:
+   - Ambos campos son opcionales — el recibo legacy y otros consumidores siguen funcionando.
+   - Las líneas informativas `ES_BASE_CC`, `ES_BASE_AT`, `ES_BASE_IRPF` se mantienen para retrocompatibilidad UI.
+   - No se modificó ningún cálculo numérico.
+
+### Garantías
+
+- ✅ TypeScript limpio (`tsc --noEmit` exit 0)
+- ✅ Sin cambios en motores SS/IRPF
+- ✅ Sin cambios en catálogo de conceptos
+- ✅ Sin migraciones de BBDD
+- ✅ Trazabilidad enriquecida sólo en runtime
+
+### Archivos tocados
+
+| Archivo | Cambio |
+|---|---|
+| `src/hooks/erp/hr/useESPayrollBridge.ts` | `ESPayrollLine.impacts_cra`, `ESPayrollLine.legal_reference`, `ESPayrollSummary.bases` |
+
+---
+
+## 🏁 Veredicto final S9.21d
+
+**"Nómina ES avanzada reforzada y alineada con casuística, conceptos obligatorios/opcionales, bases trazables y vigilancia normativa visible — sin regresiones"**
+
+### Resumen ejecutivo de la fase
+
+| Bloque | Resultado |
+|---|---|
+| **A — Modelo B Guardrails** | ✅ Validación dual (Modelo A vs B) sin auto-promote |
+| **B — Period Coverage** | ✅ Prorrateo selectivo por días efectivos con metadata |
+| **C — Conceptos avanzados** | ✅ Nacimiento (3 tramos), atrasos IT, reducción jornada |
+| **D — Vigilancia normativa UI** | ✅ Badge en cabecera con verificación manual |
+| **E — Layout XL adaptativo** | ✅ 2 columnas + tabs sticky en ≥1280px |
+| **F — Auditoría recibo oficial** | ✅ `bases` agrupadas + `impacts_cra` por línea |
+
+### Checklist no-regresión
+
+- ✅ Compilación TypeScript limpia (todos los bloques)
+- ✅ Sin cambios en motor de cálculo SS/IRPF
+- ✅ Sin migraciones BBDD
+- ✅ Backward compat absoluta (campos nuevos opcionales, layouts antiguos intactos en <1280px)
+- ✅ Sin auto-aplicación de cambios normativos (solo informativos)
+- ✅ Cumplimiento `isRealSubmissionBlocked() === true` (no se tocó la frontera oficial)
