@@ -455,6 +455,88 @@ export function useESPayrollBridge(companyId?: string) {
           `(${input.salarioBase}/30) × ${input.itATDias} × 75% = ${complementoAT}`);
       }
 
+      // ── S9.20: Aplicar Modelo B (salary_sacrifice) ──
+      // Para cada concepto flex en modo 'salary_sacrifice', restar su importe de
+      // ES_MEJORA_VOLUNTARIA. NUNCA tocar ES_SAL_BASE ni ES_COMP_CONVENIO.
+      // Si la mejora voluntaria es insuficiente: degradar a Modelo A con trace warning.
+      const fc = input.flexConfig;
+      if (fc) {
+        const mejoraLine = lines.find(l => l.concept_code === 'ES_MEJORA_VOLUNTARIA' && l.line_type === 'earning');
+        let mejoraDisponible = mejoraLine?.amount ?? 0;
+        const mejoraInicial = mejoraDisponible;
+        const sacrificios: Array<{ concepto: string; importe: number; aplicado: boolean }> = [];
+
+        const tryApplySacrifice = (conceptoLabel: string, codes: string[]) => {
+          const importeFlex = lines
+            .filter(l => codes.includes(l.concept_code))
+            .reduce((s, l) => s + l.amount, 0);
+          if (importeFlex <= 0) return;
+          if (mejoraDisponible >= importeFlex) {
+            mejoraDisponible = r(mejoraDisponible - importeFlex);
+            sacrificios.push({ concepto: conceptoLabel, importe: importeFlex, aplicado: true });
+          } else {
+            sacrificios.push({ concepto: conceptoLabel, importe: importeFlex, aplicado: false });
+          }
+        };
+
+        if (fc.seguro_medico?.application_mode === 'salary_sacrifice') {
+          tryApplySacrifice('seguro_medico', ['ES_RETRIB_FLEX_SEGURO', 'ES_RETRIB_FLEX_SEGURO_EXCESO']);
+        }
+        if (fc.ticket_restaurante?.application_mode === 'salary_sacrifice') {
+          tryApplySacrifice('ticket_restaurante', ['ES_RETRIB_FLEX_RESTAURANTE', 'ES_RETRIB_FLEX_RESTAURANTE_EXCESO']);
+        }
+
+        const totalSacrificable = sacrificios.filter(s => s.aplicado).reduce((s, x) => s + x.importe, 0);
+        const totalDegradado = sacrificios.filter(s => !s.aplicado).reduce((s, x) => s + x.importe, 0);
+
+        if (totalSacrificable > 0 && mejoraLine) {
+          const nuevoImporte = r(mejoraInicial - totalSacrificable);
+          mejoraLine.amount = nuevoImporte;
+          mejoraLine.calculation_trace = {
+            rule: 'S9.20_salary_sacrifice',
+            inputs: {
+              mejora_inicial: mejoraInicial,
+              sacrificios: sacrificios.filter(s => s.aplicado),
+              degradados_a_modelo_a: sacrificios.filter(s => !s.aplicado),
+              guardrail: 'Nunca toca ES_SAL_BASE ni ES_COMP_CONVENIO',
+            },
+            formula: `Mejora voluntaria ${mejoraInicial}€ − sacrificio flex ${totalSacrificable}€ = ${nuevoImporte}€`,
+            timestamp: ts,
+          };
+        }
+
+        // Inyectar línea informativa con el resumen Modelo B (degradaciones incluidas)
+        if (sacrificios.length > 0) {
+          lines.push({
+            concept_code: 'ES_FLEX_MODELO_B_INFO',
+            concept_name: 'Resumen Modelo B (salary sacrifice)',
+            line_type: 'informative',
+            category: 'informative',
+            amount: 0,
+            is_taxable: false,
+            is_ss_contributable: false,
+            is_percentage: false,
+            sort_order: 320,
+            source: 'rule_engine',
+            calculation_trace: {
+              rule: 'S9.20_modelo_b_resumen',
+              inputs: {
+                mejora_voluntaria_inicial: mejoraInicial,
+                mejora_voluntaria_consumida: totalSacrificable,
+                mejora_voluntaria_restante: mejoraDisponible,
+                conceptos_aplicados: sacrificios.filter(s => s.aplicado),
+                conceptos_degradados_a_modelo_a: sacrificios.filter(s => !s.aplicado),
+                aviso: totalDegradado > 0
+                  ? `Mejora voluntaria insuficiente para ${totalDegradado.toFixed(2)}€ — degradado a Modelo A (beneficio adicional)`
+                  : 'Aplicado correctamente',
+              },
+              formula: `Mejora consumida: ${totalSacrificable}€ / restante: ${mejoraDisponible}€`,
+              timestamp: ts,
+            },
+          });
+        }
+      }
+
       // ── 2. Calcular bases ──
       const totalDevengosContribuibles = lines
         .filter(l => l.line_type === 'earning' && l.is_ss_contributable)
