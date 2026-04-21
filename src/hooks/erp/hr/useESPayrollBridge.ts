@@ -84,6 +84,30 @@ export interface ESPayrollInput {
     agreementCode: string;
     professionalGroup: string;
   };
+  /**
+   * S9.21d Bloque B — Casuística temporal (cobertura del período).
+   * Si se proporciona, los conceptos fijos y de retribución en especie se prorratean
+   * por días efectivos. Backward compat: sin `periodCoverage` → mes completo (sin prorrateo).
+   *
+   * NO se prorratean: variables (bonus, comisiones, horas extra), prestaciones INSS
+   * (ES_NACIMIENTO), regularización, ni complementos IT (ya calculados por días).
+   */
+  periodCoverage?: {
+    fechaDesde: string;            // 'YYYY-MM-DD'
+    fechaHasta: string;            // 'YYYY-MM-DD'
+    diasNaturalesPeriodo: number;  // típicamente 30
+    diasEfectivos: number;         // días realmente trabajados/cubiertos
+    motivo?:
+      | 'alta_intramensual'
+      | 'baja_intramensual'
+      | 'cambio_contractual'
+      | 'cambio_salarial'
+      | 'suspension_parcial'
+      | 'excedencia'
+      | 'mes_completo'
+      | 'otro';
+    descripcion?: string;
+  };
 }
 
 export interface ESPayrollCalculation {
@@ -292,6 +316,25 @@ export function useESPayrollBridge(companyId?: string) {
       const r = (n: number) => Math.round(n * 100) / 100;
       const ts = new Date().toISOString();
 
+      // ── S9.21d Bloque B: Helper de prorrateo por días efectivos ──
+      // Backward compat: sin periodCoverage → factor = 1 (mes completo)
+      const pc = input.periodCoverage;
+      const factorProrrateo = (pc && pc.diasNaturalesPeriodo > 0)
+        ? Math.min(1, Math.max(0, pc.diasEfectivos / pc.diasNaturalesPeriodo))
+        : 1;
+      const aplicarProrrateo = factorProrrateo < 1;
+      const prorratea = (monto: number) => aplicarProrrateo ? r(monto * factorProrrateo) : monto;
+      const traceProrrateo = aplicarProrrateo
+        ? {
+            factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+            dias_efectivos: pc!.diasEfectivos,
+            dias_naturales_periodo: pc!.diasNaturalesPeriodo,
+            motivo: pc!.motivo ?? 'otro',
+            fecha_desde: pc!.fechaDesde,
+            fecha_hasta: pc!.fechaHasta,
+          }
+        : null;
+
       // ── 1. Devengos ──
       const addEarning = (code: string, name: string, amount: number, category: string, taxable: boolean, contributable: boolean, sortOrder: number, traceRule?: string, traceInputs?: Record<string, unknown>, traceFormula?: string) => {
         if (amount === 0) return;
@@ -301,7 +344,9 @@ export function useESPayrollBridge(companyId?: string) {
           is_percentage: false, sort_order: sortOrder, source: 'rule_engine',
           calculation_trace: {
             rule: traceRule || code,
-            inputs: traceInputs || { amount },
+            inputs: traceProrrateo
+              ? { ...(traceInputs || { amount }), prorrateo: traceProrrateo }
+              : (traceInputs || { amount }),
             formula: traceFormula || `${name} = ${r(amount)}`,
             timestamp: ts,
           },
@@ -311,25 +356,29 @@ export function useESPayrollBridge(companyId?: string) {
       // ── 1a. Salary resolution: split salarioBase into convention base + mejora voluntaria ──
       if (input.salaryResolution?.hasMejoraVoluntaria) {
         const sr = input.salaryResolution;
-        addEarning('ES_SAL_BASE', 'Salario base (convenio)', sr.salarioBaseConvenio, 'fixed', true, true, 10,
+        addEarning('ES_SAL_BASE', 'Salario base (convenio)', prorratea(sr.salarioBaseConvenio), 'fixed', true, true, 10,
           'agreement_salary_table', 
           { agreementCode: sr.agreementCode, professionalGroup: sr.professionalGroup, salarioPactado: input.salarioBase },
-          `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€`
+          aplicarProrrateo
+            ? `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€ × ${factorProrrateo.toFixed(4)} = ${prorratea(sr.salarioBaseConvenio)}€`
+            : `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€`
         );
         if (sr.plusConvenioTabla > 0) {
-          addEarning('ES_COMP_CONVENIO', 'Plus convenio (tabla)', sr.plusConvenioTabla, 'fixed', true, true, 20,
+          addEarning('ES_COMP_CONVENIO', 'Plus convenio (tabla)', prorratea(sr.plusConvenioTabla), 'fixed', true, true, 20,
             'agreement_salary_table',
             { agreementCode: sr.agreementCode },
-            `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€`
+            aplicarProrrateo
+              ? `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€ × ${factorProrrateo.toFixed(4)} = ${prorratea(sr.plusConvenioTabla)}€`
+              : `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€`
           );
         }
-        addEarning('ES_MEJORA_VOLUNTARIA', 'Mejora voluntaria', sr.mejoraVoluntaria, 'fixed', true, true, 15,
+        addEarning('ES_MEJORA_VOLUNTARIA', 'Mejora voluntaria', prorratea(sr.mejoraVoluntaria), 'fixed', true, true, 15,
           'salary_resolution',
           { salarioPactado: input.salarioBase, totalConvenio: sr.salarioBaseConvenio + sr.plusConvenioTabla },
           `Mejora vol. = Pactado (${r(input.salarioBase)}€) - Convenio (${r(sr.salarioBaseConvenio + sr.plusConvenioTabla)}€) = ${r(sr.mejoraVoluntaria)}€ [ET Art. 26.5]`
         );
       } else {
-        addEarning('ES_SAL_BASE', 'Salario base', input.salarioBase, 'fixed', true, true, 10);
+        addEarning('ES_SAL_BASE', 'Salario base', prorratea(input.salarioBase), 'fixed', true, true, 10);
       }
       
       // Complementos (skip ES_COMP_CONVENIO if already injected by salary resolution)
@@ -339,7 +388,9 @@ export function useESPayrollBridge(companyId?: string) {
           if (key === 'ES_COMP_CONVENIO' && input.salaryResolution?.plusConvenioTabla) return;
           const def = ES_CONCEPT_CATALOG.find(c => c.code === key);
           if (def && val > 0) {
-            addEarning(key, def.name, val, def.category, def.taxable, def.contributable, def.sort_order);
+            // Prorratear sólo conceptos fijos. Variables (overtime, bonus, commission) se mantienen íntegros.
+            const aplicar = def.category === 'fixed';
+            addEarning(key, def.name, aplicar ? prorratea(val) : val, def.category, def.taxable, def.contributable, def.sort_order);
           } else if (val > 0) {
             addEarning(`ES_COMP_${key}`, key, val, 'variable', true, true, 25 + idx);
           }
@@ -350,19 +401,24 @@ export function useESPayrollBridge(companyId?: string) {
       if (input.bonus) addEarning('ES_BONUS', 'Bonus / Gratificación', input.bonus, 'bonus', true, true, 40);
       if (input.comisiones) addEarning('ES_COMISION', 'Comisiones', input.comisiones, 'commission', true, true, 41);
       if (input.dietas) addEarning('ES_DIETAS', 'Dietas y gastos viaje', input.dietas, 'allowance', false, false, 50);
-      if (input.pagaExtra) addEarning('ES_PAGA_EXTRA', 'Paga extraordinaria', input.pagaExtra, 'fixed', true, true, 60);
+      if (input.pagaExtra) addEarning('ES_PAGA_EXTRA', 'Paga extraordinaria', prorratea(input.pagaExtra), 'fixed', true, true, 60);
       // S9.18-H4: Seguro médico — split exento/exceso, ambos cotizan SS (LGSS Art. 147), CRA
       if (input.seguroMedico && input.seguroMedico > 0) {
+        // S9.21d Bloque B: prorratear prima mensual por cobertura del período
+        const primaProrrateada = aplicarProrrateo ? r(input.seguroMedico * factorProrrateo) : input.seguroMedico;
         const nBen = Math.max(input.numBeneficiarios ?? 1, 1);
         const nDis = Math.min(Math.max(input.numBeneficiariosDiscapacidad ?? 0, 0), nBen);
         const limiteAnual = (nBen - nDis) * 500 + nDis * 1500;
         const limiteMensual = r(limiteAnual / 12);
-        const parteExenta = Math.min(input.seguroMedico, limiteMensual);
-        const parteExceso = r(Math.max(0, input.seguroMedico - limiteMensual));
+        const parteExenta = Math.min(primaProrrateada, limiteMensual);
+        const parteExceso = r(Math.max(0, primaProrrateada - limiteMensual));
 
         // Trace CRA 0039/0040 alignment
         const traceSeguro = {
-          prima_mensual_total: input.seguroMedico,
+          prima_mensual_total: primaProrrateada,
+          prima_mensual_origen: input.seguroMedico,
+          prorrateo_aplicado: aplicarProrrateo,
+          factor_prorrateo: aplicarProrrateo ? Number(factorProrrateo.toFixed(4)) : 1,
           // S9.18-H5: anual derivado para trazabilidad
           prima_anual_total_derivada: r(input.seguroMedico * 12),
           fuente_dato: 'manual_o_derivado_anual',
@@ -389,9 +445,9 @@ export function useESPayrollBridge(companyId?: string) {
         };
 
         if (parteExceso === 0) {
-          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', input.seguroMedico, 'flexible_remuneration', false, true, 70,
+          addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa', primaProrrateada, 'flexible_remuneration', false, true, 70,
             'LGSS_Art147_seguro_medico_exento', traceSeguro as any,
-            `Prima ${input.seguroMedico}€ ≤ límite ${limiteMensual}€/mes → 100% exento IRPF, cotiza SS`);
+            `Prima ${primaProrrateada}€ ≤ límite ${limiteMensual}€/mes → 100% exento IRPF, cotiza SS`);
         } else {
           addEarning('ES_RETRIB_FLEX_SEGURO', 'Seguro médico empresa (exento)', parteExenta, 'flexible_remuneration', false, true, 70,
             'LGSS_Art147_seguro_medico_exento', traceSeguro as any,
@@ -410,16 +466,22 @@ export function useESPayrollBridge(companyId?: string) {
       const tr = input.flexConfig?.ticket_restaurante;
       if (tr && tr.importe_dia > 0 && tr.dias_mes > 0 && tr.modalidad) {
         const TOPE_DIA = 11;
+        // S9.21d Bloque B: cap por días efectivos del período
+        const diasEfectivosTR = aplicarProrrateo
+          ? Math.min(tr.dias_mes, Math.floor(pc!.diasEfectivos))
+          : tr.dias_mes;
         const exentaDia = Math.min(tr.importe_dia, TOPE_DIA);
         const excesoDia = Math.max(0, tr.importe_dia - TOPE_DIA);
-        const parteExentaR = r(exentaDia * tr.dias_mes);
-        const parteExcesoR = r(excesoDia * tr.dias_mes);
+        const parteExentaR = r(exentaDia * diasEfectivosTR);
+        const parteExcesoR = r(excesoDia * diasEfectivosTR);
         const traceRest = {
           fuente_dato: 'manual_empresa',
           application_mode: tr.application_mode,
           modalidad: tr.modalidad,
           importe_dia: tr.importe_dia,
-          dias_mes: tr.dias_mes,
+          dias_mes: diasEfectivosTR,
+          dias_mes_origen: tr.dias_mes,
+          prorrateo_aplicado: aplicarProrrateo,
           tope_dia: TOPE_DIA,
           parte_exenta_mes: parteExentaR,
           parte_exceso_mes: parteExcesoR,
@@ -433,12 +495,12 @@ export function useESPayrollBridge(companyId?: string) {
         if (parteExentaR > 0) {
           addEarning('ES_RETRIB_FLEX_RESTAURANTE', 'Ticket restaurante (exento)', parteExentaR, 'flexible_remuneration', false, false, 73,
             'RIRPF_Art45_2_restaurante_exento', traceRest as any,
-            `min(${tr.importe_dia}€, ${TOPE_DIA}€) × ${tr.dias_mes} días = ${parteExentaR}€ — exento IRPF y SS`);
+            `min(${tr.importe_dia}€, ${TOPE_DIA}€) × ${diasEfectivosTR} días = ${parteExentaR}€ — exento IRPF y SS`);
         }
         if (parteExcesoR > 0) {
           addEarning('ES_RETRIB_FLEX_RESTAURANTE_EXCESO', 'Ticket restaurante (exceso gravado)', parteExcesoR, 'flexible_remuneration', true, true, 73,
             'RIRPF_Art45_2_restaurante_exceso', traceRest as any,
-            `(${tr.importe_dia} - ${TOPE_DIA})€ × ${tr.dias_mes} días = ${parteExcesoR}€ — sujeto IRPF + cotiza SS`);
+            `(${tr.importe_dia} - ${TOPE_DIA})€ × ${diasEfectivosTR} días = ${parteExcesoR}€ — sujeto IRPF + cotiza SS`);
         }
       }
       if (input.stockOptions) addEarning('ES_STOCK_OPTIONS', 'Stock options', input.stockOptions, 'variable', true, true, 80);
@@ -597,6 +659,39 @@ export function useESPayrollBridge(companyId?: string) {
       const totalDevengosContribuibles = lines
         .filter(l => l.line_type === 'earning' && l.is_ss_contributable)
         .reduce((s, l) => s + l.amount, 0);
+
+      // ── S9.21d Bloque B: Línea informativa de cobertura del período ──
+      if (aplicarProrrateo && pc) {
+        lines.push({
+          concept_code: 'ES_PERIOD_COVERAGE_INFO',
+          concept_name: 'Cobertura del período',
+          line_type: 'informative',
+          category: 'informative',
+          amount: 0,
+          is_taxable: false,
+          is_ss_contributable: false,
+          is_percentage: false,
+          sort_order: 305,
+          source: 'rule_engine',
+          calculation_trace: {
+            rule: 'S9.21d_period_coverage',
+            inputs: {
+              fecha_desde: pc.fechaDesde,
+              fecha_hasta: pc.fechaHasta,
+              dias_naturales_periodo: pc.diasNaturalesPeriodo,
+              dias_efectivos: pc.diasEfectivos,
+              factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+              motivo: pc.motivo ?? 'otro',
+              descripcion: pc.descripcion ?? null,
+              alcance_prorrateo: 'Salario base, plus convenio, mejora voluntaria, paga extra, seguro médico mensual, ticket restaurante (cap por días efectivos)',
+              no_prorrateado: 'Bonus, comisiones, horas extra, dietas, complementos IT (ya por días), prestaciones INSS, regularizaciones',
+            },
+            formula: `Días efectivos ${pc.diasEfectivos} / ${pc.diasNaturalesPeriodo} = ${factorProrrateo.toFixed(4)}`,
+            timestamp: ts,
+          },
+        });
+      }
+
       const totalDevengosImponibles = lines
         .filter(l => l.line_type === 'earning' && l.is_taxable)
         .reduce((s, l) => s + l.amount, 0);
