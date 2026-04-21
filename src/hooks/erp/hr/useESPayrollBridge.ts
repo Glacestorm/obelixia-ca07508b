@@ -404,6 +404,42 @@ export function useESPayrollBridge(companyId?: string) {
       // ticketRestaurante y chequeGuarderia se persisten en hr_es_flexible_remuneration_plans pero NO se aplican a nómina
       // if (input.ticketRestaurante) addEarning('ES_RETRIB_FLEX_RESTAURANTE', ...);
       // if (input.chequeGuarderia) addEarning('ES_RETRIB_FLEX_GUARDERIA', ...);
+      // S9.20: Ticket restaurante — automatizado SOLO si hay datos suficientes y consistentes
+      // (importe_dia + dias_mes + modalidad). Aplica tope 11€/día RIRPF Art. 45.2.
+      const tr = input.flexConfig?.ticket_restaurante;
+      if (tr && tr.importe_dia > 0 && tr.dias_mes > 0 && tr.modalidad) {
+        const TOPE_DIA = 11;
+        const exentaDia = Math.min(tr.importe_dia, TOPE_DIA);
+        const excesoDia = Math.max(0, tr.importe_dia - TOPE_DIA);
+        const parteExentaR = r(exentaDia * tr.dias_mes);
+        const parteExcesoR = r(excesoDia * tr.dias_mes);
+        const traceRest = {
+          fuente_dato: 'manual_empresa',
+          application_mode: tr.application_mode,
+          modalidad: tr.modalidad,
+          importe_dia: tr.importe_dia,
+          dias_mes: tr.dias_mes,
+          tope_dia: TOPE_DIA,
+          parte_exenta_mes: parteExentaR,
+          parte_exceso_mes: parteExcesoR,
+          flags: {
+            exento_irpf_tramo_exento: true,
+            ss_no_cotiza_tramo_exento: true,
+            exceso_sujeto_irpf_y_ss: parteExcesoR > 0,
+          },
+          legal_reference: 'RIRPF Art. 45.2',
+        };
+        if (parteExentaR > 0) {
+          addEarning('ES_RETRIB_FLEX_RESTAURANTE', 'Ticket restaurante (exento)', parteExentaR, 'flexible_remuneration', false, false, 73,
+            'RIRPF_Art45_2_restaurante_exento', traceRest as any,
+            `min(${tr.importe_dia}€, ${TOPE_DIA}€) × ${tr.dias_mes} días = ${parteExentaR}€ — exento IRPF y SS`);
+        }
+        if (parteExcesoR > 0) {
+          addEarning('ES_RETRIB_FLEX_RESTAURANTE_EXCESO', 'Ticket restaurante (exceso gravado)', parteExcesoR, 'flexible_remuneration', true, true, 73,
+            'RIRPF_Art45_2_restaurante_exceso', traceRest as any,
+            `(${tr.importe_dia} - ${TOPE_DIA})€ × ${tr.dias_mes} días = ${parteExcesoR}€ — sujeto IRPF + cotiza SS`);
+        }
+      }
       if (input.stockOptions) addEarning('ES_STOCK_OPTIONS', 'Stock options', input.stockOptions, 'variable', true, true, 80);
       if (input.regularizacion) addEarning('ES_REGULARIZACION', 'Regularización / atrasos', input.regularizacion, 'regularization', true, true, 95);
       if (input.itCCDias && input.itCCDias > 0) {
