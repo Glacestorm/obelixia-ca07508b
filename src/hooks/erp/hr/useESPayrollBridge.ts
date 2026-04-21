@@ -470,15 +470,18 @@ export function useESPayrollBridge(companyId?: string) {
         // ── S9.21d: Guardrails legales para Modelo B (salary sacrifice) ──
         // 1) ET Art. 26.1: salario en especie ≤ 30% de las percepciones salariales
         // 2) RD Ley SMI 2026 (1.221 €/mes): salario dinerario final ≥ SMI
-        // Cálculo previo de bases para evaluar viabilidad de cada sacrificio.
-        const dinerarioBase = lines
-          .filter(l => l.line_type === 'earning' && l.is_salary !== false)
-          .reduce((s, l) => s + l.amount, 0);
+        // Códigos considerados retribución en especie a estos efectos
+        const ESPECIE_CODES = new Set([
+          'ES_RETRIB_FLEX_SEGURO', 'ES_RETRIB_FLEX_SEGURO_EXCESO',
+          'ES_RETRIB_FLEX_RESTAURANTE', 'ES_RETRIB_FLEX_RESTAURANTE_EXCESO',
+          'ES_RETRIB_FLEX_GUARDERIA', 'ES_RETRIB_FLEX_FORMACION',
+          'ES_STOCK_OPTIONS',
+        ]);
         const especieBase = lines
-          .filter(l => l.line_type === 'earning' && (
-            l.concept_code.startsWith('ES_RETRIB_FLEX_') ||
-            l.concept_code === 'ES_STOCK_OPTIONS'
-          ))
+          .filter(l => l.line_type === 'earning' && ESPECIE_CODES.has(l.concept_code))
+          .reduce((s, l) => s + l.amount, 0);
+        const dinerarioBase = lines
+          .filter(l => l.line_type === 'earning' && !ESPECIE_CODES.has(l.concept_code))
           .reduce((s, l) => s + l.amount, 0);
 
         const tryApplySacrifice = (conceptoLabel: string, codes: string[]) => {
