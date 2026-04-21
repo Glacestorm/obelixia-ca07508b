@@ -563,40 +563,253 @@ export function HRFlexibleRemunerationPanel({
   );
 }
 
-// Sub-component for pending concepts
-function ConceptRow({
-  label,
+// ───────────────────────────────────────────────────────────────────────
+// S9.20: Sub-componentes Modelo A/B
+// ───────────────────────────────────────────────────────────────────────
+
+/** Toggle compacto de Modelo A (beneficio adicional) vs Modelo B (salary sacrifice) */
+function ModelToggle({
   value,
   onChange,
-  status,
+}: {
+  value: FlexApplicationMode;
+  onChange: (mode: FlexApplicationMode) => void;
+}) {
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as FlexApplicationMode)}>
+      <SelectTrigger className="h-6 w-auto min-w-[140px] text-[10px] gap-1 px-2">
+        {value === 'salary_sacrifice' ? (
+          <ArrowRightLeft className="h-2.5 w-2.5" />
+        ) : (
+          <Plus className="h-2.5 w-2.5" />
+        )}
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="benefit_additional" className="text-xs">
+          <div className="flex flex-col">
+            <span className="font-medium">Beneficio adicional</span>
+            <span className="text-[10px] text-muted-foreground">Suma al coste empresa</span>
+          </div>
+        </SelectItem>
+        <SelectItem value="salary_sacrifice" className="text-xs">
+          <div className="flex flex-col">
+            <span className="font-medium">Salary sacrifice</span>
+            <span className="text-[10px] text-muted-foreground">Consume mejora voluntaria</span>
+          </div>
+        </SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** Card de ticket restaurante con automatización si datos completos */
+function RestauranteCard({
+  importeDia,
+  diasMes,
+  modalidad,
+  applicationMode,
+  fallbackMensual,
+  onChangeMode,
+  onChangeImporteDia,
+  onChangeDiasMes,
+  onChangeModalidad,
+  onChangeFallbackMensual,
+}: {
+  importeDia: number;
+  diasMes: number;
+  modalidad: 'comedor' | 'tarjeta_vale' | null;
+  applicationMode: FlexApplicationMode;
+  fallbackMensual: number;
+  onChangeMode: (mode: FlexApplicationMode) => void;
+  onChangeImporteDia: (v: number) => void;
+  onChangeDiasMes: (v: number) => void;
+  onChangeModalidad: (v: 'comedor' | 'tarjeta_vale' | null) => void;
+  onChangeFallbackMensual: (v: number) => void;
+}) {
+  const TOPE = 11;
+  const datosCompletos = importeDia > 0 && diasMes > 0 && !!modalidad;
+  const exentaMes = datosCompletos ? Math.round(Math.min(importeDia, TOPE) * diasMes * 100) / 100 : 0;
+  const excesoMes = datosCompletos ? Math.round(Math.max(0, importeDia - TOPE) * diasMes * 100) / 100 : 0;
+  return (
+    <div className="space-y-2 p-3 rounded-lg border bg-muted/20">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-xs font-medium">Ticket restaurante</Label>
+          <Badge variant="outline" className="text-[10px] gap-1">
+            <User className="h-2.5 w-2.5" />
+            Manual empresa
+          </Badge>
+          <ModelToggle value={applicationMode} onChange={onChangeMode} />
+        </div>
+        {datosCompletos ? (
+          excesoMes > 0 ? (
+            <Badge variant="warning" className="text-[10px]">
+              <AlertTriangle className="h-2.5 w-2.5 mr-1" />
+              Exceso {excesoMes.toFixed(2)}€/mes
+            </Badge>
+          ) : (
+            <Badge variant="success" className="text-[10px]">
+              <CheckCircle className="h-2.5 w-2.5 mr-1" />
+              Aplicado a nómina
+            </Badge>
+          )
+        ) : (
+          <Badge variant="warning" className="text-[10px]">
+            <Clock className="h-2.5 w-2.5 mr-1" />
+            Faltan datos
+          </Badge>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <Label className="text-[10px] text-muted-foreground">€ / día</Label>
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            value={importeDia || ''}
+            onChange={(e) => onChangeImporteDia(Number(e.target.value) || 0)}
+            className="h-8 text-xs"
+            placeholder="p.ej. 11"
+          />
+        </div>
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Días/mes</Label>
+          <Input
+            type="number"
+            min={0}
+            max={31}
+            value={diasMes || ''}
+            onChange={(e) => onChangeDiasMes(Number(e.target.value) || 0)}
+            className="h-8 text-xs"
+            placeholder="p.ej. 20"
+          />
+        </div>
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Modalidad</Label>
+          <Select
+            value={modalidad ?? ''}
+            onValueChange={(v) => onChangeModalidad((v || null) as 'comedor' | 'tarjeta_vale' | null)}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Seleccionar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="comedor">Comedor empresa</SelectItem>
+              <SelectItem value="tarjeta_vale">Tarjeta / Vale</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {datosCompletos && (
+        <div className="grid grid-cols-3 gap-2 mt-2 p-2 rounded-md bg-background/60 border border-border/40">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Total/mes</span>
+            <span className="text-xs font-semibold tabular-nums">
+              {(importeDia * diasMes).toFixed(2)}€
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Exento/mes</span>
+            <span className="text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+              {exentaMes.toFixed(2)}€
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span
+              className={cn(
+                'text-[9px] uppercase tracking-wide',
+                excesoMes > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
+              )}
+            >
+              Exceso/mes
+            </span>
+            <span
+              className={cn(
+                'text-xs font-semibold tabular-nums',
+                excesoMes > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
+              )}
+            >
+              {excesoMes.toFixed(2)}€
+            </span>
+          </div>
+        </div>
+      )}
+      {!datosCompletos && (
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Importe mensual (legado, sin reglas)</Label>
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            value={fallbackMensual || ''}
+            onChange={(e) => onChangeFallbackMensual(Number(e.target.value) || 0)}
+            className="h-8 text-xs"
+          />
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Completa €/día + días + modalidad para automatizar el cálculo (tope 11€/día RIRPF Art. 45.2).
+          </p>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+        <span className="text-[10px] text-muted-foreground">
+          IRPF: tramo exento ≤ 11€/día — exceso sujeto
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          SS: exceso cotiza
+        </span>
+        {applicationMode === 'salary_sacrifice' && (
+          <span className="text-[10px] font-medium text-primary">
+            Modelo B: consume mejora voluntaria
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Card simple para conceptos persistidos pero NO automatizados (guardería, transporte) */
+function SimpleFlexCard({
+  label,
+  value,
+  applicationMode,
+  onChangeValue,
+  onChangeMode,
   hint,
 }: {
   label: string;
   value: number;
-  onChange: (v: number) => void;
-  status: 'applied' | 'pending';
+  applicationMode: FlexApplicationMode;
+  onChangeValue: (v: number) => void;
+  onChangeMode: (mode: FlexApplicationMode) => void;
   hint: string;
 }) {
   return (
-    <div className="flex items-center gap-3 py-1">
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <Label className="text-xs">{label}</Label>
-          <Badge variant="warning" className="text-[10px]">
-            <Clock className="h-2.5 w-2.5 mr-1" />
-            Pendiente de reglas
+    <div className="space-y-2 p-3 rounded-lg border bg-muted/20">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-xs font-medium">{label}</Label>
+          <Badge variant="outline" className="text-[10px] gap-1">
+            <User className="h-2.5 w-2.5" />
+            Manual empresa
           </Badge>
+          <ModelToggle value={applicationMode} onChange={onChangeMode} />
         </div>
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          value={value || ''}
-          onChange={e => onChange(Number(e.target.value) || 0)}
-          className="h-8 text-xs"
-        />
-        <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>
+        <Badge variant="warning" className="text-[10px]">
+          <Clock className="h-2.5 w-2.5 mr-1" />
+          Pendiente de reglas
+        </Badge>
       </div>
+      <Input
+        type="number"
+        min={0}
+        step={0.01}
+        value={value || ''}
+        onChange={(e) => onChangeValue(Number(e.target.value) || 0)}
+        className="h-8 text-xs"
+      />
+      <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>
     </div>
   );
 }
