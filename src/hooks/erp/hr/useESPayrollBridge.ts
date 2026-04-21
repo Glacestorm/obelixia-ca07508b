@@ -465,19 +465,61 @@ export function useESPayrollBridge(companyId?: string) {
         const mejoraLine = lines.find(l => l.concept_code === 'ES_MEJORA_VOLUNTARIA' && l.line_type === 'earning');
         let mejoraDisponible = mejoraLine?.amount ?? 0;
         const mejoraInicial = mejoraDisponible;
-        const sacrificios: Array<{ concepto: string; importe: number; aplicado: boolean }> = [];
+        const sacrificios: Array<{ concepto: string; importe: number; aplicado: boolean; motivo_degradacion?: string }> = [];
+
+        // ── S9.21d: Guardrails legales para Modelo B (salary sacrifice) ──
+        // 1) ET Art. 26.1: salario en especie ≤ 30% de las percepciones salariales
+        // 2) RD Ley SMI 2026 (1.221 €/mes): salario dinerario final ≥ SMI
+        // Cálculo previo de bases para evaluar viabilidad de cada sacrificio.
+        const dinerarioBase = lines
+          .filter(l => l.line_type === 'earning' && l.is_salary !== false)
+          .reduce((s, l) => s + l.amount, 0);
+        const especieBase = lines
+          .filter(l => l.line_type === 'earning' && (
+            l.concept_code.startsWith('ES_RETRIB_FLEX_') ||
+            l.concept_code === 'ES_STOCK_OPTIONS'
+          ))
+          .reduce((s, l) => s + l.amount, 0);
 
         const tryApplySacrifice = (conceptoLabel: string, codes: string[]) => {
           const importeFlex = lines
             .filter(l => codes.includes(l.concept_code))
             .reduce((s, l) => s + l.amount, 0);
           if (importeFlex <= 0) return;
-          if (mejoraDisponible >= importeFlex) {
+
+          // Guardrail 1: Mejora voluntaria suficiente
+          if (mejoraDisponible < importeFlex) {
+            sacrificios.push({
+              concepto: conceptoLabel, importe: importeFlex, aplicado: false,
+              motivo_degradacion: `Mejora voluntaria insuficiente (${mejoraDisponible.toFixed(2)}€ < ${importeFlex.toFixed(2)}€)`,
+            });
+            return;
+          }
+
+          // Guardrail 2: ET Art. 26.1 — salario en especie ≤ 30% del total salarial
+          const totalPercepciones = dinerarioBase + especieBase;
+          const pctEspecie = totalPercepciones > 0 ? (especieBase / totalPercepciones) * 100 : 0;
+          if (pctEspecie > 30) {
+            sacrificios.push({
+              concepto: conceptoLabel, importe: importeFlex, aplicado: false,
+              motivo_degradacion: `Excede límite ET Art. 26.1: especie ${pctEspecie.toFixed(1)}% > 30%`,
+            });
+            return;
+          }
+
+          // Guardrail 3: RD Ley SMI 2026 — dinerario final ≥ SMI mensual (1.221€)
+          const dinerarioFinal = dinerarioBase - importeFlex;
+          if (dinerarioFinal < SMI_MENSUAL_2026) {
+            sacrificios.push({
+              concepto: conceptoLabel, importe: importeFlex, aplicado: false,
+              motivo_degradacion: `Dinerario final (${dinerarioFinal.toFixed(2)}€) < SMI 2026 (${SMI_MENSUAL_2026}€)`,
+            });
+            return;
+          }
+
+          // Aplicar sacrificio
             mejoraDisponible = r(mejoraDisponible - importeFlex);
             sacrificios.push({ concepto: conceptoLabel, importe: importeFlex, aplicado: true });
-          } else {
-            sacrificios.push({ concepto: conceptoLabel, importe: importeFlex, aplicado: false });
-          }
         };
 
         if (fc.seguro_medico?.application_mode === 'salary_sacrifice') {
