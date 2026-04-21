@@ -167,6 +167,10 @@ export interface ESPayrollLine {
   source: string;
   incident_ref?: string;
   calculation_trace?: ESCalculationTrace;
+  /** S9.21d Bloque F: Impacto en Cuadro Resumen de Aportaciones (CRA TGSS) */
+  impacts_cra?: boolean;
+  /** S9.21d Bloque F: Referencia legal para trazabilidad recibo oficial (ET, LGSS, LIRPF, RIRPF) */
+  legal_reference?: string;
 }
 
 export interface ESPayrollSummary {
@@ -180,6 +184,21 @@ export interface ESPayrollSummary {
   tipoIRPF: number;
   ssContributions: SSContributionResult;
   irpfResult: IRPFResult;
+  /** S9.21d Bloque F: Desglose oficial de bases para recibo (ET Art. 26, LGSS Art. 147) */
+  bases?: {
+    devengosSalariales: number;
+    devengosNoSalariales: number;
+    devengosContribuibles: number;
+    devengosImponibles: number;
+    horasExtraImporte: number;
+    baseCotizacionCC: number;
+    baseCotizacionAT: number;
+    baseIRPF: number;
+    topeMinimoCC: number;
+    topeMaximoCC: number;
+    aplicoTopeMinimo: boolean;
+    aplicoTopeMaximo: boolean;
+  };
 }
 
 export interface ESPreCloseValidation {
@@ -904,6 +923,29 @@ export function useESPayrollBridge(companyId?: string) {
         tipoIRPF: irpfResult.tipoEfectivo,
         ssContributions: ssResult,
         irpfResult,
+        // ── S9.21d Bloque F: Desglose de bases para trazabilidad recibo oficial ──
+        bases: {
+          devengosSalariales: r(
+            lines
+              .filter(l => l.line_type === 'earning' && l.is_taxable && l.category !== 'allowance')
+              .reduce((s, l) => s + l.amount, 0),
+          ),
+          devengosNoSalariales: r(
+            lines
+              .filter(l => l.line_type === 'earning' && !l.is_taxable && !l.is_ss_contributable)
+              .reduce((s, l) => s + l.amount, 0),
+          ),
+          devengosContribuibles: r(totalDevengosContribuibles),
+          devengosImponibles: r(totalDevengosImponibles),
+          horasExtraImporte: r(input.horasExtraImporte || 0),
+          baseCotizacionCC: r(baseCotizacionCC),
+          baseCotizacionAT: r(baseCotizacionAT),
+          baseIRPF: r(baseIRPF),
+          topeMinimoCC: r(ssBase.base_minima_mensual),
+          topeMaximoCC: r(ssBase.base_maxima_mensual),
+          aplicoTopeMinimo: totalDevengosContribuibles < ssBase.base_minima_mensual,
+          aplicoTopeMaximo: totalDevengosContribuibles > ssBase.base_maxima_mensual,
+        },
       };
 
       const calculation = { lines, summary };
