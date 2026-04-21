@@ -108,6 +108,35 @@ export interface ESPayrollInput {
       | 'otro';
     descripcion?: string;
   };
+  /**
+   * S9.21d Bloque C — Tramos de nacimiento/cuidado de menor (LGSS Art. 177-182).
+   * Permite reflejar prestaciones por tramos cuando el período se solapa con la baja.
+   * Importes son prestación INSS (no salario): no taxable, no SS, no IRPF.
+   */
+  nacimientoTramos?: Array<{
+    tipo: 'maternidad' | 'paternidad' | 'corresponsabilidad' | 'lactancia';
+    fechaDesde: string;            // 'YYYY-MM-DD'
+    fechaHasta: string;            // 'YYYY-MM-DD'
+    importe: number;               // € en el período
+    obligatorio?: boolean;         // tramo obligatorio (6 sem post-parto)
+    descripcion?: string;
+  }>;
+  /**
+   * S9.21d Bloque C — Atrasos IT (regularización de baja médica no introducida).
+   * Se persiste como concepto separado del genérico ES_REGULARIZACION para trazabilidad.
+   */
+  atrasosIT?: {
+    importe: number;
+    periodoOrigen: string;         // 'YYYY-MM' al que corresponden los atrasos
+    motivo: 'IT_no_reflejada' | 'IT_recalculo' | 'IT_correccion';
+    descripcion?: string;
+  };
+  /**
+   * S9.21d Bloque C — Reducción de jornada por guarda legal (ET Art. 37.6).
+   * Porcentaje de reducción 1-99. Aplica a conceptos fijos salariales.
+   * Se combina multiplicativamente con factorProrrateo si ambos coexisten.
+   */
+  reduccionJornadaPct?: number;
 }
 
 export interface ESPayrollCalculation {
