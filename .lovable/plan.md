@@ -123,3 +123,37 @@ Nueva configuración `concept_config` guardada en `metadata` jsonb existente (si
 ### Veredicto
 
 **"Retribución Flexible ES ampliada con modelo A+B y automatización prudente por concepto"**
+
+## S9.21d — Bloque A: Guardrails legales Modelo B (30% especie + SMI 2026) ✅
+
+### Cambios
+
+- **Import SMI single source:** `useESPayrollBridge.ts` importa `SMI_MENSUAL_2026` (1.221€) desde `@/shared/legal/rules/smiRules`
+- **Set `ESPECIE_CODES`:** identifica retribución en especie a efectos del Art. 26.1 ET (flex seguro/restaurante/guardería/formación + stock options)
+- **Pre-cálculo:** `dinerarioBase` y `especieBase` antes de evaluar sacrificios
+- **`tryApplySacrifice` reforzado** con tres guardrails secuenciales:
+  1. **Mejora voluntaria suficiente** (existente)
+  2. **ET Art. 26.1:** especie ≤ 30% del total salarial → si excede, degrada con motivo
+  3. **RD Ley SMI 2026:** dinerario final ≥ 1.221€ → si bajaría del SMI, degrada con motivo
+- **Trace ampliada:** cada sacrificio degradado lleva `motivo_degradacion` legible
+- **Resumen Modelo B (`ES_FLEX_MODELO_B_INFO`)** ahora incluye `guardrails_aplicados` con SMI vigente, % especie actual, base legal y bases dinerario/especie
+- **UI:** `ModelToggle` advierte explícitamente "degrada si especie > 30% o dinerario < SMI"
+
+### Garantías
+
+- ✅ Modelo B nunca toca `ES_SAL_BASE` ni `ES_COMP_CONVENIO` (sólo `ES_MEJORA_VOLUNTARIA`)
+- ✅ Si cualquier guardrail falla → degradación automática a Modelo A con aviso visible y trace completa
+- ✅ Backward compat: planes sin flex o sin Modelo B siguen calculando idéntico
+- ✅ TypeScript limpio
+- ✅ Sin tocar `payroll-calculation-engine.ts`
+
+### Archivos tocados
+
+| Archivo | Cambio |
+|---|---|
+| `src/hooks/erp/hr/useESPayrollBridge.ts` | Import SMI + set ESPECIE_CODES + 3 guardrails en tryApplySacrifice + trace ampliada |
+| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Tooltip ModelToggle con condiciones de degradación |
+
+### Veredicto parcial
+
+**"Modelo B con guardrails legales (ET 26.1 + SMI 2026) operativos y trazables"**
