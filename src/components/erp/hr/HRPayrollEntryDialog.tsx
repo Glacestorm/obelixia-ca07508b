@@ -677,7 +677,7 @@ export function HRPayrollEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl xl:max-w-7xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
@@ -694,8 +694,10 @@ export function HRPayrollEntryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* S9.18-H2b: Top section — shrinks only if viewport is too small, scrolls internally to avoid clipping */}
-        <div className="shrink-0 overflow-y-auto max-h-[40vh]">
+        {/* S9.21d Bloque E: Layout XL adaptativo — 2 columnas en ≥1280px */}
+        <div className="flex-1 min-h-0 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] xl:gap-4 overflow-hidden">
+        {/* Columna izquierda: contexto (empleado, convenio, flex) */}
+        <div className="shrink-0 overflow-y-auto max-h-[40vh] xl:max-h-none xl:h-full xl:pr-1">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -750,10 +752,10 @@ export function HRPayrollEntryDialog({
           )}
         </div>
 
-        {/* S9.18-H2: Scrollable bottom section — tabs + concepts */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        {/* Columna derecha: tabs (devengos / deducciones / resumen) — sticky en XL */}
+        <div className="flex-1 overflow-y-auto min-h-0 xl:h-full xl:border-l xl:pl-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-3 xl:sticky xl:top-0 xl:z-10 xl:bg-background">
               <TabsTrigger value="earnings" className="gap-1">
                 <TrendingUp className="h-3 w-3" />
                 Devengos
@@ -880,6 +882,7 @@ export function HRPayrollEntryDialog({
               </div>
             </TabsContent>
           </Tabs>
+        </div>
         </div>
 
         <DialogFooter className="shrink-0 mt-4">

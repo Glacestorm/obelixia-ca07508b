@@ -254,3 +254,43 @@ Hacer visible la vigilancia normativa directamente en el flujo de entrada de nó
 ### Veredicto parcial
 
 **"Vigilancia normativa visible y accionable desde la nómina, sin riesgo de autoaplicación"**
+
+---
+
+## S9.21d Bloque E — Layout XL adaptativo ✅
+
+### Objetivo
+
+Aprovechar monitores ≥1280px (XL) reorganizando el diálogo de nómina en 2 columnas, sin romper móvil/tablet.
+
+### Cambios técnicos
+
+1. **`HRPayrollEntryDialog.tsx`**:
+   - `DialogContent`: `max-w-4xl xl:max-w-7xl` (más ancho en XL)
+   - Wrapper interno con `flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] xl:gap-4`
+   - **Columna izquierda (XL)**: empleado + convenio + retribución flexible — scroll independiente, ocupa toda la altura
+   - **Columna derecha (XL)**: Tabs (devengos/deducciones/resumen) — `TabsList` sticky en XL (`xl:sticky xl:top-0 xl:z-10`)
+   - Separador visual entre columnas (`xl:border-l`)
+   - En <1280px: layout vertical original intacto (sin regresión)
+
+### Garantías
+
+- ✅ Sin cambios en lógica de negocio (solo presentación)
+- ✅ Backward compat absoluta en móvil/tablet (<1280px)
+- ✅ TypeScript limpio (`tsc --noEmit` exit 0)
+- ✅ Sticky tabs en XL para mejor navegación con muchos conceptos
+- ✅ Tokens semánticos (border, background)
+
+### Archivos tocados
+
+| Archivo | Cambio |
+|---|---|
+| `src/components/erp/hr/HRPayrollEntryDialog.tsx` | Wrapper grid XL + sticky tabs + max-width XL |
+
+### Veredicto parcial
+
+**"Diálogo de nómina aprovecha monitores XL con 2 columnas y tabs sticky, sin romper móvil"**
+
+### Pendiente
+
+- **Bloque F**: Auditoría de campos de recibo oficial (CRA, trazabilidad de bases)
