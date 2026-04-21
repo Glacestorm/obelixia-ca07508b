@@ -14,10 +14,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info, Building2, User } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, Clock, Save, Info, Building2, User, ArrowRightLeft, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+// S9.20: Modelo A (beneficio adicional) vs Modelo B (salary sacrifice)
+type FlexApplicationMode = 'benefit_additional' | 'salary_sacrifice';
+
+interface FlexConceptConfig {
+  seguro_medico: { application_mode: FlexApplicationMode };
+  ticket_restaurante: {
+    application_mode: FlexApplicationMode;
+    importe_dia: number;
+    dias_mes: number;
+    modalidad: 'comedor' | 'tarjeta_vale' | null;
+  };
+  cheque_guarderia: { application_mode: FlexApplicationMode };
+  transporte: {
+    application_mode: FlexApplicationMode;
+    modalidad: 'publico_colectivo' | 'otro' | null;
+  };
+}
+
+const DEFAULT_FLEX_CONFIG: FlexConceptConfig = {
+  seguro_medico: { application_mode: 'benefit_additional' },
+  ticket_restaurante: { application_mode: 'benefit_additional', importe_dia: 0, dias_mes: 0, modalidad: null },
+  cheque_guarderia: { application_mode: 'benefit_additional' },
+  transporte: { application_mode: 'benefit_additional', modalidad: null },
+};
 
 interface FlexPlan {
   id?: string;
@@ -37,6 +62,8 @@ interface FlexPlan {
   // 'convenio' = vendría de tabla de convenio (no existe fuente real aún)
   // 'manual_overrides_convenio' = ambas fuentes y manual prevalece
   seguro_medico_source: 'manual' | 'convenio' | 'manual_overrides_convenio';
+  // S9.20: configuración por concepto (Modelo A/B + datos específicos)
+  concept_config: FlexConceptConfig;
 }
 
 interface HRFlexibleRemunerationPanelProps {
@@ -71,6 +98,7 @@ export function HRFlexibleRemunerationPanel({
     num_beneficiarios_discapacidad: 0,
     status: 'active',
     seguro_medico_source: 'manual',
+    concept_config: DEFAULT_FLEX_CONFIG,
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -101,6 +129,14 @@ export function HRFlexibleRemunerationPanel({
         const anualMeta = Number(meta.seguro_medico_anual_total ?? 0);
         const anualEfectivo = anualMeta > 0 ? anualMeta : Math.round(mensual * 12 * 100) / 100;
         const sourceMeta = (meta.seguro_medico_source as FlexPlan['seguro_medico_source']) || 'manual';
+        // S9.20: leer concept_config desde metadata; merge con defaults para forward-compat
+        const cfgMeta = (meta.concept_config as Partial<FlexConceptConfig>) || {};
+        const conceptCfg: FlexConceptConfig = {
+          seguro_medico: { ...DEFAULT_FLEX_CONFIG.seguro_medico, ...(cfgMeta.seguro_medico || {}) },
+          ticket_restaurante: { ...DEFAULT_FLEX_CONFIG.ticket_restaurante, ...(cfgMeta.ticket_restaurante || {}) },
+          cheque_guarderia: { ...DEFAULT_FLEX_CONFIG.cheque_guarderia, ...(cfgMeta.cheque_guarderia || {}) },
+          transporte: { ...DEFAULT_FLEX_CONFIG.transporte, ...(cfgMeta.transporte || {}) },
+        };
         setPlan({
           company_id: companyId,
           employee_id: employeeId,
@@ -114,6 +150,7 @@ export function HRFlexibleRemunerationPanel({
           num_beneficiarios_discapacidad: Number((data as any).num_beneficiarios_discapacidad || 0),
           status: (data as any).status || 'active',
           seguro_medico_source: sourceMeta,
+          concept_config: conceptCfg,
         });
       } else {
         setExistingId(null);
@@ -131,6 +168,7 @@ export function HRFlexibleRemunerationPanel({
           num_beneficiarios_discapacidad: 0,
           status: 'active',
           seguro_medico_source: 'manual',
+          concept_config: DEFAULT_FLEX_CONFIG,
         }));
       }
     } catch (err) {
@@ -214,7 +252,9 @@ export function HRFlexibleRemunerationPanel({
             ? plan.seguro_medico_anual_total
             : Math.round(mensualDerivado * 12 * 100) / 100,
           seguro_medico_source: plan.seguro_medico_source,
-          schema_version: 'h5',
+          // S9.20: persistir configuración por concepto (Modelo A/B + datos restaurante/transporte)
+          concept_config: plan.concept_config,
+          schema_version: 's9.20',
         },
       };
 
@@ -295,6 +335,16 @@ export function HRFlexibleRemunerationPanel({
                     <sourceLabel.icon className="h-2.5 w-2.5" />
                     {sourceLabel.label}
                   </Badge>
+                  <ModelToggle
+                    value={plan.concept_config.seguro_medico.application_mode}
+                    onChange={(mode) => setPlan(p => ({
+                      ...p,
+                      concept_config: {
+                        ...p.concept_config,
+                        seguro_medico: { application_mode: mode },
+                      },
+                    }))}
+                  />
                 </div>
                 {plan.status === 'active' ? (
                   insuranceLimits.excedeLimit ? (
@@ -429,31 +479,71 @@ export function HRFlexibleRemunerationPanel({
               </div>
             </div>
 
-            {/* Ticket restaurante — pendiente */}
-            <ConceptRow
-              label="Ticket restaurante"
-              value={plan.ticket_restaurante_mensual}
-              onChange={v => setPlan(p => ({ ...p, ticket_restaurante_mensual: v }))}
-              status="pending"
-              hint="11€/día laborable (Art. 45.2 RIRPF) — Pendiente de reglas avanzadas"
+            {/* S9.20: Ticket restaurante — automatizado si datos completos */}
+            <RestauranteCard
+              importeDia={plan.concept_config.ticket_restaurante.importe_dia}
+              diasMes={plan.concept_config.ticket_restaurante.dias_mes}
+              modalidad={plan.concept_config.ticket_restaurante.modalidad}
+              applicationMode={plan.concept_config.ticket_restaurante.application_mode}
+              fallbackMensual={plan.ticket_restaurante_mensual}
+              onChangeMode={(mode) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, application_mode: mode },
+                },
+              }))}
+              onChangeImporteDia={(v) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, importe_dia: v },
+                },
+              }))}
+              onChangeDiasMes={(v) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, dias_mes: v },
+                },
+              }))}
+              onChangeModalidad={(v) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  ticket_restaurante: { ...p.concept_config.ticket_restaurante, modalidad: v },
+                },
+              }))}
+              onChangeFallbackMensual={(v) => setPlan(p => ({ ...p, ticket_restaurante_mensual: v }))}
             />
 
-            {/* Guardería — pendiente */}
-            <ConceptRow
+            {/* Guardería — persistido + visible, NO automatizado en S9.20 */}
+            <SimpleFlexCard
               label="Cheque guardería"
               value={plan.cheque_guarderia_mensual}
-              onChange={v => setPlan(p => ({ ...p, cheque_guarderia_mensual: v }))}
-              status="pending"
-              hint="Requiere validación de centro autorizado — Pendiente de reglas avanzadas"
+              applicationMode={plan.concept_config.cheque_guarderia.application_mode}
+              onChangeValue={v => setPlan(p => ({ ...p, cheque_guarderia_mensual: v }))}
+              onChangeMode={(mode) => setPlan(p => ({
+                ...p,
+                concept_config: { ...p.concept_config, cheque_guarderia: { application_mode: mode } },
+              }))}
+              hint="Requiere validación de centro autorizado — Persistido pero no automatizado en esta fase"
             />
 
-            {/* Transporte — pendiente */}
-            <ConceptRow
+            {/* Transporte — persistido + visible, NO automatizado en S9.20 */}
+            <SimpleFlexCard
               label="Transporte"
               value={plan.transporte_mensual}
-              onChange={v => setPlan(p => ({ ...p, transporte_mensual: v }))}
-              status="pending"
-              hint="1.500€/año transporte público colectivo — Pendiente de reglas avanzadas"
+              applicationMode={plan.concept_config.transporte.application_mode}
+              onChangeValue={v => setPlan(p => ({ ...p, transporte_mensual: v }))}
+              onChangeMode={(mode) => setPlan(p => ({
+                ...p,
+                concept_config: {
+                  ...p.concept_config,
+                  transporte: { ...p.concept_config.transporte, application_mode: mode },
+                },
+              }))}
+              hint="1.500€/año transporte público colectivo — Persistido pero no automatizado en esta fase"
             />
 
             {/* Total + Save */}
@@ -473,40 +563,253 @@ export function HRFlexibleRemunerationPanel({
   );
 }
 
-// Sub-component for pending concepts
-function ConceptRow({
-  label,
+// ───────────────────────────────────────────────────────────────────────
+// S9.20: Sub-componentes Modelo A/B
+// ───────────────────────────────────────────────────────────────────────
+
+/** Toggle compacto de Modelo A (beneficio adicional) vs Modelo B (salary sacrifice) */
+function ModelToggle({
   value,
   onChange,
-  status,
+}: {
+  value: FlexApplicationMode;
+  onChange: (mode: FlexApplicationMode) => void;
+}) {
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as FlexApplicationMode)}>
+      <SelectTrigger className="h-6 w-auto min-w-[140px] text-[10px] gap-1 px-2">
+        {value === 'salary_sacrifice' ? (
+          <ArrowRightLeft className="h-2.5 w-2.5" />
+        ) : (
+          <Plus className="h-2.5 w-2.5" />
+        )}
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="benefit_additional" className="text-xs">
+          <div className="flex flex-col">
+            <span className="font-medium">Beneficio adicional</span>
+            <span className="text-[10px] text-muted-foreground">Suma al coste empresa</span>
+          </div>
+        </SelectItem>
+        <SelectItem value="salary_sacrifice" className="text-xs">
+          <div className="flex flex-col">
+            <span className="font-medium">Salary sacrifice</span>
+            <span className="text-[10px] text-muted-foreground">Consume mejora voluntaria</span>
+          </div>
+        </SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** Card de ticket restaurante con automatización si datos completos */
+function RestauranteCard({
+  importeDia,
+  diasMes,
+  modalidad,
+  applicationMode,
+  fallbackMensual,
+  onChangeMode,
+  onChangeImporteDia,
+  onChangeDiasMes,
+  onChangeModalidad,
+  onChangeFallbackMensual,
+}: {
+  importeDia: number;
+  diasMes: number;
+  modalidad: 'comedor' | 'tarjeta_vale' | null;
+  applicationMode: FlexApplicationMode;
+  fallbackMensual: number;
+  onChangeMode: (mode: FlexApplicationMode) => void;
+  onChangeImporteDia: (v: number) => void;
+  onChangeDiasMes: (v: number) => void;
+  onChangeModalidad: (v: 'comedor' | 'tarjeta_vale' | null) => void;
+  onChangeFallbackMensual: (v: number) => void;
+}) {
+  const TOPE = 11;
+  const datosCompletos = importeDia > 0 && diasMes > 0 && !!modalidad;
+  const exentaMes = datosCompletos ? Math.round(Math.min(importeDia, TOPE) * diasMes * 100) / 100 : 0;
+  const excesoMes = datosCompletos ? Math.round(Math.max(0, importeDia - TOPE) * diasMes * 100) / 100 : 0;
+  return (
+    <div className="space-y-2 p-3 rounded-lg border bg-muted/20">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-xs font-medium">Ticket restaurante</Label>
+          <Badge variant="outline" className="text-[10px] gap-1">
+            <User className="h-2.5 w-2.5" />
+            Manual empresa
+          </Badge>
+          <ModelToggle value={applicationMode} onChange={onChangeMode} />
+        </div>
+        {datosCompletos ? (
+          excesoMes > 0 ? (
+            <Badge variant="warning" className="text-[10px]">
+              <AlertTriangle className="h-2.5 w-2.5 mr-1" />
+              Exceso {excesoMes.toFixed(2)}€/mes
+            </Badge>
+          ) : (
+            <Badge variant="success" className="text-[10px]">
+              <CheckCircle className="h-2.5 w-2.5 mr-1" />
+              Aplicado a nómina
+            </Badge>
+          )
+        ) : (
+          <Badge variant="warning" className="text-[10px]">
+            <Clock className="h-2.5 w-2.5 mr-1" />
+            Faltan datos
+          </Badge>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <Label className="text-[10px] text-muted-foreground">€ / día</Label>
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            value={importeDia || ''}
+            onChange={(e) => onChangeImporteDia(Number(e.target.value) || 0)}
+            className="h-8 text-xs"
+            placeholder="p.ej. 11"
+          />
+        </div>
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Días/mes</Label>
+          <Input
+            type="number"
+            min={0}
+            max={31}
+            value={diasMes || ''}
+            onChange={(e) => onChangeDiasMes(Number(e.target.value) || 0)}
+            className="h-8 text-xs"
+            placeholder="p.ej. 20"
+          />
+        </div>
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Modalidad</Label>
+          <Select
+            value={modalidad ?? ''}
+            onValueChange={(v) => onChangeModalidad((v || null) as 'comedor' | 'tarjeta_vale' | null)}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Seleccionar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="comedor">Comedor empresa</SelectItem>
+              <SelectItem value="tarjeta_vale">Tarjeta / Vale</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {datosCompletos && (
+        <div className="grid grid-cols-3 gap-2 mt-2 p-2 rounded-md bg-background/60 border border-border/40">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wide text-muted-foreground">Total/mes</span>
+            <span className="text-xs font-semibold tabular-nums">
+              {(importeDia * diasMes).toFixed(2)}€
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Exento/mes</span>
+            <span className="text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+              {exentaMes.toFixed(2)}€
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span
+              className={cn(
+                'text-[9px] uppercase tracking-wide',
+                excesoMes > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
+              )}
+            >
+              Exceso/mes
+            </span>
+            <span
+              className={cn(
+                'text-xs font-semibold tabular-nums',
+                excesoMes > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
+              )}
+            >
+              {excesoMes.toFixed(2)}€
+            </span>
+          </div>
+        </div>
+      )}
+      {!datosCompletos && (
+        <div>
+          <Label className="text-[10px] text-muted-foreground">Importe mensual (legado, sin reglas)</Label>
+          <Input
+            type="number"
+            min={0}
+            step={0.01}
+            value={fallbackMensual || ''}
+            onChange={(e) => onChangeFallbackMensual(Number(e.target.value) || 0)}
+            className="h-8 text-xs"
+          />
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Completa €/día + días + modalidad para automatizar el cálculo (tope 11€/día RIRPF Art. 45.2).
+          </p>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+        <span className="text-[10px] text-muted-foreground">
+          IRPF: tramo exento ≤ 11€/día — exceso sujeto
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          SS: exceso cotiza
+        </span>
+        {applicationMode === 'salary_sacrifice' && (
+          <span className="text-[10px] font-medium text-primary">
+            Modelo B: consume mejora voluntaria
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Card simple para conceptos persistidos pero NO automatizados (guardería, transporte) */
+function SimpleFlexCard({
+  label,
+  value,
+  applicationMode,
+  onChangeValue,
+  onChangeMode,
   hint,
 }: {
   label: string;
   value: number;
-  onChange: (v: number) => void;
-  status: 'applied' | 'pending';
+  applicationMode: FlexApplicationMode;
+  onChangeValue: (v: number) => void;
+  onChangeMode: (mode: FlexApplicationMode) => void;
   hint: string;
 }) {
   return (
-    <div className="flex items-center gap-3 py-1">
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <Label className="text-xs">{label}</Label>
-          <Badge variant="warning" className="text-[10px]">
-            <Clock className="h-2.5 w-2.5 mr-1" />
-            Pendiente de reglas
+    <div className="space-y-2 p-3 rounded-lg border bg-muted/20">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Label className="text-xs font-medium">{label}</Label>
+          <Badge variant="outline" className="text-[10px] gap-1">
+            <User className="h-2.5 w-2.5" />
+            Manual empresa
           </Badge>
+          <ModelToggle value={applicationMode} onChange={onChangeMode} />
         </div>
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          value={value || ''}
-          onChange={e => onChange(Number(e.target.value) || 0)}
-          className="h-8 text-xs"
-        />
-        <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>
+        <Badge variant="warning" className="text-[10px]">
+          <Clock className="h-2.5 w-2.5 mr-1" />
+          Pendiente de reglas
+        </Badge>
       </div>
+      <Input
+        type="number"
+        min={0}
+        step={0.01}
+        value={value || ''}
+        onChange={(e) => onChangeValue(Number(e.target.value) || 0)}
+        className="h-8 text-xs"
+      />
+      <p className="text-[10px] text-muted-foreground mt-0.5">{hint}</p>
     </div>
   );
 }

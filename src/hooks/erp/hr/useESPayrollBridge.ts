@@ -25,6 +25,25 @@ export interface ESPayrollConceptDef {
   legal_reference?: string;
 }
 
+// ── S9.20: Modelo A (benefit_additional) vs Modelo B (salary_sacrifice) ──
+
+export type FlexApplicationMode = 'benefit_additional' | 'salary_sacrifice';
+
+export interface ESFlexConceptConfig {
+  seguro_medico?: { application_mode: FlexApplicationMode };
+  ticket_restaurante?: {
+    application_mode: FlexApplicationMode;
+    importe_dia: number;
+    dias_mes: number;
+    modalidad: 'comedor' | 'tarjeta_vale' | null;
+  };
+  cheque_guarderia?: { application_mode: FlexApplicationMode };
+  transporte?: {
+    application_mode: FlexApplicationMode;
+    modalidad: 'publico_colectivo' | 'otro' | null;
+  };
+}
+
 export interface ESPayrollInput {
   employeeId: string;
   periodId: string;
@@ -50,6 +69,11 @@ export interface ESPayrollInput {
   pensionCompensatoria?: number;
   cuotaSindical?: number;
   regularizacion?: number;
+  /**
+   * S9.20: Configuración por concepto flexible (Modelo A/B + datos específicos).
+   * Si no se proporciona, se asume Modelo A (benefit_additional) para todo.
+   */
+  flexConfig?: ESFlexConceptConfig;
   /** Salary resolution from agreement tables (optional, auto-populated when available) */
   salaryResolution?: {
     salarioBaseConvenio: number;
@@ -380,6 +404,42 @@ export function useESPayrollBridge(companyId?: string) {
       // ticketRestaurante y chequeGuarderia se persisten en hr_es_flexible_remuneration_plans pero NO se aplican a nómina
       // if (input.ticketRestaurante) addEarning('ES_RETRIB_FLEX_RESTAURANTE', ...);
       // if (input.chequeGuarderia) addEarning('ES_RETRIB_FLEX_GUARDERIA', ...);
+      // S9.20: Ticket restaurante — automatizado SOLO si hay datos suficientes y consistentes
+      // (importe_dia + dias_mes + modalidad). Aplica tope 11€/día RIRPF Art. 45.2.
+      const tr = input.flexConfig?.ticket_restaurante;
+      if (tr && tr.importe_dia > 0 && tr.dias_mes > 0 && tr.modalidad) {
+        const TOPE_DIA = 11;
+        const exentaDia = Math.min(tr.importe_dia, TOPE_DIA);
+        const excesoDia = Math.max(0, tr.importe_dia - TOPE_DIA);
+        const parteExentaR = r(exentaDia * tr.dias_mes);
+        const parteExcesoR = r(excesoDia * tr.dias_mes);
+        const traceRest = {
+          fuente_dato: 'manual_empresa',
+          application_mode: tr.application_mode,
+          modalidad: tr.modalidad,
+          importe_dia: tr.importe_dia,
+          dias_mes: tr.dias_mes,
+          tope_dia: TOPE_DIA,
+          parte_exenta_mes: parteExentaR,
+          parte_exceso_mes: parteExcesoR,
+          flags: {
+            exento_irpf_tramo_exento: true,
+            ss_no_cotiza_tramo_exento: true,
+            exceso_sujeto_irpf_y_ss: parteExcesoR > 0,
+          },
+          legal_reference: 'RIRPF Art. 45.2',
+        };
+        if (parteExentaR > 0) {
+          addEarning('ES_RETRIB_FLEX_RESTAURANTE', 'Ticket restaurante (exento)', parteExentaR, 'flexible_remuneration', false, false, 73,
+            'RIRPF_Art45_2_restaurante_exento', traceRest as any,
+            `min(${tr.importe_dia}€, ${TOPE_DIA}€) × ${tr.dias_mes} días = ${parteExentaR}€ — exento IRPF y SS`);
+        }
+        if (parteExcesoR > 0) {
+          addEarning('ES_RETRIB_FLEX_RESTAURANTE_EXCESO', 'Ticket restaurante (exceso gravado)', parteExcesoR, 'flexible_remuneration', true, true, 73,
+            'RIRPF_Art45_2_restaurante_exceso', traceRest as any,
+            `(${tr.importe_dia} - ${TOPE_DIA})€ × ${tr.dias_mes} días = ${parteExcesoR}€ — sujeto IRPF + cotiza SS`);
+        }
+      }
       if (input.stockOptions) addEarning('ES_STOCK_OPTIONS', 'Stock options', input.stockOptions, 'variable', true, true, 80);
       if (input.regularizacion) addEarning('ES_REGULARIZACION', 'Regularización / atrasos', input.regularizacion, 'regularization', true, true, 95);
       if (input.itCCDias && input.itCCDias > 0) {
@@ -393,6 +453,88 @@ export function useESPayrollBridge(companyId?: string) {
         addEarning('ES_IT_AT_EMPRESA', 'Complemento IT acc. trabajo', complementoAT, 'variable', true, false, 91,
           'IT_AT_complement', { salarioBase: input.salarioBase, dias: input.itATDias, pct: 0.75 },
           `(${input.salarioBase}/30) × ${input.itATDias} × 75% = ${complementoAT}`);
+      }
+
+      // ── S9.20: Aplicar Modelo B (salary_sacrifice) ──
+      // Para cada concepto flex en modo 'salary_sacrifice', restar su importe de
+      // ES_MEJORA_VOLUNTARIA. NUNCA tocar ES_SAL_BASE ni ES_COMP_CONVENIO.
+      // Si la mejora voluntaria es insuficiente: degradar a Modelo A con trace warning.
+      const fc = input.flexConfig;
+      if (fc) {
+        const mejoraLine = lines.find(l => l.concept_code === 'ES_MEJORA_VOLUNTARIA' && l.line_type === 'earning');
+        let mejoraDisponible = mejoraLine?.amount ?? 0;
+        const mejoraInicial = mejoraDisponible;
+        const sacrificios: Array<{ concepto: string; importe: number; aplicado: boolean }> = [];
+
+        const tryApplySacrifice = (conceptoLabel: string, codes: string[]) => {
+          const importeFlex = lines
+            .filter(l => codes.includes(l.concept_code))
+            .reduce((s, l) => s + l.amount, 0);
+          if (importeFlex <= 0) return;
+          if (mejoraDisponible >= importeFlex) {
+            mejoraDisponible = r(mejoraDisponible - importeFlex);
+            sacrificios.push({ concepto: conceptoLabel, importe: importeFlex, aplicado: true });
+          } else {
+            sacrificios.push({ concepto: conceptoLabel, importe: importeFlex, aplicado: false });
+          }
+        };
+
+        if (fc.seguro_medico?.application_mode === 'salary_sacrifice') {
+          tryApplySacrifice('seguro_medico', ['ES_RETRIB_FLEX_SEGURO', 'ES_RETRIB_FLEX_SEGURO_EXCESO']);
+        }
+        if (fc.ticket_restaurante?.application_mode === 'salary_sacrifice') {
+          tryApplySacrifice('ticket_restaurante', ['ES_RETRIB_FLEX_RESTAURANTE', 'ES_RETRIB_FLEX_RESTAURANTE_EXCESO']);
+        }
+
+        const totalSacrificable = sacrificios.filter(s => s.aplicado).reduce((s, x) => s + x.importe, 0);
+        const totalDegradado = sacrificios.filter(s => !s.aplicado).reduce((s, x) => s + x.importe, 0);
+
+        if (totalSacrificable > 0 && mejoraLine) {
+          const nuevoImporte = r(mejoraInicial - totalSacrificable);
+          mejoraLine.amount = nuevoImporte;
+          mejoraLine.calculation_trace = {
+            rule: 'S9.20_salary_sacrifice',
+            inputs: {
+              mejora_inicial: mejoraInicial,
+              sacrificios: sacrificios.filter(s => s.aplicado),
+              degradados_a_modelo_a: sacrificios.filter(s => !s.aplicado),
+              guardrail: 'Nunca toca ES_SAL_BASE ni ES_COMP_CONVENIO',
+            },
+            formula: `Mejora voluntaria ${mejoraInicial}€ − sacrificio flex ${totalSacrificable}€ = ${nuevoImporte}€`,
+            timestamp: ts,
+          };
+        }
+
+        // Inyectar línea informativa con el resumen Modelo B (degradaciones incluidas)
+        if (sacrificios.length > 0) {
+          lines.push({
+            concept_code: 'ES_FLEX_MODELO_B_INFO',
+            concept_name: 'Resumen Modelo B (salary sacrifice)',
+            line_type: 'informative',
+            category: 'informative',
+            amount: 0,
+            is_taxable: false,
+            is_ss_contributable: false,
+            is_percentage: false,
+            sort_order: 320,
+            source: 'rule_engine',
+            calculation_trace: {
+              rule: 'S9.20_modelo_b_resumen',
+              inputs: {
+                mejora_voluntaria_inicial: mejoraInicial,
+                mejora_voluntaria_consumida: totalSacrificable,
+                mejora_voluntaria_restante: mejoraDisponible,
+                conceptos_aplicados: sacrificios.filter(s => s.aplicado),
+                conceptos_degradados_a_modelo_a: sacrificios.filter(s => !s.aplicado),
+                aviso: totalDegradado > 0
+                  ? `Mejora voluntaria insuficiente para ${totalDegradado.toFixed(2)}€ — degradado a Modelo A (beneficio adicional)`
+                  : 'Aplicado correctamente',
+              },
+              formula: `Mejora consumida: ${totalSacrificable}€ / restante: ${mejoraDisponible}€`,
+              timestamp: ts,
+            },
+          });
+        }
       }
 
       // ── 2. Calcular bases ──

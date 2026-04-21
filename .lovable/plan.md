@@ -72,3 +72,54 @@ No se suman dos fuentes. Convenio es siempre placeholder honesto en esta fase.
 ### Veredicto
 
 **"Seguro médico ES ampliado con anual total + split visible y repercusión correcta en nómina"**
+
+## S9.20 — Retribución Flexible ES: Modelo A + B por concepto ✅
+
+### Tratamiento por concepto
+
+| Concepto | Estado | Modelo A | Modelo B | Notas |
+|---|---|---|---|---|
+| Seguro médico | ✅ Automatizado (S9.18 + A/B) | ✓ | ✓ | Mantiene split exento/exceso, IRPF + SS + CRA |
+| Ticket restaurante | ✅ Automatizado **si** datos completos | ✓ | ✓ | Tope 11€/día (RIRPF Art. 45.2). Genera `ES_RETRIB_FLEX_RESTAURANTE` (exento) + `ES_RETRIB_FLEX_RESTAURANTE_EXCESO` (gravado, cotiza SS) |
+| Cheque guardería | 🟡 Persistido + visible | ✓ | ✓ | NO automatizado en esta fase |
+| Transporte | 🟡 Persistido + visible | ✓ | ✓ | NO automatizado en esta fase |
+
+### Modelo A (benefit_additional) — default
+- Suma como beneficio adicional, aumenta coste empresa
+- No toca dinerario base
+
+### Modelo B (salary_sacrifice)
+- Consume **exclusivamente** `ES_MEJORA_VOLUNTARIA`
+- **Nunca** toca `ES_SAL_BASE` ni `ES_COMP_CONVENIO`
+- Si mejora voluntaria insuficiente → degrada a Modelo A automáticamente con trace + línea informativa `ES_FLEX_MODELO_B_INFO`
+- Mínimo de convenio garantizado
+
+### Fuente convenio
+
+Confirmada **inexistente** para flex. UI mantiene badges honestos (`Manual empresa` / `Desde convenio` / `Manual sobreescribe convenio`) y queda preparada para futuro origen convenio.
+
+### Archivos tocados
+
+| Archivo | Cambio |
+|---|---|
+| `src/engines/erp/hr/payrollConceptCatalog.ts` | + `ES_RETRIB_FLEX_RESTAURANTE_EXCESO` (taxable, SS, IRPF, CRA) |
+| `src/hooks/erp/hr/useESPayrollBridge.ts` | + `ESFlexConceptConfig`, automatización ticket restaurante con tope diario, lógica salary_sacrifice sobre mejora voluntaria con degradación segura, línea informativa Modelo B |
+| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | + `concept_config` en metadata, `ModelToggle`, `RestauranteCard` (€/día + días + modalidad), `SimpleFlexCard` (guardería + transporte) con Modelo A/B visible |
+
+### Persistencia
+
+Nueva configuración `concept_config` guardada en `metadata` jsonb existente (sin migración SQL). Backward compatible: si no existe, se asume `benefit_additional` para todo.
+
+### Guardrails respetados
+
+- ✅ Sin tocar `payroll-calculation-engine.ts`
+- ✅ Sin tocar S9/VPT, última milla oficial, G1.2/G2.2
+- ✅ Sin tocar convenio/mapping/tablas salariales
+- ✅ Sin migración SQL (todo en `metadata` jsonb)
+- ✅ Mínimo convenio nunca violado
+- ✅ Sin duplicidad de importes
+- ✅ Sin invención de fuente convenio
+
+### Veredicto
+
+**"Retribución Flexible ES ampliada con modelo A+B y automatización prudente por concepto"**
