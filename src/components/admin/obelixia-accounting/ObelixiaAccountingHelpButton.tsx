@@ -12,7 +12,11 @@ import { Sparkles, X } from 'lucide-react';
 import { ObelixiaAccountingCopilotPanel } from './ObelixiaAccountingCopilotPanel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+
+// Inline visually-hidden wrapper (avoids extra dependency)
+const VisuallyHidden = ({ children }: { children: React.ReactNode }) => (
+  <span className="sr-only">{children}</span>
+);
 
 interface ObelixiaAccountingHelpButtonProps {
   fiscalConfigId?: string;
