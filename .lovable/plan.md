@@ -42,3 +42,33 @@ Cada línea de seguro médico incluye `traceInputs` con:
 ### Veredicto
 
 **"Seguro médico ES corregido con tratamiento fiscal/SS completo (ambos tramos cotizan)"**
+
+## S9.18-H5 — Seguro médico ES: importe anual total + split visible ✅
+
+### Cambios
+
+- **Entrada principal:** importe anual total (€/año), mensual derivado automáticamente (anual/12)
+- **Backward compat:** si solo existe `seguro_medico_mensual` (datos antiguos), se sigue calculando anual = mensual × 12
+- **Persistencia:** `seguro_medico_mensual` en columna (compat con bridge), `seguro_medico_anual_total` + `seguro_medico_source` en `metadata` jsonb (sin migración SQL)
+- **UI desglose:** mensual / límite/mes / exento/mes / no exento/mes con colores semánticos (emerald = exento, amber = exceso)
+- **Fuente del dato:** badge visible — `Manual empresa` / `Desde convenio` / `Manual sobreescribe convenio`
+- **Convenio:** confirmado que NO existe fuente real en convenio/mapping para seguro médico — UI preparada, lógica honesta (sin invención)
+
+### Archivos tocados
+
+| Archivo | Cambio |
+|---|---|
+| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Input anual total, derivación mensual, desglose visible, badge fuente, persistencia metadata |
+| `src/hooks/erp/hr/useESPayrollBridge.ts` | Trace ampliada con `prima_anual_total_derivada` + `fuente_dato` |
+
+### Prioridad de fuente (lógica final)
+
+1. Si existe convenio (no aplica hoy) y manual = 0 → `Desde convenio`
+2. Si existe convenio y manual ≠ convenio → `Manual sobreescribe convenio` (manual prevalece)
+3. Resto → `Manual empresa`
+
+No se suman dos fuentes. Convenio es siempre placeholder honesto en esta fase.
+
+### Veredicto
+
+**"Seguro médico ES ampliado con anual total + split visible y repercusión correcta en nómina"**
