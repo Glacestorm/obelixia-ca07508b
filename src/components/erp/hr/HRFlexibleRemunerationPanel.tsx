@@ -142,33 +142,80 @@ export function HRFlexibleRemunerationPanel({
 
   useEffect(() => { fetchPlan(); }, [fetchPlan]);
 
+  // S9.18-H5: Buscar fuente de seguro médico en convenio (placeholder honesto).
+  // En esta fase NO existe fuente real en convenio/mapping/tablas para seguro médico.
+  // Se deja preparado: si en el futuro se añade, reemplazar este efecto por la
+  // consulta correspondiente y setConvenioValue con el importe anual total.
+  useEffect(() => {
+    setConvenioValue(null); // Sin fuente real: siempre null en esta fase
+  }, [employeeId, companyId, planYear]);
+
   // Insurance limit calculation
   const insuranceLimits = useMemo(() => {
     const nBen = Math.max(plan.num_beneficiarios, 1);
     const nDis = Math.min(Math.max(plan.num_beneficiarios_discapacidad, 0), nBen);
     const limiteAnual = (nBen - nDis) * 500 + nDis * 1500;
     const limiteMensual = Math.round((limiteAnual / 12) * 100) / 100;
-    const importeAnual = plan.seguro_medico_mensual * 12;
+    // S9.18-H5: anual total es la fuente principal; si está vacío, usar mensual*12 (compat)
+    const importeAnual = plan.seguro_medico_anual_total > 0
+      ? plan.seguro_medico_anual_total
+      : Math.round(plan.seguro_medico_mensual * 12 * 100) / 100;
+    const importeMensual = Math.round((importeAnual / 12) * 100) / 100;
     const excedeLimit = importeAnual > limiteAnual;
-    const excesoMensual = excedeLimit ? Math.round((plan.seguro_medico_mensual - limiteMensual) * 100) / 100 : 0;
-    return { limiteAnual, limiteMensual, importeAnual, excedeLimit, excesoMensual };
-  }, [plan.seguro_medico_mensual, plan.num_beneficiarios, plan.num_beneficiarios_discapacidad]);
+    const parteExentaMensual = Math.min(importeMensual, limiteMensual);
+    const parteNoExentaMensual = excedeLimit ? Math.round((importeMensual - limiteMensual) * 100) / 100 : 0;
+    return {
+      limiteAnual,
+      limiteMensual,
+      importeAnual,
+      importeMensual,
+      excedeLimit,
+      excesoMensual: parteNoExentaMensual,
+      parteExentaMensual,
+      parteNoExentaMensual,
+    };
+  }, [plan.seguro_medico_anual_total, plan.seguro_medico_mensual, plan.num_beneficiarios, plan.num_beneficiarios_discapacidad]);
+
+  // S9.18-H5: Etiqueta de fuente para badge
+  const sourceLabel = useMemo(() => {
+    if (convenioValue !== null && plan.seguro_medico_anual_total > 0 && plan.seguro_medico_anual_total !== convenioValue) {
+      return { label: 'Manual sobreescribe convenio', icon: Building2, variant: 'warning' as const };
+    }
+    if (convenioValue !== null && plan.seguro_medico_anual_total === 0) {
+      return { label: 'Desde convenio', icon: Building2, variant: 'secondary' as const };
+    }
+    return { label: 'Manual empresa', icon: User, variant: 'outline' as const };
+  }, [convenioValue, plan.seguro_medico_anual_total]);
 
   // Save / upsert
   const handleSave = async () => {
     setSaving(true);
     try {
+      // S9.18-H5: derivar mensual desde anual total para mantener compatibilidad con
+      // bridge actual (que sigue leyendo seguro_medico_mensual).
+      const mensualDerivado = plan.seguro_medico_anual_total > 0
+        ? Math.round((plan.seguro_medico_anual_total / 12) * 100) / 100
+        : plan.seguro_medico_mensual;
+
       const payload: any = {
         company_id: companyId,
         employee_id: employeeId,
         plan_year: planYear,
-        seguro_medico_mensual: plan.seguro_medico_mensual,
+        seguro_medico_mensual: mensualDerivado,
         ticket_restaurante_mensual: plan.ticket_restaurante_mensual,
         cheque_guarderia_mensual: plan.cheque_guarderia_mensual,
         transporte_mensual: plan.transporte_mensual,
         num_beneficiarios: plan.num_beneficiarios,
         num_beneficiarios_discapacidad: plan.num_beneficiarios_discapacidad,
         status: plan.status,
+        // S9.18-H5: persistir anual total + fuente en metadata (sin migración SQL)
+        metadata: {
+          seguro_medico_anual_total: plan.seguro_medico_anual_total > 0
+            ? plan.seguro_medico_anual_total
+            : Math.round(mensualDerivado * 12 * 100) / 100,
+          seguro_medico_source: plan.seguro_medico_source,
+          schema_version: 'h5',
+        },
       };
 
       if (existingId) {
