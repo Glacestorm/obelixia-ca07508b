@@ -354,21 +354,40 @@ export function useESPayrollBridge(companyId?: string) {
       // ── S9.21d Bloque B: Helper de prorrateo por días efectivos ──
       // Backward compat: sin periodCoverage → factor = 1 (mes completo)
       const pc = input.periodCoverage;
-      const factorProrrateo = (pc && pc.diasNaturalesPeriodo > 0)
+      const factorPeriodo = (pc && pc.diasNaturalesPeriodo > 0)
         ? Math.min(1, Math.max(0, pc.diasEfectivos / pc.diasNaturalesPeriodo))
         : 1;
+      // ── S9.21d Bloque C: Reducción jornada por guarda legal (ET Art. 37.6) ──
+      // Se combina multiplicativamente con factor de período. Backward compat: sin reducción → 1.
+      const redJornadaPct = (typeof input.reduccionJornadaPct === 'number' && input.reduccionJornadaPct > 0 && input.reduccionJornadaPct < 100)
+        ? input.reduccionJornadaPct
+        : 0;
+      const factorReduccion = redJornadaPct > 0 ? (1 - redJornadaPct / 100) : 1;
+      const factorProrrateo = Math.min(1, Math.max(0, factorPeriodo * factorReduccion));
       const aplicarProrrateo = factorProrrateo < 1;
       const prorratea = (monto: number) => aplicarProrrateo ? r(monto * factorProrrateo) : monto;
       const traceProrrateo = aplicarProrrateo
         ? {
             factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+            factor_periodo: Number(factorPeriodo.toFixed(4)),
+            factor_reduccion_jornada: Number(factorReduccion.toFixed(4)),
+            reduccion_jornada_pct: redJornadaPct,
             dias_efectivos: pc!.diasEfectivos,
             dias_naturales_periodo: pc!.diasNaturalesPeriodo,
             motivo: pc!.motivo ?? 'otro',
             fecha_desde: pc!.fechaDesde,
             fecha_hasta: pc!.fechaHasta,
           }
-        : null;
+        : (redJornadaPct > 0
+            ? {
+                factor_prorrateo: Number(factorProrrateo.toFixed(4)),
+                factor_periodo: 1,
+                factor_reduccion_jornada: Number(factorReduccion.toFixed(4)),
+                reduccion_jornada_pct: redJornadaPct,
+                motivo: 'reduccion_jornada_guarda_legal',
+                legal_reference: 'ET Art. 37.6',
+              }
+            : null);
 
       // ── 1. Devengos ──
       const addEarning = (code: string, name: string, amount: number, category: string, taxable: boolean, contributable: boolean, sortOrder: number, traceRule?: string, traceInputs?: Record<string, unknown>, traceFormula?: string) => {
