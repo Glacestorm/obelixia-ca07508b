@@ -50,6 +50,11 @@ export interface ESPayrollInput {
   pensionCompensatoria?: number;
   cuotaSindical?: number;
   regularizacion?: number;
+  /**
+   * S9.20: Configuración por concepto flexible (Modelo A/B + datos específicos).
+   * Si no se proporciona, se asume Modelo A (benefit_additional) para todo.
+   */
+  flexConfig?: ESFlexConceptConfig;
   /** Salary resolution from agreement tables (optional, auto-populated when available) */
   salaryResolution?: {
     salarioBaseConvenio: number;
