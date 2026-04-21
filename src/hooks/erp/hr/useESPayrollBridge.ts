@@ -572,6 +572,16 @@ export function useESPayrollBridge(companyId?: string) {
                 mejora_voluntaria_restante: mejoraDisponible,
                 conceptos_aplicados: sacrificios.filter(s => s.aplicado),
                 conceptos_degradados_a_modelo_a: sacrificios.filter(s => !s.aplicado),
+                guardrails_aplicados: {
+                  smi_mensual_2026: SMI_MENSUAL_2026,
+                  limite_especie_pct: 30,
+                  base_legal: ['ET Art. 26.1', 'RD Ley SMI 2026'],
+                  pct_especie_actual: dinerarioBase + especieBase > 0
+                    ? Number(((especieBase / (dinerarioBase + especieBase)) * 100).toFixed(2))
+                    : 0,
+                  dinerario_base: r(dinerarioBase),
+                  especie_base: r(especieBase),
+                },
                 aviso: totalDegradado > 0
                   ? `Mejora voluntaria insuficiente para ${totalDegradado.toFixed(2)}€ — degradado a Modelo A (beneficio adicional)`
                   : 'Aplicado correctamente',
