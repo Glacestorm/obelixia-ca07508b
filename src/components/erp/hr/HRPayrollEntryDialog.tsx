@@ -883,6 +883,7 @@ export function HRPayrollEntryDialog({
             </TabsContent>
           </Tabs>
         </div>
+        </div>
 
         <DialogFooter className="shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
