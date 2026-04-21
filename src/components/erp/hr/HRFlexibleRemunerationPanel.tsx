@@ -595,7 +595,7 @@ function ModelToggle({
         <SelectItem value="salary_sacrifice" className="text-xs">
           <div className="flex flex-col">
             <span className="font-medium">Salary sacrifice</span>
-            <span className="text-[10px] text-muted-foreground">Consume mejora voluntaria</span>
+            <span className="text-[10px] text-muted-foreground">Consume mejora voluntaria (degrada si especie &gt; 30% o dinerario &lt; SMI)</span>
           </div>
         </SelectItem>
       </SelectContent>
