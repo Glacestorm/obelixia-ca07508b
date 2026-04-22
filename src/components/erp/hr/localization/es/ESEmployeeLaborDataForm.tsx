@@ -68,7 +68,7 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
           setHasESData(true);
           setForm({
             naf: data.naf || '',
-            grupo_cotizacion: data.grupo_cotizacion || 1,
+            grupo_cotizacion: data.grupo_cotizacion ?? null,
             cno_code: data.cno_code || '',
             tipo_contrato_rd: data.tipo_contrato_rd || '',
             comunidad_autonoma: data.comunidad_autonoma || '',
