@@ -1052,31 +1052,75 @@ export function HRPayrollEntryDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b px-6 py-4">
-          <DialogTitle className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2 min-w-0">
-              <DollarSign className="h-5 w-5 text-primary shrink-0" />
-              <span className="truncate">
-                {isEditMode ? 'Editar Nómina' : 'Nueva Nómina'} — {new Date(periodYear, periodMonth - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-              </span>
-              {casuisticaActiva.length > 0 && (
-                <div className="hidden md:flex items-center gap-1 ml-2 flex-wrap">
-                  {casuisticaActiva.map(c => (
-                    <Badge key={c.key} variant="outline" className="text-[10px] h-5 border-warning/40 text-warning bg-warning/5">
-                      <CalendarRange className="h-2.5 w-2.5 mr-0.5" />
-                      {c.label}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-            {/* S9.21d Bloque D: Indicador compacto de vigilancia normativa */}
-            <HRPayrollNormativeWatchBadge companyId={companyId} className="shrink-0" />
+        {/* S9.21h — Capa 2: Header en 2 zonas (título + toolbar) con pr-12 reservado para la X nativa */}
+        <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b px-6 py-4 pr-12 space-y-2">
+          <DialogTitle className="flex items-center gap-2 min-w-0 flex-wrap">
+            <DollarSign className="h-5 w-5 text-primary shrink-0" />
+            <span className="truncate">
+              {isEditMode ? 'Editar Nómina' : 'Nueva Nómina'} — {new Date(periodYear, periodMonth - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+            </span>
+            {casuisticaActiva.length > 0 && (
+              <div className="hidden md:flex items-center gap-1 ml-2 flex-wrap">
+                {casuisticaActiva.map(c => (
+                  <Badge key={c.key} variant="outline" className="text-[10px] h-5 border-warning/40 text-warning bg-warning/5">
+                    <CalendarRange className="h-2.5 w-2.5 mr-0.5" />
+                    {c.label}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             {isEditMode ? 'Modifica los conceptos salariales' : 'Selecciona un empleado y configura los conceptos'}
           </DialogDescription>
+          {/* Toolbar de acciones legales/normativas — separada del título y de la X */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <HRPayrollNormativeWatchBadge companyId={companyId} className="shrink-0" />
+            <ESPeriodSSBasesPopover periodYear={periodYear} />
+          </div>
         </DialogHeader>
+
+        {/* S9.21h — Capa 2: Sticky summary bar ÚNICA. Fuente de verdad: liveBridgeCalc.summary
+            (mismo objeto que alimenta tab Resumen, vista previa y recibo final). Sin cálculos paralelos. */}
+        <div className="sticky top-[calc(theme(spacing.0))] z-10 shrink-0 border-b bg-muted/40 px-6 py-2.5">
+          {liveBridgeCalc ? (
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5 text-success" />
+                <span className="text-muted-foreground">Devengado</span>
+                <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDevengos.toFixed(2)} €</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                <span className="text-muted-foreground">Deducido</span>
+                <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDeducciones.toFixed(2)} €</span>
+              </div>
+              <Separator orientation="vertical" className="h-5" />
+              <div className="flex items-center gap-1.5">
+                <Euro className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">Líquido</span>
+                <span className="font-bold text-base text-primary tabular-nums">{liveBridgeCalc.summary.liquidoPercibir.toFixed(2)} €</span>
+              </div>
+              <Separator orientation="vertical" className="h-5" />
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Building2 className="h-3.5 w-3.5" />
+                <span>Coste empresa</span>
+                <span className="font-medium tabular-nums">
+                  {(liveBridgeCalc.summary.totalDevengos + liveBridgeCalc.summary.totalCosteEmpresa).toFixed(2)} €
+                </span>
+              </div>
+              <Badge variant="outline" className="ml-auto text-[10px] h-5 border-success/40 text-success bg-success/5">
+                <CheckCircle className="h-2.5 w-2.5 mr-1" />
+                Motor ES en vivo
+              </Badge>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs italic text-muted-foreground">
+              <Info className="h-3.5 w-3.5" />
+              Introduce un salario base &gt; 0 para activar los totales en vivo del motor ES.
+            </div>
+          )}
+        </div>
 
         {ssBasesMissing && (
           <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
