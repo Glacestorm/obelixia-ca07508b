@@ -865,7 +865,7 @@ export function HRPayrollEntryDialog({
             <TabsContent value="earnings" className="mt-4">
               <div className="pr-4 pb-4">
                 <div className="space-y-2">
-                  {earnings.map(concept => {
+                  {visibleEarnings.map(concept => {
                     const isDynamic = concept.id.startsWith('dyn-');
                     const isClassicResolved = resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0;
                     return (
@@ -894,6 +894,13 @@ export function HRPayrollEntryDialog({
                     </div>
                     );
                   })}
+                  {/* S9.21e: aviso de conceptos opcionales ocultos */}
+                  {earnings.length > visibleEarnings.length && (
+                    <p className="text-[10px] text-muted-foreground italic pt-1">
+                      <Info className="h-3 w-3 inline mr-0.5" />
+                      {earnings.length - visibleEarnings.length} concepto(s) opcional(es) a 0 ocultos. Se muestran solo los cumplimentados.
+                    </p>
+                  )}
                   {/* Phase 2A: Unmapped agreement concepts */}
                   {unmappedConcepts.length > 0 && (
                     <>
@@ -931,7 +938,9 @@ export function HRPayrollEntryDialog({
                   </div>
                   <Separator className="my-3" />
                   <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Otras deducciones</h4>
-                  {deductions.map(concept => (
+                  {deductions
+                    .filter(d => REQUIRED_DEDUCTION_CODES.has(d.code) || (d.amount || 0) > 0)
+                    .map(concept => (
                     <div key={concept.id} className="flex items-center gap-2 p-2 rounded-lg border">
                       <div className="flex-1"><span className="text-sm">{concept.name}</span></div>
                       <div className="w-24">
@@ -941,6 +950,11 @@ export function HRPayrollEntryDialog({
                       {concept.code === 'IRPF' && <span className="text-sm font-medium">= €{totals.irpfAmount.toFixed(2)}</span>}
                     </div>
                   ))}
+                  {visibleOtherDeductions.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground italic">
+                      Sin otras deducciones (anticipo, cuota sindical, embargos, etc.). Se ocultan los conceptos a 0.
+                    </p>
+                  )}
                 </div>
               </div>
             </TabsContent>
