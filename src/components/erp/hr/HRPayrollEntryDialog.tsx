@@ -67,6 +67,7 @@ type AgreementResolutionMode = 'auto' | 'manual' | 'missing_group' | null;
 const CLASSIC_TRIO_ERP_CODES = new Set(['ES_SAL_BASE', 'ES_COMP_CONVENIO', 'ES_MEJORA_VOLUNTARIA']);
 
 /**
+ * S9.21h-rev2 — Tasas SS centralizadas (cache invalidation marker).
  * S9.21h — Las tasas SS NO se hardcodean aquí. Se importan de la fuente única
  * (`SS_CONTRIBUTION_RATES_2026` en `shared/legal/rules/ssRules2026`) que sigue
  * RDL 3/2026 + Orden PJC/297/2026. El MEI total 2026 es 0.90 % (0.75 emp + 0.15 trab),
