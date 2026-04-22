@@ -1051,9 +1051,9 @@ export function HRPayrollEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0">
-        {/* S9.21h — Capa 2: Header en 2 zonas (título + toolbar) con pr-12 reservado para la X nativa */}
-        <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b px-6 py-4 pr-12 space-y-2">
+      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        {/* S9.21i — Header fijo (shrink-0). NO sticky: el padre flex-col ya garantiza visibilidad. */}
+        <DialogHeader className="shrink-0 bg-background border-b px-6 py-4 pr-12 space-y-2">
           <DialogTitle className="flex items-center gap-2 min-w-0 flex-wrap">
             <DollarSign className="h-5 w-5 text-primary shrink-0" />
             <span className="truncate">
@@ -1084,9 +1084,9 @@ export function HRPayrollEntryDialog({
           </div>
         </DialogHeader>
 
-        {/* S9.21h — Capa 2: Sticky summary bar ÚNICA. Fuente de verdad: liveBridgeCalc.summary
+        {/* S9.21i — Summary bar fija (shrink-0), no sticky. Fuente única: liveBridgeCalc.summary
             (mismo objeto que alimenta tab Resumen, vista previa y recibo final). Sin cálculos paralelos. */}
-        <div className="sticky top-[calc(theme(spacing.0))] z-10 shrink-0 border-b bg-muted/40 px-6 py-2.5">
+        <div className="shrink-0 border-b bg-muted/40 px-6 py-2.5">
           {liveBridgeCalc ? (
             <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs">
               <div className="flex items-center gap-1.5">
