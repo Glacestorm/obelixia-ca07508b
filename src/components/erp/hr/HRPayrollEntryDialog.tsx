@@ -1126,26 +1126,27 @@ export function HRPayrollEntryDialog({
           )}
         </div>
 
-        {ssBasesMissing && (
-          <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
-            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-warning-foreground">
-                Faltan bases de Seguridad Social para {periodYear}
-              </p>
-              <p className="text-muted-foreground mt-0.5">
-                El motor de nómina ES necesita las bases SS del año del periodo. Ve a{' '}
-                <span className="font-medium">RRHH → Configuración → Localización España → Bases SS</span>{' '}
-                y carga las bases de {periodYear} (o cambia el periodo a un año con bases ya cargadas, p. ej. 2026).
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* S9.21d Bloque E: Layout XL adaptativo — 2 columnas en ≥1280px */}
-        <div className="flex-1 min-h-0 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] xl:gap-6 overflow-hidden px-6 pt-4">
-        {/* Columna izquierda: contexto (empleado, convenio, flex) */}
-        <div className="shrink-0 overflow-y-auto max-h-[40vh] xl:max-h-none xl:h-full xl:pr-1">
+        {/* S9.21i — Body scrollable ÚNICO. Wrapper flex-1+min-h-0+overflow-y-auto.
+            El grid 2-col vive dentro y comparte el mismo scroll (preferencia explícita). */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="px-6 py-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] xl:gap-6">
+            {ssBasesMissing && (
+              <div className="xl:col-span-2 mb-4 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-warning-foreground">
+                    Faltan bases de Seguridad Social para {periodYear}
+                  </p>
+                  <p className="text-muted-foreground mt-0.5">
+                    El motor de nómina ES necesita las bases SS del año del periodo. Ve a{' '}
+                    <span className="font-medium">RRHH → Configuración → Localización España → Bases SS</span>{' '}
+                    y carga las bases de {periodYear} (o cambia el periodo a un año con bases ya cargadas, p. ej. 2026).
+                  </p>
+                </div>
+              </div>
+            )}
+            {/* Columna izquierda: contexto (empleado, convenio, flex). Sin scroll propio. */}
+            <div className="mb-4 xl:mb-0">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
