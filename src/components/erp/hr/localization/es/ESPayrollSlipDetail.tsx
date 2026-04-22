@@ -102,8 +102,14 @@ export function ESPayrollSlipDetail({
               {categoria && <span>Cat: {categoria}</span>}
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5">
-            <FileDown className="h-4 w-4" /> Exportar
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            className="gap-1.5"
+            title="Descarga un resumen del recibo en formato texto plano. PDF firmado pendiente."
+          >
+            <FileDown className="h-4 w-4" /> Descargar (TXT)
           </Button>
         </div>
       </CardHeader>
@@ -182,6 +188,13 @@ export function ESPayrollSlipDetail({
               </div>
             ))}
           </div>
+          {summary.bases && (summary.bases.aplicoTopeMaximo || summary.bases.aplicoTopeMinimo) && (
+            <p className="mt-2 text-[10px] italic text-muted-foreground">
+              {summary.bases.aplicoTopeMaximo
+                ? 'Base de cotización CC limitada por tope MÁXIMO legal vigente (Orden PJC/297/2026).'
+                : 'Base de cotización CC ajustada al tope MÍNIMO legal vigente (Orden PJC/297/2026).'}
+            </p>
+          )}
         </div>
 
         <Separator />

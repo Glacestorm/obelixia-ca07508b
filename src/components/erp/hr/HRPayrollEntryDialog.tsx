@@ -1856,13 +1856,27 @@ export function HRPayrollEntryDialog({
             <Button
               variant="outline"
               onClick={handleOpenPreview}
-              disabled={!selectedEmployeeId || totals.totalEarnings <= 0}
+              disabled={
+                !selectedEmployeeId ||
+                ((earnings.find(e => e.code === 'BASE')?.amount || 0) <= 0) ||
+                (!liveBridgeCalc && totals.totalEarnings <= 0)
+              }
               className="gap-1.5"
             >
               <Eye className="h-4 w-4" />
               Vista previa nómina
             </Button>
-            <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
+            <Button
+              onClick={handleSave}
+              disabled={
+                !selectedEmployeeId ||
+                isSaving ||
+                !month ||
+                ((earnings.find(e => e.code === 'BASE')?.amount || 0) <= 0) ||
+                (!liveBridgeCalc && totals.totalEarnings <= 0) ||
+                ssBasesMissing
+              }
+            >
               {isSaving ? (
                 <><Calculator className="h-4 w-4 mr-1 animate-spin" />Guardando...</>
               ) : (
@@ -1879,6 +1893,7 @@ export function HRPayrollEntryDialog({
         loading={previewLoading}
         employeeName={selectedEmployeeName}
         periodo={`${String(periodMonth).padStart(2, '0')}/${periodYear}`}
+        grupo={grupoCotizacion}
         categoria={selectedEmployeeCategory}
       />
     </Dialog>
