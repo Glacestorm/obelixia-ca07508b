@@ -1079,8 +1079,7 @@ export function HRPayrollEntryDialog({
             <ESPeriodSSBasesPopover
               periodYear={periodYear}
               ssBases={esLocalization.ssBases}
-              isLoading={esLocalization.loading}
-              onReload={() => esLocalization.refetch?.()}
+              isLoading={esLocalization.isLoading}
             />
           </div>
         </DialogHeader>
