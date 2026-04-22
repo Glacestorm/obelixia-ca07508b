@@ -35,8 +35,8 @@ interface Props {
 
 const IMPACT_COLORS: Record<string, string> = {
   critical: 'bg-destructive/15 text-destructive border-destructive/30',
-  high: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30',
-  medium: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30',
+  high: 'bg-warning/15 text-warning border-warning/30',
+  medium: 'bg-warning/10 text-warning border-warning/20',
   low: 'bg-muted text-muted-foreground border-muted-foreground/20',
 };
 
