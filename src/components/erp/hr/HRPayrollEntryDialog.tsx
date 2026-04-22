@@ -39,6 +39,9 @@ import { ESPeriodSSBasesPopover } from './localization/es/ESPeriodSSBasesPopover
 import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
 import { IRPF_MIN_RATE } from '@/lib/hr/payroll/rules/irpf-withholding';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
+import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
+import { FileDown } from 'lucide-react';
 
 interface PayrollConcept {
   id: string;
