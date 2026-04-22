@@ -991,8 +991,8 @@ export function HRPayrollEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl xl:max-w-7xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b px-6 py-4">
           <DialogTitle className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
               <DollarSign className="h-5 w-5 text-primary shrink-0" />
@@ -1019,7 +1019,7 @@ export function HRPayrollEntryDialog({
         </DialogHeader>
 
         {/* S9.21d Bloque E: Layout XL adaptativo — 2 columnas en ≥1280px */}
-        <div className="flex-1 min-h-0 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] xl:gap-4 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] xl:gap-6 overflow-hidden px-6 pt-4">
         {/* Columna izquierda: contexto (empleado, convenio, flex) */}
         <div className="shrink-0 overflow-y-auto max-h-[40vh] xl:max-h-none xl:h-full xl:pr-1">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
@@ -1679,24 +1679,56 @@ export function HRPayrollEntryDialog({
         </div>
         </div>
 
-        <DialogFooter className="shrink-0 mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button
-            variant="outline"
-            onClick={handleOpenPreview}
-            disabled={!selectedEmployeeId || totals.totalEarnings <= 0}
-            className="gap-1.5"
-          >
-            <Eye className="h-4 w-4" />
-            Vista previa nómina
-          </Button>
-          <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
-            {isSaving ? (
-              <><Calculator className="h-4 w-4 mr-1 animate-spin" />Guardando...</>
+        <DialogFooter className="sticky bottom-0 z-20 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t px-6 py-3 mt-0 flex-row items-center gap-3 sm:justify-between">
+          {/* Mini-resumen siempre visible (motor ES) */}
+          <div className="hidden md:flex items-center gap-4 text-xs">
+            {liveBridgeCalc ? (
+              <>
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-success" />
+                  <span className="text-muted-foreground">Devengado:</span>
+                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDevengos.toFixed(2)}€</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                  <span className="text-muted-foreground">Deducido:</span>
+                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDeducciones.toFixed(2)}€</span>
+                </div>
+                <Separator orientation="vertical" className="h-5" />
+                <div className="flex items-center gap-1.5">
+                  <Euro className="h-4 w-4 text-primary" />
+                  <span className="text-muted-foreground">Líquido:</span>
+                  <span className="font-bold text-base text-primary tabular-nums">{liveBridgeCalc.summary.liquidoPercibir.toFixed(2)}€</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Building2 className="h-3 w-3" />
+                  <span>Coste empresa:</span>
+                  <span className="tabular-nums">{(liveBridgeCalc.summary.totalDevengos + liveBridgeCalc.summary.totalCosteEmpresa).toFixed(2)}€</span>
+                </div>
+              </>
             ) : (
-              <><Save className="h-4 w-4 mr-1" />{isEditMode ? 'Actualizar Nómina' : 'Calcular y Guardar'}</>
+              <span className="italic text-muted-foreground">Introduce un salario base para ver totales en vivo</span>
             )}
-          </Button>
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button
+              variant="outline"
+              onClick={handleOpenPreview}
+              disabled={!selectedEmployeeId || totals.totalEarnings <= 0}
+              className="gap-1.5"
+            >
+              <Eye className="h-4 w-4" />
+              Vista previa nómina
+            </Button>
+            <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
+              {isSaving ? (
+                <><Calculator className="h-4 w-4 mr-1 animate-spin" />Guardando...</>
+              ) : (
+                <><Save className="h-4 w-4 mr-1" />{isEditMode ? 'Actualizar Nómina' : 'Calcular y Guardar'}</>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
       <HRPayrollPreviewDialog
