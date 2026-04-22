@@ -193,7 +193,18 @@ export function HRPayrollEntryDialog({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewCalc, setPreviewCalc] = useState<ESPayrollCalculation | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const { simulateES } = useESPayrollBridge(companyId);
+  const { simulateES, esLocalization } = useESPayrollBridge(companyId);
+
+  // S9.21h: cargar bases SS del año del periodo automáticamente
+  useEffect(() => {
+    if (open && periodYear) {
+      esLocalization.fetchSSBases(periodYear);
+      esLocalization.fetchIRPFTables(periodYear);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, periodYear]);
+
+  const ssBasesMissing = open && esLocalization.ssBases.length === 0;
 
   // S9.21g: conceptos añadidos manualmente desde el Popover (visibles aunque estén a 0)
   const [manuallyAddedCodes, setManuallyAddedCodes] = useState<Set<string>>(new Set());
