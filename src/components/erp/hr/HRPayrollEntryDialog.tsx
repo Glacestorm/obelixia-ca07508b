@@ -38,6 +38,7 @@ import { useESPayrollBridge, type ESPayrollCalculation } from '@/hooks/erp/hr/us
 import { ESPeriodSSBasesPopover } from './localization/es/ESPeriodSSBasesPopover';
 import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
 import { IRPF_MIN_RATE } from '@/lib/hr/payroll/rules/irpf-withholding';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PayrollConcept {
   id: string;
