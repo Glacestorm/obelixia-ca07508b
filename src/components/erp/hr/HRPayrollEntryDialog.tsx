@@ -1074,6 +1074,231 @@ export function HRPayrollEntryDialog({
               </CollapsibleContent>
             </Collapsible>
           )}
+
+          {/* S9.21g: Casuística entre fechas — acordeón */}
+          {selectedEmployeeId && (
+            <Collapsible open={casuisticaOpen} onOpenChange={setCasuisticaOpen} className="mb-4">
+              <CollapsibleTrigger className={cn(
+                "flex items-center gap-2 w-full p-2 rounded-lg border transition-colors text-xs",
+                casuistica.enabled
+                  ? "bg-warning/10 border-warning/30 hover:bg-warning/15"
+                  : "bg-muted/20 hover:bg-muted/40"
+              )}>
+                <CalendarRange className="h-3.5 w-3.5 text-warning" />
+                <span className="font-medium">Casuística entre fechas</span>
+                {casuisticaActiva.length > 0 && (
+                  <Badge variant="outline" className="ml-1 text-[9px] h-4 border-warning/40 text-warning">
+                    {casuisticaActiva.length} activa{casuisticaActiva.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+                <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform", casuisticaOpen && "rotate-180")} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <Card>
+                  <CardContent className="pt-4 space-y-3">
+                    {/* Toggle activador */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-start gap-2">
+                        <FileWarning className="h-4 w-4 text-warning mt-0.5" />
+                        <div>
+                          <Label className="text-xs font-medium">Activar casuística avanzada</Label>
+                          <p className="text-[10px] text-muted-foreground">PNR, IT/AT, nacimiento, atrasos, reducción jornada, cobertura intramensual.</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={casuistica.enabled ? "default" : "outline"}
+                        onClick={() => setCasuistica(c => ({ ...c, enabled: !c.enabled }))}
+                        className="h-7 text-xs shrink-0"
+                      >
+                        {casuistica.enabled ? 'Activado' : 'Activar'}
+                      </Button>
+                    </div>
+
+                    {casuistica.enabled && (
+                      <>
+                        <Separator />
+                        {/* PNR + IT/AT días */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <Briefcase className="h-2.5 w-2.5" />PNR (días)
+                            </Label>
+                            <Input
+                              type="number" min={0} step={1}
+                              value={casuistica.pnrDias || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, pnrDias: parseInt(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <Stethoscope className="h-2.5 w-2.5" />IT/AT 75% (días)
+                            </Label>
+                            <Input
+                              type="number" min={0} step={1}
+                              value={casuistica.itAtDias || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, itAtDias: parseInt(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Reducción jornada */}
+                        <div>
+                          <Label className="text-[10px]">Reducción jornada (% guarda legal)</Label>
+                          <Input
+                            type="number" min={0} max={100} step={0.01}
+                            value={casuistica.reduccionJornadaPct || ''}
+                            onChange={(e) => setCasuistica(c => ({ ...c, reduccionJornadaPct: parseFloat(e.target.value) || 0 }))}
+                            className="h-7 text-xs" placeholder="0"
+                          />
+                        </div>
+
+                        {/* Atrasos IT */}
+                        <Separator />
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase">Atrasos / regularización IT retroactiva</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Importe atrasos €</Label>
+                            <Input
+                              type="number" min={0} step={0.01}
+                              value={casuistica.atrasosITImporte || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosITImporte: parseFloat(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Período origen (YYYY-MM)</Label>
+                            <Input
+                              type="text" maxLength={7}
+                              value={casuistica.atrasosITPeriodo}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosITPeriodo: e.target.value }))}
+                              className="h-7 text-xs" placeholder="2025-09"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Nacimiento */}
+                        <Separator />
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase flex items-center gap-1">
+                          <Baby className="h-2.5 w-2.5" />Nacimiento / cuidado del menor
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Tipo</Label>
+                            <Select
+                              value={casuistica.nacimientoTipo}
+                              onValueChange={(v) => setCasuistica(c => ({ ...c, nacimientoTipo: v as CasuisticaState['nacimientoTipo'] }))}
+                            >
+                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="paternidad">Paternidad</SelectItem>
+                                <SelectItem value="maternidad">Maternidad</SelectItem>
+                                <SelectItem value="corresponsabilidad">Corresponsabilidad</SelectItem>
+                                <SelectItem value="lactancia">Lactancia</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Días</Label>
+                            <Input
+                              type="number" min={0} step={1}
+                              value={casuistica.nacimientoDias || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoDias: parseInt(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Importe €</Label>
+                            <Input
+                              type="number" min={0} step={0.01}
+                              value={casuistica.nacimientoImporte || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoImporte: parseFloat(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Cobertura período */}
+                        <Separator />
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase">Cobertura del período (intramensual)</p>
+                        <div>
+                          <Label className="text-[10px]">Motivo</Label>
+                          <Select
+                            value={casuistica.periodMotivo}
+                            onValueChange={(v) => setCasuistica(c => ({ ...c, periodMotivo: v as CasuisticaState['periodMotivo'] }))}
+                          >
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="mes_completo">Mes completo</SelectItem>
+                              <SelectItem value="alta_intramensual">Alta intramensual</SelectItem>
+                              <SelectItem value="baja_intramensual">Baja intramensual</SelectItem>
+                              <SelectItem value="cambio_contractual">Cambio contractual</SelectItem>
+                              <SelectItem value="cambio_salarial">Cambio salarial</SelectItem>
+                              <SelectItem value="suspension_parcial">Suspensión parcial</SelectItem>
+                              <SelectItem value="excedencia">Excedencia</SelectItem>
+                              <SelectItem value="otro">Otro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {casuistica.periodMotivo !== 'mes_completo' && (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px]">Desde</Label>
+                                <Input
+                                  type="date"
+                                  value={casuistica.periodFechaDesde}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodFechaDesde: e.target.value }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">Hasta</Label>
+                                <Input
+                                  type="date"
+                                  value={casuistica.periodFechaHasta}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodFechaHasta: e.target.value }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px]">Días naturales</Label>
+                                <Input
+                                  type="number" min={1} max={31} step={1}
+                                  value={casuistica.periodDiasNaturales}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodDiasNaturales: parseInt(e.target.value) || 30 }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">Días efectivos</Label>
+                                <Input
+                                  type="number" min={0} max={31} step={1}
+                                  value={casuistica.periodDiasEfectivos}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodDiasEfectivos: parseInt(e.target.value) || 0 }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        <p className="text-[9px] text-muted-foreground italic pt-1">
+                          <Info className="h-2.5 w-2.5 inline mr-0.5" />
+                          Los valores entran al motor oficial ES y afectan al Resumen y a la Vista previa en tiempo real.
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
 
         {/* Columna derecha: tabs (devengos / deducciones / resumen) — sticky en XL */}
