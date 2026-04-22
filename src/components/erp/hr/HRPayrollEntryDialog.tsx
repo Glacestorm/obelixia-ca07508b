@@ -1913,6 +1913,46 @@ export function HRPayrollEntryDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button
               variant="outline"
+              onClick={async () => {
+                if (!liveBridgeCalc) {
+                  toast.error('Sin cálculo en vivo: introduce salario base y bases SS');
+                  return;
+                }
+                try {
+                  const model = buildPayslipRenderModel({
+                    calculation: liveBridgeCalc,
+                    employee: {
+                      first_name: selectedEmployeeName.split(' ')[0],
+                      last_name: selectedEmployeeName.split(' ').slice(1).join(' '),
+                      category: selectedEmployeeCategory,
+                      grupo_cotizacion: grupoCotizacion,
+                    },
+                    period: { period_name: `${String(periodMonth).padStart(2, '0')}/${periodYear}` },
+                    currency: 'EUR',
+                  });
+                  const hash = await computeSourceHash(liveBridgeCalc);
+                  const safe = (selectedEmployeeName || 'empleado').replace(/\s+/g, '_');
+                  downloadPayslipPDF(
+                    model,
+                    `nomina_${safe}_${periodYear}-${String(periodMonth).padStart(2, '0')}_provisional.pdf`,
+                    'system_generated',
+                    hash,
+                  );
+                  toast.success('PDF provisional generado');
+                } catch (err) {
+                  console.error('[HRPayrollEntryDialog] PDF error:', err);
+                  toast.error('No se pudo generar el PDF');
+                }
+              }}
+              disabled={!liveBridgeCalc}
+              className="gap-1.5"
+              title="Descargar recibo provisional con watermark"
+            >
+              <FileDown className="h-4 w-4" />
+              Descargar PDF
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleOpenPreview}
               disabled={
                 !selectedEmployeeId ||
