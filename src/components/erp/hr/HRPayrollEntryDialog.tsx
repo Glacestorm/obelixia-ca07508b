@@ -195,17 +195,6 @@ export function HRPayrollEntryDialog({
   const [previewLoading, setPreviewLoading] = useState(false);
   const { simulateES, esLocalization } = useESPayrollBridge(companyId);
 
-  // S9.21h: cargar bases SS del año del periodo automáticamente
-  useEffect(() => {
-    if (open && periodYear) {
-      esLocalization.fetchSSBases(periodYear);
-      esLocalization.fetchIRPFTables(periodYear);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, periodYear]);
-
-  const ssBasesMissing = open && esLocalization.ssBases.length === 0;
-
   // S9.21g: conceptos añadidos manualmente desde el Popover (visibles aunque estén a 0)
   const [manuallyAddedCodes, setManuallyAddedCodes] = useState<Set<string>>(new Set());
   // S9.21g: casuística entre fechas (acordeón)
@@ -217,6 +206,17 @@ export function HRPayrollEntryDialog({
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
+
+  // S9.21h: cargar bases SS / IRPF del año del periodo automáticamente al abrir
+  useEffect(() => {
+    if (open && periodYear) {
+      esLocalization.fetchSSBases(periodYear);
+      esLocalization.fetchIRPFTables(periodYear);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, periodYear]);
+
+  const ssBasesMissing = open && esLocalization.ssBases.length === 0;
 
   // Init concepts
   const resetConcepts = useCallback((baseSalary = 0, irpfRate = 15) => {
