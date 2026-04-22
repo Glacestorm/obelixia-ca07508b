@@ -191,6 +191,16 @@ export function HRPayrollEntryDialog({
   const [activeTab, setActiveTab] = useState('earnings');
   const [isEditMode, setIsEditMode] = useState(false);
 
+  /**
+   * S9.21m — Grupo de cotización SS del empleado.
+   * Fuente real: contrato vigente / extensión ES (no se infiere de `professional_group`,
+   * que es texto libre y no tiene mapping formal auditado a grupos 1-11).
+   * Si no consta, se usa fallback explícito = 1 con `grupoCotizacionSource = 'fallback'`
+   * para trazar la asunción en UI / persistencia futura.
+   */
+  const [grupoCotizacion, setGrupoCotizacion] = useState<number>(1);
+  const [grupoCotizacionSource, setGrupoCotizacionSource] = useState<'contract' | 'fallback'>('fallback');
+
   // S9.13: Agreement resolution state
   const [agreementResolution, setAgreementResolution] = useState<SalaryResolutionResult | null>(null);
   const [agreementName, setAgreementName] = useState('');
