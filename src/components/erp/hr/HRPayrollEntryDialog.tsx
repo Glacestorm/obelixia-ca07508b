@@ -923,7 +923,6 @@ export function HRPayrollEntryDialog({
         net_salary: parseFloat(netSal.toFixed(2)),
         ss_company: parseFloat(ssCompany.toFixed(2)),
         total_cost: parseFloat(totalCost.toFixed(2)),
-        calculation_source: summarySource ? 'es_bridge_engine_live' : 'local_fallback',
         status: 'calculated' as const,
         calculated_at: new Date().toISOString(),
       };
