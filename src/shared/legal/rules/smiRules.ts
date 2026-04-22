@@ -61,3 +61,69 @@ export function getSMIAnual(year?: number): number {
 export function getSMIProrrateadoMensual(year?: number): number {
   return getSMIAnual(year) / 12;
 }
+
+// ============================================
+// REGULATORY-WATCH AWARE LOOKUP (S9.21h)
+// ============================================
+
+/**
+ * Item normativo mínimo necesario para resolver SMI desde regulatory_watch.
+ * Coincidente estructuralmente con `RegulatoryWatchItem` pero sin acoplar tipos.
+ */
+export interface ApprovedRegulatoryItemMinimal {
+  category?: string;
+  jurisdiction?: string;
+  approval_status?: string;
+  effective_date?: string | null;
+  key_changes?: unknown;
+  title?: string;
+}
+
+/**
+ * Devuelve el SMI mensual aprobado más reciente que ya esté en vigor para el año
+ * dado, leyendo de los items aprobados de regulatory_watch (categoría 'salario_minimo').
+ *
+ * Si no hay item aprobado vigente, devuelve la constante canónica (`getSMIMensual`).
+ * Esta función es PURA — no autoaplica cambios al motor.
+ *
+ * @param year Año del periodo a evaluar
+ * @param items Items de vigilancia normativa (aprobados o en vigor)
+ */
+export function getApprovedSMI(
+  year: number | undefined,
+  items: ApprovedRegulatoryItemMinimal[] = [],
+): { value: number; source: 'regulatory_watch' | 'canonical_constant'; effectiveDate?: string; title?: string } {
+  const y = year ?? new Date().getFullYear();
+  const yearStart = new Date(`${y}-01-01`);
+  const yearEnd = new Date(`${y}-12-31`);
+
+  const candidates = items.filter(it => {
+    if (it.category !== 'salario_minimo') return false;
+    if (it.jurisdiction && it.jurisdiction !== 'ES') return false;
+    if (!['approved', 'in_force'].includes(it.approval_status ?? '')) return false;
+    if (!it.effective_date) return false;
+    const eff = new Date(it.effective_date);
+    return eff <= yearEnd && eff >= new Date(`${y - 1}-01-01`);
+  });
+
+  // Más reciente con effective_date <= fin del año
+  const sorted = candidates
+    .filter(it => new Date(it.effective_date!) <= yearEnd)
+    .sort((a, b) => new Date(b.effective_date!).getTime() - new Date(a.effective_date!).getTime());
+
+  const top = sorted[0];
+  if (top && top.key_changes && typeof top.key_changes === 'object') {
+    const kc = top.key_changes as Record<string, unknown>;
+    const candidate = Number(kc.smi_mensual ?? kc.smiMensual ?? kc.value ?? NaN);
+    if (Number.isFinite(candidate) && candidate > 0) {
+      return {
+        value: candidate,
+        source: 'regulatory_watch',
+        effectiveDate: top.effective_date ?? undefined,
+        title: top.title,
+      };
+    }
+  }
+
+  return { value: getSMIMensual(y), source: 'canonical_constant' };
+}
