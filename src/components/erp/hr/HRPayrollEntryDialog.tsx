@@ -361,14 +361,23 @@ export function HRPayrollEntryDialog({
    * S9.21e — Bridge ES en vivo: ejecuta `simulateES` con los devengos UI actuales
    * para obtener el cálculo oficial (bases salariales/no salariales, contribuibles,
    * imponibles, topes CC, IRPF). Se usa en la pestaña Resumen.
-   * Fallback silencioso a `null` si el bridge no devuelve cálculo (sin empleado, etc.).
+   *
+   * IMPORTANTE: `simulateES` internamente llama a `setLastCalculation` en el bridge,
+   * por lo que NO debe ejecutarse durante el render (causaría "Too many re-renders").
+   * Se ejecuta en `useEffect` y se almacena el resultado en estado local.
    */
-  const liveBridgeCalc = useMemo<ESPayrollCalculation | null>(() => {
+  const [liveBridgeCalc, setLiveBridgeCalc] = useState<ESPayrollCalculation | null>(null);
+  // Ref a simulateES para no depender de su identidad (cambia en cada render del bridge)
+  const simulateESRef = useRef(simulateES);
+  simulateESRef.current = simulateES;
+  const ssBasesReady = esLocalization.ssBases.length > 0;
+
+  useEffect(() => {
     const base = earnings.find(e => e.code === 'BASE')?.amount || 0;
-    if (base <= 0) return null;
-    // Guard: si faltan bases SS para el año del periodo, no llamar al motor
-    // (evita toast.error en bucle desde simulateES y posible re-render infinito)
-    if (esLocalization.ssBases.length === 0) return null;
+    if (base <= 0 || !ssBasesReady) {
+      setLiveBridgeCalc(null);
+      return;
+    }
     try {
       const complementos: Record<string, number> = {};
       earnings.forEach(e => {
@@ -399,7 +408,7 @@ export function HRPayrollEntryDialog({
             motivo: cas.periodMotivo,
           }
         : undefined;
-      return simulateES({
+      const result = simulateESRef.current({
         salarioBase: base,
         grupoCotizacion: 1,
         horasExtraImporte: horasExtra,
@@ -411,11 +420,12 @@ export function HRPayrollEntryDialog({
         nacimientoTramos,
         periodCoverage,
       });
+      setLiveBridgeCalc(result);
     } catch (err) {
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
-      return null;
+      setLiveBridgeCalc(null);
     }
-  }, [earnings, simulateES, casuistica, esLocalization.ssBases.length]);
+  }, [earnings, casuistica, ssBasesReady]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
