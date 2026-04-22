@@ -932,6 +932,15 @@ export function HRPayrollEntryDialog({
 
         <DialogFooter className="shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            variant="outline"
+            onClick={handleOpenPreview}
+            disabled={!selectedEmployeeId || totals.totalEarnings <= 0}
+            className="gap-1.5"
+          >
+            <Eye className="h-4 w-4" />
+            Vista previa nómina
+          </Button>
           <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
             {isSaving ? (
               <><Calculator className="h-4 w-4 mr-1 animate-spin" />Guardando...</>
@@ -941,6 +950,15 @@ export function HRPayrollEntryDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <HRPayrollPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        calculation={previewCalc}
+        loading={previewLoading}
+        employeeName={selectedEmployeeName}
+        periodo={`${String(periodMonth).padStart(2, '0')}/${periodYear}`}
+        categoria={selectedEmployeeCategory}
+      />
     </Dialog>
   );
 }
