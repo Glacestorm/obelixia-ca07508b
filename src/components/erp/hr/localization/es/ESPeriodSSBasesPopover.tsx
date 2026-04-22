@@ -208,6 +208,8 @@ export function ESPeriodSSBasesPopover({
                     <TableHead className="text-[11px]">Categoría</TableHead>
                     <TableHead className="text-[11px] text-right">Mín. mensual</TableHead>
                     <TableHead className="text-[11px] text-right">Máx. mensual</TableHead>
+                    <TableHead className="text-[11px] text-right">Mín. diaria</TableHead>
+                    <TableHead className="text-[11px] text-right">Máx. diaria</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -216,8 +218,27 @@ export function ESPeriodSSBasesPopover({
                     .sort((a, b) => a.grupo_cotizacion - b.grupo_cotizacion)
                     .map(b => {
                       const canon = SS_GROUP_BASES_2026[b.grupo_cotizacion];
-                      const minDiverges = canon && Math.abs(b.base_minima_mensual - canon.minMensual) > 0.01;
-                      const maxDiverges = canon && Math.abs(b.base_maxima_mensual - canon.maxMensual) > 0.01;
+                      const isDaily = !!canon?.isDailyBase;
+                      // Comparación mensual: canónicas distintas según grupo
+                      const minMensualCanon = isDaily
+                        ? SS_GROUP_MIN_BASES_MENSUAL_2026[b.grupo_cotizacion]
+                        : canon?.minMensual;
+                      const maxMensualCanon = isDaily
+                        ? SS_BASE_MAX_MENSUAL_2026
+                        : canon?.maxMensual;
+                      const minDiverges = minMensualCanon != null
+                        && Math.abs(b.base_minima_mensual - minMensualCanon) > 0.01;
+                      const maxDiverges = maxMensualCanon != null
+                        && Math.abs(b.base_maxima_mensual - maxMensualCanon) > 0.01;
+                      // Comparación diaria: solo aplica a G8–11; canónica en canon.min/maxMensual
+                      const minDailyDiverges = isDaily
+                        && b.base_minima_diaria != null
+                        && canon != null
+                        && Math.abs(b.base_minima_diaria - canon.minMensual) > 0.01;
+                      const maxDailyDiverges = isDaily
+                        && b.base_maxima_diaria != null
+                        && canon != null
+                        && Math.abs(b.base_maxima_diaria - canon.maxMensual) > 0.01;
                       return (
                         <TableRow key={b.id}>
                           <TableCell className="text-xs font-mono">{b.grupo_cotizacion}</TableCell>
@@ -236,6 +257,24 @@ export function ESPeriodSSBasesPopover({
                           )}>
                             {b.base_maxima_mensual.toFixed(2)} €
                           </TableCell>
+                          <TableCell className={cn(
+                            'text-xs text-right tabular-nums',
+                            minDailyDiverges && 'text-warning font-semibold',
+                            !isDaily && 'text-muted-foreground/60',
+                          )}>
+                            {isDaily && b.base_minima_diaria != null
+                              ? `${b.base_minima_diaria.toFixed(2)} €`
+                              : '—'}
+                          </TableCell>
+                          <TableCell className={cn(
+                            'text-xs text-right tabular-nums',
+                            maxDailyDiverges && 'text-warning font-semibold',
+                            !isDaily && 'text-muted-foreground/60',
+                          )}>
+                            {isDaily && b.base_maxima_diaria != null
+                              ? `${b.base_maxima_diaria.toFixed(2)} €`
+                              : '—'}
+                          </TableCell>
                         </TableRow>
                       );
                     })}
@@ -243,10 +282,15 @@ export function ESPeriodSSBasesPopover({
               </Table>
             </ScrollArea>
             <Separator />
-            <p className="px-4 py-2 text-[10px] text-muted-foreground italic">
-              Vista de sólo lectura. Los cambios sobre bases SS se realizan desde
-              RRHH → Configuración → Localización España.
-            </p>
+            <div className="px-4 py-2 space-y-1">
+              <p className="text-[10px] text-muted-foreground italic">
+                Los grupos 8–11 cotizan por base diaria (Orden PJC/297/2026); se muestran ambos planos a efectos informativos.
+              </p>
+              <p className="text-[10px] text-muted-foreground italic">
+                Vista de sólo lectura. Los cambios sobre bases SS se realizan desde
+                RRHH → Configuración → Localización España.
+              </p>
+            </div>
           </>
         )}
       </PopoverContent>
