@@ -1051,9 +1051,9 @@ export function HRPayrollEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0">
-        {/* S9.21h — Capa 2: Header en 2 zonas (título + toolbar) con pr-12 reservado para la X nativa */}
-        <DialogHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b px-6 py-4 pr-12 space-y-2">
+      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        {/* S9.21i — Header fijo (shrink-0). NO sticky: el padre flex-col ya garantiza visibilidad. */}
+        <DialogHeader className="shrink-0 bg-background border-b px-6 py-4 pr-12 space-y-2">
           <DialogTitle className="flex items-center gap-2 min-w-0 flex-wrap">
             <DollarSign className="h-5 w-5 text-primary shrink-0" />
             <span className="truncate">
@@ -1084,9 +1084,9 @@ export function HRPayrollEntryDialog({
           </div>
         </DialogHeader>
 
-        {/* S9.21h — Capa 2: Sticky summary bar ÚNICA. Fuente de verdad: liveBridgeCalc.summary
+        {/* S9.21i — Summary bar fija (shrink-0), no sticky. Fuente única: liveBridgeCalc.summary
             (mismo objeto que alimenta tab Resumen, vista previa y recibo final). Sin cálculos paralelos. */}
-        <div className="sticky top-[calc(theme(spacing.0))] z-10 shrink-0 border-b bg-muted/40 px-6 py-2.5">
+        <div className="shrink-0 border-b bg-muted/40 px-6 py-2.5">
           {liveBridgeCalc ? (
             <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs">
               <div className="flex items-center gap-1.5">
@@ -1126,26 +1126,27 @@ export function HRPayrollEntryDialog({
           )}
         </div>
 
-        {ssBasesMissing && (
-          <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
-            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-warning-foreground">
-                Faltan bases de Seguridad Social para {periodYear}
-              </p>
-              <p className="text-muted-foreground mt-0.5">
-                El motor de nómina ES necesita las bases SS del año del periodo. Ve a{' '}
-                <span className="font-medium">RRHH → Configuración → Localización España → Bases SS</span>{' '}
-                y carga las bases de {periodYear} (o cambia el periodo a un año con bases ya cargadas, p. ej. 2026).
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* S9.21d Bloque E: Layout XL adaptativo — 2 columnas en ≥1280px */}
-        <div className="flex-1 min-h-0 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] xl:gap-6 overflow-hidden px-6 pt-4">
-        {/* Columna izquierda: contexto (empleado, convenio, flex) */}
-        <div className="shrink-0 overflow-y-auto max-h-[40vh] xl:max-h-none xl:h-full xl:pr-1">
+        {/* S9.21i — Body scrollable ÚNICO. Wrapper flex-1+min-h-0+overflow-y-auto.
+            El grid 2-col vive dentro y comparte el mismo scroll (preferencia explícita). */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="px-6 py-4 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] xl:gap-6">
+            {ssBasesMissing && (
+              <div className="xl:col-span-2 mb-4 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-warning-foreground">
+                    Faltan bases de Seguridad Social para {periodYear}
+                  </p>
+                  <p className="text-muted-foreground mt-0.5">
+                    El motor de nómina ES necesita las bases SS del año del periodo. Ve a{' '}
+                    <span className="font-medium">RRHH → Configuración → Localización España → Bases SS</span>{' '}
+                    y carga las bases de {periodYear} (o cambia el periodo a un año con bases ya cargadas, p. ej. 2026).
+                  </p>
+                </div>
+              </div>
+            )}
+            {/* Columna izquierda: contexto (empleado, convenio, flex). Sin scroll propio. */}
+            <div className="mb-4 xl:mb-0">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -1801,10 +1802,11 @@ export function HRPayrollEntryDialog({
             </TabsContent>
           </Tabs>
         </div>
+          </div>
         </div>
 
-        {/* S9.21h — Footer SOLO con acciones (los totales viven en la sticky bar superior) */}
-        <DialogFooter className="sticky bottom-0 z-20 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t px-6 py-3 mt-0 flex-row items-center gap-2 sm:justify-end">
+        {/* S9.21i — Footer fijo (shrink-0). NO sticky: es hermano del body en flex-col. */}
+        <DialogFooter className="shrink-0 bg-background border-t px-6 py-3 mt-0 flex-row items-center gap-2 sm:justify-end">
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button
