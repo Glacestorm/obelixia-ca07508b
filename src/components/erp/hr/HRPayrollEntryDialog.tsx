@@ -999,6 +999,16 @@ export function HRPayrollEntryDialog({
               <span className="truncate">
                 {isEditMode ? 'Editar Nómina' : 'Nueva Nómina'} — {new Date(periodYear, periodMonth - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
               </span>
+              {casuisticaActiva.length > 0 && (
+                <div className="hidden md:flex items-center gap-1 ml-2 flex-wrap">
+                  {casuisticaActiva.map(c => (
+                    <Badge key={c.key} variant="outline" className="text-[10px] h-5 border-warning/40 text-warning bg-warning/5">
+                      <CalendarRange className="h-2.5 w-2.5 mr-0.5" />
+                      {c.label}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             {/* S9.21d Bloque D: Indicador compacto de vigilancia normativa */}
             <HRPayrollNormativeWatchBadge companyId={companyId} className="shrink-0" />
