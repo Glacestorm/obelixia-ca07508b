@@ -99,6 +99,69 @@ const PERSISTENCE_CODE_MAP: Record<string, string> = {
   'MEJORA_VOL': 'ES_MEJORA_VOLUNTARIA',
 };
 
+/**
+ * S9.21g — Códigos UI ya cubiertos por defaults / convenio.
+ * Se excluyen del Popover "+ Añadir concepto" para evitar duplicados.
+ */
+const ALREADY_COVERED_ES_CODES = new Set([
+  'ES_SAL_BASE', 'ES_COMP_CONVENIO', 'ES_MEJORA_VOLUNTARIA',
+  'ES_IRPF', 'ES_SS_CC_TRAB', 'ES_SS_DESEMPLEO_TRAB', 'ES_SS_FP_TRAB',
+  'ES_SS_CC_EMP', 'ES_SS_DESEMPLEO_EMP', 'ES_SS_FOGASA', 'ES_SS_FP_EMP',
+  'ES_SS_MEI', 'ES_SS_AT_EP',
+  'ES_BASE_CC', 'ES_BASE_AT', 'ES_BASE_IRPF', 'ES_COSTE_EMPRESA_TOTAL',
+]);
+
+/** Subgrupos para agrupar el catálogo en el Popover */
+function conceptSubgroupLabel(def: ESConceptDefinition): string {
+  if (def.concept_type === 'deduction') return 'Deducciones';
+  switch (def.subcategory) {
+    case 'fixed': return 'Devengos fijos';
+    case 'variable': return 'Devengos variables / IT / prestaciones';
+    case 'overtime': return 'Horas extra';
+    case 'bonus':
+    case 'commission': return 'Bonus y comisiones';
+    case 'allowance': return 'Percepciones extrasalariales';
+    case 'flexible_remuneration': return 'Retribución flexible';
+    case 'regularization': return 'Regularización / atrasos';
+    default: return 'Otros';
+  }
+}
+
+/** Tipos de la casuística entre fechas (S9.21g) */
+type CasuisticaState = {
+  enabled: boolean;
+  pnrDias: number;
+  itAtDias: number;
+  reduccionJornadaPct: number;
+  atrasosITImporte: number;
+  atrasosITPeriodo: string; // YYYY-MM
+  nacimientoTipo: 'maternidad' | 'paternidad' | 'corresponsabilidad' | 'lactancia';
+  nacimientoDias: number;
+  nacimientoImporte: number;
+  periodFechaDesde: string; // YYYY-MM-DD
+  periodFechaHasta: string; // YYYY-MM-DD
+  periodDiasNaturales: number;
+  periodDiasEfectivos: number;
+  periodMotivo: 'mes_completo' | 'alta_intramensual' | 'baja_intramensual' | 'cambio_contractual' | 'cambio_salarial' | 'suspension_parcial' | 'excedencia' | 'otro';
+};
+
+const DEFAULT_CASUISTICA: CasuisticaState = {
+  enabled: false,
+  pnrDias: 0,
+  itAtDias: 0,
+  reduccionJornadaPct: 0,
+  atrasosITImporte: 0,
+  atrasosITPeriodo: '',
+  nacimientoTipo: 'paternidad',
+  nacimientoDias: 0,
+  nacimientoImporte: 0,
+  periodFechaDesde: '',
+  periodFechaHasta: '',
+  periodDiasNaturales: 30,
+  periodDiasEfectivos: 30,
+  periodMotivo: 'mes_completo',
+};
+
 export function HRPayrollEntryDialog({
   open,
   onOpenChange,
