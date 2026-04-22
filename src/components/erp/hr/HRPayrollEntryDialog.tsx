@@ -432,7 +432,7 @@ export function HRPayrollEntryDialog({
         : undefined;
       const result = simulateESRef.current({
         salarioBase: base,
-        grupoCotizacion: 1,
+        grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
         permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
@@ -447,7 +447,7 @@ export function HRPayrollEntryDialog({
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       setLiveBridgeCalc(null);
     }
-  }, [earnings, casuistica, ssBasesReady]);
+  }, [earnings, casuistica, ssBasesReady, grupoCotizacion]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
