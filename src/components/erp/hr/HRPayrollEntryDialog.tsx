@@ -485,6 +485,92 @@ export function HRPayrollEntryDialog({
   };
 
   /**
+   * S9.21g — Añadir concepto desde el Popover "+ Añadir concepto".
+   * - Si ya existe oculto a 0, se marca como manual (queda visible aunque siga a 0).
+   * - Si no existe, se inserta dinámicamente al estado de Devengos o Deducciones.
+   */
+  const addManualConcept = useCallback((def: ESConceptDefinition) => {
+    const isEarning = def.concept_type === 'earning';
+    const newId = `manual-${def.code}-${Date.now()}`;
+    const baseConcept: PayrollConcept = {
+      id: newId,
+      code: def.code,
+      name: def.name,
+      type: isEarning ? 'earning' : 'deduction',
+      category: isEarning
+        ? (def.subcategory === 'fixed' ? 'fixed' : 'variable')
+        : (def.subcategory === 'withholding' ? 'irpf'
+          : def.subcategory === 'social_contribution' ? 'ss'
+          : 'other'),
+      amount: 0,
+      isPercentage: def.is_percentage,
+      cotizaSS: def.is_ss_contributable,
+      tributaIRPF: def.impacts_irpf,
+      isEditable: true,
+    };
+
+    setManuallyAddedCodes(prev => {
+      const next = new Set(prev);
+      next.add(def.code);
+      return next;
+    });
+
+    if (isEarning) {
+      setEarnings(prev => prev.some(e => e.code === def.code) ? prev : [...prev, baseConcept]);
+      setEarnPickerOpen(false);
+      setActiveTab('earnings');
+    } else {
+      setDeductions(prev => prev.some(d => d.code === def.code) ? prev : [...prev, baseConcept]);
+      setDedPickerOpen(false);
+      setActiveTab('deductions');
+    }
+    toast.success(`Concepto añadido: ${def.name}`);
+  }, []);
+
+  /** S9.21g — Quitar concepto manual: se desmarca y vuelve a 0 */
+  const removeManualConcept = useCallback((code: string, isEarning: boolean) => {
+    setManuallyAddedCodes(prev => {
+      const next = new Set(prev);
+      next.delete(code);
+      return next;
+    });
+    if (isEarning) {
+      setEarnings(prev => prev.map(e => e.code === code ? { ...e, amount: 0 } : e));
+    } else {
+      setDeductions(prev => prev.map(d => d.code === code ? { ...d, amount: 0 } : d));
+    }
+  }, []);
+
+  /** S9.21g — Catálogo filtrado para el Popover, agrupado por subcategoría */
+  const earningPickerGroups = useMemo(() => {
+    const groups = new Map<string, ESConceptDefinition[]>();
+    ES_CONCEPT_DEFINITIONS
+      .filter(d => d.concept_type === 'earning')
+      .filter(d => !ALREADY_COVERED_ES_CODES.has(d.code))
+      .filter(d => !earnings.some(e => e.code === d.code))
+      .forEach(d => {
+        const k = conceptSubgroupLabel(d);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k)!.push(d);
+      });
+    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [earnings]);
+
+  const deductionPickerGroups = useMemo(() => {
+    const groups = new Map<string, ESConceptDefinition[]>();
+    ES_CONCEPT_DEFINITIONS
+      .filter(d => d.concept_type === 'deduction')
+      .filter(d => !ALREADY_COVERED_ES_CODES.has(d.code))
+      .filter(d => !deductions.some(de => de.code === d.code))
+      .forEach(d => {
+        const k = conceptSubgroupLabel(d);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k)!.push(d);
+      });
+    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [deductions]);
+
+  /**
    * S9.13: Resolve the applicable contract for the payroll period.
    * Ajuste 1: Not just status='active' — find the contract effective for the period.
    * Ajuste 2: Prioritize contract salary over erp_hr_employees.base_salary.
