@@ -10,6 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { FileDown, Euro, Building2, User } from 'lucide-react';
 import { type ESPayrollCalculation } from '@/hooks/erp/hr/useESPayrollBridge';
+import { Printer } from 'lucide-react';
+import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
+import { downloadPayslipPDF, printPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
 
 interface Props {
   calculation: ESPayrollCalculation;
@@ -42,42 +45,37 @@ export function ESPayrollSlipDetail({
   const employerCosts = lines.filter(l => l.line_type === 'employer_cost' && l.amount !== 0);
   const informatives = lines.filter(l => l.line_type === 'informative');
 
-  const handleExportPDF = () => {
-    // Simplified: in production, use jsPDF
-    const content = [
-      `NÓMINA — ${periodo || 'Período'}`,
-      `Empresa: ${companyName || 'N/A'} | CIF: ${companyCIF || 'N/A'} | CCC: ${companyCCC || 'N/A'}`,
-      `Trabajador: ${employeeName} | NAF: ${employeeNAF || 'N/A'} | Grupo: ${grupo || 'N/A'}`,
-      '',
-      'I. DEVENGOS',
-      ...earnings.map(l => `  ${l.concept_name}: ${fmt(l.amount)} €`),
-      `  TOTAL DEVENGOS: ${fmt(summary.totalDevengos)} €`,
-      '',
-      'II. DEDUCCIONES',
-      ...deductions.map(l => `  ${l.concept_name}${l.percentage ? ` (${l.percentage}%)` : ''}: ${fmt(l.amount)} €`),
-      `  TOTAL DEDUCCIONES: ${fmt(summary.totalDeducciones)} €`,
-      '',
-      'III. BASES DE COTIZACIÓN',
-      `  BC Contingencias Comunes: ${fmt(summary.baseCotizacionCC)} €`,
-      `  BC AT/EP: ${fmt(summary.baseCotizacionAT)} €`,
-      `  Base IRPF: ${fmt(summary.baseIRPF)} €`,
-      '',
-      'IV. COSTE EMPRESA',
-      ...employerCosts.map(l => `  ${l.concept_name}: ${fmt(l.amount)} €`),
-      `  TOTAL COSTE EMPRESA: ${fmt(summary.totalCosteEmpresa)} €`,
-      '',
-      `═══════════════════════════════════════`,
-      `LÍQUIDO A PERCIBIR: ${fmt(summary.liquidoPercibir)} €`,
-      `COSTE TOTAL EMPRESA: ${fmt(summary.totalDevengos + summary.totalCosteEmpresa)} €`,
-    ].join('\n');
+  const buildModel = () => {
+    const [firstName, ...rest] = (employeeName || 'Empleado').split(' ');
+    return buildPayslipRenderModel({
+      calculation,
+      employee: {
+        first_name: firstName,
+        last_name: rest.join(' '),
+        naf: employeeNAF,
+        category: categoria,
+        grupo_cotizacion: grupo ?? null,
+      },
+      company: { name: companyName, cif: companyCIF, ccc: companyCCC },
+      period: { period_name: periodo },
+      currency: 'EUR',
+    });
+  };
 
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `nomina_${employeeName.replace(/\s+/g, '_')}_${periodo || 'sim'}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExportPDF = async () => {
+    const model = buildModel();
+    const hash = await computeSourceHash(calculation);
+    downloadPayslipPDF(
+      model,
+      `nomina_${(employeeName || 'empleado').replace(/\s+/g, '_')}_${periodo || 'sim'}.pdf`,
+      'official',
+      hash,
+    );
+  };
+
+  const handlePrint = () => {
+    const model = buildModel();
+    printPayslipPDF(model, 'official');
   };
 
   return (
@@ -102,15 +100,25 @@ export function ESPayrollSlipDetail({
               {categoria && <span>Cat: {categoria}</span>}
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            className="gap-1.5"
-            title="Descarga un resumen del recibo en formato texto plano. PDF firmado pendiente."
-          >
-            <FileDown className="h-4 w-4" /> Descargar (TXT)
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              className="gap-1.5"
+              title="Imprimir recibo"
+            >
+              <Printer className="h-4 w-4" /> Imprimir
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleExportPDF}
+              className="gap-1.5"
+              title="Descargar recibo en PDF"
+            >
+              <FileDown className="h-4 w-4" /> Descargar PDF
+            </Button>
+          </div>
         </div>
       </CardHeader>
 

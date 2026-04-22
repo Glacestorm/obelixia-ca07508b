@@ -17,6 +17,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Eye, Printer, Info } from 'lucide-react';
 import { ESPayrollSlipDetail } from './localization/es/ESPayrollSlipDetail';
 import type { ESPayrollCalculation } from '@/hooks/erp/hr/useESPayrollBridge';
+import { Download } from 'lucide-react';
+import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
+import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
+import { PAYROLL_LEGAL_NOTICES } from '@/lib/hr/payroll/legalNotices';
+import { useState } from 'react';
 
 interface Props {
   open: boolean;
@@ -47,8 +52,39 @@ export function HRPayrollPreviewDialog({
   grupo,
   categoria,
 }: Props) {
+  const [downloading, setDownloading] = useState(false);
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!calculation) return;
+    setDownloading(true);
+    try {
+      const [firstName, ...rest] = (employeeName || 'Empleado').split(' ');
+      const model = buildPayslipRenderModel({
+        calculation,
+        employee: {
+          first_name: firstName,
+          last_name: rest.join(' '),
+          naf: employeeNAF,
+          category: categoria,
+          grupo_cotizacion: grupo ?? null,
+        },
+        company: { name: companyName, cif: companyCIF, ccc: companyCCC },
+        period: { period_name: periodo },
+        currency: 'EUR',
+      });
+      const hash = await computeSourceHash(calculation);
+      downloadPayslipPDF(
+        model,
+        `nomina-preview-${(employeeName || 'empleado').replace(/\s+/g, '_')}.pdf`,
+        'system_generated',
+        hash,
+      );
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const summary = useMemo(() => {
@@ -85,6 +121,15 @@ export function HRPayrollPreviewDialog({
               <Printer className="h-3.5 w-3.5" />
               Imprimir
             </Button>
+            <Button
+              size="sm"
+              onClick={handleDownloadPdf}
+              disabled={!calculation || downloading}
+              className="gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Descargar PDF
+            </Button>
           </DialogDescription>
         </DialogHeader>
 
@@ -120,14 +165,12 @@ export function HRPayrollPreviewDialog({
                   <p className="font-medium text-foreground text-xs flex items-center gap-1">
                     <Info className="h-3 w-3" /> Aclaración legal
                   </p>
-                  <p>
-                    La firma o acuse del trabajador acredita la <strong>recepción</strong> del recibo, no su conformidad
-                    con los conceptos liquidados. La empresa debe entregar copia (física o digital) y conservarla
-                    durante al menos 4 años (LGSS Art. 21 / LGT Art. 66).
-                  </p>
-                  <p className="pt-1 italic">
-                    Bloque informativo · El registro persistente del acuse de recibo del empleado
-                    <strong> aún no está conectado</strong> (preparado para iteración futura).
+                  <p>{PAYROLL_LEGAL_NOTICES.RECEIPT_DELIVERY}</p>
+                  <p>{PAYROLL_LEGAL_NOTICES.ACK_MEANING}</p>
+                  <p className="italic">{PAYROLL_LEGAL_NOTICES.RETENTION}</p>
+                  <p className="pt-1">
+                    Esta es una <strong>vista previa interna RRHH</strong>. El acuse persistido por el empleado
+                    se gestiona desde el Portal del Empleado, en su sección de nóminas.
                   </p>
                 </div>
               )}
