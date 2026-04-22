@@ -248,7 +248,7 @@ export function useRegulatoryWatch(companyId?: string) {
   }, [companyId, config]);
 
   // === RUN MANUAL CHECK ===
-  const runManualCheck = useCallback(async () => {
+  const runManualCheck = useCallback(async (extras?: { check_smi?: boolean; check_statute_workers?: boolean }) => {
     if (!companyId) return null;
 
     setIsChecking(true);
@@ -258,7 +258,10 @@ export function useRegulatoryWatch(companyId?: string) {
           action: 'check_updates',
           company_id: companyId,
           jurisdictions: config?.jurisdictions || ['ES'],
-          categories: config?.watch_categories || ['convenio_colectivo', 'cno', 'salario_minimo']
+          categories: config?.watch_categories || ['convenio_colectivo', 'cno', 'salario_minimo'],
+          // S9.21h — Capa 4: Verificación explícita de SMI y Estatuto de los Trabajadores
+          check_smi: extras?.check_smi ?? true,
+          check_statute_workers: extras?.check_statute_workers ?? true,
         }
       });
 
