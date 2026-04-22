@@ -603,7 +603,9 @@ function HRModuleInner() {
         {activeModule === 'payroll-engine' && <LazyHRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <LazyHRComplianceEvidencePanel companyId={companyId} />}
         {activeModule === 'document-expedient' && <LazyDocumentExpedientModule companyId={companyId} />}
-        {activeModule === 'es-localization' && <LazyESLocalizationPlugin companyId={companyId} />}
+        {activeModule === 'es-localization' && (
+          <LazyESLocalizationPlugin companyId={companyId} employeeId={selectedEmployeeId || undefined} />
+        )}
         {activeModule === 'people-analytics' && <LazyPeopleAnalyticsModule companyId={companyId} />}
         {activeModule === 'contract-expiry-report' && <LazyHRContractExpiryReport companyId={companyId} />}
 

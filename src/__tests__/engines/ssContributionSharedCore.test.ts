@@ -43,24 +43,24 @@ describe('SS Contribution Shared Core — canonical values 2026', () => {
   });
 
   // F10 — Group base equivalence tests
-  it('G1 base mínima = 1929.00 (RDL 3/2026)', () => {
-    expect(SS_GROUP_BASES_2026[1].minMensual).toBe(1929.00);
-    expect(SS_GROUP_MIN_BASES_MENSUAL_2026[1]).toBe(1929.00);
+  it('G1 base mínima = 1989.30 (Orden PJC/297/2026)', () => {
+    expect(SS_GROUP_BASES_2026[1].minMensual).toBe(1989.30);
+    expect(SS_GROUP_MIN_BASES_MENSUAL_2026[1]).toBe(1989.30);
   });
 
-  it('G2 base mínima = 1599.60, G3 = 1391.70', () => {
-    expect(SS_GROUP_BASES_2026[2].minMensual).toBe(1599.60);
-    expect(SS_GROUP_BASES_2026[3].minMensual).toBe(1391.70);
+  it('G2 base mínima = 1649.70, G3 = 1435.20', () => {
+    expect(SS_GROUP_BASES_2026[2].minMensual).toBe(1649.70);
+    expect(SS_GROUP_BASES_2026[3].minMensual).toBe(1435.20);
   });
 
-  it('G8 base mínima diaria = 46.04', () => {
-    expect(SS_GROUP_BASES_2026[8].minMensual).toBe(46.04);
+  it('G8 base mínima diaria = 47.48', () => {
+    expect(SS_GROUP_BASES_2026[8].minMensual).toBe(47.48);
     expect(SS_GROUP_BASES_2026[8].isDailyBase).toBe(true);
   });
 
-  it('All groups 4-11 min mensual = 1381.20', () => {
+  it('All groups 4-11 min mensual = 1424.40', () => {
     for (let g = 4; g <= 11; g++) {
-      expect(SS_GROUP_MIN_BASES_MENSUAL_2026[g]).toBe(1381.20);
+      expect(SS_GROUP_MIN_BASES_MENSUAL_2026[g]).toBe(1424.40);
     }
   });
 

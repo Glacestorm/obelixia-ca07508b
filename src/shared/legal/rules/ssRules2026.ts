@@ -37,35 +37,35 @@ export const SS_BASE_MAX_DIARIA_2026 = 170.04;
  * Grupos 1-7: bases mensuales. Grupos 8-11: bases diarias.
  */
 export const SS_GROUP_BASES_2026: Record<number, SSGroupBase> = {
-  1:  { minMensual: 1929.00, maxMensual: 5101.20, label: 'Ingenieros, Licenciados y Personal de alta dirección', isDailyBase: false },
-  2:  { minMensual: 1599.60, maxMensual: 5101.20, label: 'Ingenieros técnicos, Peritos y Ayudantes titulados', isDailyBase: false },
-  3:  { minMensual: 1391.70, maxMensual: 5101.20, label: 'Jefes Administrativos y de Taller', isDailyBase: false },
-  4:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Ayudantes no titulados', isDailyBase: false },
-  5:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Oficiales Administrativos', isDailyBase: false },
-  6:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Subalternos', isDailyBase: false },
-  7:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Auxiliares Administrativos', isDailyBase: false },
-  8:  { minMensual: 46.04,   maxMensual: 170.04,  label: 'Oficiales 1ª y 2ª (diaria)', isDailyBase: true },
-  9:  { minMensual: 46.04,   maxMensual: 170.04,  label: 'Oficiales 3ª y Especialistas (diaria)', isDailyBase: true },
-  10: { minMensual: 46.04,   maxMensual: 170.04,  label: 'Peones (diaria)', isDailyBase: true },
-  11: { minMensual: 46.04,   maxMensual: 170.04,  label: 'Menores de 18 años (diaria)', isDailyBase: true },
+  1:  { minMensual: 1989.30, maxMensual: 5101.20, label: 'Ingenieros, Licenciados y Personal de alta dirección', isDailyBase: false },
+  2:  { minMensual: 1649.70, maxMensual: 5101.20, label: 'Ingenieros técnicos, Peritos y Ayudantes titulados', isDailyBase: false },
+  3:  { minMensual: 1435.20, maxMensual: 5101.20, label: 'Jefes Administrativos y de Taller', isDailyBase: false },
+  4:  { minMensual: 1424.40, maxMensual: 5101.20, label: 'Ayudantes no titulados', isDailyBase: false },
+  5:  { minMensual: 1424.40, maxMensual: 5101.20, label: 'Oficiales Administrativos', isDailyBase: false },
+  6:  { minMensual: 1424.40, maxMensual: 5101.20, label: 'Subalternos', isDailyBase: false },
+  7:  { minMensual: 1424.40, maxMensual: 5101.20, label: 'Auxiliares Administrativos', isDailyBase: false },
+  8:  { minMensual: 47.48,   maxMensual: 170.04,  label: 'Oficiales 1ª y 2ª (diaria)', isDailyBase: true },
+  9:  { minMensual: 47.48,   maxMensual: 170.04,  label: 'Oficiales 3ª y Especialistas (diaria)', isDailyBase: true },
+  10: { minMensual: 47.48,   maxMensual: 170.04,  label: 'Peones (diaria)', isDailyBase: true },
+  11: { minMensual: 47.48,   maxMensual: 170.04,  label: 'Menores de 18 años (diaria)', isDailyBase: true },
 };
 
 /**
  * Convenience: bases mínimas mensuales por grupo (para payroll engine).
- * Grupos 8-11 devuelven la base mínima MENSUAL (min diaria × 30).
+ * Grupos 8-11 devuelven la base mínima MENSUAL equivalente (Orden PJC/297/2026).
  */
 export const SS_GROUP_MIN_BASES_MENSUAL_2026: Record<number, number> = {
-  1: 1929.00,
-  2: 1599.60,
-  3: 1391.70,
-  4: 1381.20,
-  5: 1381.20,
-  6: 1381.20,
-  7: 1381.20,
-  8: 1381.20,  // 46.04 × 30
-  9: 1381.20,
-  10: 1381.20,
-  11: 1381.20,
+  1: 1989.30,
+  2: 1649.70,
+  3: 1435.20,
+  4: 1424.40,
+  5: 1424.40,
+  6: 1424.40,
+  7: 1424.40,
+  8: 1424.40,  // equivalente mensual de 47.48 €/día
+  9: 1424.40,
+  10: 1424.40,
+  11: 1424.40,
 };
 
 // ============================================
