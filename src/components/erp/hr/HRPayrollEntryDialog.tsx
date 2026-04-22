@@ -1323,9 +1323,59 @@ export function HRPayrollEntryDialog({
 
             <TabsContent value="earnings" className="mt-4">
               <div className="pr-4 pb-4">
+                {/* S9.21g: Selector de conceptos avanzados ES */}
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase">Devengos del empleado</h4>
+                  <Popover open={earnPickerOpen} onOpenChange={setEarnPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1">
+                        <Plus className="h-3 w-3" />
+                        Añadir concepto
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[380px] p-0" align="end">
+                      <Command>
+                        <CommandInput placeholder="Buscar concepto ES..." className="h-8 text-xs" />
+                        <CommandList className="max-h-[320px]">
+                          <CommandEmpty>Sin coincidencias en el catálogo ES.</CommandEmpty>
+                          {earningPickerGroups.map(([group, defs]) => (
+                            <CommandGroup key={group} heading={group}>
+                              {defs.map(def => (
+                                <CommandItem
+                                  key={def.code}
+                                  value={`${def.name} ${def.code}`}
+                                  onSelect={() => addManualConcept(def)}
+                                  className="text-xs flex items-start gap-2 py-1.5"
+                                >
+                                  <Plus className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <span className="font-medium">{def.name}</span>
+                                      <span className="text-[9px] font-mono text-muted-foreground">{def.code}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                      {def.is_ss_contributable && <Badge variant="outline" className="text-[8px] h-3.5 px-1">SS</Badge>}
+                                      {def.impacts_irpf && <Badge variant="outline" className="text-[8px] h-3.5 px-1">IRPF</Badge>}
+                                      {def.impacts_cra && <Badge variant="outline" className="text-[8px] h-3.5 px-1">CRA</Badge>}
+                                      {def.legal_reference && (
+                                        <span className="text-[8px] text-muted-foreground italic truncate">{def.legal_reference}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="space-y-2">
                   {visibleEarnings.map(concept => {
                     const isDynamic = concept.id.startsWith('dyn-');
+                    const isManual = manuallyAddedCodes.has(concept.code);
                     const isClassicResolved = resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0;
                     return (
                     <div key={concept.id} className={cn(
@@ -1333,6 +1383,7 @@ export function HRPayrollEntryDialog({
                       concept.amount > 0 ? "bg-background" : "bg-muted/30",
                       isClassicResolved ? "border-primary/30 bg-primary/5" : "",
                       isDynamic && concept.amount > 0 ? "border-accent/30 bg-accent/5" : "",
+                      isManual ? "border-warning/30 bg-warning/5" : "",
                     )}>
                       <div className="flex-1">
                         <span className="text-sm">{concept.name}</span>
@@ -1342,6 +1393,9 @@ export function HRPayrollEntryDialog({
                         {isDynamic && (
                           <Badge variant="outline" className="ml-1 text-[9px] h-4 text-accent-foreground border-accent/30 bg-accent/10">Convenio</Badge>
                         )}
+                        {isManual && (
+                          <Badge variant="outline" className="ml-1 text-[9px] h-4 text-warning border-warning/30">Manual</Badge>
+                        )}
                       </div>
                       <div className="w-24">
                         <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" step="0.01" />
@@ -1350,6 +1404,16 @@ export function HRPayrollEntryDialog({
                         {concept.cotizaSS && <Badge variant="outline" className="text-[10px] h-5">SS</Badge>}
                         {concept.tributaIRPF && <Badge variant="outline" className="text-[10px] h-5">IRPF</Badge>}
                       </div>
+                      {isManual && (
+                        <Button
+                          type="button" size="icon" variant="ghost"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeManualConcept(concept.code, true)}
+                          title="Quitar concepto"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                     );
                   })}
