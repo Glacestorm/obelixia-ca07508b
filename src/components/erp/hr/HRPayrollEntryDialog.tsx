@@ -895,10 +895,10 @@ export function HRPayrollEntryDialog({
       const summarySource = liveBridgeCalc?.summary;
       const grossSalary = summarySource ? summarySource.totalDevengos : totals.totalEarnings;
       const ssWorkerAmt = summarySource
-        ? summarySource.ssContributions.employeeTotal
+        ? summarySource.ssContributions.totalTrabajador
         : totals.totalSS;
-      const irpfAmt = summarySource ? summarySource.irpfResult.withholding : totals.irpfAmount;
-      const irpfPct = summarySource ? summarySource.irpfResult.effectiveRate : totals.irpfRate;
+      const irpfAmt = summarySource ? summarySource.irpfResult.retencionMensual : totals.irpfAmount;
+      const irpfPct = summarySource ? summarySource.irpfResult.tipoEfectivo : totals.irpfRate;
       const totalDeds = summarySource ? summarySource.totalDeducciones : totals.totalDeductions;
       const netSal = summarySource ? summarySource.liquidoPercibir : totals.netSalary;
       const ssCompany = summarySource ? summarySource.totalCosteEmpresa : totals.companySS;
