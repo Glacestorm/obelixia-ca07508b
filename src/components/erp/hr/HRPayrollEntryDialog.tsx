@@ -1803,37 +1803,8 @@ export function HRPayrollEntryDialog({
         </div>
         </div>
 
-        <DialogFooter className="sticky bottom-0 z-20 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t px-6 py-3 mt-0 flex-row items-center gap-3 sm:justify-between">
-          {/* Mini-resumen siempre visible (motor ES) */}
-          <div className="hidden md:flex items-center gap-4 text-xs">
-            {liveBridgeCalc ? (
-              <>
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5 text-success" />
-                  <span className="text-muted-foreground">Devengado:</span>
-                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDevengos.toFixed(2)}€</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-                  <span className="text-muted-foreground">Deducido:</span>
-                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDeducciones.toFixed(2)}€</span>
-                </div>
-                <Separator orientation="vertical" className="h-5" />
-                <div className="flex items-center gap-1.5">
-                  <Euro className="h-4 w-4 text-primary" />
-                  <span className="text-muted-foreground">Líquido:</span>
-                  <span className="font-bold text-base text-primary tabular-nums">{liveBridgeCalc.summary.liquidoPercibir.toFixed(2)}€</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Building2 className="h-3 w-3" />
-                  <span>Coste empresa:</span>
-                  <span className="tabular-nums">{(liveBridgeCalc.summary.totalDevengos + liveBridgeCalc.summary.totalCosteEmpresa).toFixed(2)}€</span>
-                </div>
-              </>
-            ) : (
-              <span className="italic text-muted-foreground">Introduce un salario base para ver totales en vivo</span>
-            )}
-          </div>
+        {/* S9.21h — Footer SOLO con acciones (los totales viven en la sticky bar superior) */}
+        <DialogFooter className="sticky bottom-0 z-20 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t px-6 py-3 mt-0 flex-row items-center gap-2 sm:justify-end">
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button
