@@ -430,12 +430,19 @@ export function HRPayrollEntryDialog({
   const REQUIRED_DEDUCTION_CODES = new Set(['IRPF']);
 
   const visibleEarnings = useMemo(
-    () => earnings.filter(e => REQUIRED_EARNING_CODES.has(e.code) || (e.amount || 0) > 0),
-    [earnings]
+    () => earnings.filter(e =>
+      REQUIRED_EARNING_CODES.has(e.code) ||
+      (e.amount || 0) > 0 ||
+      manuallyAddedCodes.has(e.code)
+    ),
+    [earnings, manuallyAddedCodes]
   );
   const visibleOtherDeductions = useMemo(
-    () => deductions.filter(d => d.category === 'other' && (d.amount || 0) > 0),
-    [deductions]
+    () => deductions.filter(d =>
+      d.category === 'other' &&
+      ((d.amount || 0) > 0 || manuallyAddedCodes.has(d.code))
+    ),
+    [deductions, manuallyAddedCodes]
   );
 
   // S9.21e: Generar preview con motor real (simulateES)
@@ -483,6 +490,92 @@ export function HRPayrollEntryDialog({
       setDeductions(prev => prev.map(d => d.id === id ? { ...d, amount: value } : d));
     }
   };
+
+  /**
+   * S9.21g — Añadir concepto desde el Popover "+ Añadir concepto".
+   * - Si ya existe oculto a 0, se marca como manual (queda visible aunque siga a 0).
+   * - Si no existe, se inserta dinámicamente al estado de Devengos o Deducciones.
+   */
+  const addManualConcept = useCallback((def: ESConceptDefinition) => {
+    const isEarning = def.concept_type === 'earning';
+    const newId = `manual-${def.code}-${Date.now()}`;
+    const baseConcept: PayrollConcept = {
+      id: newId,
+      code: def.code,
+      name: def.name,
+      type: isEarning ? 'earning' : 'deduction',
+      category: isEarning
+        ? (def.subcategory === 'fixed' ? 'fixed' : 'variable')
+        : (def.subcategory === 'withholding' ? 'irpf'
+          : def.subcategory === 'social_contribution' ? 'ss'
+          : 'other'),
+      amount: 0,
+      isPercentage: def.is_percentage,
+      cotizaSS: def.is_ss_contributable,
+      tributaIRPF: def.impacts_irpf,
+      isEditable: true,
+    };
+
+    setManuallyAddedCodes(prev => {
+      const next = new Set(prev);
+      next.add(def.code);
+      return next;
+    });
+
+    if (isEarning) {
+      setEarnings(prev => prev.some(e => e.code === def.code) ? prev : [...prev, baseConcept]);
+      setEarnPickerOpen(false);
+      setActiveTab('earnings');
+    } else {
+      setDeductions(prev => prev.some(d => d.code === def.code) ? prev : [...prev, baseConcept]);
+      setDedPickerOpen(false);
+      setActiveTab('deductions');
+    }
+    toast.success(`Concepto añadido: ${def.name}`);
+  }, []);
+
+  /** S9.21g — Quitar concepto manual: se desmarca y vuelve a 0 */
+  const removeManualConcept = useCallback((code: string, isEarning: boolean) => {
+    setManuallyAddedCodes(prev => {
+      const next = new Set(prev);
+      next.delete(code);
+      return next;
+    });
+    if (isEarning) {
+      setEarnings(prev => prev.map(e => e.code === code ? { ...e, amount: 0 } : e));
+    } else {
+      setDeductions(prev => prev.map(d => d.code === code ? { ...d, amount: 0 } : d));
+    }
+  }, []);
+
+  /** S9.21g — Catálogo filtrado para el Popover, agrupado por subcategoría */
+  const earningPickerGroups = useMemo(() => {
+    const groups = new Map<string, ESConceptDefinition[]>();
+    ES_CONCEPT_DEFINITIONS
+      .filter(d => d.concept_type === 'earning')
+      .filter(d => !ALREADY_COVERED_ES_CODES.has(d.code))
+      .filter(d => !earnings.some(e => e.code === d.code))
+      .forEach(d => {
+        const k = conceptSubgroupLabel(d);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k)!.push(d);
+      });
+    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [earnings]);
+
+  const deductionPickerGroups = useMemo(() => {
+    const groups = new Map<string, ESConceptDefinition[]>();
+    ES_CONCEPT_DEFINITIONS
+      .filter(d => d.concept_type === 'deduction')
+      .filter(d => !ALREADY_COVERED_ES_CODES.has(d.code))
+      .filter(d => !deductions.some(de => de.code === d.code))
+      .forEach(d => {
+        const k = conceptSubgroupLabel(d);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k)!.push(d);
+      });
+    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [deductions]);
 
   /**
    * S9.13: Resolve the applicable contract for the payroll period.
@@ -906,6 +999,16 @@ export function HRPayrollEntryDialog({
               <span className="truncate">
                 {isEditMode ? 'Editar Nómina' : 'Nueva Nómina'} — {new Date(periodYear, periodMonth - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
               </span>
+              {casuisticaActiva.length > 0 && (
+                <div className="hidden md:flex items-center gap-1 ml-2 flex-wrap">
+                  {casuisticaActiva.map(c => (
+                    <Badge key={c.key} variant="outline" className="text-[10px] h-5 border-warning/40 text-warning bg-warning/5">
+                      <CalendarRange className="h-2.5 w-2.5 mr-0.5" />
+                      {c.label}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             {/* S9.21d Bloque D: Indicador compacto de vigilancia normativa */}
             <HRPayrollNormativeWatchBadge companyId={companyId} className="shrink-0" />
@@ -971,6 +1074,231 @@ export function HRPayrollEntryDialog({
               </CollapsibleContent>
             </Collapsible>
           )}
+
+          {/* S9.21g: Casuística entre fechas — acordeón */}
+          {selectedEmployeeId && (
+            <Collapsible open={casuisticaOpen} onOpenChange={setCasuisticaOpen} className="mb-4">
+              <CollapsibleTrigger className={cn(
+                "flex items-center gap-2 w-full p-2 rounded-lg border transition-colors text-xs",
+                casuistica.enabled
+                  ? "bg-warning/10 border-warning/30 hover:bg-warning/15"
+                  : "bg-muted/20 hover:bg-muted/40"
+              )}>
+                <CalendarRange className="h-3.5 w-3.5 text-warning" />
+                <span className="font-medium">Casuística entre fechas</span>
+                {casuisticaActiva.length > 0 && (
+                  <Badge variant="outline" className="ml-1 text-[9px] h-4 border-warning/40 text-warning">
+                    {casuisticaActiva.length} activa{casuisticaActiva.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+                <ChevronDown className={cn("h-3 w-3 ml-auto transition-transform", casuisticaOpen && "rotate-180")} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <Card>
+                  <CardContent className="pt-4 space-y-3">
+                    {/* Toggle activador */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-start gap-2">
+                        <FileWarning className="h-4 w-4 text-warning mt-0.5" />
+                        <div>
+                          <Label className="text-xs font-medium">Activar casuística avanzada</Label>
+                          <p className="text-[10px] text-muted-foreground">PNR, IT/AT, nacimiento, atrasos, reducción jornada, cobertura intramensual.</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={casuistica.enabled ? "default" : "outline"}
+                        onClick={() => setCasuistica(c => ({ ...c, enabled: !c.enabled }))}
+                        className="h-7 text-xs shrink-0"
+                      >
+                        {casuistica.enabled ? 'Activado' : 'Activar'}
+                      </Button>
+                    </div>
+
+                    {casuistica.enabled && (
+                      <>
+                        <Separator />
+                        {/* PNR + IT/AT días */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <Briefcase className="h-2.5 w-2.5" />PNR (días)
+                            </Label>
+                            <Input
+                              type="number" min={0} step={1}
+                              value={casuistica.pnrDias || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, pnrDias: parseInt(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] flex items-center gap-1">
+                              <Stethoscope className="h-2.5 w-2.5" />IT/AT 75% (días)
+                            </Label>
+                            <Input
+                              type="number" min={0} step={1}
+                              value={casuistica.itAtDias || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, itAtDias: parseInt(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Reducción jornada */}
+                        <div>
+                          <Label className="text-[10px]">Reducción jornada (% guarda legal)</Label>
+                          <Input
+                            type="number" min={0} max={100} step={0.01}
+                            value={casuistica.reduccionJornadaPct || ''}
+                            onChange={(e) => setCasuistica(c => ({ ...c, reduccionJornadaPct: parseFloat(e.target.value) || 0 }))}
+                            className="h-7 text-xs" placeholder="0"
+                          />
+                        </div>
+
+                        {/* Atrasos IT */}
+                        <Separator />
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase">Atrasos / regularización IT retroactiva</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Importe atrasos €</Label>
+                            <Input
+                              type="number" min={0} step={0.01}
+                              value={casuistica.atrasosITImporte || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosITImporte: parseFloat(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0.00"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Período origen (YYYY-MM)</Label>
+                            <Input
+                              type="text" maxLength={7}
+                              value={casuistica.atrasosITPeriodo}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosITPeriodo: e.target.value }))}
+                              className="h-7 text-xs" placeholder="2025-09"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Nacimiento */}
+                        <Separator />
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase flex items-center gap-1">
+                          <Baby className="h-2.5 w-2.5" />Nacimiento / cuidado del menor
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Tipo</Label>
+                            <Select
+                              value={casuistica.nacimientoTipo}
+                              onValueChange={(v) => setCasuistica(c => ({ ...c, nacimientoTipo: v as CasuisticaState['nacimientoTipo'] }))}
+                            >
+                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="paternidad">Paternidad</SelectItem>
+                                <SelectItem value="maternidad">Maternidad</SelectItem>
+                                <SelectItem value="corresponsabilidad">Corresponsabilidad</SelectItem>
+                                <SelectItem value="lactancia">Lactancia</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Días</Label>
+                            <Input
+                              type="number" min={0} step={1}
+                              value={casuistica.nacimientoDias || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoDias: parseInt(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Importe €</Label>
+                            <Input
+                              type="number" min={0} step={0.01}
+                              value={casuistica.nacimientoImporte || ''}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoImporte: parseFloat(e.target.value) || 0 }))}
+                              className="h-7 text-xs" placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Cobertura período */}
+                        <Separator />
+                        <p className="text-[10px] font-medium text-muted-foreground uppercase">Cobertura del período (intramensual)</p>
+                        <div>
+                          <Label className="text-[10px]">Motivo</Label>
+                          <Select
+                            value={casuistica.periodMotivo}
+                            onValueChange={(v) => setCasuistica(c => ({ ...c, periodMotivo: v as CasuisticaState['periodMotivo'] }))}
+                          >
+                            <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="mes_completo">Mes completo</SelectItem>
+                              <SelectItem value="alta_intramensual">Alta intramensual</SelectItem>
+                              <SelectItem value="baja_intramensual">Baja intramensual</SelectItem>
+                              <SelectItem value="cambio_contractual">Cambio contractual</SelectItem>
+                              <SelectItem value="cambio_salarial">Cambio salarial</SelectItem>
+                              <SelectItem value="suspension_parcial">Suspensión parcial</SelectItem>
+                              <SelectItem value="excedencia">Excedencia</SelectItem>
+                              <SelectItem value="otro">Otro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {casuistica.periodMotivo !== 'mes_completo' && (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px]">Desde</Label>
+                                <Input
+                                  type="date"
+                                  value={casuistica.periodFechaDesde}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodFechaDesde: e.target.value }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">Hasta</Label>
+                                <Input
+                                  type="date"
+                                  value={casuistica.periodFechaHasta}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodFechaHasta: e.target.value }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px]">Días naturales</Label>
+                                <Input
+                                  type="number" min={1} max={31} step={1}
+                                  value={casuistica.periodDiasNaturales}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodDiasNaturales: parseInt(e.target.value) || 30 }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px]">Días efectivos</Label>
+                                <Input
+                                  type="number" min={0} max={31} step={1}
+                                  value={casuistica.periodDiasEfectivos}
+                                  onChange={(e) => setCasuistica(c => ({ ...c, periodDiasEfectivos: parseInt(e.target.value) || 0 }))}
+                                  className="h-7 text-xs"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        <p className="text-[9px] text-muted-foreground italic pt-1">
+                          <Info className="h-2.5 w-2.5 inline mr-0.5" />
+                          Los valores entran al motor oficial ES y afectan al Resumen y a la Vista previa en tiempo real.
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
 
         {/* Columna derecha: tabs (devengos / deducciones / resumen) — sticky en XL */}
@@ -980,12 +1308,12 @@ export function HRPayrollEntryDialog({
               <TabsTrigger value="earnings" className="gap-1">
                 <TrendingUp className="h-3 w-3" />
                 Devengos
-                <Badge variant="secondary" className="ml-1 text-xs">€{totals.totalEarnings.toFixed(2)}</Badge>
+                <Badge variant="secondary" className="ml-1 text-xs">€{(liveBridgeCalc?.summary.totalDevengos ?? totals.totalEarnings).toFixed(2)}</Badge>
               </TabsTrigger>
               <TabsTrigger value="deductions" className="gap-1">
                 <TrendingDown className="h-3 w-3" />
                 Deducciones
-                <Badge variant="secondary" className="ml-1 text-xs">€{totals.totalDeductions.toFixed(2)}</Badge>
+                <Badge variant="secondary" className="ml-1 text-xs">€{(liveBridgeCalc?.summary.totalDeducciones ?? totals.totalDeductions).toFixed(2)}</Badge>
               </TabsTrigger>
               <TabsTrigger value="summary" className="gap-1">
                 <Calculator className="h-3 w-3" />
@@ -995,9 +1323,59 @@ export function HRPayrollEntryDialog({
 
             <TabsContent value="earnings" className="mt-4">
               <div className="pr-4 pb-4">
+                {/* S9.21g: Selector de conceptos avanzados ES */}
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase">Devengos del empleado</h4>
+                  <Popover open={earnPickerOpen} onOpenChange={setEarnPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1">
+                        <Plus className="h-3 w-3" />
+                        Añadir concepto
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[380px] p-0" align="end">
+                      <Command>
+                        <CommandInput placeholder="Buscar concepto ES..." className="h-8 text-xs" />
+                        <CommandList className="max-h-[320px]">
+                          <CommandEmpty>Sin coincidencias en el catálogo ES.</CommandEmpty>
+                          {earningPickerGroups.map(([group, defs]) => (
+                            <CommandGroup key={group} heading={group}>
+                              {defs.map(def => (
+                                <CommandItem
+                                  key={def.code}
+                                  value={`${def.name} ${def.code}`}
+                                  onSelect={() => addManualConcept(def)}
+                                  className="text-xs flex items-start gap-2 py-1.5"
+                                >
+                                  <Plus className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <span className="font-medium">{def.name}</span>
+                                      <span className="text-[9px] font-mono text-muted-foreground">{def.code}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                      {def.is_ss_contributable && <Badge variant="outline" className="text-[8px] h-3.5 px-1">SS</Badge>}
+                                      {def.impacts_irpf && <Badge variant="outline" className="text-[8px] h-3.5 px-1">IRPF</Badge>}
+                                      {def.impacts_cra && <Badge variant="outline" className="text-[8px] h-3.5 px-1">CRA</Badge>}
+                                      {def.legal_reference && (
+                                        <span className="text-[8px] text-muted-foreground italic truncate">{def.legal_reference}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <div className="space-y-2">
                   {visibleEarnings.map(concept => {
                     const isDynamic = concept.id.startsWith('dyn-');
+                    const isManual = manuallyAddedCodes.has(concept.code);
                     const isClassicResolved = resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0;
                     return (
                     <div key={concept.id} className={cn(
@@ -1005,6 +1383,7 @@ export function HRPayrollEntryDialog({
                       concept.amount > 0 ? "bg-background" : "bg-muted/30",
                       isClassicResolved ? "border-primary/30 bg-primary/5" : "",
                       isDynamic && concept.amount > 0 ? "border-accent/30 bg-accent/5" : "",
+                      isManual ? "border-warning/30 bg-warning/5" : "",
                     )}>
                       <div className="flex-1">
                         <span className="text-sm">{concept.name}</span>
@@ -1014,6 +1393,9 @@ export function HRPayrollEntryDialog({
                         {isDynamic && (
                           <Badge variant="outline" className="ml-1 text-[9px] h-4 text-accent-foreground border-accent/30 bg-accent/10">Convenio</Badge>
                         )}
+                        {isManual && (
+                          <Badge variant="outline" className="ml-1 text-[9px] h-4 text-warning border-warning/30">Manual</Badge>
+                        )}
                       </div>
                       <div className="w-24">
                         <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" step="0.01" />
@@ -1022,6 +1404,16 @@ export function HRPayrollEntryDialog({
                         {concept.cotizaSS && <Badge variant="outline" className="text-[10px] h-5">SS</Badge>}
                         {concept.tributaIRPF && <Badge variant="outline" className="text-[10px] h-5">IRPF</Badge>}
                       </div>
+                      {isManual && (
+                        <Button
+                          type="button" size="icon" variant="ghost"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeManualConcept(concept.code, true)}
+                          title="Quitar concepto"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                     );
                   })}
@@ -1068,19 +1460,79 @@ export function HRPayrollEntryDialog({
                     <div className="flex justify-between py-1 px-2 bg-primary/10 rounded font-medium"><span>Total SS Trabajador</span><span>€{totals.totalSS.toFixed(2)}</span></div>
                   </div>
                   <Separator className="my-3" />
-                  <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Otras deducciones</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase">Otras deducciones</h4>
+                    <Popover open={dedPickerOpen} onOpenChange={setDedPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1">
+                          <Plus className="h-3 w-3" />
+                          Añadir deducción
+                          <ChevronDown className="h-3 w-3 opacity-60" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[380px] p-0" align="end">
+                        <Command>
+                          <CommandInput placeholder="Buscar deducción ES..." className="h-8 text-xs" />
+                          <CommandList className="max-h-[320px]">
+                            <CommandEmpty>Sin coincidencias en el catálogo ES.</CommandEmpty>
+                            {deductionPickerGroups.map(([group, defs]) => (
+                              <CommandGroup key={group} heading={group}>
+                                {defs.map(def => (
+                                  <CommandItem
+                                    key={def.code}
+                                    value={`${def.name} ${def.code}`}
+                                    onSelect={() => addManualConcept(def)}
+                                    className="text-xs flex items-start gap-2 py-1.5"
+                                  >
+                                    <Plus className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        <span className="font-medium">{def.name}</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground">{def.code}</span>
+                                      </div>
+                                      {def.legal_reference && (
+                                        <p className="text-[8px] text-muted-foreground italic truncate">{def.legal_reference}</p>
+                                      )}
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            ))}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   {deductions
-                    .filter(d => REQUIRED_DEDUCTION_CODES.has(d.code) || (d.amount || 0) > 0)
-                    .map(concept => (
+                    .filter(d => REQUIRED_DEDUCTION_CODES.has(d.code) || (d.amount || 0) > 0 || manuallyAddedCodes.has(d.code))
+                    .map(concept => {
+                      const isManual = manuallyAddedCodes.has(concept.code);
+                      return (
                     <div key={concept.id} className="flex items-center gap-2 p-2 rounded-lg border">
-                      <div className="flex-1"><span className="text-sm">{concept.name}</span></div>
+                      <div className="flex-1">
+                        <span className="text-sm">{concept.name}</span>
+                        {isManual && (
+                          <Badge variant="outline" className="ml-1 text-[9px] h-4 text-warning border-warning/30">Manual</Badge>
+                        )}
+                      </div>
                       <div className="w-24">
                         <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" step="0.01" />
                       </div>
                       <span className="text-xs text-muted-foreground">{concept.isPercentage ? '%' : '€'}</span>
                       {concept.code === 'IRPF' && <span className="text-sm font-medium">= €{totals.irpfAmount.toFixed(2)}</span>}
+                      {isManual && (
+                        <Button
+                          type="button" size="icon" variant="ghost"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeManualConcept(concept.code, false)}
+                          title="Quitar concepto"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
-                  ))}
+                      );
+                    })}
                   {visibleOtherDeductions.length === 0 && (
                     <p className="text-[10px] text-muted-foreground italic">
                       Sin otras deducciones (anticipo, cuota sindical, embargos, etc.). Se ocultan los conceptos a 0.
@@ -1095,23 +1547,67 @@ export function HRPayrollEntryDialog({
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Euro className="h-4 w-4" />Resumen Nómina</CardTitle></CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Total Devengos</span><span className="font-medium text-success">€{totals.totalEarnings.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Deducciones SS</span><span className="text-destructive">-€{totals.totalSS.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>IRPF ({totals.irpfRate}%)</span><span className="text-destructive">-€{totals.irpfAmount.toFixed(2)}</span></div>
-                    {totals.otherDeductions > 0 && (
-                      <div className="flex justify-between"><span>Otras deducciones</span><span className="text-destructive">-€{totals.otherDeductions.toFixed(2)}</span></div>
+                    {liveBridgeCalc ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="flex items-center gap-1">Total Devengos
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-primary/40 text-primary">Motor ES</Badge>
+                          </span>
+                          <span className="font-medium text-success">€{liveBridgeCalc.summary.totalDevengos.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Deducciones</span>
+                          <span className="text-destructive">-€{liveBridgeCalc.summary.totalDeducciones.toFixed(2)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Líquido a percibir</span>
+                          <span className="text-primary">€{liveBridgeCalc.summary.liquidoPercibir.toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span>Total Devengos</span><span className="font-medium text-success">€{totals.totalEarnings.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Deducciones SS</span><span className="text-destructive">-€{totals.totalSS.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>IRPF ({totals.irpfRate}%)</span><span className="text-destructive">-€{totals.irpfAmount.toFixed(2)}</span></div>
+                        {totals.otherDeductions > 0 && (
+                          <div className="flex justify-between"><span>Otras deducciones</span><span className="text-destructive">-€{totals.otherDeductions.toFixed(2)}</span></div>
+                        )}
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold"><span>Salario Neto</span><span className="text-primary">€{totals.netSalary.toFixed(2)}</span></div>
+                      </>
                     )}
-                    <Separator className="my-2" />
-                    <div className="flex justify-between text-lg font-bold"><span>Salario Neto</span><span className="text-primary">€{totals.netSalary.toFixed(2)}</span></div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Building2 className="h-4 w-4" />Coste Empresa</CardTitle></CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Salario Bruto</span><span>€{totals.totalEarnings.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>SS Empresa ({(SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
+                    {liveBridgeCalc ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Salario Bruto</span>
+                          <span>€{liveBridgeCalc.summary.totalDevengos.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="flex items-center gap-1">SS Empresa
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-primary/40 text-primary">Motor ES</Badge>
+                          </span>
+                          <span>€{liveBridgeCalc.summary.totalCosteEmpresa.toFixed(2)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Coste Total</span>
+                          <span className="text-warning">€{(liveBridgeCalc.summary.totalDevengos + liveBridgeCalc.summary.totalCosteEmpresa).toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span>Salario Bruto</span><span>€{totals.totalEarnings.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>SS Empresa ({(SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
 
