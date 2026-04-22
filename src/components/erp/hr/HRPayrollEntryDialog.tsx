@@ -122,6 +122,11 @@ export function HRPayrollEntryDialog({
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   // S9.18: Flex plan state
   const [flexPlanOpen, setFlexPlanOpen] = useState(false);
+  // S9.21e: Vista previa nómina
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewCalc, setPreviewCalc] = useState<ESPayrollCalculation | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const { simulateES } = useESPayrollBridge(companyId);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
@@ -256,6 +261,44 @@ export function HRPayrollEntryDialog({
   }, [earnings, deductions]);
 
   const totals = calculateTotals();
+
+  // S9.21e: Generar preview con motor real (simulateES)
+  const handleOpenPreview = useCallback(() => {
+    if (!selectedEmployeeId) {
+      toast.error('Selecciona un empleado primero');
+      return;
+    }
+    const baseSalary = earnings.find(e => e.code === 'BASE')?.amount || 0;
+    if (baseSalary <= 0) {
+      toast.error('El salario base debe ser mayor que 0');
+      return;
+    }
+    setPreviewLoading(true);
+    setPreviewOpen(true);
+    try {
+      // Mapear earnings a complementos del bridge (excluye BASE, ya va en salarioBase)
+      const complementos: Record<string, number> = {};
+      earnings.forEach(e => {
+        if (e.code === 'BASE' || !e.amount) return;
+        const persistCode = PERSISTENCE_CODE_MAP[e.code] || `ES_${e.code}`;
+        complementos[persistCode] = e.amount;
+      });
+      const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      const calc = simulateES({
+        salarioBase: baseSalary,
+        grupoCotizacion: 1,
+        horasExtraImporte: horasExtra,
+        complementos,
+      });
+      setPreviewCalc(calc);
+    } catch (err) {
+      console.error('[HRPayrollEntryDialog] preview error:', err);
+      toast.error('No se pudo generar la vista previa');
+      setPreviewCalc(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [earnings, selectedEmployeeId, simulateES]);
 
   const updateConcept = (id: string, value: number) => {
     if (earnings.find(e => e.id === id)) {
