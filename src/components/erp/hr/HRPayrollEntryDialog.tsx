@@ -358,17 +358,45 @@ export function HRPayrollEntryDialog({
         complementos[persistCode] = e.amount;
       });
       const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      const cas = casuistica;
+      const useCas = cas.enabled;
+      const nacimientoTramos = useCas && (cas.nacimientoDias > 0 || cas.nacimientoImporte > 0) && cas.periodFechaDesde && cas.periodFechaHasta
+        ? [{
+            tipo: cas.nacimientoTipo,
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            importe: cas.nacimientoImporte,
+          }]
+        : undefined;
+      const atrasosIT = useCas && cas.atrasosITImporte > 0
+        ? { importe: cas.atrasosITImporte, periodoOrigen: cas.atrasosITPeriodo || '', motivo: 'IT_no_reflejada' as const }
+        : undefined;
+      const periodCoverage = useCas && cas.periodMotivo !== 'mes_completo' && cas.periodFechaDesde && cas.periodFechaHasta
+        ? {
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            diasNaturalesPeriodo: cas.periodDiasNaturales,
+            diasEfectivos: cas.periodDiasEfectivos,
+            motivo: cas.periodMotivo,
+          }
+        : undefined;
       return simulateES({
         salarioBase: base,
         grupoCotizacion: 1,
         horasExtraImporte: horasExtra,
         complementos,
+        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
+        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
+        atrasosIT,
+        nacimientoTramos,
+        periodCoverage,
       });
     } catch (err) {
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       return null;
     }
-  }, [earnings, simulateES]);
+  }, [earnings, simulateES, casuistica]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
