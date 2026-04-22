@@ -366,6 +366,9 @@ export function HRPayrollEntryDialog({
   const liveBridgeCalc = useMemo<ESPayrollCalculation | null>(() => {
     const base = earnings.find(e => e.code === 'BASE')?.amount || 0;
     if (base <= 0) return null;
+    // Guard: si faltan bases SS para el año del periodo, no llamar al motor
+    // (evita toast.error en bucle desde simulateES y posible re-render infinito)
+    if (esLocalization.ssBases.length === 0) return null;
     try {
       const complementos: Record<string, number> = {};
       earnings.forEach(e => {
@@ -412,7 +415,7 @@ export function HRPayrollEntryDialog({
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       return null;
     }
-  }, [earnings, simulateES, casuistica]);
+  }, [earnings, simulateES, casuistica, esLocalization.ssBases.length]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
