@@ -309,6 +309,9 @@ export function HRPayrollEntryDialog({
       setResolutionMode(null);
       setAgreementConcepts([]);
       setUnmappedConcepts([]);
+      setManuallyAddedCodes(new Set());
+      setCasuistica(DEFAULT_CASUISTICA);
+      setCasuisticaOpen(false);
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
