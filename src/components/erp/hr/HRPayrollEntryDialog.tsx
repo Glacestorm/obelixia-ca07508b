@@ -676,7 +676,7 @@ export function HRPayrollEntryDialog({
                 <span className="text-muted-foreground">Plus convenio</span>
                 <p className="font-semibold">{r.plusConvenioTabla.toFixed(2)}€</p>
               </div>
-              <div className={cn("p-1.5 rounded border", r.hasMejoraVoluntaria ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800" : "bg-background")}>
+              <div className={cn("p-1.5 rounded border", r.hasMejoraVoluntaria ? "bg-success/10 border-success/30" : "bg-background")}>
                 <span className="text-muted-foreground">Mejora voluntaria</span>
                 <p className="font-semibold">
                   {r.hasMejoraVoluntaria ? `${r.mejoraVoluntaria.toFixed(2)}€` : '—'}
