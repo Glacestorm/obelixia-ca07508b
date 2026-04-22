@@ -262,6 +262,51 @@ export function HRPayrollEntryDialog({
 
   const totals = calculateTotals();
 
+  /**
+   * S9.21e — Bridge ES en vivo: ejecuta `simulateES` con los devengos UI actuales
+   * para obtener el cálculo oficial (bases salariales/no salariales, contribuibles,
+   * imponibles, topes CC, IRPF). Se usa en la pestaña Resumen.
+   * Fallback silencioso a `null` si el bridge no devuelve cálculo (sin empleado, etc.).
+   */
+  const liveBridgeCalc = useMemo<ESPayrollCalculation | null>(() => {
+    const base = earnings.find(e => e.code === 'BASE')?.amount || 0;
+    if (base <= 0) return null;
+    try {
+      const complementos: Record<string, number> = {};
+      earnings.forEach(e => {
+        if (e.code === 'BASE' || !e.amount) return;
+        const persistCode = PERSISTENCE_CODE_MAP[e.code] || `ES_${e.code}`;
+        complementos[persistCode] = e.amount;
+      });
+      const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      return simulateES({
+        salarioBase: base,
+        grupoCotizacion: 1,
+        horasExtraImporte: horasExtra,
+        complementos,
+      });
+    } catch (err) {
+      console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
+      return null;
+    }
+  }, [earnings, simulateES]);
+
+  /**
+   * S9.21e — Conceptos obligatorios que SIEMPRE se muestran aunque su importe sea 0.
+   * El resto se oculta cuando vale 0 (regla "ocultar ceros / no seleccionados").
+   */
+  const REQUIRED_EARNING_CODES = new Set(['BASE']);
+  const REQUIRED_DEDUCTION_CODES = new Set(['IRPF']);
+
+  const visibleEarnings = useMemo(
+    () => earnings.filter(e => REQUIRED_EARNING_CODES.has(e.code) || (e.amount || 0) > 0),
+    [earnings]
+  );
+  const visibleOtherDeductions = useMemo(
+    () => deductions.filter(d => d.category === 'other' && (d.amount || 0) > 0),
+    [deductions]
+  );
+
   // S9.21e: Generar preview con motor real (simulateES)
   const handleOpenPreview = useCallback(() => {
     if (!selectedEmployeeId) {
@@ -820,7 +865,7 @@ export function HRPayrollEntryDialog({
             <TabsContent value="earnings" className="mt-4">
               <div className="pr-4 pb-4">
                 <div className="space-y-2">
-                  {earnings.map(concept => {
+                  {visibleEarnings.map(concept => {
                     const isDynamic = concept.id.startsWith('dyn-');
                     const isClassicResolved = resolutionMode === 'auto' && ['BASE', 'PLUS_CONV', 'MEJORA_VOL'].includes(concept.code) && concept.amount > 0;
                     return (
@@ -849,6 +894,13 @@ export function HRPayrollEntryDialog({
                     </div>
                     );
                   })}
+                  {/* S9.21e: aviso de conceptos opcionales ocultos */}
+                  {earnings.length > visibleEarnings.length && (
+                    <p className="text-[10px] text-muted-foreground italic pt-1">
+                      <Info className="h-3 w-3 inline mr-0.5" />
+                      {earnings.length - visibleEarnings.length} concepto(s) opcional(es) a 0 ocultos. Se muestran solo los cumplimentados.
+                    </p>
+                  )}
                   {/* Phase 2A: Unmapped agreement concepts */}
                   {unmappedConcepts.length > 0 && (
                     <>
@@ -886,7 +938,9 @@ export function HRPayrollEntryDialog({
                   </div>
                   <Separator className="my-3" />
                   <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Otras deducciones</h4>
-                  {deductions.map(concept => (
+                  {deductions
+                    .filter(d => REQUIRED_DEDUCTION_CODES.has(d.code) || (d.amount || 0) > 0)
+                    .map(concept => (
                     <div key={concept.id} className="flex items-center gap-2 p-2 rounded-lg border">
                       <div className="flex-1"><span className="text-sm">{concept.name}</span></div>
                       <div className="w-24">
@@ -896,6 +950,11 @@ export function HRPayrollEntryDialog({
                       {concept.code === 'IRPF' && <span className="text-sm font-medium">= €{totals.irpfAmount.toFixed(2)}</span>}
                     </div>
                   ))}
+                  {visibleOtherDeductions.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground italic">
+                      Sin otras deducciones (anticipo, cuota sindical, embargos, etc.). Se ocultan los conceptos a 0.
+                    </p>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -924,6 +983,69 @@ export function HRPayrollEntryDialog({
                     <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
                   </CardContent>
                 </Card>
+
+                {/* S9.21e — Bases oficiales del bridge ES (ET Art. 26 / LGSS Art. 147) */}
+                {liveBridgeCalc?.summary?.bases && (
+                  <Card className="md:col-span-2 border-primary/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Scale className="h-4 w-4 text-primary" />
+                        Bases oficiales (motor ES)
+                        <Badge variant="outline" className="ml-2 text-[10px] h-5 border-info/40 text-info">ET 26 · LGSS 147</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Devengos salariales</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosSalariales.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Devengos no salariales</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosNoSalariales.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base contribuible</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosContribuibles.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base imponible IRPF</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosImponibles.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base CC</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.baseCotizacionCC.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base AT/EP</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.baseCotizacionAT.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Horas extra</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.horasExtraImporte.toFixed(2)}</p>
+                      </div>
+                      <div className={cn(
+                        "p-2 rounded border",
+                        liveBridgeCalc.summary.bases.aplicoTopeMinimo || liveBridgeCalc.summary.bases.aplicoTopeMaximo
+                          ? "bg-warning/10 border-warning/30"
+                          : "bg-muted/30"
+                      )}>
+                        <span className="text-muted-foreground">Topes CC aplicados</span>
+                        <p className="font-semibold text-sm">
+                          {liveBridgeCalc.summary.bases.aplicoTopeMinimo && 'Mín. '}
+                          {liveBridgeCalc.summary.bases.aplicoTopeMaximo && 'Máx.'}
+                          {!liveBridgeCalc.summary.bases.aplicoTopeMinimo && !liveBridgeCalc.summary.bases.aplicoTopeMaximo && 'No'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {!liveBridgeCalc && (
+                  <div className="md:col-span-2 p-3 rounded border border-dashed bg-muted/30 text-xs text-muted-foreground italic flex items-center gap-2">
+                    <Info className="h-3.5 w-3.5" />
+                    Introduce un salario base &gt; 0 para activar el cálculo oficial de bases (motor ES).
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
