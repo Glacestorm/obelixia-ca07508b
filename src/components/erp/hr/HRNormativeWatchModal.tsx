@@ -290,10 +290,10 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
               size="sm"
               className="h-6 gap-1.5 text-xs ml-auto"
               disabled={isChecking}
-              onClick={() => runManualCheck()}
+              onClick={() => runManualCheck({ check_smi: true, check_statute_workers: true })}
             >
               <RefreshCw className={cn('h-3 w-3', isChecking && 'animate-spin')} />
-              Verificar ahora
+              Verificar ahora (incl. SMI + ET)
             </Button>
           </DialogDescription>
         </DialogHeader>
