@@ -35,6 +35,9 @@ import { HRFlexibleRemunerationPanel } from './HRFlexibleRemunerationPanel';
 import { HRPayrollNormativeWatchBadge } from './HRPayrollNormativeWatchBadge';
 import { HRPayrollPreviewDialog } from './HRPayrollPreviewDialog';
 import { useESPayrollBridge, type ESPayrollCalculation } from '@/hooks/erp/hr/useESPayrollBridge';
+import { ESPeriodSSBasesPopover } from './localization/es/ESPeriodSSBasesPopover';
+import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
+import { IRPF_MIN_RATE } from '@/lib/hr/payroll/rules/irpf-withholding';
 
 interface PayrollConcept {
   id: string;
@@ -63,16 +66,24 @@ type AgreementResolutionMode = 'auto' | 'manual' | 'missing_group' | null;
 /** Classic trio ERP codes — excluded from dynamic concept injection to prevent duplication */
 const CLASSIC_TRIO_ERP_CODES = new Set(['ES_SAL_BASE', 'ES_COMP_CONVENIO', 'ES_MEJORA_VOLUNTARIA']);
 
-const SS_RATES = {
-  cc_company: 23.60,
-  cc_worker: 4.70,
-  unemployment_general_company: 5.50,
-  unemployment_general_worker: 1.55,
-  fogasa: 0.20,
-  fp_company: 0.60,
-  fp_worker: 0.10,
-  mei: 0.13,
-};
+/**
+ * S9.21h — Las tasas SS NO se hardcodean aquí. Se importan de la fuente única
+ * (`SS_CONTRIBUTION_RATES_2026` en `shared/legal/rules/ssRules2026`) que sigue
+ * RDL 3/2026 + Orden PJC/297/2026. El MEI total 2026 es 0.90 % (0.75 emp + 0.15 trab),
+ * NO 0.13 %. El cálculo real (con topes) lo realiza el motor ES (`useESPayrollBridge`).
+ * Esta tabla local sólo se usa como fallback decorativo cuando aún no hay base > 0.
+ */
+const SS_RATES_FALLBACK = {
+  cc_company: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa,
+  cc_worker: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.trabajador,
+  unemployment_general_company: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa,
+  unemployment_general_worker: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.trabajador,
+  fogasa: SS_CONTRIBUTION_RATES_2026.fogasa.empresa,
+  fp_company: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa,
+  fp_worker: SS_CONTRIBUTION_RATES_2026.formacionProfesional.trabajador,
+  mei: SS_CONTRIBUTION_RATES_2026.mei.empresa + SS_CONTRIBUTION_RATES_2026.mei.trabajador,
+  mei_worker: SS_CONTRIBUTION_RATES_2026.mei.trabajador,
+} as const;
 
 const DEFAULT_EARNINGS: Omit<PayrollConcept, 'id'>[] = [
   { code: 'BASE', name: 'Salario base', type: 'earning', category: 'fixed', amount: 0, isPercentage: false, cotizaSS: true, tributaIRPF: true, isEditable: true },
@@ -87,7 +98,7 @@ const DEFAULT_EARNINGS: Omit<PayrollConcept, 'id'>[] = [
 ];
 
 const DEFAULT_DEDUCTIONS: Omit<PayrollConcept, 'id'>[] = [
-  { code: 'IRPF', name: 'Retención IRPF', type: 'deduction', category: 'irpf', amount: 15, isPercentage: true, cotizaSS: false, tributaIRPF: false, isEditable: true },
+  { code: 'IRPF', name: 'Retención IRPF', type: 'deduction', category: 'irpf', amount: IRPF_MIN_RATE, isPercentage: true, cotizaSS: false, tributaIRPF: false, isEditable: true },
   { code: 'ANTICIPO', name: 'Anticipo', type: 'deduction', category: 'other', amount: 0, isPercentage: false, cotizaSS: false, tributaIRPF: false, isEditable: true },
   { code: 'CUOTA_SIND', name: 'Cuota sindical', type: 'deduction', category: 'other', amount: 0, isPercentage: false, cotizaSS: false, tributaIRPF: false, isEditable: true },
 ];
