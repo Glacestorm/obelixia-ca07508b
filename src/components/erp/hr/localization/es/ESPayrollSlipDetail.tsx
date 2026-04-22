@@ -13,6 +13,27 @@ import { type ESPayrollCalculation } from '@/hooks/erp/hr/useESPayrollBridge';
 import { Printer } from 'lucide-react';
 import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
 import { downloadPayslipPDF, printPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getConceptDescription } from '@/engines/erp/hr/payrollConceptGlossary';
+import { Info } from 'lucide-react';
+
+function ConceptCell({ code, name }: { code: string; name: string }) {
+  const desc = getConceptDescription(code);
+  if (!desc) return <>{name}</>;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1 cursor-help underline decoration-dotted decoration-muted-foreground/40 underline-offset-2">
+            {name}
+            <Info className="h-3 w-3 text-muted-foreground/60" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs leading-snug">{desc}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 interface Props {
   calculation: ESPayrollCalculation;
@@ -138,7 +159,9 @@ export function ESPayrollSlipDetail({
             <TableBody>
               {earnings.map((l, i) => (
                 <TableRow key={i}>
-                  <TableCell className="text-sm">{l.concept_name}</TableCell>
+                  <TableCell className="text-sm">
+                    <ConceptCell code={l.concept_code} name={l.concept_name} />
+                  </TableCell>
                   <TableCell className="text-center text-xs">{l.is_taxable ? '✓' : '—'}</TableCell>
                   <TableCell className="text-center text-xs">{l.is_ss_contributable ? '✓' : '—'}</TableCell>
                   <TableCell className="text-sm text-right font-mono">{fmt(l.amount)} €</TableCell>
@@ -169,7 +192,9 @@ export function ESPayrollSlipDetail({
             <TableBody>
               {deductions.map((l, i) => (
                 <TableRow key={i}>
-                  <TableCell className="text-sm">{l.concept_name}</TableCell>
+                  <TableCell className="text-sm">
+                    <ConceptCell code={l.concept_code} name={l.concept_name} />
+                  </TableCell>
                   <TableCell className="text-sm text-right font-mono">{l.base_amount ? `${fmt(l.base_amount)}` : '—'}</TableCell>
                   <TableCell className="text-sm text-right font-mono">{l.percentage ? `${l.percentage}%` : '—'}</TableCell>
                   <TableCell className="text-sm text-right font-mono">{fmt(l.amount)} €</TableCell>
@@ -222,7 +247,9 @@ export function ESPayrollSlipDetail({
             <TableBody>
               {employerCosts.map((l, i) => (
                 <TableRow key={i}>
-                  <TableCell className="text-sm">{l.concept_name}</TableCell>
+                  <TableCell className="text-sm">
+                    <ConceptCell code={l.concept_code} name={l.concept_name} />
+                  </TableCell>
                   <TableCell className="text-sm text-right font-mono">{l.base_amount ? `${fmt(l.base_amount)}` : '—'}</TableCell>
                   <TableCell className="text-sm text-right font-mono">{l.percentage ? `${l.percentage}%` : '—'}</TableCell>
                   <TableCell className="text-sm text-right font-mono">{fmt(l.amount)} €</TableCell>

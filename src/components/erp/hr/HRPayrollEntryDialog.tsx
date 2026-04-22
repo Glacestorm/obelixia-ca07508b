@@ -39,6 +39,9 @@ import { ESPeriodSSBasesPopover } from './localization/es/ESPeriodSSBasesPopover
 import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
 import { IRPF_MIN_RATE } from '@/lib/hr/payroll/rules/irpf-withholding';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
+import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
+import { FileDown } from 'lucide-react';
 
 interface PayrollConcept {
   id: string;
@@ -1908,6 +1911,46 @@ export function HRPayrollEntryDialog({
         <DialogFooter className="shrink-0 bg-background border-t px-6 py-3 mt-0 flex-row items-center gap-2 sm:justify-end">
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!liveBridgeCalc) {
+                  toast.error('Sin cálculo en vivo: introduce salario base y bases SS');
+                  return;
+                }
+                try {
+                  const model = buildPayslipRenderModel({
+                    calculation: liveBridgeCalc,
+                    employee: {
+                      first_name: selectedEmployeeName.split(' ')[0],
+                      last_name: selectedEmployeeName.split(' ').slice(1).join(' '),
+                      category: selectedEmployeeCategory,
+                      grupo_cotizacion: grupoCotizacion,
+                    },
+                    period: { period_name: `${String(periodMonth).padStart(2, '0')}/${periodYear}` },
+                    currency: 'EUR',
+                  });
+                  const hash = await computeSourceHash(liveBridgeCalc);
+                  const safe = (selectedEmployeeName || 'empleado').replace(/\s+/g, '_');
+                  downloadPayslipPDF(
+                    model,
+                    `nomina_${safe}_${periodYear}-${String(periodMonth).padStart(2, '0')}_provisional.pdf`,
+                    'system_generated',
+                    hash,
+                  );
+                  toast.success('PDF provisional generado');
+                } catch (err) {
+                  console.error('[HRPayrollEntryDialog] PDF error:', err);
+                  toast.error('No se pudo generar el PDF');
+                }
+              }}
+              disabled={!liveBridgeCalc}
+              className="gap-1.5"
+              title="Descargar recibo provisional con watermark"
+            >
+              <FileDown className="h-4 w-4" />
+              Descargar PDF
+            </Button>
             <Button
               variant="outline"
               onClick={handleOpenPreview}

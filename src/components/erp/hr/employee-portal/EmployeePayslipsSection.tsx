@@ -23,6 +23,12 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { type PortalSection } from './EmployeePortalNav';
+import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
+import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
+import { EmployeePayrollAckBlock } from './EmployeePayrollAckBlock';
+import { EmployeePayrollObjectionDialog } from './EmployeePayrollObjectionDialog';
+import { EmployeePayrollObjectionsList } from './EmployeePayrollObjectionsList';
+import { PAYROLL_LEGAL_NOTICES } from '@/lib/hr/payroll/legalNotices';
 
 interface Props {
   employee: EmployeeProfile;
@@ -99,6 +105,66 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [objectionOpen, setObjectionOpen] = useState(false);
+  const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
+
+  // On-demand PDF (system_generated) from calculation_details
+  const handleGenerateOnDemandPdf = useCallback(async (payslip: PayslipRecord) => {
+    if (!payslip.calculation_details) {
+      toast.error('No hay datos de cálculo para generar el recibo');
+      return;
+    }
+    setGeneratingPdfId(payslip.id);
+    try {
+      const model = buildPayslipRenderModel({
+        calculation: payslip.calculation_details,
+        employee: {
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          national_id: employee.national_id,
+          job_title: employee.job_title,
+          category: employee.category,
+          hire_date: employee.hire_date,
+        },
+        period: {
+          id: payslip.period?.id,
+          period_name: payslip.period?.period_name,
+          start_date: payslip.period?.start_date,
+          end_date: payslip.period?.end_date,
+        },
+        payrollRecordId: payslip.id,
+        currency: payslip.currency || 'EUR',
+      });
+      const hash = await computeSourceHash(payslip.calculation_details);
+      const safe = `${employee.first_name}_${employee.last_name}`.replace(/\s+/g, '_');
+      const periodTag = payslip.period?.period_name?.replace(/\s+/g, '_') ||
+        format(new Date(payslip.created_at), 'yyyy-MM');
+      downloadPayslipPDF(
+        model,
+        `nomina_${safe}_${periodTag}_provisional.pdf`,
+        'system_generated',
+        hash,
+      );
+      toast.success('Recibo provisional generado');
+      try {
+        await (supabase as any)
+          .from('erp_hr_document_access_log')
+          .insert({
+            company_id: employee.company_id,
+            document_id: payslip.id,
+            document_table: 'hr_payroll_records',
+            action: 'generated_pdf_ondemand',
+            user_agent: navigator.userAgent,
+            metadata: { source: 'employee_portal', source_hash: hash },
+          });
+      } catch { /* non-blocking */ }
+    } catch (err) {
+      console.error('[EmployeePayslipsSection] on-demand PDF error:', err);
+      toast.error('No se pudo generar el recibo');
+    } finally {
+      setGeneratingPdfId(null);
+    }
+  }, [employee]);
 
   // Fetch payslips with period info + linked documents
   const fetchPayslips = useCallback(async () => {
@@ -389,6 +455,9 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
               doc={payslipDocs.get(selectedPayslip.id)}
               onDownload={() => handleDownloadPdf(selectedPayslip.id)}
               isDownloading={downloadingId === selectedPayslip.id}
+              onGenerateOnDemand={() => handleGenerateOnDemandPdf(selectedPayslip)}
+              isGenerating={generatingPdfId === selectedPayslip.id}
+              onOpenObjection={() => setObjectionOpen(true)}
               onOpenQuery={() => {
                 setSelectedPayslip(null);
                 onNavigate('requests');
@@ -397,24 +466,53 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
                 setSelectedPayslip(null);
                 onNavigate('documents');
               }}
+              previousPayslip={
+                selectedPayslip
+                  ? payslips.find(
+                      (p) =>
+                        p.id !== selectedPayslip.id &&
+                        new Date(p.created_at) < new Date(selectedPayslip.created_at) &&
+                        p.status !== 'cancelled',
+                    ) || null
+                  : null
+              }
             />
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Objection dialog (S9.22) */}
+      {selectedPayslip && (
+        <EmployeePayrollObjectionDialog
+          open={objectionOpen}
+          onOpenChange={setObjectionOpen}
+          payrollRecordId={selectedPayslip.id}
+          employeeId={employee.id}
+          companyId={employee.company_id}
+        />
+      )}
     </>
   );
 }
 
 // ─── Detail view ─────────────────────────────────────────────────────────
 
-function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOpenQuery, onNavigateDocuments }: {
+function PayslipDetail({
+  payslip, employee, doc, onDownload, isDownloading,
+  onGenerateOnDemand, isGenerating, onOpenObjection,
+  onOpenQuery, onNavigateDocuments, previousPayslip,
+}: {
   payslip: PayslipRecord;
   employee: EmployeeProfile;
   doc: PayslipDocument | undefined;
   onDownload: () => void;
   isDownloading: boolean;
+  onGenerateOnDemand: () => void;
+  isGenerating: boolean;
+  onOpenObjection: () => void;
   onOpenQuery: () => void;
   onNavigateDocuments: () => void;
+  previousPayslip: PayslipRecord | null;
 }) {
   const periodLabel = payslip.period?.period_name ||
     format(new Date(payslip.created_at), 'MMMM yyyy', { locale: es });
@@ -488,7 +586,9 @@ function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOp
             <div className="flex items-center gap-2 min-w-0">
               <PdfIcon className={`h-4 w-4 shrink-0 ${pdfCfg.className}`} />
               <div className="min-w-0">
-                <p className="text-sm font-medium">{pdfCfg.label}</p>
+                <p className="text-sm font-medium">
+                  {pdfStatus === 'available' ? 'Documento oficial de la empresa' : pdfCfg.label}
+                </p>
                 {doc?.file_name && (
                   <p className="text-[11px] text-muted-foreground truncate">{doc.file_name}</p>
                 )}
@@ -496,7 +596,9 @@ function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOp
                   <p className="text-[11px] text-amber-600">El documento está siendo procesado por RRHH</p>
                 )}
                 {pdfStatus === 'unavailable' && (
-                  <p className="text-[11px] text-muted-foreground">Este recibo aún no tiene documento archivado</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {PAYROLL_LEGAL_NOTICES.SYSTEM_GENERATED_PDF}
+                  </p>
                 )}
               </div>
             </div>
@@ -513,9 +615,31 @@ function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOp
                 Descargar
               </Button>
             )}
+            {pdfStatus !== 'available' && calc && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 shrink-0"
+                onClick={onGenerateOnDemand}
+                disabled={isGenerating}
+                title="Generar recibo provisional desde el sistema"
+              >
+                {isGenerating
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Download className="h-4 w-4" />}
+                Generar PDF
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {/* Acuse de recepción S9.22 */}
+      <EmployeePayrollAckBlock
+        payrollRecordId={payslip.id}
+        employeeId={employee.id}
+        companyId={employee.company_id}
+      />
 
       {/* Main figures */}
       <div className="grid grid-cols-2 gap-3">
@@ -548,6 +672,7 @@ function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOp
                 <CompRow label="Deducciones" value={diff.total_deductions_diff} currency={c} />
               )}
             </div>
+            <TopDeltasBlock current={payslip} previous={previousPayslip} currency={c} />
           </CardContent>
         </Card>
       )}
@@ -567,6 +692,13 @@ function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOp
         </>
       )}
 
+      {/* Lista de objeciones del empleado para esta nómina */}
+      <EmployeePayrollObjectionsList
+        payrollRecordId={payslip.id}
+        employeeId={employee.id}
+        companyId={employee.company_id}
+      />
+
       {/* Actions */}
       <Separator />
       <div className="flex flex-col gap-2">
@@ -578,6 +710,25 @@ function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOp
             Descargar PDF de nómina
           </Button>
         )}
+        {calc && (
+          <Button
+            variant={pdfStatus === 'available' ? 'outline' : 'default'}
+            className="gap-2 justify-start"
+            onClick={onGenerateOnDemand}
+            disabled={isGenerating}
+          >
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Generar PDF provisional
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          className="gap-2 justify-start"
+          onClick={onOpenObjection}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Reportar incidencia / Solicitar revisión interna
+        </Button>
         <Button variant="outline" className="gap-2 justify-start" onClick={onNavigateDocuments}>
           <Paperclip className="h-4 w-4" />
           Ver en expediente documental
@@ -661,6 +812,66 @@ function ConceptGroup({ title, items, currency, variant }: {
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/** Top-3 deltas por concepto entre nómina actual y previa (S9.22). */
+function TopDeltasBlock({
+  current, previous, currency,
+}: {
+  current: PayslipRecord; previous: PayslipRecord | null; currency: string;
+}) {
+  const deltas = useMemo(() => {
+    if (!previous || !current.calculation_details || !previous.calculation_details) return [];
+    const extract = (calc: any): Map<string, { name: string; amount: number }> => {
+      const m = new Map<string, { name: string; amount: number }>();
+      const lines = Array.isArray(calc?.lines) ? calc.lines : [];
+      for (const l of lines) {
+        const code = String(l.concept_code ?? l.code ?? '');
+        if (!code) continue;
+        const name = String(l.concept_name ?? l.name ?? code);
+        const amt = Number(l.amount ?? 0);
+        m.set(code, { name, amount: amt });
+      }
+      return m;
+    };
+    const cur = extract(current.calculation_details);
+    const prev = extract(previous.calculation_details);
+    const codes = new Set([...cur.keys(), ...prev.keys()]);
+    const arr: Array<{ code: string; name: string; delta: number }> = [];
+    for (const code of codes) {
+      const a = cur.get(code)?.amount ?? 0;
+      const b = prev.get(code)?.amount ?? 0;
+      const d = a - b;
+      if (Math.abs(d) >= 0.01) {
+        arr.push({ code, name: cur.get(code)?.name ?? prev.get(code)?.name ?? code, delta: d });
+      }
+    }
+    arr.sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta));
+    return arr.slice(0, 3);
+  }, [current, previous]);
+
+  if (deltas.length === 0) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border/50">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+        Top variaciones por concepto
+      </p>
+      <div className="space-y-1">
+        {deltas.map((d) => {
+          const positive = d.delta > 0;
+          return (
+            <div key={d.code} className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground truncate mr-2">{d.name}</span>
+              <span className={`font-medium tabular-nums ${positive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {positive ? '+' : ''}{fmtCurrency(d.delta, currency)}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
