@@ -119,18 +119,24 @@ export interface EmployeeCostInput {
 
 // ── Constants ──
 
-/** Default SS employer rates 2026 (Régimen General, indefinido) */
-const SS_EMPLOYER_RATES_2026 = {
-  cc: 23.60,
-  unemployment_indefinite: 5.50,
-  unemployment_temporary: 6.70,
-  fogasa: 0.20,
-  fp: 0.60,
-  mei: 0.58,
-  atep: 1.50, // reference rate
-};
-
+/**
+ * S9.21h — Tasas SS empresa 2026 derivadas de la fuente única (`ssRules2026`).
+ * NO duplicar valores. Si cambian las constantes oficiales, este simulador
+ * usa automáticamente la versión actualizada.
+ */
+import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
 import { SMI_MENSUAL_2026 as SMI_2026_CANONICAL } from '@/shared/legal/rules/smiRules';
+
+const SS_EMPLOYER_RATES_2026 = {
+  cc: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa,
+  unemployment_indefinite: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa,
+  unemployment_temporary: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.empresa,
+  fogasa: SS_CONTRIBUTION_RATES_2026.fogasa.empresa,
+  fp: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa,
+  mei: SS_CONTRIBUTION_RATES_2026.mei.empresa,
+  atep: SS_CONTRIBUTION_RATES_2026.atepReferencia.empresa,
+} as const;
+
 const DEFAULT_SMI_2026 = SMI_2026_CANONICAL;
 
 export const SIMULATOR_DISCLAIMER =
