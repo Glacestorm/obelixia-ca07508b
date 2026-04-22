@@ -889,6 +889,26 @@ export function HRPayrollEntryDialog({
         .filter(d => d.category === 'other' && d.amount > 0)
         .map(d => ({ code: d.code, name: d.name, amount: d.amount }));
 
+      // S9.21h — Capa 2: Si el motor ES tiene un cálculo en vivo, prevalece
+      // sobre el cálculo decorativo local (totals). Garantiza que lo persistido
+      // coincida con lo mostrado en sticky bar / Resumen / Vista previa.
+      const summarySource = liveBridgeCalc?.summary;
+      const grossSalary = summarySource ? summarySource.totalDevengos : totals.totalEarnings;
+      const ssWorkerAmt = summarySource
+        ? (summarySource.ssWorker?.contingenciasComunes ?? 0)
+          + (summarySource.ssWorker?.desempleo ?? 0)
+          + (summarySource.ssWorker?.formacionProfesional ?? 0)
+          + (summarySource.ssWorker?.mei ?? 0)
+        : totals.totalSS;
+      const irpfAmt = summarySource ? (summarySource.irpf?.amount ?? totals.irpfAmount) : totals.irpfAmount;
+      const irpfPct = summarySource ? (summarySource.irpf?.rate ?? totals.irpfRate) : totals.irpfRate;
+      const totalDeds = summarySource ? summarySource.totalDeducciones : totals.totalDeductions;
+      const netSal = summarySource ? summarySource.liquidoPercibir : totals.netSalary;
+      const ssCompany = summarySource ? summarySource.totalCosteEmpresa : totals.companySS;
+      const totalCost = summarySource
+        ? summarySource.totalDevengos + summarySource.totalCosteEmpresa
+        : totals.totalCost;
+
       const payrollRecord = {
         company_id: companyId,
         employee_id: selectedEmployeeId,
@@ -897,15 +917,16 @@ export function HRPayrollEntryDialog({
         payroll_type: 'mensual' as const,
         base_salary: baseSalary,
         complements: complements,
-        gross_salary: parseFloat(totals.totalEarnings.toFixed(2)),
-        ss_worker: parseFloat(totals.totalSS.toFixed(2)),
-        irpf_amount: parseFloat(totals.irpfAmount.toFixed(2)),
-        irpf_percentage: totals.irpfRate,
+        gross_salary: parseFloat(grossSalary.toFixed(2)),
+        ss_worker: parseFloat(ssWorkerAmt.toFixed(2)),
+        irpf_amount: parseFloat(irpfAmt.toFixed(2)),
+        irpf_percentage: irpfPct,
         other_deductions: otherDeds,
-        total_deductions: parseFloat(totals.totalDeductions.toFixed(2)),
-        net_salary: parseFloat(totals.netSalary.toFixed(2)),
-        ss_company: parseFloat(totals.companySS.toFixed(2)),
-        total_cost: parseFloat(totals.totalCost.toFixed(2)),
+        total_deductions: parseFloat(totalDeds.toFixed(2)),
+        net_salary: parseFloat(netSal.toFixed(2)),
+        ss_company: parseFloat(ssCompany.toFixed(2)),
+        total_cost: parseFloat(totalCost.toFixed(2)),
+        calculation_source: summarySource ? 'es_bridge_engine_live' : 'local_fallback',
         status: 'calculated' as const,
         calculated_at: new Date().toISOString(),
       };
