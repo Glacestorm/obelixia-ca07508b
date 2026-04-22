@@ -983,6 +983,69 @@ export function HRPayrollEntryDialog({
                     <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
                   </CardContent>
                 </Card>
+
+                {/* S9.21e — Bases oficiales del bridge ES (ET Art. 26 / LGSS Art. 147) */}
+                {liveBridgeCalc?.summary?.bases && (
+                  <Card className="md:col-span-2 border-primary/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Scale className="h-4 w-4 text-primary" />
+                        Bases oficiales (motor ES)
+                        <Badge variant="outline" className="ml-2 text-[10px] h-5 border-info/40 text-info">ET 26 · LGSS 147</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Devengos salariales</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosSalariales.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Devengos no salariales</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosNoSalariales.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base contribuible</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosContribuibles.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base imponible IRPF</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.devengosImponibles.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base CC</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.baseCotizacionCC.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Base AT/EP</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.baseCotizacionAT.toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded border bg-muted/30">
+                        <span className="text-muted-foreground">Horas extra</span>
+                        <p className="font-semibold text-sm">€{liveBridgeCalc.summary.bases.horasExtraImporte.toFixed(2)}</p>
+                      </div>
+                      <div className={cn(
+                        "p-2 rounded border",
+                        liveBridgeCalc.summary.bases.aplicoTopeMinimo || liveBridgeCalc.summary.bases.aplicoTopeMaximo
+                          ? "bg-warning/10 border-warning/30"
+                          : "bg-muted/30"
+                      )}>
+                        <span className="text-muted-foreground">Topes CC aplicados</span>
+                        <p className="font-semibold text-sm">
+                          {liveBridgeCalc.summary.bases.aplicoTopeMinimo && 'Mín. '}
+                          {liveBridgeCalc.summary.bases.aplicoTopeMaximo && 'Máx.'}
+                          {!liveBridgeCalc.summary.bases.aplicoTopeMinimo && !liveBridgeCalc.summary.bases.aplicoTopeMaximo && 'No'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {!liveBridgeCalc && (
+                  <div className="md:col-span-2 p-3 rounded border border-dashed bg-muted/30 text-xs text-muted-foreground italic flex items-center gap-2">
+                    <Info className="h-3.5 w-3.5" />
+                    Introduce un salario base &gt; 0 para activar el cálculo oficial de bases (motor ES).
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
