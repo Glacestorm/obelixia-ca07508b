@@ -1460,19 +1460,79 @@ export function HRPayrollEntryDialog({
                     <div className="flex justify-between py-1 px-2 bg-primary/10 rounded font-medium"><span>Total SS Trabajador</span><span>€{totals.totalSS.toFixed(2)}</span></div>
                   </div>
                   <Separator className="my-3" />
-                  <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Otras deducciones</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase">Otras deducciones</h4>
+                    <Popover open={dedPickerOpen} onOpenChange={setDedPickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1">
+                          <Plus className="h-3 w-3" />
+                          Añadir deducción
+                          <ChevronDown className="h-3 w-3 opacity-60" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[380px] p-0" align="end">
+                        <Command>
+                          <CommandInput placeholder="Buscar deducción ES..." className="h-8 text-xs" />
+                          <CommandList className="max-h-[320px]">
+                            <CommandEmpty>Sin coincidencias en el catálogo ES.</CommandEmpty>
+                            {deductionPickerGroups.map(([group, defs]) => (
+                              <CommandGroup key={group} heading={group}>
+                                {defs.map(def => (
+                                  <CommandItem
+                                    key={def.code}
+                                    value={`${def.name} ${def.code}`}
+                                    onSelect={() => addManualConcept(def)}
+                                    className="text-xs flex items-start gap-2 py-1.5"
+                                  >
+                                    <Plus className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        <span className="font-medium">{def.name}</span>
+                                        <span className="text-[9px] font-mono text-muted-foreground">{def.code}</span>
+                                      </div>
+                                      {def.legal_reference && (
+                                        <p className="text-[8px] text-muted-foreground italic truncate">{def.legal_reference}</p>
+                                      )}
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            ))}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   {deductions
-                    .filter(d => REQUIRED_DEDUCTION_CODES.has(d.code) || (d.amount || 0) > 0)
-                    .map(concept => (
+                    .filter(d => REQUIRED_DEDUCTION_CODES.has(d.code) || (d.amount || 0) > 0 || manuallyAddedCodes.has(d.code))
+                    .map(concept => {
+                      const isManual = manuallyAddedCodes.has(concept.code);
+                      return (
                     <div key={concept.id} className="flex items-center gap-2 p-2 rounded-lg border">
-                      <div className="flex-1"><span className="text-sm">{concept.name}</span></div>
+                      <div className="flex-1">
+                        <span className="text-sm">{concept.name}</span>
+                        {isManual && (
+                          <Badge variant="outline" className="ml-1 text-[9px] h-4 text-warning border-warning/30">Manual</Badge>
+                        )}
+                      </div>
                       <div className="w-24">
                         <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" step="0.01" />
                       </div>
                       <span className="text-xs text-muted-foreground">{concept.isPercentage ? '%' : '€'}</span>
                       {concept.code === 'IRPF' && <span className="text-sm font-medium">= €{totals.irpfAmount.toFixed(2)}</span>}
+                      {isManual && (
+                        <Button
+                          type="button" size="icon" variant="ghost"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeManualConcept(concept.code, false)}
+                          title="Quitar concepto"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
-                  ))}
+                      );
+                    })}
                   {visibleOtherDeductions.length === 0 && (
                     <p className="text-[10px] text-muted-foreground italic">
                       Sin otras deducciones (anticipo, cuota sindical, embargos, etc.). Se ocultan los conceptos a 0.
