@@ -1308,12 +1308,12 @@ export function HRPayrollEntryDialog({
               <TabsTrigger value="earnings" className="gap-1">
                 <TrendingUp className="h-3 w-3" />
                 Devengos
-                <Badge variant="secondary" className="ml-1 text-xs">€{totals.totalEarnings.toFixed(2)}</Badge>
+                <Badge variant="secondary" className="ml-1 text-xs">€{(liveBridgeCalc?.summary.totalDevengos ?? totals.totalEarnings).toFixed(2)}</Badge>
               </TabsTrigger>
               <TabsTrigger value="deductions" className="gap-1">
                 <TrendingDown className="h-3 w-3" />
                 Deducciones
-                <Badge variant="secondary" className="ml-1 text-xs">€{totals.totalDeductions.toFixed(2)}</Badge>
+                <Badge variant="secondary" className="ml-1 text-xs">€{(liveBridgeCalc?.summary.totalDeducciones ?? totals.totalDeductions).toFixed(2)}</Badge>
               </TabsTrigger>
               <TabsTrigger value="summary" className="gap-1">
                 <Calculator className="h-3 w-3" />
