@@ -38,6 +38,7 @@ import { useESPayrollBridge, type ESPayrollCalculation } from '@/hooks/erp/hr/us
 import { ESPeriodSSBasesPopover } from './localization/es/ESPeriodSSBasesPopover';
 import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
 import { IRPF_MIN_RATE } from '@/lib/hr/payroll/rules/irpf-withholding';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PayrollConcept {
   id: string;
@@ -192,14 +193,14 @@ export function HRPayrollEntryDialog({
   const [isEditMode, setIsEditMode] = useState(false);
 
   /**
-   * S9.21m — Grupo de cotización SS del empleado.
-   * Fuente real: contrato vigente / extensión ES (no se infiere de `professional_group`,
-   * que es texto libre y no tiene mapping formal auditado a grupos 1-11).
+   * S9.21n — Grupo de cotización SS del empleado.
+   * Fuente real: `hr_es_employee_labor_data.grupo_cotizacion` (extensión ES formal).
+   * Prohibido inferir desde `professional_group` (texto libre, sin mapping auditado).
    * Si no consta, se usa fallback explícito = 1 con `grupoCotizacionSource = 'fallback'`
-   * para trazar la asunción en UI / persistencia futura.
+   * y se muestra aviso visible en cabecera del diálogo.
    */
   const [grupoCotizacion, setGrupoCotizacion] = useState<number>(1);
-  const [grupoCotizacionSource, setGrupoCotizacionSource] = useState<'contract' | 'fallback'>('fallback');
+  const [grupoCotizacionSource, setGrupoCotizacionSource] = useState<'formal_es' | 'fallback'>('fallback');
 
   // S9.13: Agreement resolution state
   const [agreementResolution, setAgreementResolution] = useState<SalaryResolutionResult | null>(null);
@@ -734,6 +735,29 @@ export function HRPayrollEntryDialog({
 
       const empBaseSalaryAnnual = empData?.base_salary ? Number(empData.base_salary) : 0;
 
+      // S9.21n — Source of truth: hr_es_employee_labor_data.grupo_cotizacion (extensión ES formal).
+      // No se infiere desde professional_group. Si no existe → fallback=1 con trace visible.
+      try {
+        const { data: laborES } = await supabase
+          .from('hr_es_employee_labor_data')
+          .select('grupo_cotizacion')
+          .eq('employee_id', employeeId)
+          .eq('company_id', companyId)
+          .maybeSingle();
+        const gc = laborES?.grupo_cotizacion;
+        if (gc != null && gc >= 1 && gc <= 11) {
+          setGrupoCotizacion(gc);
+          setGrupoCotizacionSource('formal_es');
+        } else {
+          setGrupoCotizacion(1);
+          setGrupoCotizacionSource('fallback');
+        }
+      } catch (gcErr) {
+        console.warn('[HRPayrollEntryDialog] grupo_cotizacion fetch failed (non-fatal):', gcErr);
+        setGrupoCotizacion(1);
+        setGrupoCotizacionSource('fallback');
+      }
+
       // Step 2: Resolve contract for this period (Ajuste 1 & 2)
       const { contractSalary, agreementId, professionalGroup } = await resolveContractForPeriod(employeeId);
 
@@ -1125,6 +1149,37 @@ export function HRPayrollEntryDialog({
               ssBases={esLocalization.ssBases}
               isLoading={esLocalization.isLoading}
             />
+            {/* S9.21n — Badge trazabilidad grupo SS (formal_es vs fallback) */}
+            {selectedEmployeeId && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant={grupoCotizacionSource === 'formal_es' ? 'muted' : 'warning'}
+                      className="shrink-0 cursor-help"
+                    >
+                      Grupo SS: {grupoCotizacion}
+                      {grupoCotizacionSource === 'fallback' && ' (fallback)'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {grupoCotizacionSource === 'formal_es' ? (
+                      <p className="text-xs">
+                        Origen: Datos Laborales ES (formal). Tabla{' '}
+                        <code className="text-[10px]">hr_es_employee_labor_data.grupo_cotizacion</code>.
+                      </p>
+                    ) : (
+                      <p className="text-xs">
+                        No hay grupo SS formal en la ficha ES de este empleado. La nómina usa
+                        fallback (Grupo 1). Completa el dato en{' '}
+                        <strong>Localización ES → Datos Laborales</strong> para que el cálculo
+                        use el tramo de bases real.
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </DialogHeader>
 
