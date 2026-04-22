@@ -11,7 +11,7 @@
  * NUNCA autoaplica cambios normativos. Solo informa y permite disparar verificación manual.
  * Política: cambios en SMI / IRPF / SS / MEI / CRA / límites flex requieren aprobación humana.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,11 +20,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ShieldCheck, ShieldAlert, RefreshCw, Eye } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, RefreshCw } from 'lucide-react';
 import { useRegulatoryWatch } from '@/hooks/admin/useRegulatoryWatch';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { HRNormativeWatchModal } from './HRNormativeWatchModal';
 
 interface HRPayrollNormativeWatchBadgeProps {
   companyId?: string;
@@ -44,6 +45,8 @@ export function HRPayrollNormativeWatchBadge({
     isChecking,
     runManualCheck,
   } = useRegulatoryWatch(companyId);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<'overview' | 'pending' | 'verified'>('overview');
 
   // Cambios pendientes con impacto directo en cálculo de nómina
   const pendingPayrollImpact = useMemo(
@@ -67,17 +70,27 @@ export function HRPayrollNormativeWatchBadge({
   if (!companyId) return null;
 
   return (
+    <>
     <TooltipProvider delayDuration={150}>
       <div className={cn('flex items-center gap-1.5', className)}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge
-              variant={hasPending ? 'destructive' : 'secondary'}
-              className={cn(
-                'h-6 gap-1 px-2 text-[11px] font-medium',
-                hasPending ? '' : 'bg-primary/10 text-primary hover:bg-primary/20 border-primary/30',
-              )}
+            <button
+              type="button"
+              onClick={() => {
+                setModalTab(hasPending ? 'pending' : 'overview');
+                setModalOpen(true);
+              }}
+              aria-label={hasPending ? `Vigilancia normativa: ${pendingPayrollImpact.length} pendientes` : 'Vigilancia normativa al día'}
+              className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
+              <Badge
+                variant={hasPending ? 'destructive' : 'secondary'}
+                className={cn(
+                  'h-6 gap-1 px-2 text-[11px] font-medium cursor-pointer hover:opacity-90 transition-opacity',
+                  hasPending ? '' : 'bg-primary/10 text-primary hover:bg-primary/20 border-primary/30',
+                )}
+              >
               {hasPending ? (
                 <ShieldAlert className="h-3 w-3" />
               ) : (
@@ -93,7 +106,8 @@ export function HRPayrollNormativeWatchBadge({
                     : '· al día'}
                 </span>
               )}
-            </Badge>
+              </Badge>
+            </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs space-y-1.5">
             <p className="font-semibold text-xs">Vigilancia normativa</p>
@@ -112,8 +126,8 @@ export function HRPayrollNormativeWatchBadge({
                 Sin cambios pendientes con impacto en nómina.
               </p>
             )}
-            <p className="text-[10px] text-muted-foreground italic pt-1 border-t">
-              Los cambios normativos NO se autoaplican. Requieren validación humana.
+            <p className="text-[10px] text-primary italic pt-1 border-t">
+              Click para abrir el panel de normativa.
             </p>
           </TooltipContent>
         </Tooltip>
@@ -138,6 +152,14 @@ export function HRPayrollNormativeWatchBadge({
         </Tooltip>
       </div>
     </TooltipProvider>
+
+      <HRNormativeWatchModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        companyId={companyId}
+        initialTab={modalTab}
+      />
+    </>
   );
 }
 

@@ -10,7 +10,7 @@
  *   - Trazabilidad completa del convenio aplicado
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,8 @@ import { resolveEmployeeSalary, resolveAgreementConcepts, type SalaryResolutionR
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { HRFlexibleRemunerationPanel } from './HRFlexibleRemunerationPanel';
 import { HRPayrollNormativeWatchBadge } from './HRPayrollNormativeWatchBadge';
+import { HRPayrollPreviewDialog } from './HRPayrollPreviewDialog';
+import { useESPayrollBridge, type ESPayrollCalculation } from '@/hooks/erp/hr/useESPayrollBridge';
 
 interface PayrollConcept {
   id: string;
@@ -120,6 +122,11 @@ export function HRPayrollEntryDialog({
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   // S9.18: Flex plan state
   const [flexPlanOpen, setFlexPlanOpen] = useState(false);
+  // S9.21e: Vista previa nómina
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewCalc, setPreviewCalc] = useState<ESPayrollCalculation | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const { simulateES } = useESPayrollBridge(companyId);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
@@ -254,6 +261,44 @@ export function HRPayrollEntryDialog({
   }, [earnings, deductions]);
 
   const totals = calculateTotals();
+
+  // S9.21e: Generar preview con motor real (simulateES)
+  const handleOpenPreview = useCallback(() => {
+    if (!selectedEmployeeId) {
+      toast.error('Selecciona un empleado primero');
+      return;
+    }
+    const baseSalary = earnings.find(e => e.code === 'BASE')?.amount || 0;
+    if (baseSalary <= 0) {
+      toast.error('El salario base debe ser mayor que 0');
+      return;
+    }
+    setPreviewLoading(true);
+    setPreviewOpen(true);
+    try {
+      // Mapear earnings a complementos del bridge (excluye BASE, ya va en salarioBase)
+      const complementos: Record<string, number> = {};
+      earnings.forEach(e => {
+        if (e.code === 'BASE' || !e.amount) return;
+        const persistCode = PERSISTENCE_CODE_MAP[e.code] || `ES_${e.code}`;
+        complementos[persistCode] = e.amount;
+      });
+      const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      const calc = simulateES({
+        salarioBase: baseSalary,
+        grupoCotizacion: 1,
+        horasExtraImporte: horasExtra,
+        complementos,
+      });
+      setPreviewCalc(calc);
+    } catch (err) {
+      console.error('[HRPayrollEntryDialog] preview error:', err);
+      toast.error('No se pudo generar la vista previa');
+      setPreviewCalc(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [earnings, selectedEmployeeId, simulateES]);
 
   const updateConcept = (id: string, value: number) => {
     if (earnings.find(e => e.id === id)) {
@@ -887,6 +932,15 @@ export function HRPayrollEntryDialog({
 
         <DialogFooter className="shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button
+            variant="outline"
+            onClick={handleOpenPreview}
+            disabled={!selectedEmployeeId || totals.totalEarnings <= 0}
+            className="gap-1.5"
+          >
+            <Eye className="h-4 w-4" />
+            Vista previa nómina
+          </Button>
           <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
             {isSaving ? (
               <><Calculator className="h-4 w-4 mr-1 animate-spin" />Guardando...</>
@@ -896,6 +950,15 @@ export function HRPayrollEntryDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <HRPayrollPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        calculation={previewCalc}
+        loading={previewLoading}
+        employeeName={selectedEmployeeName}
+        periodo={`${String(periodMonth).padStart(2, '0')}/${periodYear}`}
+        categoria={selectedEmployeeCategory}
+      />
     </Dialog>
   );
 }
