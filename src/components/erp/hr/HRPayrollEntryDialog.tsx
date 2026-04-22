@@ -348,10 +348,10 @@ export function HRPayrollEntryDialog({
     const baseCotizacion = earnings.filter(e => e.cotizaSS).reduce((sum, e) => sum + (e.amount || 0), 0);
     const baseIRPF = earnings.filter(e => e.tributaIRPF).reduce((sum, e) => sum + (e.amount || 0), 0);
 
-    const ssCC = baseCotizacion * (SS_RATES.cc_worker / 100);
-    const ssDesempleo = baseCotizacion * (SS_RATES.unemployment_general_worker / 100);
-    const ssFP = baseCotizacion * (SS_RATES.fp_worker / 100);
-    const ssMEI = baseCotizacion * (SS_RATES.mei / 100);
+    const ssCC = baseCotizacion * (SS_RATES_FALLBACK.cc_worker / 100);
+    const ssDesempleo = baseCotizacion * (SS_RATES_FALLBACK.unemployment_general_worker / 100);
+    const ssFP = baseCotizacion * (SS_RATES_FALLBACK.fp_worker / 100);
+    const ssMEI = baseCotizacion * (SS_RATES_FALLBACK.mei / 100);
     const totalSS = ssCC + ssDesempleo + ssFP + ssMEI;
 
     const irpfRate = deductions.find(d => d.code === 'IRPF')?.amount || 0;
@@ -360,7 +360,7 @@ export function HRPayrollEntryDialog({
 
     const totalDeductions = totalSS + irpfAmount + otherDeductions;
     const netSalary = totalEarnings - totalDeductions;
-    const companySS = baseCotizacion * ((SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company) / 100);
+    const companySS = baseCotizacion * ((SS_RATES_FALLBACK.cc_company + SS_RATES_FALLBACK.unemployment_general_company + SS_RATES_FALLBACK.fogasa + SS_RATES_FALLBACK.fp_company) / 100);
     const totalCost = totalEarnings + companySS;
 
     return { totalEarnings, baseCotizacion, baseIRPF, ssCC, ssDesempleo, ssFP, ssMEI, totalSS, irpfRate, irpfAmount, otherDeductions, totalDeductions, netSalary, companySS, totalCost };
@@ -1509,10 +1509,10 @@ export function HRPayrollEntryDialog({
                 <div className="space-y-2">
                   <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Seguridad Social (automático)</h4>
                   <div className="space-y-1 text-sm">
-                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>CC ({SS_RATES.cc_worker}%)</span><span>€{totals.ssCC.toFixed(2)}</span></div>
-                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>Desempleo ({SS_RATES.unemployment_general_worker}%)</span><span>€{totals.ssDesempleo.toFixed(2)}</span></div>
-                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>FP ({SS_RATES.fp_worker}%)</span><span>€{totals.ssFP.toFixed(2)}</span></div>
-                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>MEI ({SS_RATES.mei}%)</span><span>€{totals.ssMEI.toFixed(2)}</span></div>
+                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>CC ({SS_RATES_FALLBACK.cc_worker}%)</span><span>€{totals.ssCC.toFixed(2)}</span></div>
+                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>Desempleo ({SS_RATES_FALLBACK.unemployment_general_worker}%)</span><span>€{totals.ssDesempleo.toFixed(2)}</span></div>
+                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>FP ({SS_RATES_FALLBACK.fp_worker}%)</span><span>€{totals.ssFP.toFixed(2)}</span></div>
+                    <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>MEI ({SS_RATES_FALLBACK.mei}%)</span><span>€{totals.ssMEI.toFixed(2)}</span></div>
                     <div className="flex justify-between py-1 px-2 bg-primary/10 rounded font-medium"><span>Total SS Trabajador</span><span>€{totals.totalSS.toFixed(2)}</span></div>
                   </div>
                   <Separator className="my-3" />
@@ -1659,7 +1659,7 @@ export function HRPayrollEntryDialog({
                     ) : (
                       <>
                         <div className="flex justify-between"><span>Salario Bruto</span><span>€{totals.totalEarnings.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>SS Empresa ({(SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>SS Empresa ({(SS_RATES_FALLBACK.cc_company + SS_RATES_FALLBACK.unemployment_general_company + SS_RATES_FALLBACK.fogasa + SS_RATES_FALLBACK.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
                         <Separator className="my-2" />
                         <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
                       </>
