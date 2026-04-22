@@ -489,7 +489,6 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
           payrollRecordId={selectedPayslip.id}
           employeeId={employee.id}
           companyId={employee.company_id}
-          periodLabel={selectedPayslip.period?.period_name || format(new Date(selectedPayslip.created_at), 'MMMM yyyy', { locale: es })}
         />
       )}
     </>
@@ -498,14 +497,22 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
 
 // ─── Detail view ─────────────────────────────────────────────────────────
 
-function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOpenQuery, onNavigateDocuments }: {
+function PayslipDetail({
+  payslip, employee, doc, onDownload, isDownloading,
+  onGenerateOnDemand, isGenerating, onOpenObjection,
+  onOpenQuery, onNavigateDocuments, previousPayslip,
+}: {
   payslip: PayslipRecord;
   employee: EmployeeProfile;
   doc: PayslipDocument | undefined;
   onDownload: () => void;
   isDownloading: boolean;
+  onGenerateOnDemand: () => void;
+  isGenerating: boolean;
+  onOpenObjection: () => void;
   onOpenQuery: () => void;
   onNavigateDocuments: () => void;
+  previousPayslip: PayslipRecord | null;
 }) {
   const periodLabel = payslip.period?.period_name ||
     format(new Date(payslip.created_at), 'MMMM yyyy', { locale: es });
