@@ -5,22 +5,31 @@ import { successResponse, mapAuthError, validationError, notFoundError, internal
 
 // corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
-const SMI_2026 = 1184.00; // SMI 2026 — RD 87/2025, de 11 de febrero. Sin subida publicada para 2026.
+// ────────────────────────────────────────────────────────────────────────────
+// SHARED LEGAL CORE MIRROR — Canonical 2026 values
+// SOURCE OF TRUTH: src/shared/legal/rules/ssRules2026.ts + src/shared/legal/rules/smiRules.ts
+// Fuentes oficiales:
+//   · SMI 2026 — RD 87/2025 (sin subida publicada → 1.184 €/mes)
+//   · Bases SS 2026 — Orden PJC/297/2026 + RDL 3/2026 (LGSS Art. 147-148)
+// IMPORTANT: Deno edge functions cannot import @/shared/* directly.
+// Any change to ssRules2026.ts MUST be mirrored here in the same commit.
+// ────────────────────────────────────────────────────────────────────────────
+const SMI_2026 = 1184.00;
 const SS_BASE_MAX = 5101.20;
 const SS_GROUP_MIN: Record<number, number> = {
-  1: 1847.40,  // Ingenieros y Licenciados
-  2: 1531.50,  // Ingenieros Técnicos y Peritos
-  3: 1332.90,  // Jefes Administrativos y de Taller
-  4: 1381.20,  // Ayudantes no titulados
-  5: 1381.20,  // Oficiales Administrativos
-  6: 1381.20,  // Subalternos
-  7: 1381.20,  // Auxiliares Administrativos
-  8: 1381.20,  // Oficiales de 1ª y 2ª
-  9: 1381.20,  // Oficiales de 3ª y Especialistas
-  10: 1381.20, // Peones
-  11: 1381.20, // Trabajadores menores de 18 años
+  1: 1989.30,  // Ingenieros, Licenciados y Personal de alta dirección
+  2: 1649.70,  // Ingenieros técnicos, Peritos y Ayudantes titulados
+  3: 1435.20,  // Jefes Administrativos y de Taller
+  4: 1424.40,  // Ayudantes no titulados
+  5: 1424.40,  // Oficiales Administrativos
+  6: 1424.40,  // Subalternos
+  7: 1424.40,  // Auxiliares Administrativos
+  8: 1424.40,  // Oficiales de 1ª y 2ª (equivalente mensual de 47.48 €/día)
+  9: 1424.40,  // Oficiales de 3ª y Especialistas
+  10: 1424.40, // Peones
+  11: 1424.40, // Trabajadores menores de 18 años
 };
-// Fuente: SMI 2026 (1.184€ × 7/6 = 1.381,33€) · LGSS Art. 147
+// Tipos cotización 2026 — RDL 3/2026 (canonical, alineado con SS_CONTRIBUTION_RATES_2026)
 const SS_EMPLOYEE_RATES = { cc: 4.70, fp: 0.10, mei: 0.15, desempleo_indef: 1.55, desempleo_temp: 1.60 };
 const SS_EMPLOYER_RATES = { cc: 23.60, fp: 0.60, mei: 0.75, desempleo_indef: 5.50, desempleo_temp: 6.70, fogasa: 0.20, atep: 1.50 };
 
