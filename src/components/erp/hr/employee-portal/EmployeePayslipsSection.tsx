@@ -23,6 +23,12 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { type PortalSection } from './EmployeePortalNav';
+import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
+import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
+import { EmployeePayrollAckBlock } from './EmployeePayrollAckBlock';
+import { EmployeePayrollObjectionDialog } from './EmployeePayrollObjectionDialog';
+import { EmployeePayrollObjectionsList } from './EmployeePayrollObjectionsList';
+import { PAYROLL_LEGAL_NOTICES } from '@/lib/hr/payroll/legalNotices';
 
 interface Props {
   employee: EmployeeProfile;
@@ -99,6 +105,66 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [objectionOpen, setObjectionOpen] = useState(false);
+  const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
+
+  // On-demand PDF (system_generated) from calculation_details
+  const handleGenerateOnDemandPdf = useCallback(async (payslip: PayslipRecord) => {
+    if (!payslip.calculation_details) {
+      toast.error('No hay datos de cálculo para generar el recibo');
+      return;
+    }
+    setGeneratingPdfId(payslip.id);
+    try {
+      const model = buildPayslipRenderModel({
+        calculation: payslip.calculation_details,
+        employee: {
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          national_id: employee.national_id,
+          job_title: employee.job_title,
+          category: employee.category,
+          hire_date: employee.hire_date,
+        },
+        period: {
+          id: payslip.period?.id,
+          period_name: payslip.period?.period_name,
+          start_date: payslip.period?.start_date,
+          end_date: payslip.period?.end_date,
+        },
+        payrollRecordId: payslip.id,
+        currency: payslip.currency || 'EUR',
+      });
+      const hash = await computeSourceHash(payslip.calculation_details);
+      const safe = `${employee.first_name}_${employee.last_name}`.replace(/\s+/g, '_');
+      const periodTag = payslip.period?.period_name?.replace(/\s+/g, '_') ||
+        format(new Date(payslip.created_at), 'yyyy-MM');
+      downloadPayslipPDF(
+        model,
+        `nomina_${safe}_${periodTag}_provisional.pdf`,
+        'system_generated',
+        hash,
+      );
+      toast.success('Recibo provisional generado');
+      try {
+        await (supabase as any)
+          .from('erp_hr_document_access_log')
+          .insert({
+            company_id: employee.company_id,
+            document_id: payslip.id,
+            document_table: 'hr_payroll_records',
+            action: 'generated_pdf_ondemand',
+            user_agent: navigator.userAgent,
+            metadata: { source: 'employee_portal', source_hash: hash },
+          });
+      } catch { /* non-blocking */ }
+    } catch (err) {
+      console.error('[EmployeePayslipsSection] on-demand PDF error:', err);
+      toast.error('No se pudo generar el recibo');
+    } finally {
+      setGeneratingPdfId(null);
+    }
+  }, [employee]);
 
   // Fetch payslips with period info + linked documents
   const fetchPayslips = useCallback(async () => {
@@ -389,6 +455,9 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
               doc={payslipDocs.get(selectedPayslip.id)}
               onDownload={() => handleDownloadPdf(selectedPayslip.id)}
               isDownloading={downloadingId === selectedPayslip.id}
+              onGenerateOnDemand={() => handleGenerateOnDemandPdf(selectedPayslip)}
+              isGenerating={generatingPdfId === selectedPayslip.id}
+              onOpenObjection={() => setObjectionOpen(true)}
               onOpenQuery={() => {
                 setSelectedPayslip(null);
                 onNavigate('requests');
@@ -397,10 +466,32 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
                 setSelectedPayslip(null);
                 onNavigate('documents');
               }}
+              previousPayslip={
+                selectedPayslip
+                  ? payslips.find(
+                      (p) =>
+                        p.id !== selectedPayslip.id &&
+                        new Date(p.created_at) < new Date(selectedPayslip.created_at) &&
+                        p.status !== 'cancelled',
+                    ) || null
+                  : null
+              }
             />
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Objection dialog (S9.22) */}
+      {selectedPayslip && (
+        <EmployeePayrollObjectionDialog
+          open={objectionOpen}
+          onOpenChange={setObjectionOpen}
+          payrollRecordId={selectedPayslip.id}
+          employeeId={employee.id}
+          companyId={employee.company_id}
+          periodLabel={selectedPayslip.period?.period_name || format(new Date(selectedPayslip.created_at), 'MMMM yyyy', { locale: es })}
+        />
+      )}
     </>
   );
 }
