@@ -1802,10 +1802,11 @@ export function HRPayrollEntryDialog({
             </TabsContent>
           </Tabs>
         </div>
+          </div>
         </div>
 
-        {/* S9.21h — Footer SOLO con acciones (los totales viven en la sticky bar superior) */}
-        <DialogFooter className="sticky bottom-0 z-20 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t px-6 py-3 mt-0 flex-row items-center gap-2 sm:justify-end">
+        {/* S9.21i — Footer fijo (shrink-0). NO sticky: es hermano del body en flex-col. */}
+        <DialogFooter className="shrink-0 bg-background border-t px-6 py-3 mt-0 flex-row items-center gap-2 sm:justify-end">
           <div className="flex items-center gap-2 ml-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button
