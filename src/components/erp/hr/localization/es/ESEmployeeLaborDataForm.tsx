@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Save, UserCheck } from 'lucide-react';
+import { Save, UserCheck, Search, AlertCircle } from 'lucide-react';
 import { useESLocalization } from '@/hooks/erp/hr/useESLocalization';
 import { HRCNOSelect } from '@/components/erp/hr/shared/HRCNOSelect';
 
@@ -35,6 +35,7 @@ const REGIMEN_OPTIONS = [
 
 export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
   const es = useESLocalization(companyId);
+  const [hasESData, setHasESData] = useState<boolean | null>(null);
   const [form, setForm] = useState({
     naf: '',
     grupo_cotizacion: 1,
@@ -61,8 +62,10 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
 
   useEffect(() => {
     if (employeeId) {
+      setHasESData(null);
       es.fetchLaborData(employeeId).then((data) => {
         if (data) {
+          setHasESData(true);
           setForm({
             naf: data.naf || '',
             grupo_cotizacion: data.grupo_cotizacion || 1,
@@ -86,6 +89,8 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
             prolongacion_laboral: data.prolongacion_laboral || false,
             contrato_inferior_anual: data.contrato_inferior_anual || false,
           });
+        } else {
+          setHasESData(false);
         }
       });
     }
@@ -99,9 +104,33 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
   if (!employeeId) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground text-sm">
-          <UserCheck className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
-          Selecciona un empleado para ver sus datos laborales españoles.
+        <CardContent className="py-10 text-center space-y-3">
+          <UserCheck className="h-10 w-10 mx-auto text-muted-foreground/40" />
+          <div>
+            <p className="text-sm font-medium">Sin empleado seleccionado</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Usa el selector global o la búsqueda rápida para elegir un empleado.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              const ev = new KeyboardEvent('keydown', {
+                key: 'k',
+                code: 'KeyK',
+                ctrlKey: true,
+                metaKey: true,
+                bubbles: true,
+              });
+              window.dispatchEvent(ev);
+            }}
+          >
+            <Search className="h-3.5 w-3.5" />
+            Seleccionar empleado (Ctrl/⌘+K)
+          </Button>
         </CardContent>
       </Card>
     );
@@ -112,8 +141,17 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           🇪🇸 Datos Laborales España
+          <Badge variant="outline" className="text-xs font-mono">{employeeId.slice(0, 8)}…</Badge>
           <Badge variant="outline" className="text-xs">Plugin ES</Badge>
         </CardTitle>
+        {hasESData === false && (
+          <div className="flex items-start gap-2 mt-2 p-2 rounded border border-warning/30 bg-warning/10 text-warning text-xs">
+            <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>
+              Este empleado aún no tiene datos laborales ES configurados. Completa el formulario y guarda.
+            </span>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Seguridad Social */}
