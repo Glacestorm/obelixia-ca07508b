@@ -281,7 +281,7 @@ export function HRRegulatoryWatchPanel({ companyId }: HRRegulatoryWatchPanelProp
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={runManualCheck}
+                      onClick={() => runManualCheck()}
                       disabled={isChecking}
                     >
                       <RefreshCw className={cn("h-4 w-4 mr-2", isChecking && "animate-spin")} />

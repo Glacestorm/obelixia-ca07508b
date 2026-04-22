@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ShieldCheck, ShieldAlert, RefreshCw, ExternalLink, FileText,
-  CheckCircle2, AlertTriangle, Clock, ArrowLeft, Calendar, Scale,
+  CheckCircle2, AlertTriangle, Clock, ArrowLeft, Calendar, Scale, BookOpen, Cpu,
 } from 'lucide-react';
 import { useRegulatoryWatch, type RegulatoryWatchItem } from '@/hooks/admin/useRegulatoryWatch';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -24,6 +24,9 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  SMI_MENSUAL_2026, SMI_ANUAL_2026, getApprovedSMI,
+} from '@/shared/legal/rules/smiRules';
 
 interface Props {
   open: boolean;
@@ -56,6 +59,24 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
   const [tab, setTab] = useState<'overview' | 'pending' | 'verified'>(initialTab);
   const [selectedItem, setSelectedItem] = useState<RegulatoryWatchItem | null>(null);
   const { user } = useAuth();
+
+  // S9.21h — Capa 4: Constantes vivas (SMI + Estatuto Trabajadores)
+  // Resuelve SMI aprobado del año vigente comparando contra constante canónica.
+  const currentYear = new Date().getFullYear();
+  const smiApproved = useMemo(
+    () => getApprovedSMI(currentYear, items as Array<{ category?: string; jurisdiction?: string; approval_status?: string; effective_date?: string | null; key_changes?: unknown; title?: string }>),
+    [currentYear, items],
+  );
+  const smiDivergent = Math.abs(smiApproved.value - SMI_MENSUAL_2026) > 0.01;
+
+  const etReference = useMemo(
+    () => items.find(i =>
+      (i.affected_articles ?? []).some(a => /RDL\s*2\/2015|Estatuto/i.test(a)) ||
+      /Estatuto.*Trabajadores|RDL\s*2\/2015/i.test(i.title) ||
+      /Estatuto.*Trabajadores|RDL\s*2\/2015/i.test(i.description ?? ''),
+    ),
+    [items],
+  );
 
   const pending = useMemo(
     () => items.filter(i =>
@@ -269,10 +290,10 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
               size="sm"
               className="h-6 gap-1.5 text-xs ml-auto"
               disabled={isChecking}
-              onClick={() => runManualCheck()}
+              onClick={() => runManualCheck({ check_smi: true, check_statute_workers: true })}
             >
               <RefreshCw className={cn('h-3 w-3', isChecking && 'animate-spin')} />
-              Verificar ahora
+              Verificar ahora (incl. SMI + ET)
             </Button>
           </DialogDescription>
         </DialogHeader>
@@ -296,6 +317,96 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
             <TabsContent value="overview" className="flex-1 mt-3 min-h-0">
               <ScrollArea className="h-full pr-3">
                 <div className="space-y-3">
+                  {/* S9.21h — Capa 4: Constantes vivas (SMI + Estatuto Trabajadores) con
+                      fuente oficial, fecha de vigencia, estado y motor consumidor. */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5">
+                      <BookOpen className="h-3.5 w-3.5" /> Constantes legales vivas
+                    </h4>
+
+                    {/* SMI */}
+                    <div className={cn(
+                      'p-3 rounded-lg border space-y-1.5',
+                      smiDivergent ? 'border-warning/40 bg-warning/5' : 'border-border bg-card',
+                    )}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium">SMI {currentYear}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Mensual: <strong className="text-foreground tabular-nums">{SMI_MENSUAL_2026.toFixed(2)} €</strong> · Anual (14 pagas): <strong className="text-foreground tabular-nums">{SMI_ANUAL_2026.toFixed(2)} €</strong>
+                          </p>
+                        </div>
+                        <Badge variant={smiDivergent ? 'outline' : 'secondary'} className={cn('text-[10px] shrink-0', smiDivergent && 'border-warning/40 text-warning')}>
+                          {smiDivergent ? 'Divergencia detectada' : 'Sincronizado'}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <FileText className="h-3 w-3" />
+                          Fuente: <strong className="text-foreground">RD SMI {currentYear}</strong>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          Vigor: <strong className="text-foreground">01/01/{currentYear}</strong>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Estado: <strong className="text-foreground">{smiApproved.source === 'regulatory_watch' ? 'Aprobado (watch)' : 'Constante canónica'}</strong>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Cpu className="h-3 w-3" />
+                          Consumido por: <strong className="text-foreground">payslip-validator, garnishmentEngine, multiEmploymentEngine, useESPayrollBridge</strong>
+                        </div>
+                      </div>
+                      {smiDivergent && smiApproved.effectiveDate && (
+                        <p className="text-[11px] text-warning pt-1">
+                          Watch propone <strong className="tabular-nums">{smiApproved.value.toFixed(2)} €/mes</strong> con vigor {format(new Date(smiApproved.effectiveDate), 'dd/MM/yyyy', { locale: es })}. Requiere aprobación humana.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Estatuto de los Trabajadores */}
+                    <div className="p-3 rounded-lg border border-border bg-card space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium">Estatuto de los Trabajadores</p>
+                          <p className="text-xs text-muted-foreground">
+                            RDL 2/2015 · Texto refundido (Arts. 1–60, art. 26 retribución)
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] shrink-0">En vigor</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1">
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <FileText className="h-3 w-3" />
+                          Fuente: <strong className="text-foreground">BOE-A-2015-11430</strong>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          Vigor: <strong className="text-foreground">13/11/2015</strong>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Carga KB: <strong className="text-foreground">{etReference ? 'Detectada en watch' : 'Constante en essentialKnowledgeBase'}</strong>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Cpu className="h-3 w-3" />
+                          Consumido por: <strong className="text-foreground">employeeLegalProfileEngine, laborDocumentEngine, payslip-validator</strong>
+                        </div>
+                      </div>
+                      <a
+                        href="https://www.boe.es/buscar/act.php?id=BOE-A-2015-11430"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline pt-1"
+                      >
+                        <ExternalLink className="h-3 w-3" /> Texto oficial BOE
+                      </a>
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   {pending.length > 0 && (
                     <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 flex items-start gap-2">
                       <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
