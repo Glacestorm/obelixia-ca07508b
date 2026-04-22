@@ -20,7 +20,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye, Plus, X, CalendarRange, Stethoscope, Baby, Briefcase, FileWarning } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ES_CONCEPT_DEFINITIONS, type ESConceptDefinition } from '@/engines/erp/hr/payrollConceptCatalog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -95,6 +99,69 @@ const PERSISTENCE_CODE_MAP: Record<string, string> = {
   'MEJORA_VOL': 'ES_MEJORA_VOLUNTARIA',
 };
 
+/**
+ * S9.21g — Códigos UI ya cubiertos por defaults / convenio.
+ * Se excluyen del Popover "+ Añadir concepto" para evitar duplicados.
+ */
+const ALREADY_COVERED_ES_CODES = new Set([
+  'ES_SAL_BASE', 'ES_COMP_CONVENIO', 'ES_MEJORA_VOLUNTARIA',
+  'ES_IRPF', 'ES_SS_CC_TRAB', 'ES_SS_DESEMPLEO_TRAB', 'ES_SS_FP_TRAB',
+  'ES_SS_CC_EMP', 'ES_SS_DESEMPLEO_EMP', 'ES_SS_FOGASA', 'ES_SS_FP_EMP',
+  'ES_SS_MEI', 'ES_SS_AT_EP',
+  'ES_BASE_CC', 'ES_BASE_AT', 'ES_BASE_IRPF', 'ES_COSTE_EMPRESA_TOTAL',
+]);
+
+/** Subgrupos para agrupar el catálogo en el Popover */
+function conceptSubgroupLabel(def: ESConceptDefinition): string {
+  if (def.concept_type === 'deduction') return 'Deducciones';
+  switch (def.subcategory) {
+    case 'fixed': return 'Devengos fijos';
+    case 'variable': return 'Devengos variables / IT / prestaciones';
+    case 'overtime': return 'Horas extra';
+    case 'bonus':
+    case 'commission': return 'Bonus y comisiones';
+    case 'allowance': return 'Percepciones extrasalariales';
+    case 'flexible_remuneration': return 'Retribución flexible';
+    case 'regularization': return 'Regularización / atrasos';
+    default: return 'Otros';
+  }
+}
+
+/** Tipos de la casuística entre fechas (S9.21g) */
+type CasuisticaState = {
+  enabled: boolean;
+  pnrDias: number;
+  itAtDias: number;
+  reduccionJornadaPct: number;
+  atrasosITImporte: number;
+  atrasosITPeriodo: string; // YYYY-MM
+  nacimientoTipo: 'maternidad' | 'paternidad' | 'corresponsabilidad' | 'lactancia';
+  nacimientoDias: number;
+  nacimientoImporte: number;
+  periodFechaDesde: string; // YYYY-MM-DD
+  periodFechaHasta: string; // YYYY-MM-DD
+  periodDiasNaturales: number;
+  periodDiasEfectivos: number;
+  periodMotivo: 'mes_completo' | 'alta_intramensual' | 'baja_intramensual' | 'cambio_contractual' | 'cambio_salarial' | 'suspension_parcial' | 'excedencia' | 'otro';
+};
+
+const DEFAULT_CASUISTICA: CasuisticaState = {
+  enabled: false,
+  pnrDias: 0,
+  itAtDias: 0,
+  reduccionJornadaPct: 0,
+  atrasosITImporte: 0,
+  atrasosITPeriodo: '',
+  nacimientoTipo: 'paternidad',
+  nacimientoDias: 0,
+  nacimientoImporte: 0,
+  periodFechaDesde: '',
+  periodFechaHasta: '',
+  periodDiasNaturales: 30,
+  periodDiasEfectivos: 30,
+  periodMotivo: 'mes_completo',
+};
+
 export function HRPayrollEntryDialog({
   open,
   onOpenChange,
@@ -127,6 +194,15 @@ export function HRPayrollEntryDialog({
   const [previewCalc, setPreviewCalc] = useState<ESPayrollCalculation | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const { simulateES } = useESPayrollBridge(companyId);
+
+  // S9.21g: conceptos añadidos manualmente desde el Popover (visibles aunque estén a 0)
+  const [manuallyAddedCodes, setManuallyAddedCodes] = useState<Set<string>>(new Set());
+  // S9.21g: casuística entre fechas (acordeón)
+  const [casuistica, setCasuistica] = useState<CasuisticaState>(DEFAULT_CASUISTICA);
+  const [casuisticaOpen, setCasuisticaOpen] = useState(false);
+  // S9.21g: Popovers de "+ Añadir concepto"
+  const [earnPickerOpen, setEarnPickerOpen] = useState(false);
+  const [dedPickerOpen, setDedPickerOpen] = useState(false);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
@@ -233,6 +309,9 @@ export function HRPayrollEntryDialog({
       setResolutionMode(null);
       setAgreementConcepts([]);
       setUnmappedConcepts([]);
+      setManuallyAddedCodes(new Set());
+      setCasuistica(DEFAULT_CASUISTICA);
+      setCasuisticaOpen(false);
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
@@ -279,17 +358,69 @@ export function HRPayrollEntryDialog({
         complementos[persistCode] = e.amount;
       });
       const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      const cas = casuistica;
+      const useCas = cas.enabled;
+      const nacimientoTramos = useCas && (cas.nacimientoDias > 0 || cas.nacimientoImporte > 0) && cas.periodFechaDesde && cas.periodFechaHasta
+        ? [{
+            tipo: cas.nacimientoTipo,
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            importe: cas.nacimientoImporte,
+          }]
+        : undefined;
+      const atrasosIT = useCas && cas.atrasosITImporte > 0
+        ? { importe: cas.atrasosITImporte, periodoOrigen: cas.atrasosITPeriodo || '', motivo: 'IT_no_reflejada' as const }
+        : undefined;
+      const periodCoverage = useCas && cas.periodMotivo !== 'mes_completo' && cas.periodFechaDesde && cas.periodFechaHasta
+        ? {
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            diasNaturalesPeriodo: cas.periodDiasNaturales,
+            diasEfectivos: cas.periodDiasEfectivos,
+            motivo: cas.periodMotivo,
+          }
+        : undefined;
       return simulateES({
         salarioBase: base,
         grupoCotizacion: 1,
         horasExtraImporte: horasExtra,
         complementos,
+        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
+        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
+        atrasosIT,
+        nacimientoTramos,
+        periodCoverage,
       });
     } catch (err) {
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       return null;
     }
-  }, [earnings, simulateES]);
+  }, [earnings, simulateES, casuistica]);
+
+  /**
+   * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
+   * Solo se considera "activa" si el bloque está habilitado y al menos un dato relevante > 0.
+   */
+  const casuisticaActiva = useMemo(() => {
+    if (!casuistica.enabled) return [] as Array<{ key: string; label: string }>;
+    const arr: Array<{ key: string; label: string }> = [];
+    if (casuistica.pnrDias > 0) arr.push({ key: 'pnr', label: `PNR ${casuistica.pnrDias}d` });
+    if (casuistica.itAtDias > 0) arr.push({ key: 'at', label: `AT ${casuistica.itAtDias}d` });
+    if (casuistica.reduccionJornadaPct > 0) arr.push({ key: 'red', label: `Red. ${casuistica.reduccionJornadaPct}%` });
+    if (casuistica.atrasosITImporte > 0) arr.push({ key: 'itretro', label: `IT retro ${casuistica.atrasosITImporte.toFixed(0)}€` });
+    if (casuistica.nacimientoDias > 0 || casuistica.nacimientoImporte > 0) {
+      arr.push({ key: 'nac', label: `Nacimiento ${casuistica.nacimientoTipo}` });
+    }
+    if (
+      casuistica.periodMotivo !== 'mes_completo' &&
+      casuistica.periodFechaDesde && casuistica.periodFechaHasta &&
+      casuistica.periodDiasEfectivos < casuistica.periodDiasNaturales
+    ) {
+      arr.push({ key: 'periodo', label: `Cobertura ${casuistica.periodDiasEfectivos}/${casuistica.periodDiasNaturales}d` });
+    }
+    return arr;
+  }, [casuistica]);
 
   /**
    * S9.21e — Conceptos obligatorios que SIEMPRE se muestran aunque su importe sea 0.
