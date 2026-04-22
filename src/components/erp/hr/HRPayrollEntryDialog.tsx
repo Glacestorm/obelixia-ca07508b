@@ -1687,23 +1687,23 @@ export function HRPayrollEntryDialog({
                 <div className="flex items-center gap-1.5">
                   <TrendingUp className="h-3.5 w-3.5 text-success" />
                   <span className="text-muted-foreground">Devengado:</span>
-                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.devengoTotal.toFixed(2)}€</span>
+                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDevengos.toFixed(2)}€</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <TrendingDown className="h-3.5 w-3.5 text-destructive" />
                   <span className="text-muted-foreground">Deducido:</span>
-                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.deduccionTotal.toFixed(2)}€</span>
+                  <span className="font-semibold tabular-nums">{liveBridgeCalc.summary.totalDeducciones.toFixed(2)}€</span>
                 </div>
                 <Separator orientation="vertical" className="h-5" />
                 <div className="flex items-center gap-1.5">
                   <Euro className="h-4 w-4 text-primary" />
                   <span className="text-muted-foreground">Líquido:</span>
-                  <span className="font-bold text-base text-primary tabular-nums">{liveBridgeCalc.summary.liquidoAPercibir.toFixed(2)}€</span>
+                  <span className="font-bold text-base text-primary tabular-nums">{liveBridgeCalc.summary.liquidoPercibir.toFixed(2)}€</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Building2 className="h-3 w-3" />
                   <span>Coste empresa:</span>
-                  <span className="tabular-nums">{liveBridgeCalc.summary.costeEmpresaTotal.toFixed(2)}€</span>
+                  <span className="tabular-nums">{(liveBridgeCalc.summary.totalDevengos + liveBridgeCalc.summary.totalCosteEmpresa).toFixed(2)}€</span>
                 </div>
               </>
             ) : (
