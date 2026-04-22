@@ -630,7 +630,9 @@ export function HRPayrollEntryDialog({
   }> => {
     // Build period boundaries
     const periodStart = `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`;
-    const periodEnd = `${periodYear}-${String(periodMonth).padStart(2, '0')}-28`; // safe last day approx
+    // S9.21h — fin de mes real (evita perder contratos que terminan días 29-31)
+    const lastDay = new Date(periodYear, periodMonth, 0).getDate();
+    const periodEnd = `${periodYear}-${String(periodMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
     // Query: contract whose start_date <= periodEnd AND (end_date IS NULL OR end_date >= periodStart)
     // Order by start_date desc to get most recent applicable contract
