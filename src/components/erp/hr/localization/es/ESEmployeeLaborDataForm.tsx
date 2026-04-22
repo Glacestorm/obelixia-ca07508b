@@ -38,7 +38,7 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
   const [hasESData, setHasESData] = useState<boolean | null>(null);
   const [form, setForm] = useState({
     naf: '',
-    grupo_cotizacion: 1,
+    grupo_cotizacion: null as number | null,
     cno_code: '',
     tipo_contrato_rd: '',
     comunidad_autonoma: '',
