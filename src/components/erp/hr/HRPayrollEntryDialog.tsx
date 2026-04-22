@@ -350,6 +350,8 @@ export function HRPayrollEntryDialog({
       setManuallyAddedCodes(new Set());
       setCasuistica(DEFAULT_CASUISTICA);
       setCasuisticaOpen(false);
+      setGrupoCotizacion(1);
+      setGrupoCotizacionSource('fallback');
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
