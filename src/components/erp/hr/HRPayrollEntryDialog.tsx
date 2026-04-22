@@ -430,12 +430,19 @@ export function HRPayrollEntryDialog({
   const REQUIRED_DEDUCTION_CODES = new Set(['IRPF']);
 
   const visibleEarnings = useMemo(
-    () => earnings.filter(e => REQUIRED_EARNING_CODES.has(e.code) || (e.amount || 0) > 0),
-    [earnings]
+    () => earnings.filter(e =>
+      REQUIRED_EARNING_CODES.has(e.code) ||
+      (e.amount || 0) > 0 ||
+      manuallyAddedCodes.has(e.code)
+    ),
+    [earnings, manuallyAddedCodes]
   );
   const visibleOtherDeductions = useMemo(
-    () => deductions.filter(d => d.category === 'other' && (d.amount || 0) > 0),
-    [deductions]
+    () => deductions.filter(d =>
+      d.category === 'other' &&
+      ((d.amount || 0) > 0 || manuallyAddedCodes.has(d.code))
+    ),
+    [deductions, manuallyAddedCodes]
   );
 
   // S9.21e: Generar preview con motor real (simulateES)
