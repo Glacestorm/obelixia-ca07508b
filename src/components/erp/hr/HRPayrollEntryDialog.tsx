@@ -262,6 +262,51 @@ export function HRPayrollEntryDialog({
 
   const totals = calculateTotals();
 
+  /**
+   * S9.21e — Bridge ES en vivo: ejecuta `simulateES` con los devengos UI actuales
+   * para obtener el cálculo oficial (bases salariales/no salariales, contribuibles,
+   * imponibles, topes CC, IRPF). Se usa en la pestaña Resumen.
+   * Fallback silencioso a `null` si el bridge no devuelve cálculo (sin empleado, etc.).
+   */
+  const liveBridgeCalc = useMemo<ESPayrollCalculation | null>(() => {
+    const base = earnings.find(e => e.code === 'BASE')?.amount || 0;
+    if (base <= 0) return null;
+    try {
+      const complementos: Record<string, number> = {};
+      earnings.forEach(e => {
+        if (e.code === 'BASE' || !e.amount) return;
+        const persistCode = PERSISTENCE_CODE_MAP[e.code] || `ES_${e.code}`;
+        complementos[persistCode] = e.amount;
+      });
+      const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      return simulateES({
+        salarioBase: base,
+        grupoCotizacion: 1,
+        horasExtraImporte: horasExtra,
+        complementos,
+      });
+    } catch (err) {
+      console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
+      return null;
+    }
+  }, [earnings, simulateES]);
+
+  /**
+   * S9.21e — Conceptos obligatorios que SIEMPRE se muestran aunque su importe sea 0.
+   * El resto se oculta cuando vale 0 (regla "ocultar ceros / no seleccionados").
+   */
+  const REQUIRED_EARNING_CODES = new Set(['BASE']);
+  const REQUIRED_DEDUCTION_CODES = new Set(['IRPF']);
+
+  const visibleEarnings = useMemo(
+    () => earnings.filter(e => REQUIRED_EARNING_CODES.has(e.code) || (e.amount || 0) > 0),
+    [earnings]
+  );
+  const visibleOtherDeductions = useMemo(
+    () => deductions.filter(d => d.category === 'other' && (d.amount || 0) > 0),
+    [deductions]
+  );
+
   // S9.21e: Generar preview con motor real (simulateES)
   const handleOpenPreview = useCallback(() => {
     if (!selectedEmployeeId) {
