@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ShieldCheck, ShieldAlert, RefreshCw, ExternalLink, FileText,
-  CheckCircle2, AlertTriangle, Clock, ArrowLeft, Calendar, Scale,
+  CheckCircle2, AlertTriangle, Clock, ArrowLeft, Calendar, Scale, BookOpen, Cpu,
 } from 'lucide-react';
 import { useRegulatoryWatch, type RegulatoryWatchItem } from '@/hooks/admin/useRegulatoryWatch';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -24,6 +24,9 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  SMI_MENSUAL_2026, SMI_ANUAL_2026, getApprovedSMI,
+} from '@/shared/legal/rules/smiRules';
 
 interface Props {
   open: boolean;
@@ -56,6 +59,24 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
   const [tab, setTab] = useState<'overview' | 'pending' | 'verified'>(initialTab);
   const [selectedItem, setSelectedItem] = useState<RegulatoryWatchItem | null>(null);
   const { user } = useAuth();
+
+  // S9.21h — Capa 4: Constantes vivas (SMI + Estatuto Trabajadores)
+  // Resuelve SMI aprobado del año vigente comparando contra constante canónica.
+  const currentYear = new Date().getFullYear();
+  const smiApproved = useMemo(
+    () => getApprovedSMI(currentYear, items as Array<{ category?: string; jurisdiction?: string; approval_status?: string; effective_date?: string | null; key_changes?: unknown; title?: string }>),
+    [currentYear, items],
+  );
+  const smiDivergent = Math.abs(smiApproved.value - SMI_MENSUAL_2026) > 0.01;
+
+  const etReference = useMemo(
+    () => items.find(i =>
+      (i.affected_articles ?? []).some(a => /RDL\s*2\/2015|Estatuto/i.test(a)) ||
+      /Estatuto.*Trabajadores|RDL\s*2\/2015/i.test(i.title) ||
+      /Estatuto.*Trabajadores|RDL\s*2\/2015/i.test(i.description ?? ''),
+    ),
+    [items],
+  );
 
   const pending = useMemo(
     () => items.filter(i =>
