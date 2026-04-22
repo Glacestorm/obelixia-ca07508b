@@ -1076,7 +1076,12 @@ export function HRPayrollEntryDialog({
           {/* Toolbar de acciones legales/normativas — separada del título y de la X */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <HRPayrollNormativeWatchBadge companyId={companyId} className="shrink-0" />
-            <ESPeriodSSBasesPopover periodYear={periodYear} />
+            <ESPeriodSSBasesPopover
+              periodYear={periodYear}
+              ssBases={esLocalization.ssBases}
+              isLoading={esLocalization.loading}
+              onReload={() => esLocalization.refetch?.()}
+            />
           </div>
         </DialogHeader>
 
