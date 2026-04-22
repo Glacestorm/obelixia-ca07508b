@@ -967,6 +967,14 @@ export function useESPayrollBridge(companyId?: string) {
     horasExtraImporte?: number;
     pagaExtra?: number;
     isTemporary?: boolean;
+    /** S9.21g — casuística entre fechas */
+    permisoNoRetribuido?: number;
+    itATDias?: number;
+    itCCDias?: number;
+    reduccionJornadaPct?: number;
+    atrasosIT?: ESPayrollInput['atrasosIT'];
+    nacimientoTramos?: ESPayrollInput['nacimientoTramos'];
+    periodCoverage?: ESPayrollInput['periodCoverage'];
   }): ESPayrollCalculation | null => {
     if (esLoc.ssBases.length === 0) {
       toast.error('Cargue primero las bases SS del año actual');
@@ -994,6 +1002,13 @@ export function useESPayrollBridge(companyId?: string) {
       complementos: params.complementos,
       horasExtraImporte: params.horasExtraImporte,
       pagaExtra: params.pagaExtra,
+      permisoNoRetribuido: params.permisoNoRetribuido,
+      itATDias: params.itATDias,
+      itCCDias: params.itCCDias,
+      reduccionJornadaPct: params.reduccionJornadaPct,
+      atrasosIT: params.atrasosIT,
+      nacimientoTramos: params.nacimientoTramos,
+      periodCoverage: params.periodCoverage,
     };
     return calculateESPayroll(input, mockLaborData, ssBase, esLoc.irpfTables);
   }, [esLoc.ssBases, esLoc.irpfTables, calculateESPayroll]);
