@@ -1029,6 +1029,22 @@ export function HRPayrollEntryDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {ssBasesMissing && (
+          <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-warning-foreground">
+                Faltan bases de Seguridad Social para {periodYear}
+              </p>
+              <p className="text-muted-foreground mt-0.5">
+                El motor de nómina ES necesita las bases SS del año del periodo. Ve a{' '}
+                <span className="font-medium">RRHH → Configuración → Localización España → Bases SS</span>{' '}
+                y carga las bases de {periodYear} (o cambia el periodo a un año con bases ya cargadas, p. ej. 2026).
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* S9.21d Bloque E: Layout XL adaptativo — 2 columnas en ≥1280px */}
         <div className="flex-1 min-h-0 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] xl:gap-6 overflow-hidden px-6 pt-4">
         {/* Columna izquierda: contexto (empleado, convenio, flex) */}
