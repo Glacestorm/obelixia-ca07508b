@@ -9,7 +9,7 @@
  */
 
 import { calculateSSContributions, type SSInput, type SSResult } from './rules/ss-contributions';
-import { calculateIRPFWithholding, type IRPFInput, type IRPFResult } from './rules/irpf-withholding';
+import { calculateIRPFWithholding, IRPF_MIN_RATE, type IRPFInput, type IRPFResult } from './rules/irpf-withholding';
 import { validatePayslip, type ValidationResult } from './validators/payslip-validator';
 
 // ============================================
@@ -273,7 +273,9 @@ export function calculatePayroll(input: PayrollInput): PayrollResult {
   const irpfInput: IRPFInput = {
     grossSalary,
     ssEmployeeContribution: ss.employeeTotal,
-    irpfRate: irpfRate ?? 15,
+    // S9.21h: Sin tipo IRPF efectivo recibido se usa el mínimo legal (Art. 86.2 RIRPF).
+    // El tipo real debe venir resuelto del histórico AEAT del empleado vía `irpfRate`.
+    irpfRate: irpfRate ?? IRPF_MIN_RATE,
     accruedData,
   };
   const irpf = calculateIRPFWithholding(irpfInput);
