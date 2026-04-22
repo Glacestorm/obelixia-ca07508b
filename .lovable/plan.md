@@ -1,371 +1,139 @@
+# S9.22 — Cierre total Nómina ES + Portal del Empleado (final)
 
+## 0. Ajustes incorporados
 
-## S9.18-H4 — Seguro médico ES: tratamiento fiscal/SS completo ✅
+1. **Conservación (texto canónico final):**
+   *"Conservación documental obligatoria durante 4 años conforme a la normativa laboral y de Seguridad Social aplicable, con referencia sancionadora en el art. 21 LISOS y a la conservación reglamentaria de documentación justificativa en el RD 84/1996."*
+2. **Acuse (canónico):**
+   *"La firma o acuse acredita la recepción del recibo, no la conformidad con los conceptos ni la renuncia a reclamación."*
+3. **Reclamación (canónico):**
+   *"Plazo general de reclamación de cantidades: 1 año (art. 59.2 ET)."*
+4. **PDF on-demand** se diferencia visualmente del PDF oficial (watermark + banner + hash SHA-256).
+5. **Revisión interna ≠ impugnación jurídica** (aviso explícito persistente).
+6. **Fuente única real** vía `buildPayslipRenderModel` consumido por todos los renderizadores.
 
-### Causa raíz
+## 1. Entregables
 
-Ambos conceptos de seguro médico (`ES_RETRIB_FLEX_SEGURO` y `ES_RETRIB_FLEX_SEGURO_EXCESO`) tenían `is_ss_contributable: false` y `impacts_cra: false`, lo que incumplía LGSS Art. 147 (la retribución en especie del seguro médico forma parte de la base de cotización SS).
+### A. Render model único + generador PDF
+- **Nuevo** `src/engines/erp/hr/payslipRenderModel.ts` — `buildPayslipRenderModel(calculationDetails, employee, company)` puro. Único punto de proyección. Devuelve estructura tipada con cabecera, devengos, deducciones, bases, coste empresa, líquido, notas de tope, casuística.
+- **Nuevo** `src/engines/erp/hr/payslipPdfGenerator.ts` — `generatePayslipPDF(model, { variant: 'official' | 'system_generated' })` con jsPDF + jspdf-autotable. Variante `system_generated`:
+  - Watermark diagonal "GENERADO POR EL SISTEMA · NO FIRMADO ELECTRÓNICAMENTE"
+  - Banner superior ámbar "Recibo provisional · Pendiente de documento oficial firmado por la empresa"
+  - Footer con hash SHA-256 de `calculation_details` (Web Crypto API)
+- Helpers: `downloadPayslipPDF(model, fileName, variant)`, `printPayslipPDF(model, variant)` (reusan `src/lib/pdfPrint.ts`).
 
-### Tratamiento final
+### B. Recibo interno RRHH
+- `ESPayrollSlipDetail.tsx`: sustituir TXT por `downloadPayslipPDF(model, fileName, 'official')`. Botón **"Descargar PDF"** + dropdown "Imprimir".
+- `HRPayrollEntryDialog.tsx`: botón "Descargar PDF" en footer (paralelo a "Vista previa") usando `liveBridgeCalc.calculation_details`.
+- `HRPayrollPreviewDialog.tsx`: botón "Descargar PDF" + reescritura del bloque de acuse para reflejar honestamente que el flujo persistido vive en el portal del empleado (no en el preview RRHH).
 
-| Concepto | `is_taxable` | `is_ss_contributable` | `impacts_cra` | `impacts_irpf` |
-|---|---|---|---|---|
-| `ES_RETRIB_FLEX_SEGURO` (exento) | false | **true** | **true** | false |
-| `ES_RETRIB_FLEX_SEGURO_EXCESO` | true | **true** | **true** | true |
+### C. Portal del Empleado · `EmployeePayslipsSection.tsx`
+- Botón **"Descargar PDF"**:
+  - Si existe `storage_path` → descarga PDF oficial subido (variante `official`, sin watermark).
+  - Si no existe → genera on-demand desde `calculation_details` con variante `system_generated`.
+- Botón **"Ver recibo formal"** abre vista reutilizada del slip (mismo modelo).
+- Etiqueta clara del estado: *"Documento oficial de la empresa"* vs *"Recibo provisional generado por el sistema"*.
+- Log en `erp_hr_document_access_log` con `action='generated_pdf_ondemand' | 'downloaded_official'`.
 
-### Archivos tocados
+### D. Acuse de recibo persistido
+- **Migración:** tabla `hr_payroll_acknowledgments`
+  - Columnas: `id uuid PK`, `payroll_record_id uuid FK`, `employee_id uuid FK`, `company_id uuid`, `acknowledged_at timestamptz`, `acknowledged_by uuid` (auth.uid), `user_agent text`, `ip_hash text`, `notes text`, `created_at timestamptz`.
+  - `UNIQUE (payroll_record_id, employee_id)`.
+  - RLS: SELECT/INSERT propio empleado + SELECT admin/RRHH. UPDATE/DELETE solo admin.
+- **Nuevo** `src/hooks/erp/hr/usePayrollAcknowledgments.ts`.
+- **Nuevo** `src/components/erp/hr/employee-portal/EmployeePayrollAckBlock.tsx`:
+  - Sin acuse: botón **"Confirmar recepción del recibo"** + texto fijo `ACK_MEANING` + `CLAIM_TERM`.
+  - Con acuse: badge verde con fecha/hora + nombre del usuario.
 
-| Archivo | Cambio |
+### E. Reportar incidencia / Solicitar revisión interna
+- **Migración:** tablas `hr_payroll_objections` + `hr_payroll_objection_events`
+  - `hr_payroll_objections`: `id`, `payroll_record_id`, `employee_id`, `company_id`, `category text`, `subject`, `description`, `status text` DEFAULT 'open', `reference_number text UNIQUE` (autogen `REV-YYYYMM-NNNN` vía trigger), `attachments jsonb`, `hr_response`, `hr_responded_by`, `hr_responded_at`, `closed_at`, `created_by`, `created_at`, `updated_at`.
+  - `hr_payroll_objection_events`: timeline.
+  - RLS: SELECT/INSERT propio empleado + SELECT/UPDATE RRHH/admin. INSERT empleado fuerza `employee_id = self` y `status='open'`.
+- **Nuevo** `src/hooks/erp/hr/usePayrollObjections.ts`.
+- **Nuevo** `EmployeePayrollObjectionDialog.tsx` y `EmployeePayrollObjectionsList.tsx`:
+  - Botón en sheet: **"Reportar incidencia / Solicitar revisión interna"**.
+  - Aviso persistente `INTERNAL_REVIEW_SCOPE`.
+  - Adjuntos opcionales en `hr-documents/objections/`.
+  - "Reabrir" si cerrada < 30d.
+
+### F. Mejoras UX en scope
+- **Nuevo** `src/engines/erp/hr/payrollConceptGlossary.ts`: diccionario estático → tooltip en slip + portal.
+- Comparador mes a mes: top-3 deltas por concepto desde `calculation_details` previo y actual.
+- Notificación "nueva nómina disponible": **verificar primero** existencia de `erp_hr_notifications`. Si no existe → fuera de scope.
+
+### G. Aviso legal canónico
+- **Nuevo** `src/lib/hr/payroll/legalNotices.ts`:
+  ```ts
+  export const PAYROLL_LEGAL_NOTICES = {
+    RECEIPT_DELIVERY: "La empresa debe entregar el recibo (físico o digital). El trabajador debe recibirlo y, si la empresa lo solicita, firmarlo o acusarlo recibo.",
+    ACK_MEANING: "La firma o acuse acredita la recepción del recibo, no la conformidad con los conceptos ni la renuncia a reclamación.",
+    CLAIM_TERM: "Plazo general de reclamación de cantidades: 1 año (art. 59.2 ET).",
+    RETENTION: "Conservación documental obligatoria durante 4 años conforme a la normativa laboral y de Seguridad Social aplicable, con referencia sancionadora en el art. 21 LISOS y a la conservación reglamentaria de documentación justificativa en el RD 84/1996.",
+    INTERNAL_REVIEW_SCOPE: "Canal interno de revisión por RRHH. No constituye impugnación jurídica formal ni sustituye la reclamación previa administrativa o judicial. Los plazos legales corren con independencia de este flujo.",
+    SYSTEM_GENERATED_PDF: "Recibo provisional generado por el sistema. No firmado electrónicamente. Pendiente de documento oficial firmado por la empresa.",
+  } as const;
+  ```
+- Importado por: preview, slip, PDF generator, portal ack block, portal objection dialog. Única fuente.
+
+## 2. Archivos
+
+**Nuevos**
+- `src/lib/hr/payroll/legalNotices.ts`
+- `src/engines/erp/hr/payslipRenderModel.ts`
+- `src/engines/erp/hr/payslipPdfGenerator.ts`
+- `src/engines/erp/hr/payrollConceptGlossary.ts`
+- `src/hooks/erp/hr/usePayrollAcknowledgments.ts`
+- `src/hooks/erp/hr/usePayrollObjections.ts`
+- `src/components/erp/hr/employee-portal/EmployeePayrollAckBlock.tsx`
+- `src/components/erp/hr/employee-portal/EmployeePayrollObjectionDialog.tsx`
+- `src/components/erp/hr/employee-portal/EmployeePayrollObjectionsList.tsx`
+- 2 migraciones SQL (acks + objections + events + RLS + trigger refnum)
+
+**Editados**
+- `src/components/erp/hr/localization/es/ESPayrollSlipDetail.tsx`
+- `src/components/erp/hr/employee-portal/EmployeePayslipsSection.tsx`
+- `src/components/erp/hr/HRPayrollPreviewDialog.tsx`
+- `src/components/erp/hr/HRPayrollEntryDialog.tsx`
+
+## 3. Guardrails
+
+- ✗ No tocar `payroll-calculation-engine`, `useESPayrollBridge`, bases SS, grupo SS, convenio, mapping, tablas salariales.
+- ✗ No autoaplicar normativa. No "aprobación" del empleado. No "PDF firmado".
+- ✗ Prohibido usar referencia errónea "LGSS Art. 21" para conservación.
+- ✓ Backward compatibility con PDFs oficiales ya subidos.
+- ✓ Misma fuente de datos (`calculation_details`) en todos los renderizadores.
+- ✓ Watermark + banner + hash obligatorios en PDF on-demand.
+- ✓ Textos legales **solo** desde `legalNotices.ts`.
+
+## 4. Pendientes clasificados
+
+| Pendiente | Tras S9.22 |
 |---|---|
-| `src/engines/erp/hr/payrollConceptCatalog.ts` | `is_ss_contributable: true`, `impacts_cra: true` en ambos conceptos |
-| `src/hooks/erp/hr/useESPayrollBridge.ts` | Catálogo local `contributable: true` + addEarning con SS + trace CRA con desglose trabajador/familiares |
-| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Indicadores IRPF/SS/CRA compactos |
-
-### Trazabilidad CRA
-
-Cada línea de seguro médico incluye `traceInputs` con:
-- prima mensual, nº beneficiarios, nº con discapacidad
-- desglose_asegurados: trabajador (con límite) + familiares (con/sin discapacidad)
-- límite anual/mensual, parte exenta, parte exceso
-- flags: exento_irpf, ss_contributable, impacts_cra
-- cra_nota: pendiente separación 0039/0040
-
-### Verificaciones
-
-- ✅ TypeScript limpio (tsc --noEmit = 0 errores)
-- ✅ Ambos tramos cotizan SS (`contributable: true` en catálogo + addEarning)
-- ✅ Ambos tramos impactan CRA (`impacts_cra: true`)
-- ✅ Split exento/exceso mantenido sin regresión
-- ✅ Trace con desglose trabajador/familiares para CRA 0039/0040
-- ✅ Panel flex muestra estado IRPF + SS + CRA
-
-### Veredicto
-
-**"Seguro médico ES corregido con tratamiento fiscal/SS completo (ambos tramos cotizan)"**
-
-## S9.18-H5 — Seguro médico ES: importe anual total + split visible ✅
-
-### Cambios
-
-- **Entrada principal:** importe anual total (€/año), mensual derivado automáticamente (anual/12)
-- **Backward compat:** si solo existe `seguro_medico_mensual` (datos antiguos), se sigue calculando anual = mensual × 12
-- **Persistencia:** `seguro_medico_mensual` en columna (compat con bridge), `seguro_medico_anual_total` + `seguro_medico_source` en `metadata` jsonb (sin migración SQL)
-- **UI desglose:** mensual / límite/mes / exento/mes / no exento/mes con colores semánticos (emerald = exento, amber = exceso)
-- **Fuente del dato:** badge visible — `Manual empresa` / `Desde convenio` / `Manual sobreescribe convenio`
-- **Convenio:** confirmado que NO existe fuente real en convenio/mapping para seguro médico — UI preparada, lógica honesta (sin invención)
-
-### Archivos tocados
-
-| Archivo | Cambio |
-|---|---|
-| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Input anual total, derivación mensual, desglose visible, badge fuente, persistencia metadata |
-| `src/hooks/erp/hr/useESPayrollBridge.ts` | Trace ampliada con `prima_anual_total_derivada` + `fuente_dato` |
-
-### Prioridad de fuente (lógica final)
-
-1. Si existe convenio (no aplica hoy) y manual = 0 → `Desde convenio`
-2. Si existe convenio y manual ≠ convenio → `Manual sobreescribe convenio` (manual prevalece)
-3. Resto → `Manual empresa`
-
-No se suman dos fuentes. Convenio es siempre placeholder honesto en esta fase.
-
-### Veredicto
-
-**"Seguro médico ES ampliado con anual total + split visible y repercusión correcta en nómina"**
-
-## S9.20 — Retribución Flexible ES: Modelo A + B por concepto ✅
-
-### Tratamiento por concepto
-
-| Concepto | Estado | Modelo A | Modelo B | Notas |
-|---|---|---|---|---|
-| Seguro médico | ✅ Automatizado (S9.18 + A/B) | ✓ | ✓ | Mantiene split exento/exceso, IRPF + SS + CRA |
-| Ticket restaurante | ✅ Automatizado **si** datos completos | ✓ | ✓ | Tope 11€/día (RIRPF Art. 45.2). Genera `ES_RETRIB_FLEX_RESTAURANTE` (exento) + `ES_RETRIB_FLEX_RESTAURANTE_EXCESO` (gravado, cotiza SS) |
-| Cheque guardería | 🟡 Persistido + visible | ✓ | ✓ | NO automatizado en esta fase |
-| Transporte | 🟡 Persistido + visible | ✓ | ✓ | NO automatizado en esta fase |
-
-### Modelo A (benefit_additional) — default
-- Suma como beneficio adicional, aumenta coste empresa
-- No toca dinerario base
-
-### Modelo B (salary_sacrifice)
-- Consume **exclusivamente** `ES_MEJORA_VOLUNTARIA`
-- **Nunca** toca `ES_SAL_BASE` ni `ES_COMP_CONVENIO`
-- Si mejora voluntaria insuficiente → degrada a Modelo A automáticamente con trace + línea informativa `ES_FLEX_MODELO_B_INFO`
-- Mínimo de convenio garantizado
-
-### Fuente convenio
-
-Confirmada **inexistente** para flex. UI mantiene badges honestos (`Manual empresa` / `Desde convenio` / `Manual sobreescribe convenio`) y queda preparada para futuro origen convenio.
-
-### Archivos tocados
-
-| Archivo | Cambio |
-|---|---|
-| `src/engines/erp/hr/payrollConceptCatalog.ts` | + `ES_RETRIB_FLEX_RESTAURANTE_EXCESO` (taxable, SS, IRPF, CRA) |
-| `src/hooks/erp/hr/useESPayrollBridge.ts` | + `ESFlexConceptConfig`, automatización ticket restaurante con tope diario, lógica salary_sacrifice sobre mejora voluntaria con degradación segura, línea informativa Modelo B |
-| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | + `concept_config` en metadata, `ModelToggle`, `RestauranteCard` (€/día + días + modalidad), `SimpleFlexCard` (guardería + transporte) con Modelo A/B visible |
-
-### Persistencia
-
-Nueva configuración `concept_config` guardada en `metadata` jsonb existente (sin migración SQL). Backward compatible: si no existe, se asume `benefit_additional` para todo.
-
-### Guardrails respetados
-
-- ✅ Sin tocar `payroll-calculation-engine.ts`
-- ✅ Sin tocar S9/VPT, última milla oficial, G1.2/G2.2
-- ✅ Sin tocar convenio/mapping/tablas salariales
-- ✅ Sin migración SQL (todo en `metadata` jsonb)
-- ✅ Mínimo convenio nunca violado
-- ✅ Sin duplicidad de importes
-- ✅ Sin invención de fuente convenio
-
-### Veredicto
-
-**"Retribución Flexible ES ampliada con modelo A+B y automatización prudente por concepto"**
-
-## S9.21d — Bloque A: Guardrails legales Modelo B (30% especie + SMI 2026) ✅
-
-### Cambios
-
-- **Import SMI single source:** `useESPayrollBridge.ts` importa `SMI_MENSUAL_2026` (1.221€) desde `@/shared/legal/rules/smiRules`
-- **Set `ESPECIE_CODES`:** identifica retribución en especie a efectos del Art. 26.1 ET (flex seguro/restaurante/guardería/formación + stock options)
-- **Pre-cálculo:** `dinerarioBase` y `especieBase` antes de evaluar sacrificios
-- **`tryApplySacrifice` reforzado** con tres guardrails secuenciales:
-  1. **Mejora voluntaria suficiente** (existente)
-  2. **ET Art. 26.1:** especie ≤ 30% del total salarial → si excede, degrada con motivo
-  3. **RD Ley SMI 2026:** dinerario final ≥ 1.221€ → si bajaría del SMI, degrada con motivo
-- **Trace ampliada:** cada sacrificio degradado lleva `motivo_degradacion` legible
-- **Resumen Modelo B (`ES_FLEX_MODELO_B_INFO`)** ahora incluye `guardrails_aplicados` con SMI vigente, % especie actual, base legal y bases dinerario/especie
-- **UI:** `ModelToggle` advierte explícitamente "degrada si especie > 30% o dinerario < SMI"
-
-### Garantías
-
-- ✅ Modelo B nunca toca `ES_SAL_BASE` ni `ES_COMP_CONVENIO` (sólo `ES_MEJORA_VOLUNTARIA`)
-- ✅ Si cualquier guardrail falla → degradación automática a Modelo A con aviso visible y trace completa
-- ✅ Backward compat: planes sin flex o sin Modelo B siguen calculando idéntico
-- ✅ TypeScript limpio
-- ✅ Sin tocar `payroll-calculation-engine.ts`
-
-### Archivos tocados
-
-| Archivo | Cambio |
-|---|---|
-| `src/hooks/erp/hr/useESPayrollBridge.ts` | Import SMI + set ESPECIE_CODES + 3 guardrails en tryApplySacrifice + trace ampliada |
-| `src/components/erp/hr/HRFlexibleRemunerationPanel.tsx` | Tooltip ModelToggle con condiciones de degradación |
-
-### Veredicto parcial
-
-**"Modelo B con guardrails legales (ET 26.1 + SMI 2026) operativos y trazables"**
-
----
-
-## S9.21d Bloque C — Conceptos avanzados (AT/Nacimiento/Atrasos IT/Reducción jornada) ✅
-
-### Objetivo
-
-Cubrir casuística avanzada del PDF de "procesos entre fechas":
-- Tramos de nacimiento/paternidad/maternidad/corresponsabilidad (LGSS Art. 177-183)
-- Atrasos por IT no reflejada como concepto separado y trazable (LGSS Art. 109)
-- Reducción de jornada por guarda legal (ET Art. 37.6)
-- AT 75% (ya existía, mantenido)
-
-### Cambios técnicos en `useESPayrollBridge.ts`
-
-1. **`ESPayrollInput` ampliado (backward compatible)** con tres campos opcionales:
-   - `nacimientoTramos: Array<{ tipo, fechaDesde, fechaHasta, importe, obligatorio?, descripcion? }>`
-   - `atrasosIT: { importe, periodoOrigen, motivo, descripcion? }`
-   - `reduccionJornadaPct: number` (1-99)
-
-2. **Catálogo de conceptos ampliado** (5 nuevos):
-   - `ES_NACIMIENTO_MATERNIDAD` (sort 92)
-   - `ES_NACIMIENTO_PATERNIDAD` (sort 93)
-   - `ES_NACIMIENTO_CORRESPONSABILIDAD` (sort 94)
-   - `ES_ATRASOS_IT` (sort 96)
-   - `ES_RED_JORNADA_INFO` (sort 306, informativo)
-
-3. **Factor de prorrateo combinado:**
-   - `factorPeriodo` (Bloque B) × `factorReduccion` (Bloque C) = `factorProrrateo` final
-   - Reducción jornada se compone multiplicativamente y se refleja en trace
-   - Si sólo hay reducción (sin periodCoverage), la trace incluye motivo "reduccion_jornada_guarda_legal"
-
-4. **Procesamiento de tramos nacimiento:**
-   - Cada tramo genera línea separada con código específico por tipo
-   - Marcadas como prestación INSS: `taxable=false`, `contributable=false`
-   - Trace incluye fechas, obligatoriedad y descripción
-
-5. **Atrasos IT separados de regularización genérica:**
-   - `ES_ATRASOS_IT` con trace de período origen y motivo (`IT_no_reflejada` | `IT_recalculo` | `IT_correccion`)
-   - Sujeto IRPF + cotiza SS según LGSS Art. 109
-
-6. **Línea informativa reducción jornada:**
-   - `ES_RED_JORNADA_INFO` con amount=0 y trace completa
-   - Útil para recibo y auditoría aunque no sume al líquido
-
-### Garantías
-
-- ✅ Backward compat: sin estos campos, comportamiento idéntico (factor=1, sin nuevas líneas)
-- ✅ Conceptos opcionales se ocultan si no se proporcionan o importe=0 (regla `if (amount === 0) return`)
-- ✅ TypeScript limpio (`tsc --noEmit` exit 0)
-- ✅ Sin tocar `payroll-calculation-engine.ts`
-- ✅ Sin romper Bloques A/B previos
-
-### Veredicto parcial
-
-**"Casuística avanzada (nacimiento por tramos, atrasos IT trazables, reducción jornada combinable con período) operativa y prudente"**
-
----
-
-## S9.21d Bloque D — Vigilancia normativa visible en UI de nómina ✅
-
-### Objetivo
-
-Hacer visible la vigilancia normativa directamente en el flujo de entrada de nómina, sin autoaplicar cambios. Permitir verificación manual desde la cabecera del diálogo.
-
-### Cambios técnicos
-
-1. **Nuevo componente `HRPayrollNormativeWatchBadge.tsx`** (compacto, reutilizable):
-   - Badge con estado: "al día" (verde/primary) | "N pendientes" (destructive)
-   - Filtra `items` por `approval_status='pending'` Y (`requires_payroll_recalc` OR impacto high/critical)
-   - Tooltip con: última revisión (relativa), modo (auto/manual + frecuencia), nº pendientes
-   - Botón circular "Verificar ahora" (`runManualCheck` del hook existente)
-   - Aviso explícito: "Los cambios normativos NO se autoaplican. Requieren validación humana."
-
-2. **Integración en `HRPayrollEntryDialog`**:
-   - Header del diálogo reorganizado a flex con `justify-between`
-   - Badge a la derecha del título, responsive (`flex-wrap`)
-   - No interfiere con resto del flujo
-
-### Garantías
-
-- ✅ Reutiliza `useRegulatoryWatch` existente (sin duplicar lógica)
-- ✅ Nunca autoaplica cambios — solo informa y dispara verificación manual
-- ✅ Tokens semánticos del design system (sin colores hardcodeados)
-- ✅ TypeScript limpio
-- ✅ Backward compat: si no hay `companyId` el badge no se renderiza
-
-### Archivos tocados
-
-| Archivo | Cambio |
-|---|---|
-| `src/components/erp/hr/HRPayrollNormativeWatchBadge.tsx` | **NUEVO** — badge compacto con tooltip + botón verificar |
-| `src/components/erp/hr/HRPayrollEntryDialog.tsx` | Import + integración en `DialogTitle` (header reorganizado) |
-
-### Veredicto parcial
-
-**"Vigilancia normativa visible y accionable desde la nómina, sin riesgo de autoaplicación"**
-
----
-
-## S9.21d Bloque E — Layout XL adaptativo ✅
-
-### Objetivo
-
-Aprovechar monitores ≥1280px (XL) reorganizando el diálogo de nómina en 2 columnas, sin romper móvil/tablet.
-
-### Cambios técnicos
-
-1. **`HRPayrollEntryDialog.tsx`**:
-   - `DialogContent`: `max-w-4xl xl:max-w-7xl` (más ancho en XL)
-   - Wrapper interno con `flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] xl:gap-4`
-   - **Columna izquierda (XL)**: empleado + convenio + retribución flexible — scroll independiente, ocupa toda la altura
-   - **Columna derecha (XL)**: Tabs (devengos/deducciones/resumen) — `TabsList` sticky en XL (`xl:sticky xl:top-0 xl:z-10`)
-   - Separador visual entre columnas (`xl:border-l`)
-   - En <1280px: layout vertical original intacto (sin regresión)
-
-### Garantías
-
-- ✅ Sin cambios en lógica de negocio (solo presentación)
-- ✅ Backward compat absoluta en móvil/tablet (<1280px)
-- ✅ TypeScript limpio (`tsc --noEmit` exit 0)
-- ✅ Sticky tabs en XL para mejor navegación con muchos conceptos
-- ✅ Tokens semánticos (border, background)
-
-### Archivos tocados
-
-| Archivo | Cambio |
-|---|---|
-| `src/components/erp/hr/HRPayrollEntryDialog.tsx` | Wrapper grid XL + sticky tabs + max-width XL |
-
-### Veredicto parcial
-
-**"Diálogo de nómina aprovecha monitores XL con 2 columnas y tabs sticky, sin romper móvil"**
-
-### Pendiente
-
-- **Bloque F**: Auditoría de campos de recibo oficial (CRA, trazabilidad de bases)
-
----
-
-## S9.21d Bloque F — Auditoría campos recibo oficial (CRA + bases) ✅
-
-### Auditoría previa
-
-| Aspecto | Estado |
-|---|---|
-| Catálogo conceptos con `impacts_cra`, `is_ss_contributable`, `legal_reference` | ✅ existente en `payrollConceptCatalog.ts` |
-| Engines RLC / RNT / CRA (TGSS pre-real) | ✅ `rlcRntCraArtifactEngine.ts` |
-| Bases CC / AT / IRPF en summary | ✅ ya expuestas |
-| `base_amount`, `percentage`, `percentage_base`, `calculation_trace` por línea | ✅ ya existían |
-| Desglose bases agrupado para recibo oficial | ❌ faltaba |
-| `impacts_cra` y `legal_reference` declarados a nivel `ESPayrollLine` | ❌ faltaba |
-
-### Cambios técnicos (sin tocar lógica de cálculo)
-
-1. **`ESPayrollLine` ampliado**:
-   - Campo opcional `impacts_cra?: boolean` para marcar líneas que entran al Cuadro Resumen de Aportaciones (TGSS).
-   - Campo opcional `legal_reference?: string` para trazabilidad jurídica del concepto en cada nómina (no sólo en el catálogo estático).
-
-2. **`ESPayrollSummary.bases` (nuevo)** — desglose oficial recibo:
-   - `devengosSalariales` (ET Art. 26)
-   - `devengosNoSalariales` (dietas, plus transporte, seguro flex…)
-   - `devengosContribuibles` y `devengosImponibles`
-   - `horasExtraImporte`
-   - `baseCotizacionCC`, `baseCotizacionAT`, `baseIRPF`
-   - `topeMinimoCC`, `topeMaximoCC` (para detección visible de topes)
-   - `aplicoTopeMinimo`, `aplicoTopeMaximo` (booleans informativos)
-
-3. **Backward compatibility**:
-   - Ambos campos son opcionales — el recibo legacy y otros consumidores siguen funcionando.
-   - Las líneas informativas `ES_BASE_CC`, `ES_BASE_AT`, `ES_BASE_IRPF` se mantienen para retrocompatibilidad UI.
-   - No se modificó ningún cálculo numérico.
-
-### Garantías
-
-- ✅ TypeScript limpio (`tsc --noEmit` exit 0)
-- ✅ Sin cambios en motores SS/IRPF
-- ✅ Sin cambios en catálogo de conceptos
-- ✅ Sin migraciones de BBDD
-- ✅ Trazabilidad enriquecida sólo en runtime
-
-### Archivos tocados
-
-| Archivo | Cambio |
-|---|---|
-| `src/hooks/erp/hr/useESPayrollBridge.ts` | `ESPayrollLine.impacts_cra`, `ESPayrollLine.legal_reference`, `ESPayrollSummary.bases` |
-
----
-
-## 🏁 Veredicto final S9.21d
-
-**"Nómina ES avanzada reforzada y alineada con casuística, conceptos obligatorios/opcionales, bases trazables y vigilancia normativa visible — sin regresiones"**
-
-### Resumen ejecutivo de la fase
-
-| Bloque | Resultado |
-|---|---|
-| **A — Modelo B Guardrails** | ✅ Validación dual (Modelo A vs B) sin auto-promote |
-| **B — Period Coverage** | ✅ Prorrateo selectivo por días efectivos con metadata |
-| **C — Conceptos avanzados** | ✅ Nacimiento (3 tramos), atrasos IT, reducción jornada |
-| **D — Vigilancia normativa UI** | ✅ Badge en cabecera con verificación manual |
-| **E — Layout XL adaptativo** | ✅ 2 columnas + tabs sticky en ≥1280px |
-| **F — Auditoría recibo oficial** | ✅ `bases` agrupadas + `impacts_cra` por línea |
-
-### Checklist no-regresión
-
-- ✅ Compilación TypeScript limpia (todos los bloques)
-- ✅ Sin cambios en motor de cálculo SS/IRPF
-- ✅ Sin migraciones BBDD
-- ✅ Backward compat absoluta (campos nuevos opcionales, layouts antiguos intactos en <1280px)
-- ✅ Sin auto-aplicación de cambios normativos (solo informativos)
-- ✅ Cumplimiento `isRealSubmissionBlocked() === true` (no se tocó la frontera oficial)
+| PDF formal recibo | **Cerrado** (oficial sin firma electrónica + on-demand con watermark) |
+| Descarga portal sin upload manual | **Cerrado** |
+| Acuse persistido | **Cerrado** |
+| Revisión interna sobre nómina | **Cerrado** |
+| Comparador top-3 deltas conceptos | **Cerrado** |
+| Glosario conceptos | **Cerrado** |
+| Notificación nueva nómina | **Condicional** a existencia de `erp_hr_notifications` |
+| Timeline retributivo multi-año | **Fuera de scope** |
+| Firma electrónica eIDAS | **Fuera de scope** |
+| SEPA CT wiring al recibo | **Fuera de scope** |
+
+## 5. Checklist de no regresión
+
+- [ ] PDF oficial subido → descarga sin watermark, sin banner.
+- [ ] PDF on-demand → watermark diagonal + banner ámbar + hash SHA-256 en footer.
+- [ ] Slip RRHH y portal empleado renderizan **idéntico modelo** desde `calculation_details`.
+- [ ] Acuse persistido único por (payroll_record_id, employee_id); RLS verificada.
+- [ ] Texto del acuse: "Confirmar recepción del recibo" + aclaración no-conformidad.
+- [ ] Flujo de revisión: "Reportar incidencia / Solicitar revisión interna" + `INTERNAL_REVIEW_SCOPE`.
+- [ ] Conservación cita art. 21 LISOS + RD 84/1996; nunca "LGSS Art. 21".
+- [ ] `legalNotices.ts` es la única fuente de los textos legales (verificable por grep).
+- [ ] Sin regresiones S9.21k/l/m/n (bases SS, grupo SS, source of truth).
+- [ ] TypeScript y build limpios.
+
+## 6. Veredicto
+
+> "Portal del Empleado y Nómina ES reforzados para entrega, visualización, descarga y gestión seria del recibo salarial — con fuente única real, PDF diferenciado y referencias legales correctas."
