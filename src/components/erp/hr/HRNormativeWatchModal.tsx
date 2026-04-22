@@ -23,6 +23,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Props {
   open: boolean;
@@ -54,6 +55,7 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
   } = useRegulatoryWatch(companyId);
   const [tab, setTab] = useState<'overview' | 'pending' | 'verified'>(initialTab);
   const [selectedItem, setSelectedItem] = useState<RegulatoryWatchItem | null>(null);
+  const { user } = useAuth();
 
   const pending = useMemo(
     () => items.filter(i =>
@@ -220,7 +222,12 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
               </Button>
             )}
             {it.approval_status === 'approved' && it.implementation_status !== 'completed' && (
-              <Button size="sm" variant="default" onClick={() => implementRegulation(it.id, 'manual')} className="gap-1.5">
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => implementRegulation(it.id, user?.id || 'manual')}
+                className="gap-1.5"
+              >
                 <CheckCircle2 className="h-3.5 w-3.5" /> Marcar implementada
               </Button>
             )}
