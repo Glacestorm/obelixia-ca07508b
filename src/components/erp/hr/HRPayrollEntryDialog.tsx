@@ -641,7 +641,7 @@ export function HRPayrollEntryDialog({
             <CardTitle className="text-sm flex items-center gap-2">
               <Scale className="h-4 w-4 text-primary" />
               Convenio aplicado
-              <Badge variant="default" className="text-[10px] h-5 bg-green-600">
+              <Badge variant="default" className="text-[10px] h-5 bg-success text-success-foreground hover:bg-success/90">
                 <CheckCircle className="h-3 w-3 mr-0.5" />
                 Automático
               </Badge>
@@ -676,7 +676,7 @@ export function HRPayrollEntryDialog({
                 <span className="text-muted-foreground">Plus convenio</span>
                 <p className="font-semibold">{r.plusConvenioTabla.toFixed(2)}€</p>
               </div>
-              <div className={cn("p-1.5 rounded border", r.hasMejoraVoluntaria ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800" : "bg-background")}>
+              <div className={cn("p-1.5 rounded border", r.hasMejoraVoluntaria ? "bg-success/10 border-success/30" : "bg-background")}>
                 <span className="text-muted-foreground">Mejora voluntaria</span>
                 <p className="font-semibold">
                   {r.hasMejoraVoluntaria ? `${r.mejoraVoluntaria.toFixed(2)}€` : '—'}
@@ -697,12 +697,12 @@ export function HRPayrollEntryDialog({
     // Missing professional_group — specific warning
     if (resolutionMode === 'missing_group') {
       return (
-        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/30">
-          <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-800 dark:text-amber-300">
+        <div className="mb-4 flex items-start gap-2 p-3 rounded-lg border border-warning/40 bg-warning/10">
+          <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-warning-foreground/90 dark:text-warning">
             <p className="font-medium">Convenio asignado{agreementName ? ` (${agreementName})` : ''} pero falta grupo profesional en el contrato.</p>
             <p className="mt-1">No se puede resolver la tabla salarial automáticamente. Complete el campo "Grupo profesional" en el contrato del empleado para activar la resolución de convenio.</p>
-            <Badge variant="outline" className="mt-1.5 text-[10px] border-amber-400/50 text-amber-700 dark:text-amber-400">Salario manual</Badge>
+            <Badge variant="outline" className="mt-1.5 text-[10px] border-warning/50 text-warning">Salario manual</Badge>
           </div>
         </div>
       );
@@ -710,11 +710,11 @@ export function HRPayrollEntryDialog({
 
     // Manual / degradation mode
     return (
-      <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-700/30">
-        <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
-        <div className="text-xs text-amber-800 dark:text-amber-300">
+      <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-warning/40 bg-warning/10">
+        <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
+        <div className="text-xs text-warning-foreground/90 dark:text-warning">
           <p>Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.</p>
-          <Badge variant="outline" className="mt-1 text-[10px] border-amber-400/50 text-amber-700 dark:text-amber-400">Salario manual</Badge>
+          <Badge variant="outline" className="mt-1 text-[10px] border-warning/50 text-warning">Salario manual</Badge>
         </div>
       </div>
     );
@@ -854,14 +854,14 @@ export function HRPayrollEntryDialog({
                     <>
                       <Separator className="my-2" />
                       <h4 className="text-xs font-medium text-muted-foreground uppercase mb-1 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3 text-amber-500" />
+                        <AlertTriangle className="h-3 w-3 text-warning" />
                         Conceptos de convenio pendientes de mapping ({unmappedConcepts.length})
                       </h4>
                       {unmappedConcepts.map((c, i) => (
-                        <div key={`unmapped-${i}`} className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-amber-300/50 bg-amber-50/30 dark:bg-amber-950/10">
+                        <div key={`unmapped-${i}`} className="flex items-center gap-2 p-2 rounded-lg border border-dashed border-warning/40 bg-warning/5">
                           <div className="flex-1">
                             <span className="text-sm text-muted-foreground">{c.agreementConceptName}</span>
-                            <Badge variant="outline" className="ml-1 text-[9px] h-4 border-amber-400/50 text-amber-600 dark:text-amber-400">Sin mapping</Badge>
+                            <Badge variant="outline" className="ml-1 text-[9px] h-4 border-warning/50 text-warning">Sin mapping</Badge>
                           </div>
                           <span className="text-xs text-muted-foreground font-mono">{c.agreementConceptCode}</span>
                           <span className="text-xs text-muted-foreground">{c.amount > 0 ? `${c.amount}${c.isPercentage ? '%' : '€'}` : '—'}</span>
@@ -905,11 +905,11 @@ export function HRPayrollEntryDialog({
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Euro className="h-4 w-4" />Resumen Nómina</CardTitle></CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Total Devengos</span><span className="font-medium text-green-600">€{totals.totalEarnings.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Deducciones SS</span><span className="text-red-600">-€{totals.totalSS.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>IRPF ({totals.irpfRate}%)</span><span className="text-red-600">-€{totals.irpfAmount.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Total Devengos</span><span className="font-medium text-success">€{totals.totalEarnings.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Deducciones SS</span><span className="text-destructive">-€{totals.totalSS.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>IRPF ({totals.irpfRate}%)</span><span className="text-destructive">-€{totals.irpfAmount.toFixed(2)}</span></div>
                     {totals.otherDeductions > 0 && (
-                      <div className="flex justify-between"><span>Otras deducciones</span><span className="text-red-600">-€{totals.otherDeductions.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span>Otras deducciones</span><span className="text-destructive">-€{totals.otherDeductions.toFixed(2)}</span></div>
                     )}
                     <Separator className="my-2" />
                     <div className="flex justify-between text-lg font-bold"><span>Salario Neto</span><span className="text-primary">€{totals.netSalary.toFixed(2)}</span></div>
@@ -921,7 +921,7 @@ export function HRPayrollEntryDialog({
                     <div className="flex justify-between"><span>Salario Bruto</span><span>€{totals.totalEarnings.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span>SS Empresa ({(SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
                     <Separator className="my-2" />
-                    <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-amber-600">€{totals.totalCost.toFixed(2)}</span></div>
+                    <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
                   </CardContent>
                 </Card>
               </div>
