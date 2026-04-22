@@ -163,15 +163,39 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
               <Input value={form.naf} onChange={e => setForm(p => ({ ...p, naf: e.target.value }))} placeholder="28/12345678/90" className="h-8 text-sm" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Grupo de Cotización</Label>
-              <Select value={String(form.grupo_cotizacion)} onValueChange={v => setForm(p => ({ ...p, grupo_cotizacion: parseInt(v) }))}>
+              <Label className="text-xs flex items-center gap-1.5">
+                Grupo de Cotización SS
+                {form.grupo_cotizacion == null && (
+                  <Badge variant="warning" className="text-[9px] h-4 px-1.5 leading-none">
+                    Recomendado
+                  </Badge>
+                )}
+              </Label>
+              <Select
+                value={form.grupo_cotizacion == null ? '__unset__' : String(form.grupo_cotizacion)}
+                onValueChange={v =>
+                  setForm(p => ({
+                    ...p,
+                    grupo_cotizacion: v === '__unset__' ? null : parseInt(v),
+                  }))
+                }
+              >
                 <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__unset__">— Sin asignar —</SelectItem>
                   {Array.from({ length: 11 }, (_, i) => i + 1).map(g => (
                     <SelectItem key={g} value={String(g)}>Grupo {g}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Tramo de bases SS aplicado en nómina (1–11 según Orden PJC/297/2026).
+                {form.grupo_cotizacion == null && (
+                  <span className="block text-warning mt-0.5">
+                    Sin asignar: la nómina usará Grupo 1 como fallback.
+                  </span>
+                )}
+              </p>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Régimen SS</Label>
