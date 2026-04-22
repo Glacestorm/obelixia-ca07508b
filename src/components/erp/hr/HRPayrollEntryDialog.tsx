@@ -193,7 +193,7 @@ export function HRPayrollEntryDialog({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewCalc, setPreviewCalc] = useState<ESPayrollCalculation | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const { simulateES } = useESPayrollBridge(companyId);
+  const { simulateES, esLocalization } = useESPayrollBridge(companyId);
 
   // S9.21g: conceptos añadidos manualmente desde el Popover (visibles aunque estén a 0)
   const [manuallyAddedCodes, setManuallyAddedCodes] = useState<Set<string>>(new Set());
@@ -206,6 +206,17 @@ export function HRPayrollEntryDialog({
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
+
+  // S9.21h: cargar bases SS / IRPF del año del periodo automáticamente al abrir
+  useEffect(() => {
+    if (open && periodYear) {
+      esLocalization.fetchSSBases(periodYear);
+      esLocalization.fetchIRPFTables(periodYear);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, periodYear]);
+
+  const ssBasesMissing = open && esLocalization.ssBases.length === 0;
 
   // Init concepts
   const resetConcepts = useCallback((baseSalary = 0, irpfRate = 15) => {
@@ -1017,6 +1028,22 @@ export function HRPayrollEntryDialog({
             {isEditMode ? 'Modifica los conceptos salariales' : 'Selecciona un empleado y configura los conceptos'}
           </DialogDescription>
         </DialogHeader>
+
+        {ssBasesMissing && (
+          <div className="mx-6 mt-3 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-warning-foreground">
+                Faltan bases de Seguridad Social para {periodYear}
+              </p>
+              <p className="text-muted-foreground mt-0.5">
+                El motor de nómina ES necesita las bases SS del año del periodo. Ve a{' '}
+                <span className="font-medium">RRHH → Configuración → Localización España → Bases SS</span>{' '}
+                y carga las bases de {periodYear} (o cambia el periodo a un año con bases ya cargadas, p. ej. 2026).
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* S9.21d Bloque E: Layout XL adaptativo — 2 columnas en ≥1280px */}
         <div className="flex-1 min-h-0 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] xl:gap-6 overflow-hidden px-6 pt-4">
