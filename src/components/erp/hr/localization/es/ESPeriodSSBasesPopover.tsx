@@ -19,7 +19,11 @@ import {
 } from '@/components/ui/table';
 import { ChevronDown, Database, AlertTriangle, ExternalLink, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SS_BASE_MAX_MENSUAL_2026, SS_GROUP_BASES_2026 } from '@/shared/legal/rules/ssRules2026';
+import {
+  SS_BASE_MAX_MENSUAL_2026,
+  SS_GROUP_BASES_2026,
+  SS_GROUP_MIN_BASES_MENSUAL_2026,
+} from '@/shared/legal/rules/ssRules2026';
 import type { ESSSBase } from '@/hooks/erp/hr/useESLocalization';
 
 interface Props {
@@ -40,18 +44,52 @@ export function ESPeriodSSBasesPopover({
   const yearOfBases = ssBases[0]?.year;
   const yearMatchesPeriod = yearOfBases === periodYear;
 
-  // Comparación con fuente canónica para detectar divergencias
+  /**
+   * Comparación con fuente canónica.
+   *
+   * IMPORTANTE — semántica de `SS_GROUP_BASES_2026`:
+   *  - G1–G7 (`isDailyBase=false`): los campos `minMensual`/`maxMensual` son
+   *    valores MENSUALES → comparar contra `base_minima_mensual` / `base_maxima_mensual` de BD.
+   *  - G8–G11 (`isDailyBase=true`): los campos `minMensual`/`maxMensual` son
+   *    valores DIARIOS (Orden PJC/297/2026) → comparar contra
+   *    `base_minima_diaria` / `base_maxima_diaria` de BD. La parte mensual de estos
+   *    grupos se compara contra la mínima común (`SS_GROUP_MIN_BASES_MENSUAL_2026`)
+   *    y el tope general (`SS_BASE_MAX_MENSUAL_2026`).
+   *
+   * Sin esta separación, comparar `mensual BD` contra `diaria canónica` produce
+   * 8 falsos positivos para G8–G11.
+   */
   const divergencias = useMemo(() => {
     if (!isLoaded || !yearMatchesPeriod) return [];
     const out: Array<{ grupo: number; campo: string; bd: number; canon: number }> = [];
     for (const b of ssBases) {
       const canon = SS_GROUP_BASES_2026[b.grupo_cotizacion];
       if (!canon) continue;
-      if (Math.abs(b.base_maxima_mensual - canon.maxMensual) > 0.01) {
-        out.push({ grupo: b.grupo_cotizacion, campo: 'max_mensual', bd: b.base_maxima_mensual, canon: canon.maxMensual });
-      }
-      if (Math.abs(b.base_minima_mensual - canon.minMensual) > 0.01) {
-        out.push({ grupo: b.grupo_cotizacion, campo: 'min_mensual', bd: b.base_minima_mensual, canon: canon.minMensual });
+
+      if (canon.isDailyBase) {
+        // G8–G11: plano mensual contra constantes mensuales del shared core
+        const minMensualCanon = SS_GROUP_MIN_BASES_MENSUAL_2026[b.grupo_cotizacion];
+        if (minMensualCanon != null && Math.abs(b.base_minima_mensual - minMensualCanon) > 0.01) {
+          out.push({ grupo: b.grupo_cotizacion, campo: 'min_mensual', bd: b.base_minima_mensual, canon: minMensualCanon });
+        }
+        if (Math.abs(b.base_maxima_mensual - SS_BASE_MAX_MENSUAL_2026) > 0.01) {
+          out.push({ grupo: b.grupo_cotizacion, campo: 'max_mensual', bd: b.base_maxima_mensual, canon: SS_BASE_MAX_MENSUAL_2026 });
+        }
+        // Plano diario: la canónica vive en `minMensual`/`maxMensual` con isDailyBase=true
+        if (b.base_minima_diaria != null && Math.abs(b.base_minima_diaria - canon.minMensual) > 0.01) {
+          out.push({ grupo: b.grupo_cotizacion, campo: 'min_diaria', bd: b.base_minima_diaria, canon: canon.minMensual });
+        }
+        if (b.base_maxima_diaria != null && Math.abs(b.base_maxima_diaria - canon.maxMensual) > 0.01) {
+          out.push({ grupo: b.grupo_cotizacion, campo: 'max_diaria', bd: b.base_maxima_diaria, canon: canon.maxMensual });
+        }
+      } else {
+        // G1–G7: comparación mensual directa
+        if (Math.abs(b.base_maxima_mensual - canon.maxMensual) > 0.01) {
+          out.push({ grupo: b.grupo_cotizacion, campo: 'max_mensual', bd: b.base_maxima_mensual, canon: canon.maxMensual });
+        }
+        if (Math.abs(b.base_minima_mensual - canon.minMensual) > 0.01) {
+          out.push({ grupo: b.grupo_cotizacion, campo: 'min_mensual', bd: b.base_minima_mensual, canon: canon.minMensual });
+        }
       }
     }
     return out;
