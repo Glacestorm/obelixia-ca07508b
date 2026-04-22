@@ -10,7 +10,7 @@
  *   - Trazabilidad completa del convenio aplicado
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,8 @@ import { resolveEmployeeSalary, resolveAgreementConcepts, type SalaryResolutionR
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { HRFlexibleRemunerationPanel } from './HRFlexibleRemunerationPanel';
 import { HRPayrollNormativeWatchBadge } from './HRPayrollNormativeWatchBadge';
+import { HRPayrollPreviewDialog } from './HRPayrollPreviewDialog';
+import { useESPayrollBridge, type ESPayrollCalculation } from '@/hooks/erp/hr/useESPayrollBridge';
 
 interface PayrollConcept {
   id: string;
