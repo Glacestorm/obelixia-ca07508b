@@ -371,6 +371,30 @@ export function HRPayrollEntryDialog({
   }, [earnings, simulateES]);
 
   /**
+   * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
+   * Solo se considera "activa" si el bloque está habilitado y al menos un dato relevante > 0.
+   */
+  const casuisticaActiva = useMemo(() => {
+    if (!casuistica.enabled) return [] as Array<{ key: string; label: string }>;
+    const arr: Array<{ key: string; label: string }> = [];
+    if (casuistica.pnrDias > 0) arr.push({ key: 'pnr', label: `PNR ${casuistica.pnrDias}d` });
+    if (casuistica.itAtDias > 0) arr.push({ key: 'at', label: `AT ${casuistica.itAtDias}d` });
+    if (casuistica.reduccionJornadaPct > 0) arr.push({ key: 'red', label: `Red. ${casuistica.reduccionJornadaPct}%` });
+    if (casuistica.atrasosITImporte > 0) arr.push({ key: 'itretro', label: `IT retro ${casuistica.atrasosITImporte.toFixed(0)}€` });
+    if (casuistica.nacimientoDias > 0 || casuistica.nacimientoImporte > 0) {
+      arr.push({ key: 'nac', label: `Nacimiento ${casuistica.nacimientoTipo}` });
+    }
+    if (
+      casuistica.periodMotivo !== 'mes_completo' &&
+      casuistica.periodFechaDesde && casuistica.periodFechaHasta &&
+      casuistica.periodDiasEfectivos < casuistica.periodDiasNaturales
+    ) {
+      arr.push({ key: 'periodo', label: `Cobertura ${casuistica.periodDiasEfectivos}/${casuistica.periodDiasNaturales}d` });
+    }
+    return arr;
+  }, [casuistica]);
+
+  /**
    * S9.21e — Conceptos obligatorios que SIEMPRE se muestran aunque su importe sea 0.
    * El resto se oculta cuando vale 0 (regla "ocultar ceros / no seleccionados").
    */
