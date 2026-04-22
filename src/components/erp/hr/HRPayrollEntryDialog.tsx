@@ -1149,6 +1149,37 @@ export function HRPayrollEntryDialog({
               ssBases={esLocalization.ssBases}
               isLoading={esLocalization.isLoading}
             />
+            {/* S9.21n — Badge trazabilidad grupo SS (formal_es vs fallback) */}
+            {selectedEmployeeId && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant={grupoCotizacionSource === 'formal_es' ? 'muted' : 'warning'}
+                      className="shrink-0 cursor-help"
+                    >
+                      Grupo SS: {grupoCotizacion}
+                      {grupoCotizacionSource === 'fallback' && ' (fallback)'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    {grupoCotizacionSource === 'formal_es' ? (
+                      <p className="text-xs">
+                        Origen: Datos Laborales ES (formal). Tabla{' '}
+                        <code className="text-[10px]">hr_es_employee_labor_data.grupo_cotizacion</code>.
+                      </p>
+                    ) : (
+                      <p className="text-xs">
+                        No hay grupo SS formal en la ficha ES de este empleado. La nómina usa
+                        fallback (Grupo 1). Completa el dato en{' '}
+                        <strong>Localización ES → Datos Laborales</strong> para que el cálculo
+                        use el tramo de bases real.
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </DialogHeader>
 
