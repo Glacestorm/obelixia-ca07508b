@@ -496,7 +496,10 @@ export function HRPayrollEntryDialog({
     [deductions, manuallyAddedCodes]
   );
 
-  // S9.21e: Generar preview con motor real (simulateES)
+  // S9.21m: Vista previa = espejo exacto del cálculo en vivo (misma fuente que sticky bar
+  //         y que `handleSave`). Si `liveBridgeCalc` ya existe → se usa directamente.
+  //         Si no, se fuerza un recálculo síncrono pasando los MISMOS parámetros que el
+  //         effect de live calc (incluida casuística completa) para evitar staleness.
   const handleOpenPreview = useCallback(() => {
     if (!selectedEmployeeId) {
       toast.error('Selecciona un empleado primero');
@@ -510,7 +513,8 @@ export function HRPayrollEntryDialog({
     setPreviewLoading(true);
     setPreviewOpen(true);
     try {
-      // Mapear earnings a complementos del bridge (excluye BASE, ya va en salarioBase)
+      // 1) Recalcular SIEMPRE en el momento de abrir el preview con los MISMOS parámetros
+      //    que usa el effect de live calc (evita staleness frente al estado actual del form).
       const complementos: Record<string, number> = {};
       earnings.forEach(e => {
         if (e.code === 'BASE' || !e.amount) return;
@@ -518,11 +522,39 @@ export function HRPayrollEntryDialog({
         complementos[persistCode] = e.amount;
       });
       const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      const cas = casuistica;
+      const useCas = cas.enabled;
+      const nacimientoTramos = useCas && (cas.nacimientoDias > 0 || cas.nacimientoImporte > 0) && cas.periodFechaDesde && cas.periodFechaHasta
+        ? [{
+            tipo: cas.nacimientoTipo,
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            importe: cas.nacimientoImporte,
+          }]
+        : undefined;
+      const atrasosIT = useCas && cas.atrasosITImporte > 0
+        ? { importe: cas.atrasosITImporte, periodoOrigen: cas.atrasosITPeriodo || '', motivo: 'IT_no_reflejada' as const }
+        : undefined;
+      const periodCoverage = useCas && cas.periodMotivo !== 'mes_completo' && cas.periodFechaDesde && cas.periodFechaHasta
+        ? {
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            diasNaturalesPeriodo: cas.periodDiasNaturales,
+            diasEfectivos: cas.periodDiasEfectivos,
+            motivo: cas.periodMotivo,
+          }
+        : undefined;
       const calc = simulateES({
         salarioBase: baseSalary,
-        grupoCotizacion: 1,
+        grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
+        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
+        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
+        atrasosIT,
+        nacimientoTramos,
+        periodCoverage,
       });
       setPreviewCalc(calc);
     } catch (err) {
@@ -532,7 +564,7 @@ export function HRPayrollEntryDialog({
     } finally {
       setPreviewLoading(false);
     }
-  }, [earnings, selectedEmployeeId, simulateES]);
+  }, [earnings, selectedEmployeeId, simulateES, casuistica, grupoCotizacion]);
 
   const updateConcept = (id: string, value: number) => {
     if (earnings.find(e => e.id === id)) {
