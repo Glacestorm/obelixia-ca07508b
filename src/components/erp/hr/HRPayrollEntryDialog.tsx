@@ -1547,23 +1547,67 @@ export function HRPayrollEntryDialog({
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Euro className="h-4 w-4" />Resumen Nómina</CardTitle></CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Total Devengos</span><span className="font-medium text-success">€{totals.totalEarnings.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Deducciones SS</span><span className="text-destructive">-€{totals.totalSS.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>IRPF ({totals.irpfRate}%)</span><span className="text-destructive">-€{totals.irpfAmount.toFixed(2)}</span></div>
-                    {totals.otherDeductions > 0 && (
-                      <div className="flex justify-between"><span>Otras deducciones</span><span className="text-destructive">-€{totals.otherDeductions.toFixed(2)}</span></div>
+                    {liveBridgeCalc ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="flex items-center gap-1">Total Devengos
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-primary/40 text-primary">Motor ES</Badge>
+                          </span>
+                          <span className="font-medium text-success">€{liveBridgeCalc.summary.totalDevengos.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total Deducciones</span>
+                          <span className="text-destructive">-€{liveBridgeCalc.summary.totalDeducciones.toFixed(2)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Líquido a percibir</span>
+                          <span className="text-primary">€{liveBridgeCalc.summary.liquidoPercibir.toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span>Total Devengos</span><span className="font-medium text-success">€{totals.totalEarnings.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Deducciones SS</span><span className="text-destructive">-€{totals.totalSS.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>IRPF ({totals.irpfRate}%)</span><span className="text-destructive">-€{totals.irpfAmount.toFixed(2)}</span></div>
+                        {totals.otherDeductions > 0 && (
+                          <div className="flex justify-between"><span>Otras deducciones</span><span className="text-destructive">-€{totals.otherDeductions.toFixed(2)}</span></div>
+                        )}
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold"><span>Salario Neto</span><span className="text-primary">€{totals.netSalary.toFixed(2)}</span></div>
+                      </>
                     )}
-                    <Separator className="my-2" />
-                    <div className="flex justify-between text-lg font-bold"><span>Salario Neto</span><span className="text-primary">€{totals.netSalary.toFixed(2)}</span></div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Building2 className="h-4 w-4" />Coste Empresa</CardTitle></CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Salario Bruto</span><span>€{totals.totalEarnings.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>SS Empresa ({(SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
+                    {liveBridgeCalc ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Salario Bruto</span>
+                          <span>€{liveBridgeCalc.summary.totalDevengos.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="flex items-center gap-1">SS Empresa
+                            <Badge variant="outline" className="text-[8px] h-3.5 px-1 border-primary/40 text-primary">Motor ES</Badge>
+                          </span>
+                          <span>€{liveBridgeCalc.summary.totalCosteEmpresa.toFixed(2)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Coste Total</span>
+                          <span className="text-warning">€{(liveBridgeCalc.summary.totalDevengos + liveBridgeCalc.summary.totalCosteEmpresa).toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span>Salario Bruto</span><span>€{totals.totalEarnings.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>SS Empresa ({(SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-warning">€{totals.totalCost.toFixed(2)}</span></div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
 
