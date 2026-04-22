@@ -61446,6 +61446,60 @@ export type Database = {
           },
         ]
       }
+      hr_payroll_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          acknowledged_by: string
+          company_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          ip_hash: string | null
+          notes: string | null
+          payroll_record_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledged_by: string
+          company_id: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          ip_hash?: string | null
+          notes?: string | null
+          payroll_record_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledged_by?: string
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          ip_hash?: string | null
+          notes?: string | null
+          payroll_record_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_acknowledgments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_acknowledgments_payroll_record_id_fkey"
+            columns: ["payroll_record_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_payroll_audit_log: {
         Row: {
           action: string
@@ -61572,6 +61626,122 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_objection_events: {
+        Row: {
+          actor_id: string
+          actor_role: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          objection_id: string
+        }
+        Insert: {
+          actor_id: string
+          actor_role?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          objection_id: string
+        }
+        Update: {
+          actor_id?: string
+          actor_role?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          objection_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_objection_events_objection_id_fkey"
+            columns: ["objection_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_objections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_objections: {
+        Row: {
+          attachments: Json
+          category: string
+          closed_at: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string
+          employee_id: string
+          hr_responded_at: string | null
+          hr_responded_by: string | null
+          hr_response: string | null
+          id: string
+          payroll_record_id: string
+          reference_number: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          category: string
+          closed_at?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          description: string
+          employee_id: string
+          hr_responded_at?: string | null
+          hr_responded_by?: string | null
+          hr_response?: string | null
+          id?: string
+          payroll_record_id: string
+          reference_number?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          category?: string
+          closed_at?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          employee_id?: string
+          hr_responded_at?: string | null
+          hr_responded_by?: string | null
+          hr_response?: string | null
+          id?: string
+          payroll_record_id?: string
+          reference_number?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_objections_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_objections_payroll_record_id_fkey"
+            columns: ["payroll_record_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_records"
             referencedColumns: ["id"]
           },
         ]
