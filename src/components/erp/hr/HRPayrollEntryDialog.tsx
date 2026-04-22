@@ -191,6 +191,16 @@ export function HRPayrollEntryDialog({
   const [activeTab, setActiveTab] = useState('earnings');
   const [isEditMode, setIsEditMode] = useState(false);
 
+  /**
+   * S9.21m — Grupo de cotización SS del empleado.
+   * Fuente real: contrato vigente / extensión ES (no se infiere de `professional_group`,
+   * que es texto libre y no tiene mapping formal auditado a grupos 1-11).
+   * Si no consta, se usa fallback explícito = 1 con `grupoCotizacionSource = 'fallback'`
+   * para trazar la asunción en UI / persistencia futura.
+   */
+  const [grupoCotizacion, setGrupoCotizacion] = useState<number>(1);
+  const [grupoCotizacionSource, setGrupoCotizacionSource] = useState<'contract' | 'fallback'>('fallback');
+
   // S9.13: Agreement resolution state
   const [agreementResolution, setAgreementResolution] = useState<SalaryResolutionResult | null>(null);
   const [agreementName, setAgreementName] = useState('');
@@ -340,6 +350,8 @@ export function HRPayrollEntryDialog({
       setManuallyAddedCodes(new Set());
       setCasuistica(DEFAULT_CASUISTICA);
       setCasuisticaOpen(false);
+      setGrupoCotizacion(1);
+      setGrupoCotizacionSource('fallback');
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
@@ -422,7 +434,7 @@ export function HRPayrollEntryDialog({
         : undefined;
       const result = simulateESRef.current({
         salarioBase: base,
-        grupoCotizacion: 1,
+        grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
         permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
@@ -437,7 +449,7 @@ export function HRPayrollEntryDialog({
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       setLiveBridgeCalc(null);
     }
-  }, [earnings, casuistica, ssBasesReady]);
+  }, [earnings, casuistica, ssBasesReady, grupoCotizacion]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
@@ -486,7 +498,10 @@ export function HRPayrollEntryDialog({
     [deductions, manuallyAddedCodes]
   );
 
-  // S9.21e: Generar preview con motor real (simulateES)
+  // S9.21m: Vista previa = espejo exacto del cálculo en vivo (misma fuente que sticky bar
+  //         y que `handleSave`). Si `liveBridgeCalc` ya existe → se usa directamente.
+  //         Si no, se fuerza un recálculo síncrono pasando los MISMOS parámetros que el
+  //         effect de live calc (incluida casuística completa) para evitar staleness.
   const handleOpenPreview = useCallback(() => {
     if (!selectedEmployeeId) {
       toast.error('Selecciona un empleado primero');
@@ -500,7 +515,8 @@ export function HRPayrollEntryDialog({
     setPreviewLoading(true);
     setPreviewOpen(true);
     try {
-      // Mapear earnings a complementos del bridge (excluye BASE, ya va en salarioBase)
+      // 1) Recalcular SIEMPRE en el momento de abrir el preview con los MISMOS parámetros
+      //    que usa el effect de live calc (evita staleness frente al estado actual del form).
       const complementos: Record<string, number> = {};
       earnings.forEach(e => {
         if (e.code === 'BASE' || !e.amount) return;
@@ -508,11 +524,39 @@ export function HRPayrollEntryDialog({
         complementos[persistCode] = e.amount;
       });
       const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
+      const cas = casuistica;
+      const useCas = cas.enabled;
+      const nacimientoTramos = useCas && (cas.nacimientoDias > 0 || cas.nacimientoImporte > 0) && cas.periodFechaDesde && cas.periodFechaHasta
+        ? [{
+            tipo: cas.nacimientoTipo,
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            importe: cas.nacimientoImporte,
+          }]
+        : undefined;
+      const atrasosIT = useCas && cas.atrasosITImporte > 0
+        ? { importe: cas.atrasosITImporte, periodoOrigen: cas.atrasosITPeriodo || '', motivo: 'IT_no_reflejada' as const }
+        : undefined;
+      const periodCoverage = useCas && cas.periodMotivo !== 'mes_completo' && cas.periodFechaDesde && cas.periodFechaHasta
+        ? {
+            fechaDesde: cas.periodFechaDesde,
+            fechaHasta: cas.periodFechaHasta,
+            diasNaturalesPeriodo: cas.periodDiasNaturales,
+            diasEfectivos: cas.periodDiasEfectivos,
+            motivo: cas.periodMotivo,
+          }
+        : undefined;
       const calc = simulateES({
         salarioBase: baseSalary,
-        grupoCotizacion: 1,
+        grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
+        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
+        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
+        atrasosIT,
+        nacimientoTramos,
+        periodCoverage,
       });
       setPreviewCalc(calc);
     } catch (err) {
@@ -522,7 +566,7 @@ export function HRPayrollEntryDialog({
     } finally {
       setPreviewLoading(false);
     }
-  }, [earnings, selectedEmployeeId, simulateES]);
+  }, [earnings, selectedEmployeeId, simulateES, casuistica, grupoCotizacion]);
 
   const updateConcept = (id: string, value: number) => {
     if (earnings.find(e => e.id === id)) {
@@ -1812,13 +1856,27 @@ export function HRPayrollEntryDialog({
             <Button
               variant="outline"
               onClick={handleOpenPreview}
-              disabled={!selectedEmployeeId || totals.totalEarnings <= 0}
+              disabled={
+                !selectedEmployeeId ||
+                ((earnings.find(e => e.code === 'BASE')?.amount || 0) <= 0) ||
+                (!liveBridgeCalc && totals.totalEarnings <= 0)
+              }
               className="gap-1.5"
             >
               <Eye className="h-4 w-4" />
               Vista previa nómina
             </Button>
-            <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
+            <Button
+              onClick={handleSave}
+              disabled={
+                !selectedEmployeeId ||
+                isSaving ||
+                !month ||
+                ((earnings.find(e => e.code === 'BASE')?.amount || 0) <= 0) ||
+                (!liveBridgeCalc && totals.totalEarnings <= 0) ||
+                ssBasesMissing
+              }
+            >
               {isSaving ? (
                 <><Calculator className="h-4 w-4 mr-1 animate-spin" />Guardando...</>
               ) : (
@@ -1835,6 +1893,7 @@ export function HRPayrollEntryDialog({
         loading={previewLoading}
         employeeName={selectedEmployeeName}
         periodo={`${String(periodMonth).padStart(2, '0')}/${periodYear}`}
+        grupo={grupoCotizacion}
         categoria={selectedEmployeeCategory}
       />
     </Dialog>

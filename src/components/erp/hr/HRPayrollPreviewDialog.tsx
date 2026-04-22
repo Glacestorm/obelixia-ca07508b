@@ -125,6 +125,10 @@ export function HRPayrollPreviewDialog({
                     con los conceptos liquidados. La empresa debe entregar copia (física o digital) y conservarla
                     durante al menos 4 años (LGSS Art. 21 / LGT Art. 66).
                   </p>
+                  <p className="pt-1 italic">
+                    Bloque informativo · El registro persistente del acuse de recibo del empleado
+                    <strong> aún no está conectado</strong> (preparado para iteración futura).
+                  </p>
                 </div>
               )}
             </div>
