@@ -10,7 +10,7 @@
  *   - Trazabilidad completa del convenio aplicado
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -194,6 +194,9 @@ export function HRPayrollEntryDialog({
   const [previewCalc, setPreviewCalc] = useState<ESPayrollCalculation | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const { simulateES, esLocalization } = useESPayrollBridge(companyId);
+  // Refs estables para evitar loops por cambios de identidad del objeto esLocalization
+  const esLocRef = useRef(esLocalization);
+  esLocRef.current = esLocalization;
 
   // S9.21g: conceptos añadidos manualmente desde el Popover (visibles aunque estén a 0)
   const [manuallyAddedCodes, setManuallyAddedCodes] = useState<Set<string>>(new Set());
@@ -208,12 +211,14 @@ export function HRPayrollEntryDialog({
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
 
   // S9.21h: cargar bases SS / IRPF del año del periodo automáticamente al abrir
+  // Uso ref para no depender de la identidad cambiante del objeto esLocalization
+  const lastFetchedYearRef = useRef<number | null>(null);
   useEffect(() => {
-    if (open && periodYear) {
-      esLocalization.fetchSSBases(periodYear);
-      esLocalization.fetchIRPFTables(periodYear);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!open || !periodYear) return;
+    if (lastFetchedYearRef.current === periodYear) return;
+    lastFetchedYearRef.current = periodYear;
+    void esLocRef.current.fetchSSBases(periodYear);
+    void esLocRef.current.fetchIRPFTables(periodYear);
   }, [open, periodYear]);
 
   const ssBasesMissing = open && esLocalization.ssBases.length === 0;
@@ -361,6 +366,9 @@ export function HRPayrollEntryDialog({
   const liveBridgeCalc = useMemo<ESPayrollCalculation | null>(() => {
     const base = earnings.find(e => e.code === 'BASE')?.amount || 0;
     if (base <= 0) return null;
+    // Guard: si faltan bases SS para el año del periodo, no llamar al motor
+    // (evita toast.error en bucle desde simulateES y posible re-render infinito)
+    if (esLocalization.ssBases.length === 0) return null;
     try {
       const complementos: Record<string, number> = {};
       earnings.forEach(e => {
@@ -407,7 +415,7 @@ export function HRPayrollEntryDialog({
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       return null;
     }
-  }, [earnings, simulateES, casuistica]);
+  }, [earnings, simulateES, casuistica, esLocalization.ssBases.length]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
