@@ -2150,6 +2150,36 @@ export function HRPayrollEntryDialog({
         grupo={grupoCotizacion}
         categoria={selectedEmployeeCategory}
       />
+      {/* S9.21o — SafeMode pre-save AlertDialog (no bloqueante) */}
+      <PayrollSafeModeSaveDialog
+        open={showSafeModeSaveDialog}
+        onOpenChange={setShowSafeModeSaveDialog}
+        normalizer={normalizerResult}
+        isSaving={isSaving}
+        onConfirm={handleConfirmSafeModeSave}
+      />
+      {/* S9.21o — CTA "Revisar contrato del empleado" desde bloque ámbar */}
+      {resolvedContractId && selectedEmployeeId && (
+        <HRContractFormDialog
+          open={showContractDialog}
+          onOpenChange={setShowContractDialog}
+          companyId={companyId}
+          contractId={resolvedContractId}
+          employeeId={selectedEmployeeId}
+          onSaved={() => {
+            setShowContractDialog(false);
+            // Re-resolver tras editar contrato
+            if (selectedEmployeeId) {
+              void handleEmployeeSelect(selectedEmployeeId, {
+                id: selectedEmployeeId,
+                first_name: selectedEmployeeName.split(' ')[0] || '',
+                last_name: selectedEmployeeName.split(' ').slice(1).join(' ') || '',
+                job_title: selectedEmployeeCategory,
+              } as EmployeeOption);
+            }
+          }}
+        />
+      )}
     </Dialog>
   );
 }
