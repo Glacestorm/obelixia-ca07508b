@@ -18,16 +18,48 @@
  *   C7: base=42000, annual=null, sin convenio → safeMode (B4)
  *   C8: base=42000, annual=42000 (incoherentes) → safeMode (A4)
  *   C9: base=null, annual=null → safeMode (A5)
+ *
+ * S9.21p — Paso 0: source of truth contractual.
+ *   Antes de la jerarquía A/B se evalúa `diagnoseContractParametrization`.
+ *   - Si status='complete' → NIVEL 1 contract_explicit (sin heurística).
+ *   - Si status='incoherent' && severity='structural' → safeMode obligatorio
+ *     con resolutionPath='incoherent_structural_safeMode'. NO degrada a legacy.
+ *   - Si status='pending' o 'incoherent' soft → NIVEL 3 legacy (flujo A/B
+ *     original con A3 heurístico como red de seguridad).
  */
+
+import {
+  diagnoseContractParametrization,
+  type ParametrizationDiagnostic,
+} from './contractSalaryParametrization';
 
 export type SalaryUnit = 'mensual' | 'anual' | 'ambigua' | 'no_informada';
 export type SalaryConfidence = 'alta' | 'media' | 'baja';
 export type DivisorSource = 'agreement_field' | 'table_total' | 'table_annual' | 'none';
 export type AgreementResolutionStatus = 'computed' | 'manual_review_required' | 'no_agreement';
 
+/**
+ * S9.21p — Camino de resolución usado por el normalizer.
+ *   - contract_explicit: NIVEL 1, datos contractuales completos y coherentes.
+ *   - contract_partial_agreement_aided: NIVEL 2, contrato parcial completado por convenio.
+ *   - legacy_resolution: NIVEL 3, flujo A/B histórico (incluye A3 heurístico).
+ *   - incoherent_structural_safeMode: incoherencia estructural detectada → safeMode.
+ */
+export type ResolutionPath =
+  | 'contract_explicit'
+  | 'contract_partial_agreement_aided'
+  | 'legacy_resolution'
+  | 'incoherent_structural_safeMode';
+
 export interface NormalizerContractInput {
   base_salary?: number | null;
   annual_salary?: number | null;
+  /** S9.21p — unidad salarial explícita pactada en contrato. */
+  salary_amount_unit?: 'monthly' | 'annual' | null;
+  /** S9.21p — número de pagas anuales pactadas en contrato. */
+  salary_periods_per_year?: number | null;
+  /** S9.21p — true si las pagas extra están prorrateadas en mensualidad. */
+  extra_payments_prorated?: boolean | null;
 }
 
 export interface NormalizerAgreementInput {
@@ -64,6 +96,10 @@ export interface NormalizeResult {
   agreementResolutionStatus: AgreementResolutionStatus;
   /** Pasos legibles para auditoría (paso A, paso B, decisiones). */
   trace: string[];
+  /** S9.21p — camino de resolución elegido por la jerarquía. */
+  resolutionPath: ResolutionPath;
+  /** S9.21p — diagnóstico contractual usado en Paso 0. */
+  parametrizationDiagnostic: ParametrizationDiagnostic;
 }
 
 const MIN_DIVISOR = 12;
