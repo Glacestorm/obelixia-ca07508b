@@ -11,6 +11,13 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type {
+  NormalizeResult,
+  AgreementResolutionStatus,
+  SalaryUnit,
+  SalaryConfidence,
+  DivisorSource,
+} from './salaryNormalizer';
 
 // ── Types ──
 
@@ -48,6 +55,14 @@ export interface SalaryResolutionResult {
   tableEntry: AgreementSalaryTable | null;
   /** Trazabilidad del cálculo */
   trace: SalaryResolutionTrace;
+  /** S9.21o — Metadatos del normalizer (modo seguro y diagnóstico). */
+  safeMode?: boolean;
+  safeModeReason?: string;
+  unidadDetectada?: SalaryUnit;
+  divisor?: number | null;
+  divisorSource?: DivisorSource;
+  confianza?: SalaryConfidence;
+  agreementResolutionStatus?: AgreementResolutionStatus;
 }
 
 export interface SalaryResolutionTrace {
@@ -62,6 +77,17 @@ export interface SalaryResolutionTrace {
   formula: string;
   legalReference: string;
   timestamp: string;
+  /** S9.21o — Estado auditable de la resolución de la mejora voluntaria. */
+  agreement_resolution_status?: AgreementResolutionStatus;
+  safeModeReason?: string;
+  unidadDetectada?: SalaryUnit;
+  divisor?: number | null;
+  divisorSource?: DivisorSource;
+  confianza?: SalaryConfidence;
+  normalizerTrace?: string[];
+  /** Auditoría: el usuario confirmó conscientemente guardar pese al modo seguro. */
+  manual_review_confirmation_at?: string;
+  manual_review_confirmed_by?: string | null;
 }
 
 // ── Engine ──
@@ -178,8 +204,48 @@ export function resolveSalaryFromAgreement(
   agreementCode: string,
   professionalGroup: string,
   year: number,
+  /** S9.21o — Metadatos del normalizer. Si se provee con safeMode, mejora=0 y traza ampliada. */
+  normalizer?: NormalizeResult,
 ): SalaryResolutionResult {
   const ts = new Date().toISOString();
+
+  // ── S9.21o: modo seguro estricto ──
+  if (normalizer?.safeMode) {
+    return {
+      salarioBaseConvenio: 0,
+      plusConvenioTabla: 0,
+      mejoraVoluntaria: 0,
+      hasMejoraVoluntaria: false,
+      tableEntry,
+      safeMode: true,
+      safeModeReason: normalizer.safeModeReason,
+      unidadDetectada: normalizer.unidadDetectada,
+      divisor: normalizer.divisor,
+      divisorSource: normalizer.divisorSource,
+      confianza: normalizer.confianza,
+      agreementResolutionStatus: 'manual_review_required',
+      trace: {
+        agreementCode,
+        professionalGroup,
+        year,
+        salarioPactado,
+        salarioBaseConvenio: 0,
+        plusConvenioTabla: 0,
+        totalMinimoConvenio: 0,
+        mejoraVoluntaria: 0,
+        formula: 'Modo seguro: mejora voluntaria no calculada — pendiente de revisión manual.',
+        legalReference: 'ET Art. 26 — requiere unidad y divisor determinables.',
+        timestamp: ts,
+        agreement_resolution_status: 'manual_review_required',
+        safeModeReason: normalizer.safeModeReason,
+        unidadDetectada: normalizer.unidadDetectada,
+        divisor: normalizer.divisor,
+        divisorSource: normalizer.divisorSource,
+        confianza: normalizer.confianza,
+        normalizerTrace: normalizer.trace,
+      },
+    };
+  }
 
   // No table found → use full salary as base, no mejora
   if (!tableEntry) {
@@ -189,6 +255,12 @@ export function resolveSalaryFromAgreement(
       mejoraVoluntaria: 0,
       hasMejoraVoluntaria: false,
       tableEntry: null,
+      safeMode: false,
+      unidadDetectada: normalizer?.unidadDetectada,
+      divisor: normalizer?.divisor,
+      divisorSource: normalizer?.divisorSource,
+      confianza: normalizer?.confianza,
+      agreementResolutionStatus: 'no_agreement',
       trace: {
         agreementCode,
         professionalGroup,
@@ -201,6 +273,12 @@ export function resolveSalaryFromAgreement(
         formula: 'Sin tabla salarial → salario pactado íntegro como salario base',
         legalReference: 'ET Art. 26',
         timestamp: ts,
+        agreement_resolution_status: 'no_agreement',
+        unidadDetectada: normalizer?.unidadDetectada,
+        divisor: normalizer?.divisor,
+        divisorSource: normalizer?.divisorSource,
+        confianza: normalizer?.confianza,
+        normalizerTrace: normalizer?.trace,
       },
     };
   }
@@ -220,6 +298,12 @@ export function resolveSalaryFromAgreement(
     mejoraVoluntaria: r(mejoraVoluntaria),
     hasMejoraVoluntaria: mejoraVoluntaria > 0,
     tableEntry,
+    safeMode: false,
+    unidadDetectada: normalizer?.unidadDetectada,
+    divisor: normalizer?.divisor,
+    divisorSource: normalizer?.divisorSource,
+    confianza: normalizer?.confianza,
+    agreementResolutionStatus: 'computed',
     trace: {
       agreementCode,
       professionalGroup,
@@ -234,6 +318,12 @@ export function resolveSalaryFromAgreement(
         : `Salario = mínimo convenio (${r(totalMinimoConvenio)}€). Sin mejora voluntaria.`,
       legalReference: 'ET Art. 26.5 — Mejora voluntaria absorbible y compensable',
       timestamp: ts,
+      agreement_resolution_status: 'computed',
+      unidadDetectada: normalizer?.unidadDetectada,
+      divisor: normalizer?.divisor,
+      divisorSource: normalizer?.divisorSource,
+      confianza: normalizer?.confianza,
+      normalizerTrace: normalizer?.trace,
     },
   };
 }
