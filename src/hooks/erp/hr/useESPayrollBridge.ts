@@ -1324,6 +1324,10 @@ export function useESPayrollBridge(companyId?: string) {
                   contract: {
                     base_salary: (contract as any)?.base_salary ?? null,
                     annual_salary: (contract as any)?.annual_salary ?? null,
+                    // S9.21p — Source of truth contractual (read-only wiring)
+                    salary_amount_unit: ((contract as any)?.salary_amount_unit ?? null) as 'monthly' | 'annual' | null,
+                    salary_periods_per_year: (contract as any)?.salary_periods_per_year ?? null,
+                    extra_payments_prorated: (contract as any)?.extra_payments_prorated ?? null,
                   },
                   agreement: { extra_payments: (tableEntry as any).extra_pay_amount ?? null },
                   salaryTable: {
