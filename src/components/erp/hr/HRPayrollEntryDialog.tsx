@@ -1093,6 +1093,19 @@ export function HRPayrollEntryDialog({
     if (!selectedEmployeeId || resolutionLoading) return null;
     if (resolutionMode === null) return null;
 
+    // S9.21o — SafeMode tiene prioridad: si el normalizer marcó modo seguro,
+    // mostrar bloque ámbar de revisión manual y no renderizar la mejora calculada.
+    if (normalizerResult?.safeMode && normalizerResult.agreementResolutionStatus === 'manual_review_required') {
+      return (
+        <PayrollSafeModeBlock
+          normalizer={normalizerResult}
+          contractId={resolvedContractId}
+          employeeId={selectedEmployeeId}
+          onOpenContract={() => setShowContractDialog(true)}
+        />
+      );
+    }
+
     if (resolutionMode === 'auto' && agreementResolution) {
       const r = agreementResolution;
       const trace = r.trace;
@@ -1148,6 +1161,16 @@ export function HRPayrollEntryDialog({
               <p className="text-[10px] text-muted-foreground mt-2 italic">
                 <Info className="h-3 w-3 inline mr-0.5" />
                 {trace.formula}
+              </p>
+            )}
+            {normalizerResult && !normalizerResult.safeMode && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                <Info className="h-3 w-3 inline mr-0.5" />
+                Unidad: <span className="font-medium">{normalizerResult.unidadDetectada}</span>
+                {normalizerResult.divisor != null && (
+                  <> · Divisor: <span className="font-medium">{normalizerResult.divisor}</span> ({normalizerResult.divisorSource})</>
+                )}
+                {' '}· Confianza: <span className="font-medium uppercase">{normalizerResult.confianza}</span>
               </p>
             )}
           </CardContent>
