@@ -213,6 +213,8 @@ function safe(
   divisor: number | null,
   divisorSource: DivisorSource,
   trace: string[],
+  diag: ParametrizationDiagnostic,
+  resolutionPath: ResolutionPath = 'legacy_resolution',
   status: AgreementResolutionStatus = 'manual_review_required',
 ): NormalizeResult {
   trace.push(`[SAFE] ${reason}`);
@@ -227,6 +229,8 @@ function safe(
     safeModeReason: reason,
     agreementResolutionStatus: status,
     trace,
+    resolutionPath,
+    parametrizationDiagnostic: diag,
   };
 }
 
