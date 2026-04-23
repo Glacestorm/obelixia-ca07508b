@@ -836,6 +836,9 @@ export function HRPayrollEntryDialog({
     setUnmappedConcepts([]);
     setNormalizerResult(null);
     setResolvedContractId(null);
+    setAgreementSource('none');
+    setAgreementConflictDetected(false);
+    setAgreementConflictResolution(null);
 
     if (!employee) return;
 
