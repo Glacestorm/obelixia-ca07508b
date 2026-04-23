@@ -42,6 +42,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
 import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
 import { FileDown } from 'lucide-react';
+import { normalizeSalarioPactadoToMonthly, type NormalizeResult } from '@/engines/erp/hr/salaryNormalizer';
+import { PayrollSafeModeBlock } from './safeMode/PayrollSafeModeBlock';
+import { PayrollSafeModeSaveDialog } from './safeMode/PayrollSafeModeSaveDialog';
+import { HRContractFormDialog } from './HRContractFormDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PayrollConcept {
   id: string;
