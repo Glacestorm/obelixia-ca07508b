@@ -1395,6 +1395,14 @@ export function useESPayrollBridge(companyId?: string) {
           const netSalary = calculation.summary.liquidoPercibir;
           const employerCost = calculation.summary.totalCosteEmpresa;
 
+          // S9.21o — Adjuntar la traza del convenio (si existe) al
+          // calculation_details para defensa en profundidad y auditoría.
+          const agreementTrace = (salaryResolution as any)?.__agreement_trace ?? null;
+          const calcDetailsToPersist: any = {
+            ...(calculation.summary as any),
+            ...(agreementTrace ? { __agreement_trace: agreementTrace } : {}),
+          };
+
           const { data: record, error: recError } = await supabase.from('hr_payroll_records').insert({
             company_id: companyId,
             employee_id: emp.id,
@@ -1407,7 +1415,7 @@ export function useESPayrollBridge(companyId?: string) {
             employer_cost: employerCost,
             status: 'calculated',
             review_status: 'pending',
-            calculation_details: calculation.summary as any,
+            calculation_details: calcDetailsToPersist,
           } as any).select().single();
 
           if (recError) throw recError;
