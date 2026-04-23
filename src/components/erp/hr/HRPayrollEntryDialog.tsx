@@ -367,6 +367,8 @@ export function HRPayrollEntryDialog({
       setCasuisticaOpen(false);
       setGrupoCotizacion(1);
       setGrupoCotizacionSource('fallback');
+      setNormalizerResult(null);
+      setResolvedContractId(null);
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
