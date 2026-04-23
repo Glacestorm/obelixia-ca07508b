@@ -148,14 +148,24 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
       toast.success('Recibo provisional generado');
       try {
         await (supabase as any)
-          .from('erp_hr_document_access_log')
+          .from('erp_hr_audit_log')
           .insert({
             company_id: employee.company_id,
-            document_id: payslip.id,
-            document_table: 'hr_payroll_records',
+            user_id: (await supabase.auth.getUser()).data.user?.id ?? null,
             action: 'generated_pdf_ondemand',
+            table_name: 'hr_payroll_records',
+            record_id: payslip.id,
+            category: 'payroll_pdf_access',
+            severity: 'info',
             user_agent: navigator.userAgent,
-            metadata: { source: 'employee_portal', source_hash: hash },
+            metadata: {
+              source: 'employee_portal',
+              event_type: 'payroll_pdf_access',
+              entity_type: 'hr_payroll_records',
+              entity_id: payslip.id,
+              employee_id: employee.id,
+              source_hash: hash,
+            },
           });
       } catch { /* non-blocking */ }
     } catch (err) {
@@ -249,14 +259,25 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
       // Best-effort audit log
       try {
         await (supabase as any)
-          .from('erp_hr_document_access_log')
+          .from('erp_hr_audit_log')
           .insert({
             company_id: employee.company_id,
-            document_id: doc.id,
-            document_table: 'erp_hr_employee_documents',
-            action: 'file_download',
+            user_id: (await supabase.auth.getUser()).data.user?.id ?? null,
+            action: 'downloaded_official',
+            table_name: 'hr_payroll_records',
+            record_id: payslipId,
+            category: 'payroll_pdf_access',
+            severity: 'info',
             user_agent: navigator.userAgent,
-            metadata: { source: 'employee_portal', payroll_record_id: payslipId },
+            metadata: {
+              source: 'employee_portal',
+              event_type: 'payroll_pdf_access',
+              entity_type: 'hr_payroll_records',
+              entity_id: payslipId,
+              employee_id: employee.id,
+              document_id: doc.id,
+              document_name: doc.file_name || doc.document_name || null,
+            },
           });
       } catch { /* non-blocking */ }
     } catch {
@@ -468,12 +489,7 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
               }}
               previousPayslip={
                 selectedPayslip
-                  ? payslips.find(
-                      (p) =>
-                        p.id !== selectedPayslip.id &&
-                        new Date(p.created_at) < new Date(selectedPayslip.created_at) &&
-                        p.status !== 'cancelled',
-                    ) || null
+                  ? findComparablePrevious(payslips, selectedPayslip)
                   : null
               }
             />
@@ -710,17 +726,6 @@ function PayslipDetail({
             Descargar PDF de nómina
           </Button>
         )}
-        {calc && (
-          <Button
-            variant={pdfStatus === 'available' ? 'outline' : 'default'}
-            className="gap-2 justify-start"
-            onClick={onGenerateOnDemand}
-            disabled={isGenerating}
-          >
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Generar PDF provisional
-          </Button>
-        )}
         <Button
           variant="outline"
           className="gap-2 justify-start"
@@ -886,4 +891,72 @@ function formatBaseLabel(key: string): string {
     base_horas_extra: 'Base horas extra',
   };
   return map[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+/**
+ * Devuelve la nómina previa **comparable** para el comparador top-3 (S9.23):
+ * - Excluye explícitamente nóminas no comparables: complementarias, atrasos,
+ *   regularizaciones, finiquitos y borradores/canceladas.
+ * - Prioriza la nómina **regular** del periodo inmediatamente anterior
+ *   (mismo `fiscal_year` y `period_number - 1`, o último periodo del año previo).
+ * - Fallback: la regular más reciente anterior por `created_at`.
+ */
+function findComparablePrevious(
+  list: PayslipRecord[],
+  current: PayslipRecord,
+): PayslipRecord | null {
+  const NON_COMPARABLE_TYPE_RE = /(complement|atras|regulariz|finiquit|settlement|extra|bonus_only)/i;
+  const NON_COMPARABLE_STATUS = new Set(['draft', 'cancelled']);
+
+  const isComparable = (p: PayslipRecord): boolean => {
+    if (p.id === current.id) return false;
+    if (NON_COMPARABLE_STATUS.has(p.status)) return false;
+    const meta = (p.metadata || {}) as any;
+    const candidates = [
+      meta.payroll_type,
+      meta.type,
+      meta.kind,
+      meta.subtype,
+      p.period?.period_name,
+    ];
+    for (const c of candidates) {
+      if (typeof c === 'string' && NON_COMPARABLE_TYPE_RE.test(c)) return false;
+    }
+    return true;
+  };
+
+  const candidates = list.filter(isComparable);
+  if (!candidates.length) return null;
+
+  // Priority A: same fiscal_year, period_number = current - 1
+  const curYear = current.period?.fiscal_year;
+  const curNum = current.period?.period_number;
+  if (curYear != null && curNum != null) {
+    const prevSamePeriod = candidates.find(
+      (p) =>
+        p.period?.fiscal_year === curYear &&
+        p.period?.period_number === curNum - 1,
+    );
+    if (prevSamePeriod) return prevSamePeriod;
+
+    // Priority B: if current is period 1 → last period of previous year
+    if (curNum === 1) {
+      const prevYear = candidates
+        .filter((p) => p.period?.fiscal_year === curYear - 1)
+        .sort(
+          (a, b) =>
+            (b.period?.period_number ?? 0) - (a.period?.period_number ?? 0),
+        );
+      if (prevYear[0]) return prevYear[0];
+    }
+  }
+
+  // Fallback: most recent comparable strictly before current.created_at
+  const curTs = new Date(current.created_at).getTime();
+  const sortedPrev = candidates
+    .filter((p) => new Date(p.created_at).getTime() < curTs)
+    .sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  return sortedPrev[0] || null;
 }

@@ -107,6 +107,20 @@ export function usePayrollObjections({ payrollRecordId, employeeId, companyId }:
         if (error) throw error;
         const fresh = data as PayrollObjection;
         setItems((prev) => [fresh, ...prev]);
+        // Timeline (best-effort, non-blocking)
+        try {
+          await (supabase as any)
+            .from('hr_payroll_objection_events')
+            .insert({
+              objection_id: fresh.id,
+              event_type: 'created',
+              actor_id: user.id,
+              actor_role: 'employee',
+              message: params.subject,
+            });
+        } catch (e) {
+          console.warn('[usePayrollObjections] event create failed:', e);
+        }
         toast.success(`Incidencia registrada: ${fresh.reference_number}`);
         return fresh;
       } catch (err) {
@@ -129,6 +143,18 @@ export function usePayrollObjections({ payrollRecordId, employeeId, companyId }:
           .eq('id', objectionId)
           .eq('employee_id', employeeId);
         if (error) throw error;
+        if (user?.id) {
+          try {
+            await (supabase as any)
+              .from('hr_payroll_objection_events')
+              .insert({
+                objection_id: objectionId,
+                event_type: 'reopened',
+                actor_id: user.id,
+                actor_role: 'employee',
+              });
+          } catch (e) { console.warn('[usePayrollObjections] event reopen failed:', e); }
+        }
         toast.success('Incidencia reabierta');
         fetchItems();
       } catch (err) {
@@ -136,7 +162,7 @@ export function usePayrollObjections({ payrollRecordId, employeeId, companyId }:
         toast.error('No se pudo reabrir');
       }
     },
-    [employeeId, fetchItems],
+    [employeeId, fetchItems, user?.id],
   );
 
   const closeAsResolved = useCallback(
@@ -148,6 +174,19 @@ export function usePayrollObjections({ payrollRecordId, employeeId, companyId }:
           .eq('id', objectionId)
           .eq('employee_id', employeeId);
         if (error) throw error;
+        if (user?.id) {
+          try {
+            await (supabase as any)
+              .from('hr_payroll_objection_events')
+              .insert({
+                objection_id: objectionId,
+                event_type: 'closed',
+                actor_id: user.id,
+                actor_role: 'employee',
+                message: 'Marcada como resuelta por el empleado',
+              });
+          } catch (e) { console.warn('[usePayrollObjections] event close failed:', e); }
+        }
         toast.success('Incidencia cerrada');
         fetchItems();
       } catch (err) {
@@ -155,7 +194,7 @@ export function usePayrollObjections({ payrollRecordId, employeeId, companyId }:
         toast.error('No se pudo cerrar');
       }
     },
-    [employeeId, fetchItems],
+    [employeeId, fetchItems, user?.id],
   );
 
   return { items, loading, submitting, create, reopen, closeAsResolved, refresh: fetchItems };
