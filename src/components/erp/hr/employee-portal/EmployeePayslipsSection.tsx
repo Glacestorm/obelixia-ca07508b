@@ -489,12 +489,7 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
               }}
               previousPayslip={
                 selectedPayslip
-                  ? payslips.find(
-                      (p) =>
-                        p.id !== selectedPayslip.id &&
-                        new Date(p.created_at) < new Date(selectedPayslip.created_at) &&
-                        p.status !== 'cancelled',
-                    ) || null
+                  ? findComparablePrevious(payslips, selectedPayslip)
                   : null
               }
             />
@@ -729,17 +724,6 @@ function PayslipDetail({
               ? <Loader2 className="h-4 w-4 animate-spin" />
               : <Download className="h-4 w-4" />}
             Descargar PDF de nómina
-          </Button>
-        )}
-        {calc && (
-          <Button
-            variant={pdfStatus === 'available' ? 'outline' : 'default'}
-            className="gap-2 justify-start"
-            onClick={onGenerateOnDemand}
-            disabled={isGenerating}
-          >
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Generar PDF provisional
           </Button>
         )}
         <Button
