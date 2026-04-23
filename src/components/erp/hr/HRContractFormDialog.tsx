@@ -18,12 +18,20 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale, Info } from 'lucide-react';
+import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale, Info, Calculator, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
 import { HRCNOSelect } from './shared/HRCNOSelect';
 import { HRCollectiveAgreementSelect, type AgreementData } from './shared/HRCollectiveAgreementSelect';
+import { Switch } from '@/components/ui/switch';
+import { ConfirmationDialog } from '@/components/erp/maestros/shared/ConfirmationDialog';
+import {
+  diagnoseContractParametrization,
+  type ParametrizationDiagnostic,
+} from '@/engines/erp/hr/contractSalaryParametrization';
+import { logDataModification } from '@/lib/security/auditLogger';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HRContractFormDialogProps {
   open: boolean;
