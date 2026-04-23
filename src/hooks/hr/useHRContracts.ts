@@ -42,6 +42,22 @@ export interface HRContractAdvanced {
   updated_at: string | null;
 }
 
+// S9.21p — Source of truth contractual + auditoría de incoherencia consciente
+export interface HRContractAdvancedS921p extends HRContractAdvanced {
+  /** Unidad del importe salarial declarado en contrato. Inmutable ante automatismos cuando incoherent. */
+  salary_amount_unit: 'monthly' | 'annual' | null;
+  /** Número de pagas anuales pactadas (12-16). Inmutable ante automatismos cuando incoherent. */
+  salary_periods_per_year: number | null;
+  /** TRUE si las pagas extra están prorrateadas en la mensualidad. Inmutable ante automatismos cuando incoherent. */
+  extra_payments_prorated: boolean | null;
+  /** Fecha en la que un usuario confirmó conscientemente guardar el contrato con datos incoherentes. */
+  manual_incoherence_confirmation_at: string | null;
+  /** Usuario que confirmó la incoherencia (resolver con useProfileLookup). */
+  manual_incoherence_confirmed_by: string | null;
+  /** Tipo de incoherencia confirmada (structural=safeMode obligatorio; soft=legacy con warning). */
+  manual_incoherence_confirmation_type: 'structural' | 'soft' | null;
+}
+
 const QUERY_KEY = 'hr-contracts-advanced';
 
 export function useHRContracts(filters?: { companyId?: string; status?: string; employeeId?: string }) {

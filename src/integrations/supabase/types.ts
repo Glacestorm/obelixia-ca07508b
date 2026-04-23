@@ -31553,8 +31553,12 @@ export type Database = {
           end_date: string | null
           extension_count: number | null
           extension_date: string | null
+          extra_payments_prorated: boolean | null
           id: string
           is_active: boolean | null
+          manual_incoherence_confirmation_at: string | null
+          manual_incoherence_confirmation_type: string | null
+          manual_incoherence_confirmed_by: string | null
           maternity_reincorporation_date: string | null
           maternity_reserve_until: string | null
           notes: string | null
@@ -31562,6 +31566,8 @@ export type Database = {
           part_time_days_week: Json | null
           probation_end_date: string | null
           professional_group: string | null
+          salary_amount_unit: string | null
+          salary_periods_per_year: number | null
           signed_at: string | null
           signed_by_company: boolean | null
           signed_by_employee: boolean | null
@@ -31601,8 +31607,12 @@ export type Database = {
           end_date?: string | null
           extension_count?: number | null
           extension_date?: string | null
+          extra_payments_prorated?: boolean | null
           id?: string
           is_active?: boolean | null
+          manual_incoherence_confirmation_at?: string | null
+          manual_incoherence_confirmation_type?: string | null
+          manual_incoherence_confirmed_by?: string | null
           maternity_reincorporation_date?: string | null
           maternity_reserve_until?: string | null
           notes?: string | null
@@ -31610,6 +31620,8 @@ export type Database = {
           part_time_days_week?: Json | null
           probation_end_date?: string | null
           professional_group?: string | null
+          salary_amount_unit?: string | null
+          salary_periods_per_year?: number | null
           signed_at?: string | null
           signed_by_company?: boolean | null
           signed_by_employee?: boolean | null
@@ -31649,8 +31661,12 @@ export type Database = {
           end_date?: string | null
           extension_count?: number | null
           extension_date?: string | null
+          extra_payments_prorated?: boolean | null
           id?: string
           is_active?: boolean | null
+          manual_incoherence_confirmation_at?: string | null
+          manual_incoherence_confirmation_type?: string | null
+          manual_incoherence_confirmed_by?: string | null
           maternity_reincorporation_date?: string | null
           maternity_reserve_until?: string | null
           notes?: string | null
@@ -31658,6 +31674,8 @@ export type Database = {
           part_time_days_week?: Json | null
           probation_end_date?: string | null
           professional_group?: string | null
+          salary_amount_unit?: string | null
+          salary_periods_per_year?: number | null
           signed_at?: string | null
           signed_by_company?: boolean | null
           signed_by_employee?: boolean | null
