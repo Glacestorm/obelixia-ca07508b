@@ -226,12 +226,17 @@ export function HRContractFormDialog({
       cno_code: '',
       cno_description: '',
       collective_agreement_id: '',
-      notes: ''
+      notes: '',
+      salary_amount_unit: '',
+      salary_periods_per_year: '',
+      extra_payments_prorated: null,
     });
     setSelectedAgreement(null);
     setAvailableGroups([]);
     setUseCustomGroup(false);
     setGroupMismatchWarning(false);
+    setPreviousIncoherenceConfirmed(false);
+    setPendingDiagnostic(null);
   };
 
   // When employee changes on new contract, try prefill
