@@ -69,6 +69,14 @@ export interface NormalizeResult {
 const MIN_DIVISOR = 12;
 const MAX_DIVISOR = 16;
 const COHERENCE_TOLERANCE = 0.05; // 5% para regla A2
+/**
+ * S9.21o-H1 — Umbral anti-misinterpretación para A3.
+ * Un `base_salary` declarado como mensual sólo es plausible por debajo de este
+ * importe. Por encima, sin convenio que confirme el divisor, se considera
+ * ambiguo (probable salario anual mal etiquetado) y se activa modo seguro
+ * (caso C7: base=42000, annual=null, sin convenio resoluble).
+ */
+const A3_MONTHLY_PLAUSIBILITY_MAX = 15000;
 
 function num(v: unknown): number {
   if (v === null || v === undefined) return 0;
@@ -258,6 +266,22 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
 
   // A3 — base > 0 y annual null/0 → mensual (convención), MEDIA
   if (hasBase && !hasAnnual) {
+    // S9.21o-H1 — Guardia anti-misinterpretación (C7):
+    // Si el base_salary es implausiblemente alto para una mensualidad
+    // (> A3_MONTHLY_PLAUSIBILITY_MAX) Y no hay convenio que aporte un divisor
+    // explícito, no podemos asumir "mensual" sin riesgo de leer un anual como
+    // mensual. Activamos modo seguro y derivamos a revisión manual.
+    if (base > A3_MONTHLY_PLAUSIBILITY_MAX && !divisor) {
+      return safe(
+        `Salario base (${base}) declarado sin annual_salary y sin divisor resoluble por convenio. ` +
+          `Importe implausible como mensualidad (> ${A3_MONTHLY_PLAUSIBILITY_MAX}€/mes): ` +
+          `revisión manual requerida para confirmar unidad (mensual vs anual) o configurar el convenio.`,
+        'ambigua',
+        null,
+        divisorSource,
+        trace,
+      );
+    }
     trace.push('[A3] base_salary>0 y annual_salary null/0 → unidad=mensual (convención), confianza=MEDIA');
     const mensualEqPeriodo = base * factorProrrateo;
     trace.push(`[C] mensualEq=base=${base} ; ×factor(${factorProrrateo})=${mensualEqPeriodo.toFixed(2)}`);
