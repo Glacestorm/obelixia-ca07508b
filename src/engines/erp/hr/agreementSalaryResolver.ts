@@ -11,6 +11,13 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import type {
+  NormalizeResult,
+  AgreementResolutionStatus,
+  SalaryUnit,
+  SalaryConfidence,
+  DivisorSource,
+} from './salaryNormalizer';
 
 // ── Types ──
 
@@ -48,6 +55,14 @@ export interface SalaryResolutionResult {
   tableEntry: AgreementSalaryTable | null;
   /** Trazabilidad del cálculo */
   trace: SalaryResolutionTrace;
+  /** S9.21o — Metadatos del normalizer (modo seguro y diagnóstico). */
+  safeMode?: boolean;
+  safeModeReason?: string;
+  unidadDetectada?: SalaryUnit;
+  divisor?: number | null;
+  divisorSource?: DivisorSource;
+  confianza?: SalaryConfidence;
+  agreementResolutionStatus?: AgreementResolutionStatus;
 }
 
 export interface SalaryResolutionTrace {
@@ -62,6 +77,17 @@ export interface SalaryResolutionTrace {
   formula: string;
   legalReference: string;
   timestamp: string;
+  /** S9.21o — Estado auditable de la resolución de la mejora voluntaria. */
+  agreement_resolution_status?: AgreementResolutionStatus;
+  safeModeReason?: string;
+  unidadDetectada?: SalaryUnit;
+  divisor?: number | null;
+  divisorSource?: DivisorSource;
+  confianza?: SalaryConfidence;
+  normalizerTrace?: string[];
+  /** Auditoría: el usuario confirmó conscientemente guardar pese al modo seguro. */
+  manual_review_confirmation_at?: string;
+  manual_review_confirmed_by?: string | null;
 }
 
 // ── Engine ──
