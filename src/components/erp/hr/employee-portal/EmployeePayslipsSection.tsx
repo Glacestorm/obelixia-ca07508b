@@ -892,3 +892,71 @@ function formatBaseLabel(key: string): string {
   };
   return map[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
+
+/**
+ * Devuelve la nómina previa **comparable** para el comparador top-3 (S9.23):
+ * - Excluye explícitamente nóminas no comparables: complementarias, atrasos,
+ *   regularizaciones, finiquitos y borradores/canceladas.
+ * - Prioriza la nómina **regular** del periodo inmediatamente anterior
+ *   (mismo `fiscal_year` y `period_number - 1`, o último periodo del año previo).
+ * - Fallback: la regular más reciente anterior por `created_at`.
+ */
+function findComparablePrevious(
+  list: PayslipRecord[],
+  current: PayslipRecord,
+): PayslipRecord | null {
+  const NON_COMPARABLE_TYPE_RE = /(complement|atras|regulariz|finiquit|settlement|extra|bonus_only)/i;
+  const NON_COMPARABLE_STATUS = new Set(['draft', 'cancelled']);
+
+  const isComparable = (p: PayslipRecord): boolean => {
+    if (p.id === current.id) return false;
+    if (NON_COMPARABLE_STATUS.has(p.status)) return false;
+    const meta = (p.metadata || {}) as any;
+    const candidates = [
+      meta.payroll_type,
+      meta.type,
+      meta.kind,
+      meta.subtype,
+      p.period?.period_name,
+    ];
+    for (const c of candidates) {
+      if (typeof c === 'string' && NON_COMPARABLE_TYPE_RE.test(c)) return false;
+    }
+    return true;
+  };
+
+  const candidates = list.filter(isComparable);
+  if (!candidates.length) return null;
+
+  // Priority A: same fiscal_year, period_number = current - 1
+  const curYear = current.period?.fiscal_year;
+  const curNum = current.period?.period_number;
+  if (curYear != null && curNum != null) {
+    const prevSamePeriod = candidates.find(
+      (p) =>
+        p.period?.fiscal_year === curYear &&
+        p.period?.period_number === curNum - 1,
+    );
+    if (prevSamePeriod) return prevSamePeriod;
+
+    // Priority B: if current is period 1 → last period of previous year
+    if (curNum === 1) {
+      const prevYear = candidates
+        .filter((p) => p.period?.fiscal_year === curYear - 1)
+        .sort(
+          (a, b) =>
+            (b.period?.period_number ?? 0) - (a.period?.period_number ?? 0),
+        );
+      if (prevYear[0]) return prevYear[0];
+    }
+  }
+
+  // Fallback: most recent comparable strictly before current.created_at
+  const curTs = new Date(current.created_at).getTime();
+  const sortedPrev = candidates
+    .filter((p) => new Date(p.created_at).getTime() < curTs)
+    .sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  return sortedPrev[0] || null;
+}
