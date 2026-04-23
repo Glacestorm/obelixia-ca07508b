@@ -745,6 +745,8 @@ export function HRPayrollEntryDialog({
     setResolutionMode(null);
     setAgreementConcepts([]);
     setUnmappedConcepts([]);
+    setNormalizerResult(null);
+    setResolvedContractId(null);
 
     if (!employee) return;
 
@@ -786,10 +788,43 @@ export function HRPayrollEntryDialog({
       }
 
       // Step 2: Resolve contract for this period (Ajuste 1 & 2)
-      const { contractSalary, agreementId, professionalGroup } = await resolveContractForPeriod(employeeId);
+      const {
+        contractSalary,
+        agreementId,
+        professionalGroup,
+        contractId,
+        rawBaseSalary,
+        rawAnnualSalary,
+      } = await resolveContractForPeriod(employeeId);
+      setResolvedContractId(contractId);
 
       // Ajuste 2: Prioritize contract salary, fallback to employee base_salary / 12
       const salarioPactado = contractSalary ?? (empBaseSalaryAnnual > 0 ? Math.round((empBaseSalaryAnnual / 12) * 100) / 100 : 0);
+
+      // S9.21o — Normalizer: detecta unidad/divisor y activa modo seguro si procede.
+      // Requiere fetch de extra_payments del convenio (si existe agreementId).
+      let agreementExtraPayments: number | null = null;
+      if (agreementId) {
+        try {
+          const { data: agreementMeta } = await supabase
+            .from('erp_hr_collective_agreements')
+            .select('extra_payments')
+            .eq('id', agreementId)
+            .maybeSingle();
+          if (agreementMeta && (agreementMeta as any).extra_payments != null) {
+            agreementExtraPayments = Number((agreementMeta as any).extra_payments);
+          }
+        } catch (extraErr) {
+          console.warn('[HRPayrollEntryDialog] agreement.extra_payments fetch failed (non-fatal):', extraErr);
+        }
+      }
+      const normalized = normalizeSalarioPactadoToMonthly({
+        contract: { base_salary: rawBaseSalary, annual_salary: rawAnnualSalary },
+        agreement: agreementExtraPayments != null ? { extra_payments: agreementExtraPayments } : null,
+        salaryTable: null,
+        factorProrrateo: 1,
+      });
+      setNormalizerResult(normalized);
 
       // Step 3: Try agreement resolution if we have agreement + group
       if (agreementId && professionalGroup) {
