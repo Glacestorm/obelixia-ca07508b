@@ -691,6 +691,9 @@ export function HRPayrollEntryDialog({
     contractId: string | null;
     rawBaseSalary: number | null;
     rawAnnualSalary: number | null;
+    salaryAmountUnit: 'monthly' | 'annual' | null;
+    salaryPeriodsPerYear: number | null;
+    extraPaymentsProrated: boolean | null;
   }> => {
     // Build period boundaries
     const periodStart = `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`;
