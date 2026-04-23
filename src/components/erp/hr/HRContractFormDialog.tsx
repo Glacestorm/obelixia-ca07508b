@@ -89,8 +89,17 @@ export function HRContractFormDialog({
     cno_code: '',
     cno_description: '',
     collective_agreement_id: '',
-    notes: ''
+    notes: '',
+    // S9.21p — Source of truth contractual de parametrización salarial
+    salary_amount_unit: '' as '' | 'monthly' | 'annual',
+    salary_periods_per_year: '' as string,
+    extra_payments_prorated: null as boolean | null,
   });
+  // S9.21p — Estado para confirmación de incoherencia
+  const { user } = useAuth();
+  const [showIncoherenceDialog, setShowIncoherenceDialog] = useState(false);
+  const [pendingDiagnostic, setPendingDiagnostic] = useState<ParametrizationDiagnostic | null>(null);
+  const [previousIncoherenceConfirmed, setPreviousIncoherenceConfirmed] = useState(false);
 
   // Fetch professional groups when agreement changes
   const fetchProfessionalGroups = useCallback(async (agreementCode: string) => {
@@ -187,8 +196,17 @@ export function HRContractFormDialog({
         cno_code: (data as Record<string, unknown>).cno_code as string || '',
         cno_description: (data as Record<string, unknown>).cno_description as string || '',
         collective_agreement_id: (data as Record<string, unknown>).collective_agreement_id as string || '',
-        notes: data.notes || ''
+        notes: data.notes || '',
+        salary_amount_unit: ((data as any).salary_amount_unit as 'monthly' | 'annual' | null) || '',
+        salary_periods_per_year: (data as any).salary_periods_per_year != null
+          ? String((data as any).salary_periods_per_year)
+          : '',
+        extra_payments_prorated: ((data as any).extra_payments_prorated ?? null) as boolean | null,
       });
+      // S9.21p — capturar si ya tenía confirmación previa de incoherencia
+      setPreviousIncoherenceConfirmed(
+        Boolean((data as any).manual_incoherence_confirmation_at)
+      );
     }
   };
 
