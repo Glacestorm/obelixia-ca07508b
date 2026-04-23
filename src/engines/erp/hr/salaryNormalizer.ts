@@ -70,11 +70,36 @@ const MIN_DIVISOR = 12;
 const MAX_DIVISOR = 16;
 const COHERENCE_TOLERANCE = 0.05; // 5% para regla A2
 /**
- * S9.21o-H1 — Umbral anti-misinterpretación para A3.
- * Un `base_salary` declarado como mensual sólo es plausible por debajo de este
- * importe. Por encima, sin convenio que confirme el divisor, se considera
- * ambiguo (probable salario anual mal etiquetado) y se activa modo seguro
- * (caso C7: base=42000, annual=null, sin convenio resoluble).
+ * S9.21o-H2 — WORKAROUND HEURÍSTICO TEMPORAL (deuda técnica registrada).
+ *
+ * Umbral anti-misinterpretación para la regla A3 (base>0 y annual=null/0
+ * sin convenio resoluble). Sin un campo explícito de unidad/periodicidad
+ * salarial en el contrato, no es posible distinguir formalmente entre:
+ *   - una mensualidad alta legítima (caso raro pero válido), y
+ *   - un anual mal etiquetado como base_salary (caso C7: 42.000€).
+ *
+ * Este umbral aplica EXCLUSIVAMENTE cuando se cumplen las tres condiciones:
+ *   (1) base_salary > A3_MONTHLY_PLAUSIBILITY_MAX
+ *   (2) annual_salary null o 0
+ *   (3) divisor NO determinable por convenio ni tabla salarial
+ * En ese caso se activa safeMode → manual_review_required, sin reinterpretar.
+ *
+ * LIMITACIÓN FUNCIONAL CONOCIDA:
+ *   Mensualidades reales superiores a 15.000€ sin convenio cargado (alta
+ *   dirección, expatriados sin tabla) caerán a revisión manual aunque sean
+ *   correctas. Es el comportamiento deseado mientras no exista campo de
+ *   unidad explícita: preferimos falso positivo (revisión) a falso negativo
+ *   (cálculo erróneo de mejora voluntaria sobre un anual leído como mensual).
+ *
+ * DEUDA TÉCNICA — futura formalización (fuera de S9.21o):
+ *   Añadir a `hr_es_employee_contracts` un campo
+ *     base_salary_unit: enum('monthly','annual','daily','hourly')
+ *   y opcionalmente `base_salary_periodicity` (nº pagas pactadas a nivel
+ *   contrato, prevalente sobre convenio). Con eso se elimina este umbral
+ *   y A3 deja de necesitar heurística: la unidad pasa a ser explícita.
+ *
+ * Mientras tanto, este valor se mantiene como umbral conservador y debe
+ * revisarse junto con cualquier cambio en la regla A3.
  */
 const A3_MONTHLY_PLAUSIBILITY_MAX = 15000;
 
