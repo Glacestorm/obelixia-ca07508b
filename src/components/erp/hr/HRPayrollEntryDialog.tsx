@@ -1139,6 +1139,27 @@ export function HRPayrollEntryDialog({
     }
   };
 
+  /**
+   * S9.21o — Wrapper de guardado: si el normalizer está en
+   * `manual_review_required`, abre AlertDialog de aviso pre-guardado no
+   * bloqueante. En caso contrario, persiste directamente.
+   */
+  const handleSave = async () => {
+    if (
+      normalizerResult?.safeMode &&
+      normalizerResult.agreementResolutionStatus === 'manual_review_required'
+    ) {
+      setShowSafeModeSaveDialog(true);
+      return;
+    }
+    await performSave(false);
+  };
+
+  const handleConfirmSafeModeSave = async () => {
+    setShowSafeModeSaveDialog(false);
+    await performSave(true);
+  };
+
   // S9.13: Agreement resolution card
   const renderAgreementCard = () => {
     if (!selectedEmployeeId || resolutionLoading) return null;
