@@ -890,8 +890,14 @@ export function HRPayrollEntryDialog({
         salaryAmountUnit,
         salaryPeriodsPerYear,
         extraPaymentsProrated,
+        agreementSource: resolvedAgreementSource,
+        agreementConflictDetected: resolvedConflict,
+        agreementConflictResolution: resolvedConflictRes,
       } = await resolveContractForPeriod(employeeId);
       setResolvedContractId(contractId);
+      setAgreementSource(resolvedAgreementSource);
+      setAgreementConflictDetected(resolvedConflict);
+      setAgreementConflictResolution(resolvedConflictRes);
 
       // Ajuste 2: Prioritize contract salary, fallback to employee base_salary / 12
       const salarioPactado = contractSalary ?? (empBaseSalaryAnnual > 0 ? Math.round((empBaseSalaryAnnual / 12) * 100) / 100 : 0);
