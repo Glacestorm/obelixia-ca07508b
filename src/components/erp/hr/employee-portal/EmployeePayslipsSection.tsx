@@ -148,14 +148,24 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
       toast.success('Recibo provisional generado');
       try {
         await (supabase as any)
-          .from('erp_hr_document_access_log')
+          .from('erp_hr_audit_log')
           .insert({
             company_id: employee.company_id,
-            document_id: payslip.id,
-            document_table: 'hr_payroll_records',
+            user_id: (await supabase.auth.getUser()).data.user?.id ?? null,
             action: 'generated_pdf_ondemand',
+            table_name: 'hr_payroll_records',
+            record_id: payslip.id,
+            category: 'payroll_pdf_access',
+            severity: 'info',
             user_agent: navigator.userAgent,
-            metadata: { source: 'employee_portal', source_hash: hash },
+            metadata: {
+              source: 'employee_portal',
+              event_type: 'payroll_pdf_access',
+              entity_type: 'hr_payroll_records',
+              entity_id: payslip.id,
+              employee_id: employee.id,
+              source_hash: hash,
+            },
           });
       } catch { /* non-blocking */ }
     } catch (err) {
@@ -249,14 +259,25 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
       // Best-effort audit log
       try {
         await (supabase as any)
-          .from('erp_hr_document_access_log')
+          .from('erp_hr_audit_log')
           .insert({
             company_id: employee.company_id,
-            document_id: doc.id,
-            document_table: 'erp_hr_employee_documents',
-            action: 'file_download',
+            user_id: (await supabase.auth.getUser()).data.user?.id ?? null,
+            action: 'downloaded_official',
+            table_name: 'hr_payroll_records',
+            record_id: payslipId,
+            category: 'payroll_pdf_access',
+            severity: 'info',
             user_agent: navigator.userAgent,
-            metadata: { source: 'employee_portal', payroll_record_id: payslipId },
+            metadata: {
+              source: 'employee_portal',
+              event_type: 'payroll_pdf_access',
+              entity_type: 'hr_payroll_records',
+              entity_id: payslipId,
+              employee_id: employee.id,
+              document_id: doc.id,
+              document_name: doc.file_name || doc.document_name || null,
+            },
           });
       } catch { /* non-blocking */ }
     } catch {
