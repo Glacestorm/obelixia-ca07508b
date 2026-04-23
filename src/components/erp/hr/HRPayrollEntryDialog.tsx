@@ -970,7 +970,12 @@ export function HRPayrollEntryDialog({
       .reduce((sum, e) => sum + (e.amount || 0), 0);
   }, [earnings]);
 
-  const handleSave = async () => {
+  /**
+   * S9.21o — Persistencia real de la nómina. Acepta flag de confirmación
+   * post-aviso para registrar `manual_review_confirmation_at` y
+   * `manual_review_confirmed_by` en la traza cuando proceda.
+   */
+  const performSave = async (manualReviewConfirmed = false) => {
     if (!selectedEmployeeId) {
       toast.error('Selecciona un empleado');
       return;
@@ -1010,13 +1015,56 @@ export function HRPayrollEntryDialog({
 
       // Ajuste 5 & trazabilidad: Include agreement trace if resolved
       if (agreementResolution?.trace) {
+        // S9.21o — Enriquecer la traza con metadatos del normalizer y, si el
+        // usuario confirmó conscientemente el modo seguro, marcar auditoría.
+        const enrichedTrace: any = {
+          ...agreementResolution.trace,
+          agreement_resolution_status:
+            normalizerResult?.agreementResolutionStatus ??
+            agreementResolution.trace.agreement_resolution_status ??
+            'computed',
+          safeModeReason: normalizerResult?.safeModeReason,
+          unidadDetectada: normalizerResult?.unidadDetectada,
+          divisor: normalizerResult?.divisor ?? null,
+          divisorSource: normalizerResult?.divisorSource,
+          confianza: normalizerResult?.confianza,
+          normalizerTrace: normalizerResult?.trace,
+        };
+        if (manualReviewConfirmed) {
+          enrichedTrace.manual_review_confirmation_at = new Date().toISOString();
+          enrichedTrace.manual_review_confirmed_by = user?.id ?? null;
+        }
         complements.push({
           code: '__agreement_trace',
           name: 'Traza de convenio',
           amount: 0,
           cotizaSS: false,
           tributaIRPF: false,
-          ...({ trace: agreementResolution.trace, mode: resolutionMode } as any),
+          ...({ trace: enrichedTrace, mode: resolutionMode } as any),
+        });
+      } else if (normalizerResult) {
+        // No agreementResolution pero sí normalizer (ej. safeMode sin convenio resuelto)
+        const enrichedTrace: any = {
+          agreement_resolution_status: normalizerResult.agreementResolutionStatus,
+          safeModeReason: normalizerResult.safeModeReason,
+          unidadDetectada: normalizerResult.unidadDetectada,
+          divisor: normalizerResult.divisor,
+          divisorSource: normalizerResult.divisorSource,
+          confianza: normalizerResult.confianza,
+          normalizerTrace: normalizerResult.trace,
+          timestamp: new Date().toISOString(),
+        };
+        if (manualReviewConfirmed) {
+          enrichedTrace.manual_review_confirmation_at = new Date().toISOString();
+          enrichedTrace.manual_review_confirmed_by = user?.id ?? null;
+        }
+        complements.push({
+          code: '__agreement_trace',
+          name: 'Traza de convenio',
+          amount: 0,
+          cotizaSS: false,
+          tributaIRPF: false,
+          ...({ trace: enrichedTrace, mode: resolutionMode } as any),
         });
       }
 
