@@ -702,7 +702,7 @@ export function HRPayrollEntryDialog({
     // Order by start_date desc to get most recent applicable contract
     const { data: contracts, error } = await supabase
       .from('erp_hr_contracts')
-      .select('id, base_salary, annual_salary, collective_agreement_id, professional_group, start_date, end_date')
+      .select('id, base_salary, annual_salary, collective_agreement_id, professional_group, start_date, end_date, salary_amount_unit, salary_periods_per_year, extra_payments_prorated')
       .eq('employee_id', employeeId)
       .lte('start_date', periodEnd)
       .or(`end_date.is.null,end_date.gte.${periodStart}`)
@@ -717,6 +717,9 @@ export function HRPayrollEntryDialog({
         contractId: null,
         rawBaseSalary: null,
         rawAnnualSalary: null,
+        salaryAmountUnit: null,
+        salaryPeriodsPerYear: null,
+        extraPaymentsProrated: null,
       };
     }
 
@@ -737,6 +740,9 @@ export function HRPayrollEntryDialog({
       contractId: contract.id || null,
       rawBaseSalary: contract.base_salary != null ? Number(contract.base_salary) : null,
       rawAnnualSalary: contract.annual_salary != null ? Number(contract.annual_salary) : null,
+      salaryAmountUnit: (contract.salary_amount_unit ?? null) as 'monthly' | 'annual' | null,
+      salaryPeriodsPerYear: contract.salary_periods_per_year != null ? Number(contract.salary_periods_per_year) : null,
+      extraPaymentsProrated: contract.extra_payments_prorated ?? null,
     };
   };
 
