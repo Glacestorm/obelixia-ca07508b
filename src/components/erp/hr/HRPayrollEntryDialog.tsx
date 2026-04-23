@@ -875,11 +875,19 @@ export function HRPayrollEntryDialog({
             // Pre-fill earnings with classic trio
             const classicEarnings = DEFAULT_EARNINGS.map((e, i) => {
               let amount = 0;
-              if (e.code === 'BASE') amount = resolution.salarioBaseConvenio;
-              else if (e.code === 'PLUS_CONV') amount = resolution.plusConvenioTabla;
-              else if (e.code === 'MEJORA_VOL') {
-                // S9.21o — En modo seguro, mejora voluntaria SIEMPRE = 0.
-                amount = normalized.safeMode ? 0 : resolution.mejoraVoluntaria;
+              // S9.21r — En modo seguro, TODO el bloque salarial fijo queda a 0.
+              // No puede mezclarse safeMode con bases convenio "normales": la
+              // mejora voluntaria depende de un mensual equivalente fiable que
+              // safeMode niega por definición. La UI debe mostrar el bloque
+              // ámbar de revisión manual y earnings vacíos hasta corrección.
+              if (normalized.safeMode) {
+                amount = 0;
+              } else if (e.code === 'BASE') {
+                amount = resolution.salarioBaseConvenio;
+              } else if (e.code === 'PLUS_CONV') {
+                amount = resolution.plusConvenioTabla;
+              } else if (e.code === 'MEJORA_VOL') {
+                amount = resolution.mejoraVoluntaria;
               }
               return { ...e, id: `earning-${i}`, amount };
             });
@@ -968,7 +976,19 @@ export function HRPayrollEntryDialog({
 
       // Fallback: no agreement or no table → manual mode
       if (!resolutionMode) setResolutionMode('manual');
-      resetConcepts(salarioPactado, 15);
+      // S9.21r — Causa raíz del bug "Salario base = 42000":
+      // Antes se inyectaba `salarioPactado` (= contract.base_salary crudo)
+      // como BASE mensual sin honrar el normalizer. Si el normalizer activó
+      // safeMode (ambigüedad estructural / A4 / B4 / C7-C9), el BASE debe
+      // quedar a 0 hasta corrección contractual explícita. Si el normalizer
+      // resolvió correctamente la unidad, usamos su mensual equivalente
+      // (que ya divide anuales por divisor coherente).
+      const baseSeguro = normalized.safeMode
+        ? 0
+        : (normalized.mensualEquivalente > 0
+            ? normalized.mensualEquivalente
+            : salarioPactado);
+      resetConcepts(baseSeguro, 15);
     } catch (err) {
       console.error('[HRPayrollEntryDialog] agreement resolution error:', err);
       setResolutionMode('manual');
