@@ -215,6 +215,10 @@ export function HRPayrollEntryDialog({
   const [agreementName, setAgreementName] = useState('');
   const [resolutionMode, setResolutionMode] = useState<AgreementResolutionMode>(null);
   const [resolutionLoading, setResolutionLoading] = useState(false);
+  // S9.21s — Trazabilidad del origen del convenio aplicado
+  const [agreementSource, setAgreementSource] = useState<'employee_assignment' | 'contract' | 'none'>('none');
+  const [agreementConflictDetected, setAgreementConflictDetected] = useState(false);
+  const [agreementConflictResolution, setAgreementConflictResolution] = useState<'employee_assignment_prioritized' | null>(null);
   // Phase 2A: dynamic agreement concepts
   const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
@@ -694,6 +698,9 @@ export function HRPayrollEntryDialog({
    * S9.13: Resolve the applicable contract for the payroll period.
    * Ajuste 1: Not just status='active' — find the contract effective for the period.
    * Ajuste 2: Prioritize contract salary over erp_hr_employees.base_salary.
+   * S9.21s: Source of truth de convenio prioriza hr_es_employee_labor_data
+   *         (asignación activa del empleado en People) sobre contract.collective_agreement_id.
+   *         Detecta conflictos y deja traza visible.
    */
   const resolveContractForPeriod = async (employeeId: string): Promise<{
     contractSalary: number | null;
@@ -705,6 +712,11 @@ export function HRPayrollEntryDialog({
     salaryAmountUnit: 'monthly' | 'annual' | null;
     salaryPeriodsPerYear: number | null;
     extraPaymentsProrated: boolean | null;
+    agreementSource: 'employee_assignment' | 'contract' | 'none';
+    agreementConflictDetected: boolean;
+    agreementConflictResolution: 'employee_assignment_prioritized' | null;
+    contractAgreementId: string | null;
+    employeeAssignmentAgreementId: string | null;
   }> => {
     // Build period boundaries
     const periodStart = `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`;
@@ -723,17 +735,40 @@ export function HRPayrollEntryDialog({
       .order('start_date', { ascending: false })
       .limit(1);
 
+    // S9.21s — Asignación activa del empleado en People (source of truth principal)
+    let employeeAssignmentAgreementId: string | null = null;
+    let employeeAssignmentCategory: string | null = null;
+    try {
+      const { data: laborES } = await supabase
+        .from('hr_es_employee_labor_data')
+        .select('convenio_colectivo_id, categoria_profesional')
+        .eq('employee_id', employeeId)
+        .eq('company_id', companyId)
+        .maybeSingle();
+      employeeAssignmentAgreementId = (laborES as any)?.convenio_colectivo_id ?? null;
+      employeeAssignmentCategory = (laborES as any)?.categoria_profesional ?? null;
+    } catch (laborErr) {
+      console.warn('[HRPayrollEntryDialog] employee labor_data fetch failed (non-fatal):', laborErr);
+    }
+
     if (error || !contracts || contracts.length === 0) {
+      // Aún sin contrato, si hay asignación de empleado, devolverla.
+      const noContractSource: 'employee_assignment' | 'none' = employeeAssignmentAgreementId ? 'employee_assignment' : 'none';
       return {
         contractSalary: null,
-        agreementId: null,
-        professionalGroup: null,
+        agreementId: employeeAssignmentAgreementId,
+        professionalGroup: employeeAssignmentCategory,
         contractId: null,
         rawBaseSalary: null,
         rawAnnualSalary: null,
         salaryAmountUnit: null,
         salaryPeriodsPerYear: null,
         extraPaymentsProrated: null,
+        agreementSource: noContractSource,
+        agreementConflictDetected: false,
+        agreementConflictResolution: null,
+        contractAgreementId: null,
+        employeeAssignmentAgreementId,
       };
     }
 
@@ -747,16 +782,48 @@ export function HRPayrollEntryDialog({
       contractSalary = Math.round((Number(contract.annual_salary) / 12) * 100) / 100;
     }
 
+    // S9.21s — Prioridad explícita: employee_assignment > contract > none
+    const contractAgreementId = (contract.collective_agreement_id as string | null) || null;
+    let agreementSource: 'employee_assignment' | 'contract' | 'none' = 'none';
+    let resolvedAgreementId: string | null = null;
+    let resolvedProfessionalGroup: string | null = null;
+    let agreementConflictDetected = false;
+    let agreementConflictResolution: 'employee_assignment_prioritized' | null = null;
+
+    if (employeeAssignmentAgreementId) {
+      agreementSource = 'employee_assignment';
+      resolvedAgreementId = employeeAssignmentAgreementId;
+      // Categoría: prioriza la del empleado si está, fallback a contract
+      resolvedProfessionalGroup = employeeAssignmentCategory || (contract.professional_group as string | null) || null;
+      if (contractAgreementId && contractAgreementId !== employeeAssignmentAgreementId) {
+        agreementConflictDetected = true;
+        agreementConflictResolution = 'employee_assignment_prioritized';
+        console.warn('[HRPayrollEntryDialog] agreement conflict: employee assignment prioritized over contract', {
+          employeeAssignmentAgreementId,
+          contractAgreementId,
+        });
+      }
+    } else if (contractAgreementId) {
+      agreementSource = 'contract';
+      resolvedAgreementId = contractAgreementId;
+      resolvedProfessionalGroup = (contract.professional_group as string | null) || null;
+    }
+
     return {
       contractSalary,
-      agreementId: contract.collective_agreement_id || null,
-      professionalGroup: contract.professional_group || null,
+      agreementId: resolvedAgreementId,
+      professionalGroup: resolvedProfessionalGroup,
       contractId: contract.id || null,
       rawBaseSalary: contract.base_salary != null ? Number(contract.base_salary) : null,
       rawAnnualSalary: contract.annual_salary != null ? Number(contract.annual_salary) : null,
       salaryAmountUnit: (contract.salary_amount_unit ?? null) as 'monthly' | 'annual' | null,
       salaryPeriodsPerYear: contract.salary_periods_per_year != null ? Number(contract.salary_periods_per_year) : null,
       extraPaymentsProrated: contract.extra_payments_prorated ?? null,
+      agreementSource,
+      agreementConflictDetected,
+      agreementConflictResolution,
+      contractAgreementId,
+      employeeAssignmentAgreementId,
     };
   };
 
@@ -769,6 +836,9 @@ export function HRPayrollEntryDialog({
     setUnmappedConcepts([]);
     setNormalizerResult(null);
     setResolvedContractId(null);
+    setAgreementSource('none');
+    setAgreementConflictDetected(false);
+    setAgreementConflictResolution(null);
 
     if (!employee) return;
 
@@ -820,8 +890,14 @@ export function HRPayrollEntryDialog({
         salaryAmountUnit,
         salaryPeriodsPerYear,
         extraPaymentsProrated,
+        agreementSource: resolvedAgreementSource,
+        agreementConflictDetected: resolvedConflict,
+        agreementConflictResolution: resolvedConflictRes,
       } = await resolveContractForPeriod(employeeId);
       setResolvedContractId(contractId);
+      setAgreementSource(resolvedAgreementSource);
+      setAgreementConflictDetected(resolvedConflict);
+      setAgreementConflictResolution(resolvedConflictRes);
 
       // Ajuste 2: Prioritize contract salary, fallback to employee base_salary / 12
       const salarioPactado = contractSalary ?? (empBaseSalaryAnnual > 0 ? Math.round((empBaseSalaryAnnual / 12) * 100) / 100 : 0);
@@ -1241,6 +1317,22 @@ export function HRPayrollEntryDialog({
                 <CheckCircle className="h-3 w-3 mr-0.5" />
                 Automático
               </Badge>
+              {agreementSource === 'employee_assignment' && (
+                <Badge variant="outline" className="text-[10px] h-5 border-primary/40 text-primary" title="Asignación activa del empleado en People">
+                  Origen: Empleado
+                </Badge>
+              )}
+              {agreementSource === 'contract' && (
+                <Badge variant="outline" className="text-[10px] h-5 border-muted-foreground/40 text-muted-foreground" title="Convenio enlazado al contrato">
+                  Origen: Contrato
+                </Badge>
+              )}
+              {agreementConflictDetected && (
+                <Badge variant="outline" className="text-[10px] h-5 border-warning/50 text-warning" title="El convenio del contrato difiere de la asignación activa del empleado. Se prioriza la asignación del empleado.">
+                  <AlertTriangle className="h-3 w-3 mr-0.5" />
+                  Conflicto: empleado prioriza
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-3">
