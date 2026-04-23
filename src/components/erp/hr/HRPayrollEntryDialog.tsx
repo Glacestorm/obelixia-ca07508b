@@ -1317,6 +1317,22 @@ export function HRPayrollEntryDialog({
                 <CheckCircle className="h-3 w-3 mr-0.5" />
                 Automático
               </Badge>
+              {agreementSource === 'employee_assignment' && (
+                <Badge variant="outline" className="text-[10px] h-5 border-primary/40 text-primary" title="Asignación activa del empleado en People">
+                  Origen: Empleado
+                </Badge>
+              )}
+              {agreementSource === 'contract' && (
+                <Badge variant="outline" className="text-[10px] h-5 border-muted-foreground/40 text-muted-foreground" title="Convenio enlazado al contrato">
+                  Origen: Contrato
+                </Badge>
+              )}
+              {agreementConflictDetected && (
+                <Badge variant="outline" className="text-[10px] h-5 border-warning/50 text-warning" title="El convenio del contrato difiere de la asignación activa del empleado. Se prioriza la asignación del empleado.">
+                  <AlertTriangle className="h-3 w-3 mr-0.5" />
+                  Conflicto: empleado prioriza
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-3">
