@@ -215,6 +215,10 @@ export function HRPayrollEntryDialog({
   const [agreementName, setAgreementName] = useState('');
   const [resolutionMode, setResolutionMode] = useState<AgreementResolutionMode>(null);
   const [resolutionLoading, setResolutionLoading] = useState(false);
+  // S9.21s — Trazabilidad del origen del convenio aplicado
+  const [agreementSource, setAgreementSource] = useState<'employee_assignment' | 'contract' | 'none'>('none');
+  const [agreementConflictDetected, setAgreementConflictDetected] = useState(false);
+  const [agreementConflictResolution, setAgreementConflictResolution] = useState<'employee_assignment_prioritized' | null>(null);
   // Phase 2A: dynamic agreement concepts
   const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
