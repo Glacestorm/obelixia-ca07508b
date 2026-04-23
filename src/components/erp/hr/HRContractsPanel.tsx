@@ -234,10 +234,90 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
     }
   };
 
-  const filteredContracts = contracts.filter(c => {
-    const employeeName = c.employee ? `${c.employee.first_name} ${c.employee.last_name}` : '';
-    return employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+  // S9.21p — Diagnóstico runtime sobre cada fila (única fuente de verdad funcional)
+  const contractsWithDiagnostic = contracts.map(c => ({
+    contract: c,
+    diagnostic: diagnoseContractParametrization({
+      salary_amount_unit: c.salary_amount_unit ?? null,
+      salary_periods_per_year: c.salary_periods_per_year ?? null,
+      extra_payments_prorated: c.extra_payments_prorated ?? null,
+      base_salary: c.base_salary ?? null,
+      annual_salary: c.annual_salary ?? null,
+    }),
+  }));
+
+  const reviewCount = contractsWithDiagnostic.filter(
+    ({ diagnostic }) => diagnostic.status !== 'complete'
+  ).length;
+
+  // Resolve confirmed_by user labels in batch
+  const confirmedByIds = contracts
+    .map(c => c.manual_incoherence_confirmed_by)
+    .filter((x): x is string => !!x);
+  const { resolve: resolveUser } = useProfileLookup(confirmedByIds);
+
+  const filteredContracts = contractsWithDiagnostic.filter(({ contract, diagnostic }) => {
+    const employeeName = contract.employee
+      ? `${contract.employee.first_name} ${contract.employee.last_name}`
+      : '';
+    const matchesSearch = employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    if (onlyParamReview && diagnostic.status === 'complete') return false;
+    return true;
   });
+
+  const renderParamBadge = (diag: ParametrizationDiagnostic, contract: Contract) => {
+    if (diag.status === 'complete') {
+      return (
+        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs">
+          <CheckCircle className="h-3 w-3 mr-1" /> OK
+        </Badge>
+      );
+    }
+    if (diag.status === 'pending') {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs cursor-help">
+                <Clock className="h-3 w-3 mr-1" /> Pendiente
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="text-xs">{diag.reasons[0]}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    // incoherent
+    const isStructural = diag.incoherenceSeverity === 'structural';
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge className={`text-xs cursor-help ${
+              isStructural
+                ? 'bg-destructive/10 text-destructive border-destructive/30'
+                : 'bg-sky-500/10 text-sky-600 border-sky-500/30'
+            }`}>
+              <ShieldAlert className="h-3 w-3 mr-1" />
+              Incoherente · {diag.incoherenceSeverity}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm space-y-1">
+            {diag.reasons.map((r, i) => <p key={i} className="text-xs">• {r}</p>)}
+            {contract.manual_incoherence_confirmation_at && (
+              <p className="text-xs pt-1 border-t border-border/40 text-muted-foreground">
+                Confirmado el {format(new Date(contract.manual_incoherence_confirmation_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                {' por '}{resolveUser(contract.manual_incoherence_confirmed_by)}
+              </p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -264,7 +344,14 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">Contratos Laborales</CardTitle>
-                  <CardDescription>Gestión de contratos activos y vencimientos</CardDescription>
+                  <CardDescription>
+                    Gestión de contratos activos y vencimientos
+                    {reviewCount > 0 && (
+                      <span className="ml-2 text-amber-600 font-medium">
+                        · {reviewCount} de {contracts.length} requieren parametrización o revisión
+                      </span>
+                    )}
+                  </CardDescription>
                 </div>
                 <Button size="sm" onClick={() => setShowContractDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
@@ -282,6 +369,16 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
                   />
+                </div>
+                <div className="flex items-center gap-2 px-3 h-9 rounded-md border border-input">
+                  <Switch
+                    id="only-review"
+                    checked={onlyParamReview}
+                    onCheckedChange={setOnlyParamReview}
+                  />
+                  <Label htmlFor="only-review" className="text-xs cursor-pointer">
+                    Solo pendientes/incoherentes
+                  </Label>
                 </div>
                 <Button variant="outline" size="sm" onClick={fetchContracts} disabled={loading}>
                   <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
