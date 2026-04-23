@@ -571,6 +571,116 @@ export function HRContractFormDialog({
               </div>
             </div>
 
+            {/* S9.21p — PARAMETRIZACIÓN SALARIAL (Source of Truth) */}
+            <div className="space-y-3 p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-primary" />
+                <Label className="font-semibold">Parametrización salarial</Label>
+                <Badge variant="outline" className="text-xs">Source of truth</Badge>
+                {liveDiagnostic.status === 'complete' && (
+                  <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs">
+                    Coherente
+                  </Badge>
+                )}
+                {liveDiagnostic.status === 'pending' && (
+                  <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">
+                    Pendiente
+                  </Badge>
+                )}
+                {liveDiagnostic.status === 'incoherent' && (
+                  <Badge className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
+                    Incoherente · {liveDiagnostic.incoherenceSeverity}
+                  </Badge>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs">Unidad salarial *</Label>
+                  <Select
+                    value={formData.salary_amount_unit}
+                    onValueChange={(v) => setFormData(prev => ({
+                      ...prev,
+                      salary_amount_unit: v as 'monthly' | 'annual',
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Mensual (base × N pagas)</SelectItem>
+                      <SelectItem value="annual">Anual (anual ÷ N pagas)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Pagas por año</Label>
+                  <Select
+                    value={formData.salary_periods_per_year}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, salary_periods_per_year: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="N..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12 (prorrateadas)</SelectItem>
+                      <SelectItem value="14">14 (junio + diciembre)</SelectItem>
+                      <SelectItem value="15">15</SelectItem>
+                      <SelectItem value="16">16</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Pagas extra prorrateadas</Label>
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-background">
+                    <Switch
+                      checked={formData.extra_payments_prorated === true}
+                      onCheckedChange={(checked) => setFormData(prev => ({
+                        ...prev,
+                        extra_payments_prorated: checked,
+                      }))}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {formData.extra_payments_prorated === true ? 'Sí' : 'No'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {/* Diagnostic feedback */}
+              {liveDiagnostic.status === 'incoherent' && (
+                <div className={`p-2 rounded-md text-xs ${
+                  liveDiagnostic.incoherenceSeverity === 'structural'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                }`}>
+                  <div className="flex items-start gap-1.5">
+                    <ShieldAlert className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-0.5">
+                      <p className="font-semibold">
+                        {liveDiagnostic.incoherenceSeverity === 'structural'
+                          ? 'Incoherencia estructural'
+                          : 'Incoherencia leve'}
+                      </p>
+                      {liveDiagnostic.reasons.map((r, i) => (
+                        <p key={i}>• {r}</p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {liveDiagnostic.status === 'pending' && liveDiagnostic.reasons.length > 0 && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  {liveDiagnostic.reasons[0]}
+                </p>
+              )}
+              {previousIncoherenceConfirmed && liveDiagnostic.status === 'complete' && (
+                <p className="text-xs text-emerald-600 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Al guardar se registrará la resolución de la incoherencia previa.
+                </p>
+              )}
+            </div>
+
             {/* CONVENIO COLECTIVO (OBLIGATORIO Art. 8.5 ET) */}
             <div className="space-y-2 p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
               <div className="flex items-center gap-2">
