@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { 
   FileText, Plus, Search, Filter, Calendar, AlertTriangle,
-  CheckCircle, Clock, Calculator, UserX, Euro, FileDown, RefreshCw
+  CheckCircle, Clock, Calculator, UserX, Euro, FileDown, RefreshCw, ShieldAlert, Info
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -24,6 +24,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRContractFormDialog } from './HRContractFormDialog';
 import { HRSettlementDialog } from './dialogs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  diagnoseContractParametrization,
+  type ParametrizationDiagnostic,
+} from '@/engines/erp/hr/contractSalaryParametrization';
+import { useProfileLookup } from '@/hooks/shared/useProfileLookup';
 
 interface HRContractsPanelProps {
   companyId: string;
@@ -37,9 +45,18 @@ interface Contract {
   start_date: string;
   end_date: string | null;
   base_salary: number | null;
+  annual_salary?: number | null;
   category: string | null;
   workday_type: string;
   is_active: boolean;
+  // S9.21p — campos de parametrización
+  salary_amount_unit?: 'monthly' | 'annual' | null;
+  salary_periods_per_year?: number | null;
+  extra_payments_prorated?: boolean | null;
+  // S9.21p — auditoría local
+  manual_incoherence_confirmation_at?: string | null;
+  manual_incoherence_confirmed_by?: string | null;
+  manual_incoherence_confirmation_type?: 'structural' | 'soft' | null;
   employee?: {
     id: string;
     first_name: string;
@@ -56,6 +73,8 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
   const [showContractDialog, setShowContractDialog] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [showSettlementDialog, setShowSettlementDialog] = useState(false);
+  // S9.21p — filtro toggle
+  const [onlyParamReview, setOnlyParamReview] = useState(false);
 
   // Fetch contracts from database
   const fetchContracts = useCallback(async () => {
@@ -65,7 +84,9 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
         .from('erp_hr_contracts')
         .select(`
           id, employee_id, contract_type, contract_code, start_date, end_date,
-          base_salary, category, workday_type, is_active,
+          base_salary, annual_salary, category, workday_type, is_active,
+          salary_amount_unit, salary_periods_per_year, extra_payments_prorated,
+          manual_incoherence_confirmation_at, manual_incoherence_confirmed_by, manual_incoherence_confirmation_type,
           erp_hr_employees!employee_id (id, first_name, last_name, department_id)
         `)
         .eq('company_id', companyId)
@@ -213,10 +234,90 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
     }
   };
 
-  const filteredContracts = contracts.filter(c => {
-    const employeeName = c.employee ? `${c.employee.first_name} ${c.employee.last_name}` : '';
-    return employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+  // S9.21p — Diagnóstico runtime sobre cada fila (única fuente de verdad funcional)
+  const contractsWithDiagnostic = contracts.map(c => ({
+    contract: c,
+    diagnostic: diagnoseContractParametrization({
+      salary_amount_unit: c.salary_amount_unit ?? null,
+      salary_periods_per_year: c.salary_periods_per_year ?? null,
+      extra_payments_prorated: c.extra_payments_prorated ?? null,
+      base_salary: c.base_salary ?? null,
+      annual_salary: c.annual_salary ?? null,
+    }),
+  }));
+
+  const reviewCount = contractsWithDiagnostic.filter(
+    ({ diagnostic }) => diagnostic.status !== 'complete'
+  ).length;
+
+  // Resolve confirmed_by user labels in batch
+  const confirmedByIds = contracts
+    .map(c => c.manual_incoherence_confirmed_by)
+    .filter((x): x is string => !!x);
+  const { resolve: resolveUser } = useProfileLookup(confirmedByIds);
+
+  const filteredContracts = contractsWithDiagnostic.filter(({ contract, diagnostic }) => {
+    const employeeName = contract.employee
+      ? `${contract.employee.first_name} ${contract.employee.last_name}`
+      : '';
+    const matchesSearch = employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    if (onlyParamReview && diagnostic.status === 'complete') return false;
+    return true;
   });
+
+  const renderParamBadge = (diag: ParametrizationDiagnostic, contract: Contract) => {
+    if (diag.status === 'complete') {
+      return (
+        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs">
+          <CheckCircle className="h-3 w-3 mr-1" /> OK
+        </Badge>
+      );
+    }
+    if (diag.status === 'pending') {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs cursor-help">
+                <Clock className="h-3 w-3 mr-1" /> Pendiente
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="text-xs">{diag.reasons[0]}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    // incoherent
+    const isStructural = diag.incoherenceSeverity === 'structural';
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge className={`text-xs cursor-help ${
+              isStructural
+                ? 'bg-destructive/10 text-destructive border-destructive/30'
+                : 'bg-sky-500/10 text-sky-600 border-sky-500/30'
+            }`}>
+              <ShieldAlert className="h-3 w-3 mr-1" />
+              Incoherente · {diag.incoherenceSeverity}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm space-y-1">
+            {diag.reasons.map((r, i) => <p key={i} className="text-xs">• {r}</p>)}
+            {contract.manual_incoherence_confirmation_at && (
+              <p className="text-xs pt-1 border-t border-border/40 text-muted-foreground">
+                Confirmado el {format(new Date(contract.manual_incoherence_confirmation_at), 'dd/MM/yyyy HH:mm', { locale: es })}
+                {' por '}{resolveUser(contract.manual_incoherence_confirmed_by)}
+              </p>
+            )}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -243,7 +344,14 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">Contratos Laborales</CardTitle>
-                  <CardDescription>Gestión de contratos activos y vencimientos</CardDescription>
+                  <CardDescription>
+                    Gestión de contratos activos y vencimientos
+                    {reviewCount > 0 && (
+                      <span className="ml-2 text-amber-600 font-medium">
+                        · {reviewCount} de {contracts.length} requieren parametrización o revisión
+                      </span>
+                    )}
+                  </CardDescription>
                 </div>
                 <Button size="sm" onClick={() => setShowContractDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
@@ -262,6 +370,16 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
                     className="pl-9"
                   />
                 </div>
+                <div className="flex items-center gap-2 px-3 h-9 rounded-md border border-input">
+                  <Switch
+                    id="only-review"
+                    checked={onlyParamReview}
+                    onCheckedChange={setOnlyParamReview}
+                  />
+                  <Label htmlFor="only-review" className="text-xs cursor-pointer">
+                    Solo pendientes/incoherentes
+                  </Label>
+                </div>
                 <Button variant="outline" size="sm" onClick={fetchContracts} disabled={loading}>
                   <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
                   Actualizar
@@ -279,18 +397,19 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
                       <TableHead>Categoría</TableHead>
                       <TableHead className="text-right">Salario</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Parametrización</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredContracts.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                           {loading ? 'Cargando contratos...' : 'No hay contratos registrados'}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredContracts.map((contract) => {
+                      filteredContracts.map(({ contract, diagnostic }) => {
                         const employeeName = contract.employee 
                           ? `${contract.employee.first_name} ${contract.employee.last_name}` 
                           : 'Sin asignar';
@@ -312,6 +431,7 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
                               {contract.base_salary ? `€${contract.base_salary.toLocaleString()}` : '-'}
                             </TableCell>
                             <TableCell>{getStatusBadge(contract.is_active, contract.end_date)}</TableCell>
+                            <TableCell>{renderParamBadge(diagnostic, contract)}</TableCell>
                             <TableCell>
                               <Button variant="ghost" size="sm" onClick={() => {
                                 setSelectedContract(contract);

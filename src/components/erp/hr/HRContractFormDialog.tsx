@@ -18,12 +18,20 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale, Info } from 'lucide-react';
+import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale, Info, Calculator, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
 import { HRCNOSelect } from './shared/HRCNOSelect';
 import { HRCollectiveAgreementSelect, type AgreementData } from './shared/HRCollectiveAgreementSelect';
+import { Switch } from '@/components/ui/switch';
+import { ConfirmationDialog } from '@/components/erp/maestros/shared/ConfirmationDialog';
+import {
+  diagnoseContractParametrization,
+  type ParametrizationDiagnostic,
+} from '@/engines/erp/hr/contractSalaryParametrization';
+import { logDataModification } from '@/lib/security/auditLogger';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HRContractFormDialogProps {
   open: boolean;
@@ -81,8 +89,17 @@ export function HRContractFormDialog({
     cno_code: '',
     cno_description: '',
     collective_agreement_id: '',
-    notes: ''
+    notes: '',
+    // S9.21p — Source of truth contractual de parametrización salarial
+    salary_amount_unit: '' as '' | 'monthly' | 'annual',
+    salary_periods_per_year: '' as string,
+    extra_payments_prorated: null as boolean | null,
   });
+  // S9.21p — Estado para confirmación de incoherencia
+  const { user } = useAuth();
+  const [showIncoherenceDialog, setShowIncoherenceDialog] = useState(false);
+  const [pendingDiagnostic, setPendingDiagnostic] = useState<ParametrizationDiagnostic | null>(null);
+  const [previousIncoherenceConfirmed, setPreviousIncoherenceConfirmed] = useState(false);
 
   // Fetch professional groups when agreement changes
   const fetchProfessionalGroups = useCallback(async (agreementCode: string) => {
@@ -179,8 +196,17 @@ export function HRContractFormDialog({
         cno_code: (data as Record<string, unknown>).cno_code as string || '',
         cno_description: (data as Record<string, unknown>).cno_description as string || '',
         collective_agreement_id: (data as Record<string, unknown>).collective_agreement_id as string || '',
-        notes: data.notes || ''
+        notes: data.notes || '',
+        salary_amount_unit: ((data as any).salary_amount_unit as 'monthly' | 'annual' | null) || '',
+        salary_periods_per_year: (data as any).salary_periods_per_year != null
+          ? String((data as any).salary_periods_per_year)
+          : '',
+        extra_payments_prorated: ((data as any).extra_payments_prorated ?? null) as boolean | null,
       });
+      // S9.21p — capturar si ya tenía confirmación previa de incoherencia
+      setPreviousIncoherenceConfirmed(
+        Boolean((data as any).manual_incoherence_confirmation_at)
+      );
     }
   };
 
@@ -200,12 +226,17 @@ export function HRContractFormDialog({
       cno_code: '',
       cno_description: '',
       collective_agreement_id: '',
-      notes: ''
+      notes: '',
+      salary_amount_unit: '',
+      salary_periods_per_year: '',
+      extra_payments_prorated: null,
     });
     setSelectedAgreement(null);
     setAvailableGroups([]);
     setUseCustomGroup(false);
     setGroupMismatchWarning(false);
+    setPreviousIncoherenceConfirmed(false);
+    setPendingDiagnostic(null);
   };
 
   // When employee changes on new contract, try prefill
@@ -240,6 +271,162 @@ export function HRContractFormDialog({
     }
   }, [availableGroups, formData.professional_group]);
 
+  // S9.21p — snapshot del contrato para diagnóstico
+  const buildContractSnapshot = useCallback(() => {
+    const periodsNum = formData.salary_periods_per_year
+      ? parseInt(formData.salary_periods_per_year, 10)
+      : null;
+    return {
+      salary_amount_unit: (formData.salary_amount_unit || null) as 'monthly' | 'annual' | null,
+      salary_periods_per_year: Number.isFinite(periodsNum as number) ? periodsNum : null,
+      extra_payments_prorated: formData.extra_payments_prorated,
+      base_salary: formData.base_salary ? parseFloat(formData.base_salary) : null,
+      annual_salary: formData.annual_salary ? parseFloat(formData.annual_salary) : null,
+    };
+  }, [formData.salary_amount_unit, formData.salary_periods_per_year, formData.extra_payments_prorated, formData.base_salary, formData.annual_salary]);
+
+  // S9.21p — diagnóstico en vivo (warnings inline)
+  const liveDiagnostic = diagnoseContractParametrization(buildContractSnapshot());
+
+  /**
+   * S9.21p — Persistencia con orden estricto:
+   *   1. Si el contrato resulta incoherent y el usuario confirmó → log central PRIMERO
+   *   2. Si el log falla → no actualizar, dejar formulario abierto
+   *   3. Si va bien → actualizar BD con campos manual_incoherence_*
+   *   4. Si se resuelve incoherencia previa → log de resolución PRIMERO, luego limpiar
+   */
+  const persistContract = useCallback(async (
+    diagnostic: ParametrizationDiagnostic,
+    confirmedIncoherence: boolean,
+  ) => {
+    setLoading(true);
+    try {
+      const agreementId = formData.collective_agreement_id.startsWith('local_')
+        ? null
+        : formData.collective_agreement_id;
+
+      const snapshot = buildContractSnapshot();
+
+      const baseContractData: Record<string, unknown> = {
+        company_id: companyId,
+        employee_id: formData.employee_id,
+        contract_type: formData.contract_type,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null,
+        probation_end_date: formData.probation_end_date || null,
+        base_salary: snapshot.base_salary,
+        annual_salary: snapshot.annual_salary,
+        working_hours: parseFloat(formData.working_hours) || 40,
+        workday_type: formData.workday_type,
+        category: formData.category || null,
+        cno_code: formData.cno_code || null,
+        cno_description: formData.cno_description || null,
+        collective_agreement_id: agreementId,
+        professional_group: formData.professional_group || null,
+        notes: formData.notes || null,
+        // Source of truth contractual
+        salary_amount_unit: snapshot.salary_amount_unit,
+        salary_periods_per_year: snapshot.salary_periods_per_year,
+        extra_payments_prorated: snapshot.extra_payments_prorated,
+      };
+
+      const isIncoherent = diagnostic.status === 'incoherent';
+      const isResolution = previousIncoherenceConfirmed && diagnostic.status === 'complete';
+
+      // ── Paso 1: log central PRIMERO si hay confirmación o resolución ──
+      if (isIncoherent && confirmedIncoherence) {
+        try {
+          await logDataModification(
+            'erp_hr_contracts',
+            contractId || 'new',
+            contractId ? 'update' : 'create',
+            undefined,
+            {
+              event: 'incoherence_acceptance',
+              severity: diagnostic.incoherenceSeverity,
+              reasons: diagnostic.reasons,
+              affectedFields: diagnostic.affectedFields,
+              snapshot,
+              confirmed_by: user?.id,
+              confirmed_at: new Date().toISOString(),
+            },
+          );
+        } catch (logErr) {
+          console.error('[HRContractFormDialog] central audit log failed:', logErr);
+          toast.error('No se pudo registrar la auditoría central. No se actualiza el contrato.');
+          setLoading(false);
+          return;
+        }
+      } else if (isResolution) {
+        try {
+          await logDataModification(
+            'erp_hr_contracts',
+            contractId || 'unknown',
+            'update',
+            undefined,
+            {
+              event: 'incoherence_resolution',
+              snapshot,
+              resolved_by: user?.id,
+              resolved_at: new Date().toISOString(),
+            },
+          );
+        } catch (logErr) {
+          console.error('[HRContractFormDialog] resolution audit log failed:', logErr);
+          toast.error('No se pudo registrar la resolución. La huella local se conserva.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // ── Paso 2: campos de auditoría local ──
+      if (isIncoherent && confirmedIncoherence) {
+        baseContractData.manual_incoherence_confirmation_at = new Date().toISOString();
+        baseContractData.manual_incoherence_confirmed_by = user?.id || null;
+        baseContractData.manual_incoherence_confirmation_type = diagnostic.incoherenceSeverity;
+      } else if (isResolution) {
+        // log central OK → limpiar huella local
+        baseContractData.manual_incoherence_confirmation_at = null;
+        baseContractData.manual_incoherence_confirmed_by = null;
+        baseContractData.manual_incoherence_confirmation_type = null;
+      }
+      // En estados pending o complete sin previous, no se tocan los campos manual_incoherence_*
+
+      // ── Paso 3: status del contrato ──
+      if (isIncoherent) {
+        baseContractData.status = 'incoherent';
+      }
+
+      // ── Paso 4: UPDATE/INSERT en BD ──
+      if (contractId) {
+        const { error } = await supabase
+          .from('erp_hr_contracts')
+          .update(baseContractData as any)
+          .eq('id', contractId);
+        if (error) throw error;
+        toast.success(isIncoherent
+          ? 'Contrato actualizado (incoherencia registrada)'
+          : 'Contrato actualizado');
+      } else {
+        const { error } = await supabase
+          .from('erp_hr_contracts')
+          .insert([baseContractData] as any);
+        if (error) throw error;
+        toast.success(isIncoherent
+          ? 'Contrato creado (incoherencia registrada)'
+          : 'Contrato creado');
+      }
+
+      onSaved?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error saving contract:', error);
+      toast.error('Error al guardar el contrato');
+    } finally {
+      setLoading(false);
+    }
+  }, [formData, companyId, contractId, buildContractSnapshot, previousIncoherenceConfirmed, user?.id, onSaved, onOpenChange]);
+
   const handleSubmit = async () => {
     if (!formData.employee_id || !formData.start_date) {
       toast.error('Empleado y fecha de inicio son obligatorios');
@@ -258,55 +445,25 @@ export function HRContractFormDialog({
       return;
     }
 
-    setLoading(true);
-    try {
-      // Manejar IDs locales del catálogo (convertir a null para insertar luego en DB)
-      const agreementId = formData.collective_agreement_id.startsWith('local_') 
-        ? null 
-        : formData.collective_agreement_id;
+    // S9.21p — Validaciones bloqueantes de parametrización
+    const snap = buildContractSnapshot();
+    const diagnostic = diagnoseContractParametrization(snap);
 
-      const contractData = {
-        company_id: companyId,
-        employee_id: formData.employee_id,
-        contract_type: formData.contract_type,
-        start_date: formData.start_date,
-        end_date: formData.end_date || null,
-        probation_end_date: formData.probation_end_date || null,
-        base_salary: formData.base_salary ? parseFloat(formData.base_salary) : null,
-        annual_salary: formData.annual_salary ? parseFloat(formData.annual_salary) : null,
-        working_hours: parseFloat(formData.working_hours) || 40,
-        workday_type: formData.workday_type,
-        category: formData.category || null,
-        cno_code: formData.cno_code || null,
-        cno_description: formData.cno_description || null,
-        collective_agreement_id: agreementId,
-        professional_group: formData.professional_group || null,
-        notes: formData.notes || null
-      };
-
-      if (contractId) {
-        const { error } = await supabase
-          .from('erp_hr_contracts')
-          .update(contractData)
-          .eq('id', contractId);
-        if (error) throw error;
-        toast.success('Contrato actualizado');
-      } else {
-        const { error } = await supabase
-          .from('erp_hr_contracts')
-          .insert([contractData]);
-        if (error) throw error;
-        toast.success('Contrato creado');
-      }
-
-      onSaved?.();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error saving contract:', error);
-      toast.error('Error al guardar el contrato');
-    } finally {
-      setLoading(false);
+    if (diagnostic.status === 'pending') {
+      // pending = falta info; permitido guardar (legacy aún operará en nivel 3)
+      // pero avisar al usuario
+      toast.warning('Parametrización salarial incompleta — la nómina usará lógica legacy');
     }
+
+    if (diagnostic.status === 'incoherent') {
+      // Abrir confirmación. La persistencia ocurrirá tras confirmar.
+      setPendingDiagnostic(diagnostic);
+      setShowIncoherenceDialog(true);
+      return;
+    }
+
+    // complete o pending → guardar directamente (resolución se detecta dentro)
+    await persistContract(diagnostic, false);
   };
 
   return (
@@ -412,6 +569,116 @@ export function HRContractFormDialog({
                   onChange={(e) => setFormData(prev => ({ ...prev, working_hours: e.target.value }))}
                 />
               </div>
+            </div>
+
+            {/* S9.21p — PARAMETRIZACIÓN SALARIAL (Source of Truth) */}
+            <div className="space-y-3 p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-primary" />
+                <Label className="font-semibold">Parametrización salarial</Label>
+                <Badge variant="outline" className="text-xs">Source of truth</Badge>
+                {liveDiagnostic.status === 'complete' && (
+                  <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs">
+                    Coherente
+                  </Badge>
+                )}
+                {liveDiagnostic.status === 'pending' && (
+                  <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">
+                    Pendiente
+                  </Badge>
+                )}
+                {liveDiagnostic.status === 'incoherent' && (
+                  <Badge className="bg-destructive/10 text-destructive border-destructive/30 text-xs">
+                    Incoherente · {liveDiagnostic.incoherenceSeverity}
+                  </Badge>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs">Unidad salarial *</Label>
+                  <Select
+                    value={formData.salary_amount_unit}
+                    onValueChange={(v) => setFormData(prev => ({
+                      ...prev,
+                      salary_amount_unit: v as 'monthly' | 'annual',
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Mensual (base × N pagas)</SelectItem>
+                      <SelectItem value="annual">Anual (anual ÷ N pagas)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Pagas por año</Label>
+                  <Select
+                    value={formData.salary_periods_per_year}
+                    onValueChange={(v) => setFormData(prev => ({ ...prev, salary_periods_per_year: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="N..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12 (prorrateadas)</SelectItem>
+                      <SelectItem value="14">14 (junio + diciembre)</SelectItem>
+                      <SelectItem value="15">15</SelectItem>
+                      <SelectItem value="16">16</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Pagas extra prorrateadas</Label>
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-background">
+                    <Switch
+                      checked={formData.extra_payments_prorated === true}
+                      onCheckedChange={(checked) => setFormData(prev => ({
+                        ...prev,
+                        extra_payments_prorated: checked,
+                      }))}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {formData.extra_payments_prorated === true ? 'Sí' : 'No'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {/* Diagnostic feedback */}
+              {liveDiagnostic.status === 'incoherent' && (
+                <div className={`p-2 rounded-md text-xs ${
+                  liveDiagnostic.incoherenceSeverity === 'structural'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                }`}>
+                  <div className="flex items-start gap-1.5">
+                    <ShieldAlert className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-0.5">
+                      <p className="font-semibold">
+                        {liveDiagnostic.incoherenceSeverity === 'structural'
+                          ? 'Incoherencia estructural'
+                          : 'Incoherencia leve'}
+                      </p>
+                      {liveDiagnostic.reasons.map((r, i) => (
+                        <p key={i}>• {r}</p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {liveDiagnostic.status === 'pending' && liveDiagnostic.reasons.length > 0 && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  {liveDiagnostic.reasons[0]}
+                </p>
+              )}
+              {previousIncoherenceConfirmed && liveDiagnostic.status === 'complete' && (
+                <p className="text-xs text-emerald-600 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Al guardar se registrará la resolución de la incoherencia previa.
+                </p>
+              )}
             </div>
 
             {/* CONVENIO COLECTIVO (OBLIGATORIO Art. 8.5 ET) */}
@@ -620,6 +887,30 @@ export function HRContractFormDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* S9.21p — Confirmación explícita de incoherencia */}
+      <ConfirmationDialog
+        open={showIncoherenceDialog}
+        onOpenChange={setShowIncoherenceDialog}
+        variant={pendingDiagnostic?.incoherenceSeverity === 'structural' ? 'destructive' : 'warning'}
+        title={pendingDiagnostic?.incoherenceSeverity === 'structural'
+          ? 'Incoherencia estructural en el contrato'
+          : 'Incoherencia leve en parametrización'}
+        description={
+          pendingDiagnostic
+            ? `La parametrización salarial es incoherente. Las futuras nóminas caerán en manual_review_required y el cálculo automático quedará bloqueado hasta corregir. Esta decisión quedará auditada.\n\nMotivos:\n${pendingDiagnostic.reasons.map(r => `• ${r}`).join('\n')}`
+            : ''
+        }
+        requireTypedConfirmation={pendingDiagnostic?.incoherenceSeverity === 'structural'}
+        confirmationText="BLOQUEAR"
+        confirmLabel="Confirmar y guardar"
+        isLoading={loading}
+        onConfirm={async () => {
+          if (pendingDiagnostic) {
+            await persistContract(pendingDiagnostic, true);
+          }
+        }}
+      />
     </Dialog>
   );
 }
