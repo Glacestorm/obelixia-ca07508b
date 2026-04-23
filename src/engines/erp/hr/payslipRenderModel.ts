@@ -120,9 +120,25 @@ export function buildPayslipRenderModel(args: {
   const summary = calc.summary ?? {};
   const bases = summary.bases ?? {};
 
+  // S9.21o — Defensa en profundidad: si la traza del convenio marca
+  // `manual_review_required`, omitir ES_MEJORA_VOLUNTARIA del render. Hereda
+  // automáticamente en preview, slip oficial, PDF y portal del empleado.
+  const agreementTrace =
+    calc.__agreement_trace ??
+    (Array.isArray(calc.complements)
+      ? calc.complements.find((c: any) => c?.code === '__agreement_trace')?.trace
+      : null);
+  const omitMejora =
+    agreementTrace?.agreement_resolution_status === 'manual_review_required';
+
   // ─── Líneas ───
+  const isMejoraLine = (l: any) => {
+    const code = String(l?.concept_code ?? l?.conceptCode ?? l?.code ?? '');
+    return code === 'ES_MEJORA_VOLUNTARIA';
+  };
   const devengos: PayslipRenderLine[] = lines
     .filter((l) => l && (l.line_type === 'earning' || l.lineType === 'earning'))
+    .filter((l) => !(omitMejora && isMejoraLine(l)))
     .map((l) => mapLine(l));
 
   const deducciones: PayslipRenderLine[] = lines
