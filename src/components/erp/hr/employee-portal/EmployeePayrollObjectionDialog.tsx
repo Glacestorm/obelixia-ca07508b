@@ -59,7 +59,7 @@ export function EmployeePayrollObjectionDialog({
         <DialogHeader>
           <DialogTitle>Reportar incidencia / Solicitar revisión interna</DialogTitle>
           <DialogDescription>
-            Tu solicitud llegará a RRHH para revisión interna.
+            Tu solicitud llegará a RRHH para revisión interna. Sin adjuntos en esta versión.
           </DialogDescription>
         </DialogHeader>
 
