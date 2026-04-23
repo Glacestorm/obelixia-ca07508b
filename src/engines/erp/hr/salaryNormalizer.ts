@@ -366,6 +366,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       divisor,
       divisorSource,
       trace,
+      diag,
     );
   }
 
@@ -380,6 +381,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
         null,
         divisorSource,
         trace,
+        diag,
       );
     }
     const mensualEq = annual / divisor;
@@ -397,6 +399,8 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       safeMode: false,
       agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
       trace,
+      resolutionPath: 'legacy_resolution',
+      parametrizationDiagnostic: diag,
     };
   }
 
@@ -419,6 +423,8 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
         safeMode: false,
         agreementResolutionStatus: 'computed',
         trace,
+        resolutionPath: 'legacy_resolution',
+        parametrizationDiagnostic: diag,
       };
     }
 
@@ -427,7 +433,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       ? `Salario base (${base}) y anual (${annual}) no coherentes con divisor ${divisor} (tolerancia ${COHERENCE_TOLERANCE * 100}%) — revisión manual requerida.`
       : `Salario base (${base}) y anual (${annual}) ambos informados pero el divisor no es determinable y los valores no son coherentes con ningún divisor [${MIN_DIVISOR},${MAX_DIVISOR}].`;
     trace.push('[A4] incoherentes con divisor disponible o no determinable');
-    return safe(reason, 'ambigua', divisor, divisorSource, trace);
+    return safe(reason, 'ambigua', divisor, divisorSource, trace, diag);
   }
 
   // A3 — base > 0 y annual null/0 → mensual (convención), MEDIA
@@ -449,6 +455,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
         null,
         divisorSource,
         trace,
+        diag,
       );
     }
     trace.push('[A3] base_salary>0 y annual_salary null/0 → unidad=mensual (convención), confianza=MEDIA');
@@ -464,9 +471,11 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       safeMode: false,
       agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
       trace,
+      resolutionPath: 'legacy_resolution',
+      parametrizationDiagnostic: diag,
     };
   }
 
   // Fallback defensivo
-  return safe('Configuración salarial no reconocida.', 'ambigua', divisor, divisorSource, trace);
+  return safe('Configuración salarial no reconocida.', 'ambigua', divisor, divisorSource, trace, diag);
 }
