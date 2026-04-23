@@ -525,6 +525,17 @@ export function HRPayrollEntryDialog({
       return;
     }
     const baseSalary = earnings.find(e => e.code === 'BASE')?.amount || 0;
+    // S9.21r — En safeMode el BASE=0 es la condición esperada, NO un error
+    // del usuario. Mensaje específico que explica la causa estructural.
+    if (baseSalary <= 0 && normalizerResult?.safeMode) {
+      toast.error(
+        'Cálculo bloqueado: parametrización contractual ambigua o incoherente. ' +
+        'Corrige el contrato (unidad salarial / nº pagas / coherencia base-anual) ' +
+        'antes de guardar la nómina.',
+        { duration: 8000 }
+      );
+      return;
+    }
     if (baseSalary <= 0) {
       toast.error('El salario base debe ser mayor que 0');
       return;
