@@ -1315,17 +1315,56 @@ export function useESPayrollBridge(companyId?: string) {
           if (agreementCode && professionalGroup && companyId) {
             try {
               const { resolveSalaryFromAgreement, fetchAgreementSalaryTable } = await import('@/engines/erp/hr/agreementSalaryResolver');
+              const { normalizeSalarioPactadoToMonthly } = await import('@/engines/erp/hr/salaryNormalizer');
               const { entry: tableEntry } = await fetchAgreementSalaryTable(companyId, agreementCode, professionalGroup, currentYear);
               if (tableEntry) {
-                const resolution = resolveSalaryFromAgreement(salarioBase, tableEntry, agreementCode, professionalGroup, currentYear);
-                salaryResolution = {
-                  salarioBaseConvenio: resolution.salarioBaseConvenio,
-                  plusConvenioTabla: resolution.plusConvenioTabla,
-                  mejoraVoluntaria: resolution.mejoraVoluntaria,
-                  hasMejoraVoluntaria: resolution.hasMejoraVoluntaria,
+                // S9.21o — Wiring del normalizer: detecta unidad/divisor y activa
+                // safeMode si la mejora voluntaria no es determinable.
+                const normalized = normalizeSalarioPactadoToMonthly({
+                  contract: {
+                    base_salary: (contract as any)?.base_salary ?? null,
+                    annual_salary: (contract as any)?.annual_salary ?? null,
+                  },
+                  agreement: { extra_payments: (tableEntry as any).extra_pay_amount ?? null },
+                  salaryTable: {
+                    base_salary_monthly: tableEntry.base_salary_monthly,
+                    base_salary_annual: tableEntry.base_salary_annual,
+                    total_annual_compensation: tableEntry.total_annual_compensation,
+                  },
+                  factorProrrateo: 1,
+                });
+                const resolution = resolveSalaryFromAgreement(
+                  salarioBase,
+                  tableEntry,
                   agreementCode,
                   professionalGroup,
-                };
+                  currentYear,
+                  normalized,
+                );
+                // S9.21o — Si safeMode, NO propagar mejora voluntaria al motor:
+                // el bridge no debe inyectar ES_MEJORA_VOLUNTARIA en líneas.
+                if (normalized.safeMode) {
+                  salaryResolution = {
+                    salarioBaseConvenio: resolution.salarioBaseConvenio || tableEntry.base_salary_monthly,
+                    plusConvenioTabla: resolution.plusConvenioTabla || (Number(tableEntry.plus_convenio_monthly) || 0),
+                    mejoraVoluntaria: 0,
+                    hasMejoraVoluntaria: false,
+                    agreementCode,
+                    professionalGroup,
+                  };
+                } else {
+                  salaryResolution = {
+                    salarioBaseConvenio: resolution.salarioBaseConvenio,
+                    plusConvenioTabla: resolution.plusConvenioTabla,
+                    mejoraVoluntaria: resolution.mejoraVoluntaria,
+                    hasMejoraVoluntaria: resolution.hasMejoraVoluntaria,
+                    agreementCode,
+                    professionalGroup,
+                  };
+                }
+                // Propagar la traza completa (incluido agreement_resolution_status
+                // y safeModeReason) al calculation_details para auditoría posterior.
+                (salaryResolution as any).__agreement_trace = resolution.trace;
               }
             } catch (resolveErr) {
               console.warn('[useESPayrollBridge] salary resolution skipped:', resolveErr);
