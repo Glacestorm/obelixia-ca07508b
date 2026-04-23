@@ -291,11 +291,14 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
 
   // A3 — base > 0 y annual null/0 → mensual (convención), MEDIA
   if (hasBase && !hasAnnual) {
-    // S9.21o-H1 — Guardia anti-misinterpretación (C7):
-    // Si el base_salary es implausiblemente alto para una mensualidad
-    // (> A3_MONTHLY_PLAUSIBILITY_MAX) Y no hay convenio que aporte un divisor
-    // explícito, no podemos asumir "mensual" sin riesgo de leer un anual como
-    // mensual. Activamos modo seguro y derivamos a revisión manual.
+    // S9.21o-H2 — WORKAROUND HEURÍSTICO TEMPORAL (ver constante
+    // A3_MONTHLY_PLAUSIBILITY_MAX arriba para justificación, limitación
+    // funcional y deuda técnica registrada).
+    //
+    // Sin campo explícito `base_salary_unit` en contrato, esta guardia es
+    // hoy la única forma de cubrir C7 (base=42.000, annual=null, sin
+    // convenio) sin reinterpretar un anual como mensual. Reemplazar por
+    // chequeo de unidad explícita cuando se introduzca el schema.
     if (base > A3_MONTHLY_PLAUSIBILITY_MAX && !divisor) {
       return safe(
         `Salario base (${base}) declarado sin annual_salary y sin divisor resoluble por convenio. ` +
