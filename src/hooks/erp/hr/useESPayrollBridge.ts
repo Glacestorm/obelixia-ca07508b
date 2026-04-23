@@ -1309,8 +1309,30 @@ export function useESPayrollBridge(companyId?: string) {
 
           // ── Salary resolution from agreement tables ──
           let salaryResolution: ESPayrollInput['salaryResolution'] = undefined;
-          const agreementCode = (laborData as any).convenio_colectivo_id || (contract as any)?.collective_agreement_id;
-          const professionalGroup = (laborData as any).categoria_profesional || (contract as any)?.professional_group;
+          // S9.21s — Prioridad explícita: employee_assignment > contract > none
+          const employeeAgreementId = (laborData as any).convenio_colectivo_id || null;
+          const contractAgreementId = (contract as any)?.collective_agreement_id || null;
+          const employeeCategory = (laborData as any).categoria_profesional || null;
+          const contractGroup = (contract as any)?.professional_group || null;
+          let agreementSource: 'employee_assignment' | 'contract' | 'none' = 'none';
+          let agreementCode: string | null = null;
+          let professionalGroup: string | null = null;
+          let agreementConflictDetected = false;
+          if (employeeAgreementId) {
+            agreementSource = 'employee_assignment';
+            agreementCode = employeeAgreementId;
+            professionalGroup = employeeCategory || contractGroup;
+            if (contractAgreementId && contractAgreementId !== employeeAgreementId) {
+              agreementConflictDetected = true;
+              console.warn('[useESPayrollBridge] agreement conflict: employee assignment prioritized', {
+                employeeId: emp.id, employeeAgreementId, contractAgreementId,
+              });
+            }
+          } else if (contractAgreementId) {
+            agreementSource = 'contract';
+            agreementCode = contractAgreementId;
+            professionalGroup = contractGroup;
+          }
           
           if (agreementCode && professionalGroup && companyId) {
             try {
