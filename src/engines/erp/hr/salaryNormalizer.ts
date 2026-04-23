@@ -252,8 +252,109 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
     `[INPUT] base_salary=${hasBase ? base : 'null/0'}, annual_salary=${hasAnnual ? annual : 'null/0'}, hasAgreement=${hasAgreement}, factor=${factorProrrateo}`,
   );
 
+  // ── S9.21p · Paso 0 — Source of truth contractual ──
+  const diag = diagnoseContractParametrization({
+    salary_amount_unit: contract.salary_amount_unit ?? null,
+    salary_periods_per_year: contract.salary_periods_per_year ?? null,
+    extra_payments_prorated: contract.extra_payments_prorated ?? null,
+    base_salary: contract.base_salary ?? null,
+    annual_salary: contract.annual_salary ?? null,
+  });
+  trace.push(`[S0] diagnostic.status=${diag.status}${diag.incoherenceSeverity ? ` severity=${diag.incoherenceSeverity}` : ''}`);
+
   // ── Paso B (preliminar) — necesitamos divisor antes para A1/A2 ──
   const { divisor, source: divisorSource } = resolveDivisor(args.agreement, args.salaryTable, trace);
+
+  // ── NIVEL 1 — contract_explicit ──
+  if (diag.status === 'complete' && contract.salary_amount_unit) {
+    const unit = contract.salary_amount_unit;
+    const periods = contract.salary_periods_per_year ?? null;
+
+    if (unit === 'monthly' && hasBase) {
+      const effectivePeriods = periods ?? divisor ?? 12;
+      const mensualEqPeriodo = base * factorProrrateo;
+      trace.push(`[N1] contract_explicit unit=monthly base=${base} periods=${effectivePeriods}`);
+      return {
+        mensualEquivalente: base,
+        mensualEquivalentePeriodo: mensualEqPeriodo,
+        divisor: effectivePeriods,
+        divisorSource: periods ? 'agreement_field' : divisorSource,
+        unidadDetectada: 'mensual',
+        confianza: 'alta',
+        safeMode: false,
+        agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
+        trace,
+        resolutionPath: 'contract_explicit',
+        parametrizationDiagnostic: diag,
+      };
+    }
+
+    if (unit === 'annual' && hasAnnual && periods != null) {
+      const mensualEq = annual / periods;
+      const mensualEqPeriodo = mensualEq * factorProrrateo;
+      trace.push(`[N1] contract_explicit unit=annual annual=${annual}/periods=${periods}=${mensualEq.toFixed(2)}`);
+      return {
+        mensualEquivalente: mensualEq,
+        mensualEquivalentePeriodo: mensualEqPeriodo,
+        divisor: periods,
+        divisorSource: 'agreement_field',
+        unidadDetectada: 'anual',
+        confianza: 'alta',
+        safeMode: false,
+        agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
+        trace,
+        resolutionPath: 'contract_explicit',
+        parametrizationDiagnostic: diag,
+      };
+    }
+    trace.push('[N1] contract_explicit no aplicable; sigue a NIVEL 2/3');
+  }
+
+  // ── NIVEL 2 — contract_partial_agreement_aided ──
+  if (
+    diag.status === 'pending' &&
+    contract.salary_amount_unit === 'annual' &&
+    hasAnnual &&
+    !contract.salary_periods_per_year &&
+    divisor
+  ) {
+    const mensualEq = annual / divisor;
+    const mensualEqPeriodo = mensualEq * factorProrrateo;
+    trace.push(`[N2] contract_partial_agreement_aided annual=${annual}/divisor=${divisor}=${mensualEq.toFixed(2)}`);
+    return {
+      mensualEquivalente: mensualEq,
+      mensualEquivalentePeriodo: mensualEqPeriodo,
+      divisor,
+      divisorSource,
+      unidadDetectada: 'anual',
+      confianza: 'alta',
+      safeMode: false,
+      agreementResolutionStatus: 'computed',
+      trace,
+      resolutionPath: 'contract_partial_agreement_aided',
+      parametrizationDiagnostic: diag,
+    };
+  }
+
+  // ── PRIORIZACIÓN — Incoherencia structural escala a safeMode ──
+  if (diag.status === 'incoherent' && diag.incoherenceSeverity === 'structural') {
+    const reason =
+      `Parametrización contractual incoherente estructuralmente: ${diag.reasons.join('; ')}. ` +
+      `Cálculo automático bloqueado hasta corrección explícita por usuario.`;
+    return safe(
+      reason,
+      'ambigua',
+      divisor,
+      divisorSource,
+      trace,
+      diag,
+      'incoherent_structural_safeMode',
+      'manual_review_required',
+    );
+  }
+
+  // ── NIVEL 3 — legacy_resolution (pending o incoherent soft) ──
+  trace.push('[N3] legacy_resolution (flujo A/B histórico)');
 
   // ── Paso A — Unidad ──
 
