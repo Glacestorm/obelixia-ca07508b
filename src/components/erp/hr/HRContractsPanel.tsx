@@ -397,18 +397,19 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
                       <TableHead>Categoría</TableHead>
                       <TableHead className="text-right">Salario</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Parametrización</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredContracts.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                           {loading ? 'Cargando contratos...' : 'No hay contratos registrados'}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredContracts.map((contract) => {
+                      filteredContracts.map(({ contract, diagnostic }) => {
                         const employeeName = contract.employee 
                           ? `${contract.employee.first_name} ${contract.employee.last_name}` 
                           : 'Sin asignar';
@@ -430,6 +431,7 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
                               {contract.base_salary ? `€${contract.base_salary.toLocaleString()}` : '-'}
                             </TableCell>
                             <TableCell>{getStatusBadge(contract.is_active, contract.end_date)}</TableCell>
+                            <TableCell>{renderParamBadge(diagnostic, contract)}</TableCell>
                             <TableCell>
                               <Button variant="ghost" size="sm" onClick={() => {
                                 setSelectedContract(contract);
