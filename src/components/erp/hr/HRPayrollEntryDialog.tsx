@@ -218,6 +218,12 @@ export function HRPayrollEntryDialog({
   // Phase 2A: dynamic agreement concepts
   const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
+  // S9.21o — Normalizer + safeMode state
+  const [normalizerResult, setNormalizerResult] = useState<NormalizeResult | null>(null);
+  const [resolvedContractId, setResolvedContractId] = useState<string | null>(null);
+  const [showContractDialog, setShowContractDialog] = useState(false);
+  const [showSafeModeSaveDialog, setShowSafeModeSaveDialog] = useState(false);
+  const { user } = useAuth();
   // S9.18: Flex plan state
   const [flexPlanOpen, setFlexPlanOpen] = useState(false);
   // S9.21e: Vista previa nómina
