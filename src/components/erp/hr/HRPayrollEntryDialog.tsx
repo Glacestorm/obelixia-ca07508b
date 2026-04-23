@@ -858,7 +858,10 @@ export function HRPayrollEntryDialog({
               let amount = 0;
               if (e.code === 'BASE') amount = resolution.salarioBaseConvenio;
               else if (e.code === 'PLUS_CONV') amount = resolution.plusConvenioTabla;
-              else if (e.code === 'MEJORA_VOL') amount = resolution.mejoraVoluntaria;
+              else if (e.code === 'MEJORA_VOL') {
+                // S9.21o — En modo seguro, mejora voluntaria SIEMPRE = 0.
+                amount = normalized.safeMode ? 0 : resolution.mejoraVoluntaria;
+              }
               return { ...e, id: `earning-${i}`, amount };
             });
             const classicDeductions = DEFAULT_DEDUCTIONS.map((d, i) => ({
