@@ -686,6 +686,9 @@ export function HRPayrollEntryDialog({
     contractSalary: number | null;
     agreementId: string | null;
     professionalGroup: string | null;
+    contractId: string | null;
+    rawBaseSalary: number | null;
+    rawAnnualSalary: number | null;
   }> => {
     // Build period boundaries
     const periodStart = `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`;
@@ -697,7 +700,7 @@ export function HRPayrollEntryDialog({
     // Order by start_date desc to get most recent applicable contract
     const { data: contracts, error } = await supabase
       .from('erp_hr_contracts')
-      .select('base_salary, annual_salary, collective_agreement_id, professional_group, start_date, end_date')
+      .select('id, base_salary, annual_salary, collective_agreement_id, professional_group, start_date, end_date')
       .eq('employee_id', employeeId)
       .lte('start_date', periodEnd)
       .or(`end_date.is.null,end_date.gte.${periodStart}`)
@@ -705,7 +708,14 @@ export function HRPayrollEntryDialog({
       .limit(1);
 
     if (error || !contracts || contracts.length === 0) {
-      return { contractSalary: null, agreementId: null, professionalGroup: null };
+      return {
+        contractSalary: null,
+        agreementId: null,
+        professionalGroup: null,
+        contractId: null,
+        rawBaseSalary: null,
+        rawAnnualSalary: null,
+      };
     }
 
     const contract = contracts[0] as any;
@@ -722,6 +732,9 @@ export function HRPayrollEntryDialog({
       contractSalary,
       agreementId: contract.collective_agreement_id || null,
       professionalGroup: contract.professional_group || null,
+      contractId: contract.id || null,
+      rawBaseSalary: contract.base_salary != null ? Number(contract.base_salary) : null,
+      rawAnnualSalary: contract.annual_salary != null ? Number(contract.annual_salary) : null,
     };
   };
 
