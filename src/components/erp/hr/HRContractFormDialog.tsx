@@ -887,6 +887,30 @@ export function HRContractFormDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* S9.21p — Confirmación explícita de incoherencia */}
+      <ConfirmationDialog
+        open={showIncoherenceDialog}
+        onOpenChange={setShowIncoherenceDialog}
+        variant={pendingDiagnostic?.incoherenceSeverity === 'structural' ? 'destructive' : 'warning'}
+        title={pendingDiagnostic?.incoherenceSeverity === 'structural'
+          ? 'Incoherencia estructural en el contrato'
+          : 'Incoherencia leve en parametrización'}
+        description={
+          pendingDiagnostic
+            ? `La parametrización salarial es incoherente. Las futuras nóminas caerán en manual_review_required y el cálculo automático quedará bloqueado hasta corregir. Esta decisión quedará auditada.\n\nMotivos:\n${pendingDiagnostic.reasons.map(r => `• ${r}`).join('\n')}`
+            : ''
+        }
+        requireTypedConfirmation={pendingDiagnostic?.incoherenceSeverity === 'structural'}
+        confirmationText="BLOQUEAR"
+        confirmLabel="Confirmar y guardar"
+        isLoading={loading}
+        onConfirm={async () => {
+          if (pendingDiagnostic) {
+            await persistContract(pendingDiagnostic, true);
+          }
+        }}
+      />
     </Dialog>
   );
 }
