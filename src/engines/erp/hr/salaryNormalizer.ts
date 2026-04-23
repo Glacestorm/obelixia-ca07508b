@@ -18,16 +18,48 @@
  *   C7: base=42000, annual=null, sin convenio → safeMode (B4)
  *   C8: base=42000, annual=42000 (incoherentes) → safeMode (A4)
  *   C9: base=null, annual=null → safeMode (A5)
+ *
+ * S9.21p — Paso 0: source of truth contractual.
+ *   Antes de la jerarquía A/B se evalúa `diagnoseContractParametrization`.
+ *   - Si status='complete' → NIVEL 1 contract_explicit (sin heurística).
+ *   - Si status='incoherent' && severity='structural' → safeMode obligatorio
+ *     con resolutionPath='incoherent_structural_safeMode'. NO degrada a legacy.
+ *   - Si status='pending' o 'incoherent' soft → NIVEL 3 legacy (flujo A/B
+ *     original con A3 heurístico como red de seguridad).
  */
+
+import {
+  diagnoseContractParametrization,
+  type ParametrizationDiagnostic,
+} from './contractSalaryParametrization';
 
 export type SalaryUnit = 'mensual' | 'anual' | 'ambigua' | 'no_informada';
 export type SalaryConfidence = 'alta' | 'media' | 'baja';
 export type DivisorSource = 'agreement_field' | 'table_total' | 'table_annual' | 'none';
 export type AgreementResolutionStatus = 'computed' | 'manual_review_required' | 'no_agreement';
 
+/**
+ * S9.21p — Camino de resolución usado por el normalizer.
+ *   - contract_explicit: NIVEL 1, datos contractuales completos y coherentes.
+ *   - contract_partial_agreement_aided: NIVEL 2, contrato parcial completado por convenio.
+ *   - legacy_resolution: NIVEL 3, flujo A/B histórico (incluye A3 heurístico).
+ *   - incoherent_structural_safeMode: incoherencia estructural detectada → safeMode.
+ */
+export type ResolutionPath =
+  | 'contract_explicit'
+  | 'contract_partial_agreement_aided'
+  | 'legacy_resolution'
+  | 'incoherent_structural_safeMode';
+
 export interface NormalizerContractInput {
   base_salary?: number | null;
   annual_salary?: number | null;
+  /** S9.21p — unidad salarial explícita pactada en contrato. */
+  salary_amount_unit?: 'monthly' | 'annual' | null;
+  /** S9.21p — número de pagas anuales pactadas en contrato. */
+  salary_periods_per_year?: number | null;
+  /** S9.21p — true si las pagas extra están prorrateadas en mensualidad. */
+  extra_payments_prorated?: boolean | null;
 }
 
 export interface NormalizerAgreementInput {
@@ -64,6 +96,10 @@ export interface NormalizeResult {
   agreementResolutionStatus: AgreementResolutionStatus;
   /** Pasos legibles para auditoría (paso A, paso B, decisiones). */
   trace: string[];
+  /** S9.21p — camino de resolución elegido por la jerarquía. */
+  resolutionPath: ResolutionPath;
+  /** S9.21p — diagnóstico contractual usado en Paso 0. */
+  parametrizationDiagnostic: ParametrizationDiagnostic;
 }
 
 const MIN_DIVISOR = 12;
@@ -177,6 +213,8 @@ function safe(
   divisor: number | null,
   divisorSource: DivisorSource,
   trace: string[],
+  diag: ParametrizationDiagnostic,
+  resolutionPath: ResolutionPath = 'legacy_resolution',
   status: AgreementResolutionStatus = 'manual_review_required',
 ): NormalizeResult {
   trace.push(`[SAFE] ${reason}`);
@@ -191,6 +229,8 @@ function safe(
     safeModeReason: reason,
     agreementResolutionStatus: status,
     trace,
+    resolutionPath,
+    parametrizationDiagnostic: diag,
   };
 }
 
@@ -212,8 +252,109 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
     `[INPUT] base_salary=${hasBase ? base : 'null/0'}, annual_salary=${hasAnnual ? annual : 'null/0'}, hasAgreement=${hasAgreement}, factor=${factorProrrateo}`,
   );
 
+  // ── S9.21p · Paso 0 — Source of truth contractual ──
+  const diag = diagnoseContractParametrization({
+    salary_amount_unit: contract.salary_amount_unit ?? null,
+    salary_periods_per_year: contract.salary_periods_per_year ?? null,
+    extra_payments_prorated: contract.extra_payments_prorated ?? null,
+    base_salary: contract.base_salary ?? null,
+    annual_salary: contract.annual_salary ?? null,
+  });
+  trace.push(`[S0] diagnostic.status=${diag.status}${diag.incoherenceSeverity ? ` severity=${diag.incoherenceSeverity}` : ''}`);
+
   // ── Paso B (preliminar) — necesitamos divisor antes para A1/A2 ──
   const { divisor, source: divisorSource } = resolveDivisor(args.agreement, args.salaryTable, trace);
+
+  // ── NIVEL 1 — contract_explicit ──
+  if (diag.status === 'complete' && contract.salary_amount_unit) {
+    const unit = contract.salary_amount_unit;
+    const periods = contract.salary_periods_per_year ?? null;
+
+    if (unit === 'monthly' && hasBase) {
+      const effectivePeriods = periods ?? divisor ?? 12;
+      const mensualEqPeriodo = base * factorProrrateo;
+      trace.push(`[N1] contract_explicit unit=monthly base=${base} periods=${effectivePeriods}`);
+      return {
+        mensualEquivalente: base,
+        mensualEquivalentePeriodo: mensualEqPeriodo,
+        divisor: effectivePeriods,
+        divisorSource: periods ? 'agreement_field' : divisorSource,
+        unidadDetectada: 'mensual',
+        confianza: 'alta',
+        safeMode: false,
+        agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
+        trace,
+        resolutionPath: 'contract_explicit',
+        parametrizationDiagnostic: diag,
+      };
+    }
+
+    if (unit === 'annual' && hasAnnual && periods != null) {
+      const mensualEq = annual / periods;
+      const mensualEqPeriodo = mensualEq * factorProrrateo;
+      trace.push(`[N1] contract_explicit unit=annual annual=${annual}/periods=${periods}=${mensualEq.toFixed(2)}`);
+      return {
+        mensualEquivalente: mensualEq,
+        mensualEquivalentePeriodo: mensualEqPeriodo,
+        divisor: periods,
+        divisorSource: 'agreement_field',
+        unidadDetectada: 'anual',
+        confianza: 'alta',
+        safeMode: false,
+        agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
+        trace,
+        resolutionPath: 'contract_explicit',
+        parametrizationDiagnostic: diag,
+      };
+    }
+    trace.push('[N1] contract_explicit no aplicable; sigue a NIVEL 2/3');
+  }
+
+  // ── NIVEL 2 — contract_partial_agreement_aided ──
+  if (
+    diag.status === 'pending' &&
+    contract.salary_amount_unit === 'annual' &&
+    hasAnnual &&
+    !contract.salary_periods_per_year &&
+    divisor
+  ) {
+    const mensualEq = annual / divisor;
+    const mensualEqPeriodo = mensualEq * factorProrrateo;
+    trace.push(`[N2] contract_partial_agreement_aided annual=${annual}/divisor=${divisor}=${mensualEq.toFixed(2)}`);
+    return {
+      mensualEquivalente: mensualEq,
+      mensualEquivalentePeriodo: mensualEqPeriodo,
+      divisor,
+      divisorSource,
+      unidadDetectada: 'anual',
+      confianza: 'alta',
+      safeMode: false,
+      agreementResolutionStatus: 'computed',
+      trace,
+      resolutionPath: 'contract_partial_agreement_aided',
+      parametrizationDiagnostic: diag,
+    };
+  }
+
+  // ── PRIORIZACIÓN — Incoherencia structural escala a safeMode ──
+  if (diag.status === 'incoherent' && diag.incoherenceSeverity === 'structural') {
+    const reason =
+      `Parametrización contractual incoherente estructuralmente: ${diag.reasons.join('; ')}. ` +
+      `Cálculo automático bloqueado hasta corrección explícita por usuario.`;
+    return safe(
+      reason,
+      'ambigua',
+      divisor,
+      divisorSource,
+      trace,
+      diag,
+      'incoherent_structural_safeMode',
+      'manual_review_required',
+    );
+  }
+
+  // ── NIVEL 3 — legacy_resolution (pending o incoherent soft) ──
+  trace.push('[N3] legacy_resolution (flujo A/B histórico)');
 
   // ── Paso A — Unidad ──
 
@@ -225,6 +366,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       divisor,
       divisorSource,
       trace,
+      diag,
     );
   }
 
@@ -239,6 +381,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
         null,
         divisorSource,
         trace,
+        diag,
       );
     }
     const mensualEq = annual / divisor;
@@ -256,6 +399,8 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       safeMode: false,
       agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
       trace,
+      resolutionPath: 'legacy_resolution',
+      parametrizationDiagnostic: diag,
     };
   }
 
@@ -278,6 +423,8 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
         safeMode: false,
         agreementResolutionStatus: 'computed',
         trace,
+        resolutionPath: 'legacy_resolution',
+        parametrizationDiagnostic: diag,
       };
     }
 
@@ -286,7 +433,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       ? `Salario base (${base}) y anual (${annual}) no coherentes con divisor ${divisor} (tolerancia ${COHERENCE_TOLERANCE * 100}%) — revisión manual requerida.`
       : `Salario base (${base}) y anual (${annual}) ambos informados pero el divisor no es determinable y los valores no son coherentes con ningún divisor [${MIN_DIVISOR},${MAX_DIVISOR}].`;
     trace.push('[A4] incoherentes con divisor disponible o no determinable');
-    return safe(reason, 'ambigua', divisor, divisorSource, trace);
+    return safe(reason, 'ambigua', divisor, divisorSource, trace, diag);
   }
 
   // A3 — base > 0 y annual null/0 → mensual (convención), MEDIA
@@ -308,6 +455,7 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
         null,
         divisorSource,
         trace,
+        diag,
       );
     }
     trace.push('[A3] base_salary>0 y annual_salary null/0 → unidad=mensual (convención), confianza=MEDIA');
@@ -323,9 +471,11 @@ export function normalizeSalarioPactadoToMonthly(args: NormalizeArgs): Normalize
       safeMode: false,
       agreementResolutionStatus: hasAgreement ? 'computed' : 'no_agreement',
       trace,
+      resolutionPath: 'legacy_resolution',
+      parametrizationDiagnostic: diag,
     };
   }
 
   // Fallback defensivo
-  return safe('Configuración salarial no reconocida.', 'ambigua', divisor, divisorSource, trace);
+  return safe('Configuración salarial no reconocida.', 'ambigua', divisor, divisorSource, trace, diag);
 }
