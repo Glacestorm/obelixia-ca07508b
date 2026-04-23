@@ -806,6 +806,9 @@ export function HRPayrollEntryDialog({
         contractId,
         rawBaseSalary,
         rawAnnualSalary,
+        salaryAmountUnit,
+        salaryPeriodsPerYear,
+        extraPaymentsProrated,
       } = await resolveContractForPeriod(employeeId);
       setResolvedContractId(contractId);
 
@@ -830,7 +833,14 @@ export function HRPayrollEntryDialog({
         }
       }
       const normalized = normalizeSalarioPactadoToMonthly({
-        contract: { base_salary: rawBaseSalary, annual_salary: rawAnnualSalary },
+        contract: {
+          base_salary: rawBaseSalary,
+          annual_salary: rawAnnualSalary,
+          // S9.21p — Source of truth contractual (read-only wiring)
+          salary_amount_unit: salaryAmountUnit,
+          salary_periods_per_year: salaryPeriodsPerYear,
+          extra_payments_prorated: extraPaymentsProrated,
+        },
         agreement: agreementExtraPayments != null ? { extra_payments: agreementExtraPayments } : null,
         salaryTable: null,
         factorProrrateo: 1,
