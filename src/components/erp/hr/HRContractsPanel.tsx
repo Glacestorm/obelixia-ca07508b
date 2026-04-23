@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { 
   FileText, Plus, Search, Filter, Calendar, AlertTriangle,
-  CheckCircle, Clock, Calculator, UserX, Euro, FileDown, RefreshCw
+  CheckCircle, Clock, Calculator, UserX, Euro, FileDown, RefreshCw, ShieldAlert, Info
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -24,6 +24,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRContractFormDialog } from './HRContractFormDialog';
 import { HRSettlementDialog } from './dialogs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  diagnoseContractParametrization,
+  type ParametrizationDiagnostic,
+} from '@/engines/erp/hr/contractSalaryParametrization';
+import { useProfileLookup } from '@/hooks/shared/useProfileLookup';
 
 interface HRContractsPanelProps {
   companyId: string;
@@ -37,9 +45,18 @@ interface Contract {
   start_date: string;
   end_date: string | null;
   base_salary: number | null;
+  annual_salary?: number | null;
   category: string | null;
   workday_type: string;
   is_active: boolean;
+  // S9.21p — campos de parametrización
+  salary_amount_unit?: 'monthly' | 'annual' | null;
+  salary_periods_per_year?: number | null;
+  extra_payments_prorated?: boolean | null;
+  // S9.21p — auditoría local
+  manual_incoherence_confirmation_at?: string | null;
+  manual_incoherence_confirmed_by?: string | null;
+  manual_incoherence_confirmation_type?: 'structural' | 'soft' | null;
   employee?: {
     id: string;
     first_name: string;
@@ -56,6 +73,8 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
   const [showContractDialog, setShowContractDialog] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [showSettlementDialog, setShowSettlementDialog] = useState(false);
+  // S9.21p — filtro toggle
+  const [onlyParamReview, setOnlyParamReview] = useState(false);
 
   // Fetch contracts from database
   const fetchContracts = useCallback(async () => {
@@ -65,7 +84,9 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
         .from('erp_hr_contracts')
         .select(`
           id, employee_id, contract_type, contract_code, start_date, end_date,
-          base_salary, category, workday_type, is_active,
+          base_salary, annual_salary, category, workday_type, is_active,
+          salary_amount_unit, salary_periods_per_year, extra_payments_prorated,
+          manual_incoherence_confirmation_at, manual_incoherence_confirmed_by, manual_incoherence_confirmation_type,
           erp_hr_employees!employee_id (id, first_name, last_name, department_id)
         `)
         .eq('company_id', companyId)
