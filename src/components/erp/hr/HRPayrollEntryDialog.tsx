@@ -42,6 +42,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { buildPayslipRenderModel, computeSourceHash } from '@/engines/erp/hr/payslipRenderModel';
 import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
 import { FileDown } from 'lucide-react';
+import { normalizeSalarioPactadoToMonthly, type NormalizeResult } from '@/engines/erp/hr/salaryNormalizer';
+import { PayrollSafeModeBlock } from './safeMode/PayrollSafeModeBlock';
+import { PayrollSafeModeSaveDialog } from './safeMode/PayrollSafeModeSaveDialog';
+import { HRContractFormDialog } from './HRContractFormDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PayrollConcept {
   id: string;
@@ -213,6 +218,12 @@ export function HRPayrollEntryDialog({
   // Phase 2A: dynamic agreement concepts
   const [agreementConcepts, setAgreementConcepts] = useState<ResolvedConceptForPayroll[]>([]);
   const [unmappedConcepts, setUnmappedConcepts] = useState<ResolvedConceptForPayroll[]>([]);
+  // S9.21o — Normalizer + safeMode state
+  const [normalizerResult, setNormalizerResult] = useState<NormalizeResult | null>(null);
+  const [resolvedContractId, setResolvedContractId] = useState<string | null>(null);
+  const [showContractDialog, setShowContractDialog] = useState(false);
+  const [showSafeModeSaveDialog, setShowSafeModeSaveDialog] = useState(false);
+  const { user } = useAuth();
   // S9.18: Flex plan state
   const [flexPlanOpen, setFlexPlanOpen] = useState(false);
   // S9.21e: Vista previa nómina
@@ -356,6 +367,8 @@ export function HRPayrollEntryDialog({
       setCasuisticaOpen(false);
       setGrupoCotizacion(1);
       setGrupoCotizacionSource('fallback');
+      setNormalizerResult(null);
+      setResolvedContractId(null);
       resetConcepts();
     }
   }, [open, payrollId, resetConcepts]);
@@ -675,6 +688,9 @@ export function HRPayrollEntryDialog({
     contractSalary: number | null;
     agreementId: string | null;
     professionalGroup: string | null;
+    contractId: string | null;
+    rawBaseSalary: number | null;
+    rawAnnualSalary: number | null;
   }> => {
     // Build period boundaries
     const periodStart = `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`;
@@ -686,7 +702,7 @@ export function HRPayrollEntryDialog({
     // Order by start_date desc to get most recent applicable contract
     const { data: contracts, error } = await supabase
       .from('erp_hr_contracts')
-      .select('base_salary, annual_salary, collective_agreement_id, professional_group, start_date, end_date')
+      .select('id, base_salary, annual_salary, collective_agreement_id, professional_group, start_date, end_date')
       .eq('employee_id', employeeId)
       .lte('start_date', periodEnd)
       .or(`end_date.is.null,end_date.gte.${periodStart}`)
@@ -694,7 +710,14 @@ export function HRPayrollEntryDialog({
       .limit(1);
 
     if (error || !contracts || contracts.length === 0) {
-      return { contractSalary: null, agreementId: null, professionalGroup: null };
+      return {
+        contractSalary: null,
+        agreementId: null,
+        professionalGroup: null,
+        contractId: null,
+        rawBaseSalary: null,
+        rawAnnualSalary: null,
+      };
     }
 
     const contract = contracts[0] as any;
@@ -711,6 +734,9 @@ export function HRPayrollEntryDialog({
       contractSalary,
       agreementId: contract.collective_agreement_id || null,
       professionalGroup: contract.professional_group || null,
+      contractId: contract.id || null,
+      rawBaseSalary: contract.base_salary != null ? Number(contract.base_salary) : null,
+      rawAnnualSalary: contract.annual_salary != null ? Number(contract.annual_salary) : null,
     };
   };
 
@@ -721,6 +747,8 @@ export function HRPayrollEntryDialog({
     setResolutionMode(null);
     setAgreementConcepts([]);
     setUnmappedConcepts([]);
+    setNormalizerResult(null);
+    setResolvedContractId(null);
 
     if (!employee) return;
 
@@ -762,10 +790,43 @@ export function HRPayrollEntryDialog({
       }
 
       // Step 2: Resolve contract for this period (Ajuste 1 & 2)
-      const { contractSalary, agreementId, professionalGroup } = await resolveContractForPeriod(employeeId);
+      const {
+        contractSalary,
+        agreementId,
+        professionalGroup,
+        contractId,
+        rawBaseSalary,
+        rawAnnualSalary,
+      } = await resolveContractForPeriod(employeeId);
+      setResolvedContractId(contractId);
 
       // Ajuste 2: Prioritize contract salary, fallback to employee base_salary / 12
       const salarioPactado = contractSalary ?? (empBaseSalaryAnnual > 0 ? Math.round((empBaseSalaryAnnual / 12) * 100) / 100 : 0);
+
+      // S9.21o — Normalizer: detecta unidad/divisor y activa modo seguro si procede.
+      // Requiere fetch de extra_payments del convenio (si existe agreementId).
+      let agreementExtraPayments: number | null = null;
+      if (agreementId) {
+        try {
+          const { data: agreementMeta } = await supabase
+            .from('erp_hr_collective_agreements')
+            .select('extra_payments')
+            .eq('id', agreementId)
+            .maybeSingle();
+          if (agreementMeta && (agreementMeta as any).extra_payments != null) {
+            agreementExtraPayments = Number((agreementMeta as any).extra_payments);
+          }
+        } catch (extraErr) {
+          console.warn('[HRPayrollEntryDialog] agreement.extra_payments fetch failed (non-fatal):', extraErr);
+        }
+      }
+      const normalized = normalizeSalarioPactadoToMonthly({
+        contract: { base_salary: rawBaseSalary, annual_salary: rawAnnualSalary },
+        agreement: agreementExtraPayments != null ? { extra_payments: agreementExtraPayments } : null,
+        salaryTable: null,
+        factorProrrateo: 1,
+      });
+      setNormalizerResult(normalized);
 
       // Step 3: Try agreement resolution if we have agreement + group
       if (agreementId && professionalGroup) {
@@ -797,7 +858,10 @@ export function HRPayrollEntryDialog({
               let amount = 0;
               if (e.code === 'BASE') amount = resolution.salarioBaseConvenio;
               else if (e.code === 'PLUS_CONV') amount = resolution.plusConvenioTabla;
-              else if (e.code === 'MEJORA_VOL') amount = resolution.mejoraVoluntaria;
+              else if (e.code === 'MEJORA_VOL') {
+                // S9.21o — En modo seguro, mejora voluntaria SIEMPRE = 0.
+                amount = normalized.safeMode ? 0 : resolution.mejoraVoluntaria;
+              }
               return { ...e, id: `earning-${i}`, amount };
             });
             const classicDeductions = DEFAULT_DEDUCTIONS.map((d, i) => ({
@@ -906,7 +970,12 @@ export function HRPayrollEntryDialog({
       .reduce((sum, e) => sum + (e.amount || 0), 0);
   }, [earnings]);
 
-  const handleSave = async () => {
+  /**
+   * S9.21o — Persistencia real de la nómina. Acepta flag de confirmación
+   * post-aviso para registrar `manual_review_confirmation_at` y
+   * `manual_review_confirmed_by` en la traza cuando proceda.
+   */
+  const performSave = async (manualReviewConfirmed = false) => {
     if (!selectedEmployeeId) {
       toast.error('Selecciona un empleado');
       return;
@@ -946,13 +1015,56 @@ export function HRPayrollEntryDialog({
 
       // Ajuste 5 & trazabilidad: Include agreement trace if resolved
       if (agreementResolution?.trace) {
+        // S9.21o — Enriquecer la traza con metadatos del normalizer y, si el
+        // usuario confirmó conscientemente el modo seguro, marcar auditoría.
+        const enrichedTrace: any = {
+          ...agreementResolution.trace,
+          agreement_resolution_status:
+            normalizerResult?.agreementResolutionStatus ??
+            agreementResolution.trace.agreement_resolution_status ??
+            'computed',
+          safeModeReason: normalizerResult?.safeModeReason,
+          unidadDetectada: normalizerResult?.unidadDetectada,
+          divisor: normalizerResult?.divisor ?? null,
+          divisorSource: normalizerResult?.divisorSource,
+          confianza: normalizerResult?.confianza,
+          normalizerTrace: normalizerResult?.trace,
+        };
+        if (manualReviewConfirmed) {
+          enrichedTrace.manual_review_confirmation_at = new Date().toISOString();
+          enrichedTrace.manual_review_confirmed_by = user?.id ?? null;
+        }
         complements.push({
           code: '__agreement_trace',
           name: 'Traza de convenio',
           amount: 0,
           cotizaSS: false,
           tributaIRPF: false,
-          ...({ trace: agreementResolution.trace, mode: resolutionMode } as any),
+          ...({ trace: enrichedTrace, mode: resolutionMode } as any),
+        });
+      } else if (normalizerResult) {
+        // No agreementResolution pero sí normalizer (ej. safeMode sin convenio resuelto)
+        const enrichedTrace: any = {
+          agreement_resolution_status: normalizerResult.agreementResolutionStatus,
+          safeModeReason: normalizerResult.safeModeReason,
+          unidadDetectada: normalizerResult.unidadDetectada,
+          divisor: normalizerResult.divisor,
+          divisorSource: normalizerResult.divisorSource,
+          confianza: normalizerResult.confianza,
+          normalizerTrace: normalizerResult.trace,
+          timestamp: new Date().toISOString(),
+        };
+        if (manualReviewConfirmed) {
+          enrichedTrace.manual_review_confirmation_at = new Date().toISOString();
+          enrichedTrace.manual_review_confirmed_by = user?.id ?? null;
+        }
+        complements.push({
+          code: '__agreement_trace',
+          name: 'Traza de convenio',
+          amount: 0,
+          cotizaSS: false,
+          tributaIRPF: false,
+          ...({ trace: enrichedTrace, mode: resolutionMode } as any),
         });
       }
 
@@ -1027,10 +1139,44 @@ export function HRPayrollEntryDialog({
     }
   };
 
+  /**
+   * S9.21o — Wrapper de guardado: si el normalizer está en
+   * `manual_review_required`, abre AlertDialog de aviso pre-guardado no
+   * bloqueante. En caso contrario, persiste directamente.
+   */
+  const handleSave = async () => {
+    if (
+      normalizerResult?.safeMode &&
+      normalizerResult.agreementResolutionStatus === 'manual_review_required'
+    ) {
+      setShowSafeModeSaveDialog(true);
+      return;
+    }
+    await performSave(false);
+  };
+
+  const handleConfirmSafeModeSave = async () => {
+    setShowSafeModeSaveDialog(false);
+    await performSave(true);
+  };
+
   // S9.13: Agreement resolution card
   const renderAgreementCard = () => {
     if (!selectedEmployeeId || resolutionLoading) return null;
     if (resolutionMode === null) return null;
+
+    // S9.21o — SafeMode tiene prioridad: si el normalizer marcó modo seguro,
+    // mostrar bloque ámbar de revisión manual y no renderizar la mejora calculada.
+    if (normalizerResult?.safeMode && normalizerResult.agreementResolutionStatus === 'manual_review_required') {
+      return (
+        <PayrollSafeModeBlock
+          normalizer={normalizerResult}
+          contractId={resolvedContractId}
+          employeeId={selectedEmployeeId}
+          onOpenContract={() => setShowContractDialog(true)}
+        />
+      );
+    }
 
     if (resolutionMode === 'auto' && agreementResolution) {
       const r = agreementResolution;
@@ -1087,6 +1233,16 @@ export function HRPayrollEntryDialog({
               <p className="text-[10px] text-muted-foreground mt-2 italic">
                 <Info className="h-3 w-3 inline mr-0.5" />
                 {trace.formula}
+              </p>
+            )}
+            {normalizerResult && !normalizerResult.safeMode && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                <Info className="h-3 w-3 inline mr-0.5" />
+                Unidad: <span className="font-medium">{normalizerResult.unidadDetectada}</span>
+                {normalizerResult.divisor != null && (
+                  <> · Divisor: <span className="font-medium">{normalizerResult.divisor}</span> ({normalizerResult.divisorSource})</>
+                )}
+                {' '}· Confianza: <span className="font-medium uppercase">{normalizerResult.confianza}</span>
               </p>
             )}
           </CardContent>
@@ -1994,6 +2150,36 @@ export function HRPayrollEntryDialog({
         grupo={grupoCotizacion}
         categoria={selectedEmployeeCategory}
       />
+      {/* S9.21o — SafeMode pre-save AlertDialog (no bloqueante) */}
+      <PayrollSafeModeSaveDialog
+        open={showSafeModeSaveDialog}
+        onOpenChange={setShowSafeModeSaveDialog}
+        normalizer={normalizerResult}
+        isSaving={isSaving}
+        onConfirm={handleConfirmSafeModeSave}
+      />
+      {/* S9.21o — CTA "Revisar contrato del empleado" desde bloque ámbar */}
+      {resolvedContractId && selectedEmployeeId && (
+        <HRContractFormDialog
+          open={showContractDialog}
+          onOpenChange={setShowContractDialog}
+          companyId={companyId}
+          contractId={resolvedContractId}
+          employeeId={selectedEmployeeId}
+          onSaved={() => {
+            setShowContractDialog(false);
+            // Re-resolver tras editar contrato
+            if (selectedEmployeeId) {
+              void handleEmployeeSelect(selectedEmployeeId, {
+                id: selectedEmployeeId,
+                first_name: selectedEmployeeName.split(' ')[0] || '',
+                last_name: selectedEmployeeName.split(' ').slice(1).join(' ') || '',
+                job_title: selectedEmployeeCategory,
+              } as EmployeeOption);
+            }
+          }}
+        />
+      )}
     </Dialog>
   );
 }
