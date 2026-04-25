@@ -90,6 +90,8 @@ interface HREmployeeFormDialogProps {
   employee: Employee | null;
   companyId: string;
   onSave: () => void;
+  /** S9.21t — Tab inicial al abrir. Por defecto 'personal'. */
+  initialTab?: string;
 }
 
 // === H2.0: Profile data for hr_employee_profiles ===
@@ -223,9 +225,9 @@ function validateIBAN(iban: string): { valid: boolean; error: string | null } {
   return { valid: true, error: null };
 }
 
-export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, onSave }: HREmployeeFormDialogProps) {
+export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, onSave, initialTab = 'personal' }: HREmployeeFormDialogProps) {
   const isNew = !employee;
-  const [activeTab, setActiveTab] = useState('personal');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setSaving] = useState(false);
   const [selectPortalContainer, setSelectPortalContainer] = useState<HTMLElement | null>(null);
   const [generationMode, setGenerationModeState] = useState<GenerationMode>(() => getGenerationModeConfig(companyId).mode);
