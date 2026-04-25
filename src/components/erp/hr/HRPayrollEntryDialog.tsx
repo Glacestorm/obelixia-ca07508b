@@ -227,6 +227,8 @@ export function HRPayrollEntryDialog({
   const [normalizerResult, setNormalizerResult] = useState<NormalizeResult | null>(null);
   const [resolvedContractId, setResolvedContractId] = useState<string | null>(null);
   const [showContractDialog, setShowContractDialog] = useState(false);
+  // S9.21t — CTA "Completar ficha ES" desde badge fallback Grupo SS
+  const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
   const [showSafeModeSaveDialog, setShowSafeModeSaveDialog] = useState(false);
   const { user } = useAuth();
   // S9.18: Flex plan state
