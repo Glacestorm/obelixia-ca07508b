@@ -1296,7 +1296,9 @@ export function HRPayrollEntryDialog({
 
     // S9.21o — SafeMode tiene prioridad: si el normalizer marcó modo seguro,
     // mostrar bloque ámbar de revisión manual y no renderizar la mejora calculada.
-    if (normalizerResult?.safeMode && normalizerResult.agreementResolutionStatus === 'manual_review_required') {
+    // S9.21t — Ampliado: todo safeMode debe mostrar el bloque, no sólo
+    // manual_review_required (también no_agreement / paths sin resolución).
+    if (normalizerResult?.safeMode) {
       return (
         <PayrollSafeModeBlock
           normalizer={normalizerResult}
