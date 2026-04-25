@@ -20,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye, Plus, X, CalendarRange, Stethoscope, Baby, Briefcase, FileWarning } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye, Plus, X, CalendarRange, Stethoscope, Baby, Briefcase, FileWarning, ExternalLink } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -46,6 +46,7 @@ import { normalizeSalarioPactadoToMonthly, type NormalizeResult } from '@/engine
 import { PayrollSafeModeBlock } from './safeMode/PayrollSafeModeBlock';
 import { PayrollSafeModeSaveDialog } from './safeMode/PayrollSafeModeSaveDialog';
 import { HRContractFormDialog } from './HRContractFormDialog';
+import { HREmployeeFormDialog } from './HREmployeeFormDialog';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PayrollConcept {
@@ -226,6 +227,8 @@ export function HRPayrollEntryDialog({
   const [normalizerResult, setNormalizerResult] = useState<NormalizeResult | null>(null);
   const [resolvedContractId, setResolvedContractId] = useState<string | null>(null);
   const [showContractDialog, setShowContractDialog] = useState(false);
+  // S9.21t — CTA "Completar ficha ES" desde badge fallback Grupo SS
+  const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
   const [showSafeModeSaveDialog, setShowSafeModeSaveDialog] = useState(false);
   const { user } = useAuth();
   // S9.18: Flex plan state
@@ -1293,7 +1296,9 @@ export function HRPayrollEntryDialog({
 
     // S9.21o — SafeMode tiene prioridad: si el normalizer marcó modo seguro,
     // mostrar bloque ámbar de revisión manual y no renderizar la mejora calculada.
-    if (normalizerResult?.safeMode && normalizerResult.agreementResolutionStatus === 'manual_review_required') {
+    // S9.21t — Ampliado: todo safeMode debe mostrar el bloque, no sólo
+    // manual_review_required (también no_agreement / paths sin resolución).
+    if (normalizerResult?.safeMode) {
       return (
         <PayrollSafeModeBlock
           normalizer={normalizerResult}
@@ -1480,6 +1485,19 @@ export function HRPayrollEntryDialog({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+            )}
+            {/* S9.21t — CTA accionable junto al badge fallback */}
+            {selectedEmployeeId && grupoCotizacionSource === 'fallback' && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-5 text-[10px] px-1.5 gap-1 text-warning hover:text-warning"
+                onClick={() => setShowEmployeeDialog(true)}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Completar ficha ES
+              </Button>
             )}
           </div>
         </DialogHeader>
@@ -2319,6 +2337,38 @@ export function HRPayrollEntryDialog({
                 job_title: selectedEmployeeCategory,
               } as EmployeeOption);
             }
+          }}
+        />
+      )}
+      {/* S9.21t — CTA "Completar ficha ES" desde badge fallback Grupo SS */}
+      {showEmployeeDialog && selectedEmployeeId && (
+        <HREmployeeFormDialog
+          open={showEmployeeDialog}
+          onOpenChange={setShowEmployeeDialog}
+          companyId={companyId}
+          initialTab="country"
+          employee={{
+            id: selectedEmployeeId,
+            first_name: selectedEmployeeName.split(' ')[0] || '',
+            last_name: selectedEmployeeName.split(' ').slice(1).join(' ') || '',
+            email: '',
+            employee_number: null,
+            position: selectedEmployeeCategory || null,
+            department_id: null,
+            hire_date: null,
+            status: 'active',
+            phone: null,
+            country_code: 'ES',
+          }}
+          onSave={() => {
+            setShowEmployeeDialog(false);
+            // Re-resolver tras completar ficha ES (refresca grupo SS y convenio)
+            void handleEmployeeSelect(selectedEmployeeId, {
+              id: selectedEmployeeId,
+              first_name: selectedEmployeeName.split(' ')[0] || '',
+              last_name: selectedEmployeeName.split(' ').slice(1).join(' ') || '',
+              job_title: selectedEmployeeCategory,
+            } as EmployeeOption);
           }}
         />
       )}
