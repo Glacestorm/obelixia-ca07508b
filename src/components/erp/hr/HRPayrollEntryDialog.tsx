@@ -20,7 +20,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye, Plus, X, CalendarRange, Stethoscope, Baby, Briefcase, FileWarning } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, Scale, AlertTriangle, CheckCircle, Info, ChevronDown, Shield, Eye, Plus, X, CalendarRange, Stethoscope, Baby, Briefcase, FileWarning, ExternalLink } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -46,6 +46,7 @@ import { normalizeSalarioPactadoToMonthly, type NormalizeResult } from '@/engine
 import { PayrollSafeModeBlock } from './safeMode/PayrollSafeModeBlock';
 import { PayrollSafeModeSaveDialog } from './safeMode/PayrollSafeModeSaveDialog';
 import { HRContractFormDialog } from './HRContractFormDialog';
+import { HREmployeeFormDialog } from './HREmployeeFormDialog';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PayrollConcept {
