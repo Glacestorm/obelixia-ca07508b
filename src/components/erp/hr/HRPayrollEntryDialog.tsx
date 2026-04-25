@@ -1486,6 +1486,19 @@ export function HRPayrollEntryDialog({
                 </Tooltip>
               </TooltipProvider>
             )}
+            {/* S9.21t — CTA accionable junto al badge fallback */}
+            {selectedEmployeeId && grupoCotizacionSource === 'fallback' && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-5 text-[10px] px-1.5 gap-1 text-warning hover:text-warning"
+                onClick={() => setShowEmployeeDialog(true)}
+              >
+                <ExternalLink className="h-3 w-3" />
+                Completar ficha ES
+              </Button>
+            )}
           </div>
         </DialogHeader>
 
