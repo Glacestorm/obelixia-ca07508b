@@ -264,7 +264,7 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {pending.length > 0 ? (
@@ -299,7 +299,9 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
         </DialogHeader>
 
         {selectedItem ? (
-          <ScrollArea className="flex-1 pr-3">{renderDetail()}</ScrollArea>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full pr-3">{renderDetail()}</ScrollArea>
+          </div>
         ) : (
           <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="flex-1 flex flex-col min-h-0">
             <TabsList className="grid w-full grid-cols-3">
@@ -462,10 +464,12 @@ export function HRNormativeWatchModal({ open, onOpenChange, companyId, initialTa
           </Tabs>
         )}
 
-        <Separator />
-        <p className="text-[10px] text-muted-foreground italic">
-          Los cambios normativos NO se autoaplican al cálculo de nómina. Siempre requieren revisión y aprobación humana.
-        </p>
+        <div className="shrink-0 px-0 pt-2">
+          <Separator />
+          <p className="text-[10px] text-muted-foreground italic pt-1">
+            Los cambios normativos NO se autoaplican al cálculo de nómina. Siempre requieren revisión y aprobación humana.
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );
