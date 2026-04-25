@@ -2340,6 +2340,38 @@ export function HRPayrollEntryDialog({
           }}
         />
       )}
+      {/* S9.21t — CTA "Completar ficha ES" desde badge fallback Grupo SS */}
+      {showEmployeeDialog && selectedEmployeeId && (
+        <HREmployeeFormDialog
+          open={showEmployeeDialog}
+          onOpenChange={setShowEmployeeDialog}
+          companyId={companyId}
+          initialTab="country"
+          employee={{
+            id: selectedEmployeeId,
+            first_name: selectedEmployeeName.split(' ')[0] || '',
+            last_name: selectedEmployeeName.split(' ').slice(1).join(' ') || '',
+            email: '',
+            employee_number: null,
+            position: selectedEmployeeCategory || null,
+            department_id: null,
+            hire_date: null,
+            status: 'active',
+            phone: null,
+            country_code: 'ES',
+          }}
+          onSave={() => {
+            setShowEmployeeDialog(false);
+            // Re-resolver tras completar ficha ES (refresca grupo SS y convenio)
+            void handleEmployeeSelect(selectedEmployeeId, {
+              id: selectedEmployeeId,
+              first_name: selectedEmployeeName.split(' ')[0] || '',
+              last_name: selectedEmployeeName.split(' ').slice(1).join(' ') || '',
+              job_title: selectedEmployeeCategory,
+            } as EmployeeOption);
+          }}
+        />
+      )}
     </Dialog>
   );
 }
