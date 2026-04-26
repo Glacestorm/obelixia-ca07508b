@@ -8,7 +8,7 @@
  */
 
 import { memo } from 'react';
-import { AlertTriangle, FileText, Info, Scale, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
+import { AlertTriangle, FileText, Info, Scale, CheckCircle2, XCircle, HelpCircle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,29 @@ export interface PayrollSafeModeBlockProps {
   agreementConflictDetected?: boolean;
   /** Etiqueta de periodo legible, e.g. "04/2026". */
   periodLabel?: string | null;
+  /**
+   * S9.21u.2 — Importes de convenio mostrados como REFERENCIA (no aplicados).
+   * Solo deben pasarse si proceden de la tabla salarial del convenio. Nunca
+   * se inyectan en los campos finales de nómina ni se suman a devengos.
+   */
+  referenceAmounts?: {
+    salarioBaseConvenio?: number | null;
+    plusConvenioTabla?: number | null;
+    totalMinimoConvenio?: number | null;
+  } | null;
+  /**
+   * S9.21u.2 — Conceptos dinámicos seguros del convenio (no porcentuales,
+   * con importe fijo procedente de tabla salarial). Se muestran como
+   * referencia informativa. NUNCA se inyectan en la nómina final.
+   */
+  referenceConcepts?: Array<{
+    code?: string | null;
+    name?: string | null;
+    label?: string | null;
+    amount?: number | null;
+    type?: string | null;
+    source?: string | null;
+  }> | null;
 }
 
 const unidadLabel: Record<NormalizeResult['unidadDetectada'], string> = {
@@ -89,6 +112,203 @@ const confianzaLabel: Record<NormalizeResult['confianza'], string> = {
   media: 'MEDIA',
   baja: 'BAJA',
 };
+
+// S9.21u.2 — Formato moneda EUR estable y locale-agnóstico de cara a tests.
+const CURRENCY_FORMATTER = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatEUR(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  return CURRENCY_FORMATTER.format(value);
+}
+
+/**
+ * S9.21u.2 — Subcomponente interno (no exportado). Renderiza importes de
+ * convenio como REFERENCIA INFORMATIVA dentro del bloque safeMode. Reglas:
+ *  - Solo se muestra si hay importes de tabla salarial.
+ *  - NUNCA muestra mejora voluntaria, salario pactado, mensual equivalente,
+ *    bases SS/IRPF, deducciones finales ni totales de nómina.
+ *  - Lleva siempre badge "Referencia — no aplicado" y aviso legal explícito.
+ *  - Estilo neutral/ámbar (no verde de éxito) para evitar confusión con
+ *    "Convenio aplicado".
+ */
+function SafeModeReferenceAmountsCard({
+  referenceAmounts,
+  referenceConcepts,
+}: {
+  referenceAmounts?: PayrollSafeModeBlockProps['referenceAmounts'];
+  referenceConcepts?: PayrollSafeModeBlockProps['referenceConcepts'];
+}) {
+  const baseAmount =
+    referenceAmounts && typeof referenceAmounts.salarioBaseConvenio === 'number'
+      ? referenceAmounts.salarioBaseConvenio
+      : null;
+  const plusAmount =
+    referenceAmounts && typeof referenceAmounts.plusConvenioTabla === 'number'
+      ? referenceAmounts.plusConvenioTabla
+      : null;
+  const totalAmount =
+    referenceAmounts && typeof referenceAmounts.totalMinimoConvenio === 'number'
+      ? referenceAmounts.totalMinimoConvenio
+      : baseAmount !== null || plusAmount !== null
+        ? (baseAmount ?? 0) + (plusAmount ?? 0)
+        : null;
+
+  const safeConcepts = (referenceConcepts ?? []).filter(
+    (c) =>
+      c &&
+      typeof c.amount === 'number' &&
+      Number.isFinite(c.amount) &&
+      (c.amount as number) > 0,
+  );
+
+  const hasAmounts = baseAmount !== null || plusAmount !== null || totalAmount !== null;
+  const hasConcepts = safeConcepts.length > 0;
+  if (!hasAmounts && !hasConcepts) return null;
+
+  return (
+    <div
+      className="rounded-md border border-warning/40 bg-background p-3 space-y-2"
+      aria-label="Importes de convenio mostrados como referencia (no aplicados a la nómina)"
+    >
+      {/* Cabecera */}
+      <div className="flex items-start gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Eye className="h-4 w-4 text-warning shrink-0" />
+          <span className="text-xs font-semibold text-foreground">
+            Importes de convenio
+          </span>
+        </div>
+        <Badge
+          variant="outline"
+          className="text-[10px] border-warning/60 bg-warning/10 text-foreground whitespace-normal"
+          title="Estos importes no se aplican a la nómina mientras SafeMode esté activo."
+        >
+          Referencia — no aplicado
+        </Badge>
+      </div>
+
+      {/* Aviso legal */}
+      <div className="flex items-start gap-1.5 text-[11px] text-foreground/80 bg-warning/5 border border-warning/20 rounded p-2">
+        <Info className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+        <p className="break-words">
+          Estos importes proceden de la tabla salarial del convenio y se muestran
+          solo como referencia. No se aplicarán a la nómina hasta resolver la
+          incoherencia contractual.
+        </p>
+      </div>
+
+      {/* Grid de importes clásicos */}
+      {hasAmounts && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+          <div className="p-2 rounded border border-warning/20 bg-warning/5">
+            <span className="block text-muted-foreground">Salario base convenio</span>
+            <p
+              className="font-medium text-foreground break-words"
+              title={
+                baseAmount !== null
+                  ? `${formatEUR(baseAmount)} / mes — referencia tabla salarial`
+                  : 'No disponible'
+              }
+            >
+              {baseAmount !== null ? (
+                <>
+                  {formatEUR(baseAmount)}{' '}
+                  <span className="text-muted-foreground font-normal">€/mes</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">No disponible</span>
+              )}
+            </p>
+          </div>
+          <div className="p-2 rounded border border-warning/20 bg-warning/5">
+            <span className="block text-muted-foreground">Plus convenio</span>
+            <p
+              className="font-medium text-foreground break-words"
+              title={
+                plusAmount !== null
+                  ? `${formatEUR(plusAmount)} / mes — referencia tabla salarial`
+                  : 'No disponible'
+              }
+            >
+              {plusAmount !== null ? (
+                <>
+                  {formatEUR(plusAmount)}{' '}
+                  <span className="text-muted-foreground font-normal">€/mes</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">No disponible</span>
+              )}
+            </p>
+          </div>
+          <div className="p-2 rounded border border-warning/30 bg-warning/10">
+            <span className="block text-muted-foreground">
+              Total mínimo convenio — referencia
+            </span>
+            <p
+              className="font-semibold text-foreground break-words"
+              title="Suma informativa de salario base y plus de convenio. No se aplica a la nómina."
+            >
+              {totalAmount !== null ? (
+                <>
+                  {formatEUR(totalAmount)}{' '}
+                  <span className="text-muted-foreground font-normal">€/mes</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">No disponible</span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Conceptos dinámicos seguros */}
+      {hasConcepts && (
+        <div className="space-y-1">
+          <p className="text-[11px] text-muted-foreground">
+            Conceptos adicionales del convenio (referencia):
+          </p>
+          <ul className="space-y-1">
+            {safeConcepts.map((c, i) => {
+              const label = c.name || c.label || c.code || 'Concepto de convenio';
+              return (
+                <li
+                  key={`${c.code ?? 'concept'}-${i}`}
+                  className="flex items-center justify-between gap-2 text-[11px] p-1.5 rounded border border-warning/20 bg-warning/5"
+                >
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] border-warning/40 bg-background text-foreground"
+                    >
+                      Convenio
+                    </Badge>
+                    <span
+                      className="font-medium text-foreground truncate"
+                      title={label}
+                    >
+                      {label}
+                    </span>
+                  </span>
+                  <span
+                    className="font-medium text-foreground tabular-nums"
+                    title={`${formatEUR(c.amount as number)} — referencia, no aplicado`}
+                  >
+                    {formatEUR(c.amount as number)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * S9.21u.1h — Subcomponente interno (no exportado). Renderiza el contexto de
@@ -261,11 +481,31 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
   tableFound,
   agreementConflictDetected,
   periodLabel,
+  referenceAmounts,
+  referenceConcepts,
 }: PayrollSafeModeBlockProps) {
   const canOpenContract = !!contractId && !!employeeId;
   const hasAgreement = !!(agreementName && agreementName.trim().length > 0);
   const noAgreementResolved =
     !hasAgreement && (!agreementSource || agreementSource === 'none');
+  const hasReferenceAmounts = !!(
+    referenceAmounts &&
+    (typeof referenceAmounts.salarioBaseConvenio === 'number' ||
+      typeof referenceAmounts.plusConvenioTabla === 'number' ||
+      typeof referenceAmounts.totalMinimoConvenio === 'number')
+  );
+  const hasReferenceConcepts = !!(
+    referenceConcepts &&
+    referenceConcepts.some(
+      (c) =>
+        c &&
+        typeof c.amount === 'number' &&
+        Number.isFinite(c.amount) &&
+        (c.amount as number) > 0,
+    )
+  );
+  const showReferenceCard =
+    hasAgreement && (hasReferenceAmounts || hasReferenceConcepts);
 
   return (
     <div
@@ -293,6 +533,15 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
           tableFound={tableFound}
           agreementConflictDetected={agreementConflictDetected}
           periodLabel={periodLabel}
+        />
+      )}
+      {/* S9.21u.2 — Tarjeta de importes de convenio como REFERENCIA. Va después
+          de la tarjeta de identidad y antes del bloque de motivo de bloqueo.
+          Estrictamente informativa: no desbloquea cálculo ni inyecta importes. */}
+      {showReferenceCard && (
+        <SafeModeReferenceAmountsCard
+          referenceAmounts={referenceAmounts}
+          referenceConcepts={referenceConcepts}
         />
       )}
       {noAgreementResolved && (
