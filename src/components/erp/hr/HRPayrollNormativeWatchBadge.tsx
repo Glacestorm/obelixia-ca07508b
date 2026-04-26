@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { ShieldCheck, ShieldAlert, RefreshCw } from 'lucide-react';
 import { useRegulatoryWatch } from '@/hooks/admin/useRegulatoryWatch';
 import { formatDistanceToNow } from 'date-fns';
@@ -109,8 +110,16 @@ export function HRPayrollNormativeWatchBadge({
               </Badge>
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs space-y-1.5">
-            <p className="font-semibold text-xs">Vigilancia normativa</p>
+          <TooltipPrimitive.Portal>
+            <TooltipContent
+              side="bottom"
+              align="start"
+              sideOffset={8}
+              collisionPadding={12}
+              avoidCollisions
+              className="z-[10100] w-[min(92vw,320px)] max-w-[calc(100vw-24px)] space-y-1.5 bg-popover text-popover-foreground border shadow-xl"
+            >
+              <p className="font-semibold text-xs">Vigilancia normativa</p>
             <p className="text-[11px] text-muted-foreground">
               Última revisión: <strong>{lastCheckLabel}</strong>
             </p>
@@ -129,7 +138,8 @@ export function HRPayrollNormativeWatchBadge({
             <p className="text-[10px] text-primary italic pt-1 border-t">
               Click para abrir el panel de normativa.
             </p>
-          </TooltipContent>
+            </TooltipContent>
+          </TooltipPrimitive.Portal>
         </Tooltip>
 
         <Tooltip>
@@ -146,9 +156,17 @@ export function HRPayrollNormativeWatchBadge({
               <RefreshCw className={cn('h-3 w-3', isChecking && 'animate-spin')} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p className="text-[11px]">Verificar normativa ahora</p>
-          </TooltipContent>
+          <TooltipPrimitive.Portal>
+            <TooltipContent
+              side="bottom"
+              sideOffset={8}
+              collisionPadding={12}
+              avoidCollisions
+              className="z-[10100]"
+            >
+              <p className="text-[11px]">Verificar normativa ahora</p>
+            </TooltipContent>
+          </TooltipPrimitive.Portal>
         </Tooltip>
       </div>
     </TooltipProvider>
