@@ -55,19 +55,34 @@ const unidadLabel: Record<NormalizeResult['unidadDetectada'], string> = {
 };
 
 // S9.21u.1h — Etiquetas humanas. El valor técnico se preserva en `title` (tooltip nativo).
-const divisorSourceLabel: Record<NormalizeResult['divisorSource'], string> = {
+// S9.21u.1i — Mapeo robusto: cualquier valor desconocido cae en "No determinable".
+const DIVISOR_SOURCE_HUMAN: Record<string, string> = {
   agreement_field: 'Convenio (pagas extra)',
+  'agreement.extra_payments': 'Convenio (pagas extra)',
   table_total: 'Tabla salarial (total/mensual)',
   table_annual: 'Tabla salarial (anual/mensual)',
+  contract_explicit: 'Contrato',
   none: 'No determinable',
 };
 
-const divisorSourceTechnical: Record<NormalizeResult['divisorSource'], string> = {
+const DIVISOR_SOURCE_TECHNICAL: Record<string, string> = {
   agreement_field: 'agreement.extra_payments',
+  'agreement.extra_payments': 'agreement.extra_payments',
   table_total: 'table_total',
   table_annual: 'table_annual',
+  contract_explicit: 'contract_explicit',
   none: 'none',
 };
+
+function getDivisorSourceLabel(source: string | null | undefined): string {
+  if (!source) return 'No determinable';
+  return DIVISOR_SOURCE_HUMAN[source] ?? 'No determinable';
+}
+
+function getDivisorSourceTechnical(source: string | null | undefined): string {
+  if (!source) return 'none';
+  return DIVISOR_SOURCE_TECHNICAL[source] ?? source;
+}
 
 const confianzaLabel: Record<NormalizeResult['confianza'], string> = {
   alta: 'ALTA',
@@ -105,17 +120,43 @@ function SafeModeAgreementContextCard({
         ? 'Contrato'
         : null;
 
+  // S9.21u.1i — Estados con tooltip explicativo accesible.
   const tableState =
     tableFound === true
-      ? { label: 'Encontrada', Icon: CheckCircle2, tone: 'text-success' as const }
+      ? {
+          label: 'Encontrada',
+          Icon: CheckCircle2,
+          tone: 'text-success' as const,
+          tooltip:
+            'Se ha encontrado una tabla salarial compatible con el convenio, grupo y periodo. No se usan importes porque SafeMode mantiene bloqueado el cálculo automático.',
+        }
       : tableFound === false
-        ? { label: 'No encontrada', Icon: XCircle, tone: 'text-destructive' as const }
-        : { label: 'No determinada', Icon: HelpCircle, tone: 'text-muted-foreground' as const };
+        ? {
+            label: 'No encontrada',
+            Icon: XCircle,
+            tone: 'text-destructive' as const,
+            tooltip:
+              'No se ha encontrado una tabla salarial compatible para el convenio, grupo o periodo actual.',
+          }
+        : {
+            label: 'Desconocida',
+            Icon: HelpCircle,
+            tone: 'text-muted-foreground' as const,
+            tooltip:
+              'No se ha podido determinar el estado de la tabla salarial en este contexto.',
+          };
 
   const TableIcon = tableState.Icon;
 
+  const conflictTooltip = agreementConflictDetected
+    ? 'Se ha detectado una diferencia entre fuentes de convenio. Se aplica la prioridad configurada por el flujo de nómina.'
+    : undefined;
+
   return (
-    <div className="rounded-md border border-warning/40 bg-background p-3 space-y-2">
+    <div
+      className="rounded-md border border-warning/40 bg-background p-3 space-y-2"
+      aria-label="Convenio identificado en modo seguro de nómina"
+    >
       {/* Cabecera */}
       <div className="flex items-start gap-2 flex-wrap">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -137,8 +178,8 @@ function SafeModeAgreementContextCard({
           {agreementConflictDetected && (
             <Badge
               variant="outline"
-              className="text-[10px] border-destructive/50 text-destructive"
-              title="El convenio del contrato difiere de la asignación activa del empleado. Se prioriza la asignación del empleado."
+              className="text-[10px] border-destructive/50 text-destructive whitespace-normal"
+              title={conflictTooltip}
             >
               <AlertTriangle className="h-3 w-3 mr-0.5" />
               Conflicto detectado
@@ -159,19 +200,28 @@ function SafeModeAgreementContextCard({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
         <div className="p-1.5 rounded border border-warning/20 bg-warning/5">
           <span className="block text-muted-foreground">Grupo profesional</span>
-          <p className="font-medium text-foreground break-words">
+          <p
+            className="font-medium text-foreground break-words"
+            title={professionalGroup || 'No informado'}
+          >
             {professionalGroup || 'No informado'}
           </p>
         </div>
         <div className="p-1.5 rounded border border-warning/20 bg-warning/5">
           <span className="block text-muted-foreground">Periodo</span>
-          <p className="font-medium text-foreground">
-            {periodLabel || 'No determinado'}
+          <p
+            className="font-medium text-foreground"
+            title={periodLabel || 'Periodo no determinado'}
+          >
+            {periodLabel || 'Periodo no determinado'}
           </p>
         </div>
         <div className="p-1.5 rounded border border-warning/20 bg-warning/5">
           <span className="block text-muted-foreground">Tabla salarial</span>
-          <p className={cn('font-medium inline-flex items-center gap-1', tableState.tone)}>
+          <p
+            className={cn('font-medium inline-flex items-center gap-1', tableState.tone)}
+            title={tableState.tooltip}
+          >
             <TableIcon className="h-3 w-3 shrink-0" />
             {tableState.label}
           </p>
@@ -179,8 +229,8 @@ function SafeModeAgreementContextCard({
       </div>
 
       {agreementCode && (
-        <p className="text-[10px] text-muted-foreground">
-          Código: <span className="font-mono text-foreground">{agreementCode}</span>
+        <p className="text-[10px] text-muted-foreground break-words" title={agreementCode}>
+          Código: <span className="font-mono text-foreground break-all">{agreementCode}</span>
         </p>
       )}
 
@@ -225,6 +275,11 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       )}
       role="alert"
       aria-live="polite"
+      aria-label={
+        hasAgreement
+          ? 'Convenio identificado en modo seguro de nómina'
+          : 'Sin convenio aplicable en modo seguro de nómina'
+      }
     >
       {/* S9.21u.1h — Tarjeta detallada de contexto de convenio. Se muestra ANTES
           del título de safeMode. Estrictamente informativa: no muestra importes
@@ -279,9 +334,9 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
           <span className="text-muted-foreground block">Fuente divisor</span>
           <p
             className="font-medium text-foreground break-words"
-            title={divisorSourceTechnical[normalizer.divisorSource]}
+            title={getDivisorSourceTechnical(normalizer.divisorSource)}
           >
-            {divisorSourceLabel[normalizer.divisorSource]}
+            {getDivisorSourceLabel(normalizer.divisorSource)}
           </p>
         </div>
         <div className="p-1.5 bg-background rounded border border-warning/30">
@@ -296,7 +351,10 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       </div>
 
       {normalizer.safeModeReason && (
-        <div className="text-[11px] text-foreground bg-background rounded p-2 border border-warning/30 break-words whitespace-normal">
+        <div
+          className="text-[11px] text-foreground bg-background rounded p-2 border border-warning/30 break-words whitespace-normal"
+          title={normalizer.safeModeReason}
+        >
           <span className="font-semibold text-foreground">Motivo del bloqueo: </span>
           {normalizer.safeModeReason}
         </div>
