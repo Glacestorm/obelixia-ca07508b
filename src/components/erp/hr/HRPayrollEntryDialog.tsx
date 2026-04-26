@@ -1588,7 +1588,7 @@ export function HRPayrollEntryDialog({
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <Label className="text-xs">Empleado</Label>
+                <Label className="text-xs">Empleado <span className="text-destructive">*</span></Label>
                 {isEditMode ? (
                   <p className="text-sm font-medium mt-1">{selectedEmployeeName}</p>
                 ) : (
