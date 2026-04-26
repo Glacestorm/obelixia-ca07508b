@@ -971,7 +971,7 @@ export function HRPayrollEntryDialog({
 
           if (resolution.tableEntry) {
             // Auto-resolved from agreement tables
-            setResolutionMode('auto');
+            applyResolutionMode('auto');
 
             // Pre-fill earnings with classic trio
             const classicEarnings = DEFAULT_EARNINGS.map((e, i) => {
@@ -1060,13 +1060,13 @@ export function HRPayrollEntryDialog({
             return; // Done — agreement resolved
           } else {
             // No table found or ambiguous — resolution returned fallback
-            setResolutionMode('manual');
+            applyResolutionMode('manual');
           }
         }
       } else if (agreementId && !professionalGroup) {
         // Ajuste S9.14-4: Contract has agreement but missing professional_group
         // Show explicit warning, degrade to manual — do NOT attempt auto-resolution
-        setResolutionMode('missing_group');
+        applyResolutionMode('missing_group');
         const { data: agreement } = await supabase
           .from('erp_hr_collective_agreements')
           .select('name')
@@ -1076,7 +1076,7 @@ export function HRPayrollEntryDialog({
       }
 
       // Fallback: no agreement or no table → manual mode
-      if (!resolutionMode) setResolutionMode('manual');
+      if (!resolutionModeWasSet) applyResolutionMode('manual');
       // S9.21r — Causa raíz del bug "Salario base = 42000":
       // Antes se inyectaba `salarioPactado` (= contract.base_salary crudo)
       // como BASE mensual sin honrar el normalizer. Si el normalizer activó
@@ -1092,7 +1092,7 @@ export function HRPayrollEntryDialog({
       resetConcepts(baseSeguro, 15);
     } catch (err) {
       console.error('[HRPayrollEntryDialog] agreement resolution error:', err);
-      setResolutionMode('manual');
+      applyResolutionMode('manual');
       resetConcepts(0, 15);
     } finally {
       setResolutionLoading(false);
