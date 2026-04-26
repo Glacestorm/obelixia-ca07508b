@@ -1,10 +1,15 @@
 /**
- * S9.21u.1i — Render snapshot/contract test for PayrollSafeModeBlock.
+ * S9.21u.1i / S9.21u.2 — Render snapshot/contract test for PayrollSafeModeBlock.
  *
  * Verifies:
  *  - SafeMode agreement context card renders with name/origin/group/period/table.
- *  - NO calculated agreement amounts are displayed as definitive (Base convenio,
- *    Plus convenio, Mejora voluntaria automática, Total mínimo convenio).
+ *  - When `referenceAmounts` are provided, the agreement amounts are rendered
+ *    inside the "Importes de convenio — Referencia no aplicado" card with the
+ *    explicit non-applied badge and the legal disclaimer.
+ *  - Without `referenceAmounts`, no reference amounts card is rendered.
+ *  - Forbidden definitive labels never appear in safeMode (Mejora voluntaria
+ *    automática, Base de cotización SS, Retención IRPF, Total devengos
+ *    definitivo, Fórmula definitiva).
  *
  * Reuses the existing Vitest + RTL infrastructure (vitest.config.ts +
  * src/test/utils.tsx). No new dependencies introduced.
@@ -67,7 +72,7 @@ describe('PayrollSafeModeBlock — S9.21u.1i SafeMode agreement context', () => 
     ).toBeInTheDocument();
   });
 
-  it('does NOT render any calculated agreement amount as definitive', () => {
+  it('does NOT render forbidden definitive labels when no referenceAmounts are passed', () => {
     render(
       <PayrollSafeModeBlock
         normalizer={baseNormalizer}
@@ -82,11 +87,16 @@ describe('PayrollSafeModeBlock — S9.21u.1i SafeMode agreement context', () => 
       />,
     );
 
-    // Forbidden labels — none of these definitive amounts may appear in safeMode.
-    expect(screen.queryByText(/Base convenio/i)).toBeNull();
-    expect(screen.queryByText(/Plus convenio/i)).toBeNull();
+    // Without referenceAmounts, the reference card must NOT render.
+    expect(screen.queryByText(/Importes de convenio/i)).toBeNull();
+    expect(screen.queryByText(/Referencia — no aplicado/i)).toBeNull();
+
+    // Forbidden definitive labels — must NEVER appear while safeMode is active.
     expect(screen.queryByText(/Mejora voluntaria autom[aá]tica/i)).toBeNull();
-    expect(screen.queryByText(/Total m[ií]nimo convenio/i)).toBeNull();
+    expect(screen.queryByText(/Base de cotizaci[oó]n SS/i)).toBeNull();
+    expect(screen.queryByText(/Retenci[oó]n IRPF/i)).toBeNull();
+    expect(screen.queryByText(/Total devengos definitivo/i)).toBeNull();
+    expect(screen.queryByText(/F[oó]rmula definitiva/i)).toBeNull();
   });
 
   it('renders "Sin convenio aplicable" branch when agreementName is empty', () => {
@@ -103,5 +113,85 @@ describe('PayrollSafeModeBlock — S9.21u.1i SafeMode agreement context', () => 
 
     expect(screen.getByText(/Sin convenio aplicable/i)).toBeInTheDocument();
     expect(screen.queryByText('Convenio identificado')).toBeNull();
+  });
+
+  it('S9.21u.2 — renders reference amounts card with non-applied badge and legal disclaimer', () => {
+    render(
+      <PayrollSafeModeBlock
+        normalizer={baseNormalizer}
+        contractId="contract-1"
+        employeeId="employee-1"
+        onOpenContract={vi.fn()}
+        agreementName="Convenio Colectivo Estatal de la Industria de la Alimentación y Bebidas"
+        agreementSource="employee_assignment"
+        professionalGroup="Grupo III"
+        periodLabel="04/2026"
+        tableFound={true}
+        referenceAmounts={{
+          salarioBaseConvenio: 1850,
+          plusConvenioTabla: 120,
+          totalMinimoConvenio: 1970,
+        }}
+        referenceConcepts={[
+          {
+            code: 'PLUS_TRANSPORTE',
+            name: 'Plus transporte',
+            amount: 80,
+            type: 'earning',
+            source: 'agreement_table',
+          },
+        ]}
+      />,
+    );
+
+    // Reference card title and explicit non-applied badge.
+    expect(screen.getByText('Importes de convenio')).toBeInTheDocument();
+    expect(screen.getByText(/Referencia — no aplicado/i)).toBeInTheDocument();
+    // Legal disclaimer.
+    expect(
+      screen.getByText(
+        /Estos importes proceden de la tabla salarial del convenio y se muestran solo como referencia/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/No se aplicar[aá]n a la n[oó]mina hasta resolver/i),
+    ).toBeInTheDocument();
+    // Reference labels (these legitimately appear under the non-applied badge).
+    expect(screen.getByText('Salario base convenio')).toBeInTheDocument();
+    expect(screen.getByText('Plus convenio')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Total m[ií]nimo convenio — referencia/i),
+    ).toBeInTheDocument();
+    // Dynamic safe concept rendered as reference.
+    expect(screen.getByText('Plus transporte')).toBeInTheDocument();
+
+    // Even with reference amounts shown, mejora voluntaria automática is still
+    // forbidden. The block must never render it as a calculated value.
+    expect(screen.queryByText(/Mejora voluntaria autom[aá]tica/i)).toBeNull();
+    expect(screen.queryByText(/Total devengos definitivo/i)).toBeNull();
+  });
+
+  it('S9.21u.2 — does NOT render reference card if no referenceAmounts and no positive concepts', () => {
+    render(
+      <PayrollSafeModeBlock
+        normalizer={baseNormalizer}
+        contractId="contract-1"
+        employeeId="employee-1"
+        onOpenContract={vi.fn()}
+        agreementName="Convenio X"
+        agreementSource="employee_assignment"
+        professionalGroup="Grupo II"
+        periodLabel="04/2026"
+        tableFound={false}
+        referenceAmounts={null}
+        referenceConcepts={[
+          // amount = 0 → must be filtered out (safeMode rule)
+          { code: 'X', name: 'Concepto cero', amount: 0, type: 'earning' },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText('Importes de convenio')).toBeNull();
+    expect(screen.queryByText(/Referencia — no aplicado/i)).toBeNull();
   });
 });
