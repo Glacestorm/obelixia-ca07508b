@@ -1316,6 +1316,38 @@ export function HRPayrollEntryDialog({
     // S9.21t — Ampliado: todo safeMode debe mostrar el bloque, no sólo
     // manual_review_required (también no_agreement / paths sin resolución).
     if (normalizerResult?.safeMode) {
+      // S9.21u.2 — Doble carril: pasamos importes de convenio como REFERENCIA
+      // (no aplicados). Solo si la tabla salarial fue encontrada y los importes
+      // proceden literalmente de tableEntry. Filtramos conceptos dinámicos
+      // seguros (tipo earning, no porcentuales, importe positivo) que no
+      // dependen del salario contractual ambiguo.
+      const tableEntry = agreementResolution?.tableEntry ?? null;
+      const referenceAmounts = tableEntry
+        ? {
+            salarioBaseConvenio: agreementResolution!.salarioBaseConvenio,
+            plusConvenioTabla: agreementResolution!.plusConvenioTabla,
+            totalMinimoConvenio:
+              (agreementResolution!.salarioBaseConvenio || 0) +
+              (agreementResolution!.plusConvenioTabla || 0),
+          }
+        : null;
+      const safeReferenceConcepts = (agreementConcepts || [])
+        .filter(
+          (c) =>
+            c &&
+            c.type === 'earning' &&
+            !c.isPercentage &&
+            typeof c.amount === 'number' &&
+            Number.isFinite(c.amount) &&
+            c.amount > 0,
+        )
+        .map((c) => ({
+          code: c.erpConceptCode || c.agreementConceptCode || null,
+          name: c.agreementConceptName || null,
+          amount: c.amount,
+          type: c.type,
+          source: 'agreement_table',
+        }));
       return (
         <PayrollSafeModeBlock
           normalizer={normalizerResult}
@@ -1330,6 +1362,8 @@ export function HRPayrollEntryDialog({
           tableFound={!!agreementResolution?.tableEntry}
           agreementConflictDetected={agreementConflictDetected}
           periodLabel={`${String(periodMonth).padStart(2, '0')}/${periodYear}`}
+          referenceAmounts={referenceAmounts}
+          referenceConcepts={safeReferenceConcepts}
         />
       );
     }
