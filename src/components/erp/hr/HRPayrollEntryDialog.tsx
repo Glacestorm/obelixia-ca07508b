@@ -44,6 +44,7 @@ import { downloadPayslipPDF } from '@/engines/erp/hr/payslipPdfGenerator';
 import { FileDown } from 'lucide-react';
 import { normalizeSalarioPactadoToMonthly, type NormalizeResult } from '@/engines/erp/hr/salaryNormalizer';
 import { PayrollSafeModeBlock } from './safeMode/PayrollSafeModeBlock';
+import { isSafeReferenceConcept } from './safeMode/PayrollSafeModeBlock';
 import { PayrollSafeModeSaveDialog } from './safeMode/PayrollSafeModeSaveDialog';
 import { HRContractFormDialog } from './HRContractFormDialog';
 import { HREmployeeFormDialog } from './HREmployeeFormDialog';
