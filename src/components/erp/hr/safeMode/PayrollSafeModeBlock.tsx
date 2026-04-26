@@ -226,12 +226,9 @@ function SafeModeReferenceAmountsCard({
         ? (baseAmount ?? 0) + (plusAmount ?? 0)
         : null;
 
-  const safeConcepts = (referenceConcepts ?? []).filter(
-    (c) =>
-      c &&
-      typeof c.amount === 'number' &&
-      Number.isFinite(c.amount) &&
-      (c.amount as number) > 0,
+  // S9.21u.2-VERIFY — Filtrado defensivo unificado vía isSafeReferenceConcept.
+  const safeConcepts = (referenceConcepts ?? []).filter((c) =>
+    isSafeReferenceConcept(c as SafeReferenceConceptInput | null | undefined),
   );
 
   const hasAmounts = baseAmount !== null || plusAmount !== null || totalAmount !== null;
