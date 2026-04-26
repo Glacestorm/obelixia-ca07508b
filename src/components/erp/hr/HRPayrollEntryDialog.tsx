@@ -1316,6 +1316,9 @@ export function HRPayrollEntryDialog({
           contractId={resolvedContractId}
           employeeId={selectedEmployeeId}
           onOpenContract={() => setShowContractDialog(true)}
+          agreementName={agreementName || null}
+          agreementSource={agreementSource || 'none'}
+          professionalGroup={agreementResolution?.trace?.professionalGroup ?? null}
         />
       );
     }
