@@ -23,6 +23,17 @@ export interface PayrollSafeModeBlockProps {
   /** Abre HRContractFormDialog con companyId/contractId/employeeId pre-cargados. */
   onOpenContract: () => void;
   className?: string;
+  /**
+   * S9.21u.1d — Contexto de convenio mostrado como cabecera del bloque safeMode.
+   * Estrictamente informativo: NO altera la lógica de safeMode, NO relaja el
+   * bloqueo, NO infiere convenio. Si `agreementName` existe se muestra junto al
+   * origen (employee_assignment | contract). Si no existe convenio resuelto
+   * (`agreementName` vacío y `agreementSource` null/'none'), se renderiza un
+   * mensaje explícito "Sin convenio aplicable".
+   */
+  agreementName?: string | null;
+  agreementSource?: 'employee_assignment' | 'contract' | 'none' | null;
+  professionalGroup?: string | null;
 }
 
 const unidadLabel: Record<NormalizeResult['unidadDetectada'], string> = {
@@ -51,8 +62,14 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
   employeeId,
   onOpenContract,
   className,
+  agreementName,
+  agreementSource,
+  professionalGroup,
 }: PayrollSafeModeBlockProps) {
   const canOpenContract = !!contractId && !!employeeId;
+  const hasAgreement = !!(agreementName && agreementName.trim().length > 0);
+  const noAgreementResolved =
+    !hasAgreement && (!agreementSource || agreementSource === 'none');
 
   return (
     <div
@@ -63,6 +80,42 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       role="alert"
       aria-live="polite"
     >
+      {/* S9.21u.1d — Cabecera contextual de convenio. Se muestra ANTES del
+          título de safeMode para preservar el contexto operativo aunque el
+          normalizer haya bloqueado el cálculo automático. */}
+      {hasAgreement && (
+        <div className="rounded-md border border-warning/30 bg-background px-3 py-2 text-xs text-foreground">
+          <span className="font-semibold">Convenio asignado:</span>{' '}
+          <span>{agreementName}</span>
+          {agreementSource && agreementSource !== 'none' && (
+            <Badge
+              variant="outline"
+              className="ml-2 text-[10px] border-warning/50 text-foreground"
+            >
+              Origen:{' '}
+              {agreementSource === 'employee_assignment' ? 'Empleado' : 'Contrato'}
+            </Badge>
+          )}
+          {professionalGroup && (
+            <Badge
+              variant="outline"
+              className="ml-2 text-[10px] border-warning/50 text-foreground"
+            >
+              Grupo: {professionalGroup}
+            </Badge>
+          )}
+        </div>
+      )}
+      {noAgreementResolved && (
+        <div className="rounded-md border border-warning/30 bg-background px-3 py-2 text-xs text-foreground">
+          <span className="font-semibold">Sin convenio aplicable.</span>
+          <span className="ml-1 text-foreground/70">
+            No se ha encontrado convenio en los datos laborales del empleado ni
+            en el contrato vigente.
+          </span>
+        </div>
+      )}
+
       <div className="flex items-start gap-2">
         <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
