@@ -194,4 +194,112 @@ describe('PayrollSafeModeBlock — S9.21u.1i SafeMode agreement context', () => 
     expect(screen.queryByText('Importes de convenio')).toBeNull();
     expect(screen.queryByText(/Referencia — no aplicado/i)).toBeNull();
   });
+
+  it('S9.21u.2-VERIFY — never renders forbidden definitive payroll labels in SafeMode', () => {
+    render(
+      <PayrollSafeModeBlock
+        normalizer={baseNormalizer}
+        contractId="contract-1"
+        employeeId="employee-1"
+        onOpenContract={vi.fn()}
+        agreementName="Convenio Colectivo Estatal de la Industria de la Alimentación y Bebidas"
+        agreementSource="employee_assignment"
+        professionalGroup="Grupo III"
+        periodLabel="04/2026"
+        tableFound={true}
+        referenceAmounts={{
+          salarioBaseConvenio: 1850,
+          plusConvenioTabla: 120,
+          totalMinimoConvenio: 1970,
+        }}
+        referenceConcepts={[
+          { code: 'PLUS_TRANSPORTE', name: 'Plus transporte', amount: 80, type: 'earning' },
+        ]}
+      />,
+    );
+
+    // Etiquetas DEFINITIVAS prohibidas — no deben aparecer JAMÁS en SafeMode.
+    expect(screen.queryByText(/Base SS/i)).toBeNull();
+    expect(screen.queryByText(/Base de cotizaci[oó]n SS/i)).toBeNull();
+    expect(screen.queryByText(/Base IRPF/i)).toBeNull();
+    expect(screen.queryByText(/Base de IRPF/i)).toBeNull();
+    expect(screen.queryByText(/Total devengos/i)).toBeNull();
+    expect(screen.queryByText(/Salario neto/i)).toBeNull();
+    expect(screen.queryByText(/Coste empresa/i)).toBeNull();
+    expect(screen.queryByText(/Salario pactado aplicado/i)).toBeNull();
+    expect(screen.queryByText(/Mejora voluntaria autom[aá]tica aplicada/i)).toBeNull();
+    expect(screen.queryByText(/Mensual equivalente/i)).toBeNull();
+  });
+
+  it('S9.21u.2-VERIFY — reference card has accessible label indicating "referencia" and "no aplicados"', () => {
+    render(
+      <PayrollSafeModeBlock
+        normalizer={baseNormalizer}
+        contractId="contract-1"
+        employeeId="employee-1"
+        onOpenContract={vi.fn()}
+        agreementName="Convenio X"
+        agreementSource="employee_assignment"
+        professionalGroup="Grupo III"
+        periodLabel="04/2026"
+        tableFound={true}
+        referenceAmounts={{
+          salarioBaseConvenio: 1850,
+          plusConvenioTabla: 120,
+          totalMinimoConvenio: 1970,
+        }}
+      />,
+    );
+
+    // aria-label de la tarjeta de referencia debe explicitar el carácter no-aplicado.
+    const referenceRegion = screen.getByLabelText(
+      /Importes de convenio mostrados como referencia.*no aplicados/i,
+    );
+    expect(referenceRegion).toBeInTheDocument();
+
+    // Badge visible "Referencia — no aplicado".
+    expect(screen.getByText(/Referencia — no aplicado/i)).toBeInTheDocument();
+
+    // Aviso legal con palabra "tabla salarial del convenio" y "referencia".
+    expect(
+      screen.getByText(/tabla salarial del convenio.*solo como referencia/i),
+    ).toBeInTheDocument();
+  });
+
+  it('S9.21u.2-VERIFY — percentage and zero-amount concepts are filtered out from reference card', () => {
+    render(
+      <PayrollSafeModeBlock
+        normalizer={baseNormalizer}
+        contractId="contract-1"
+        employeeId="employee-1"
+        onOpenContract={vi.fn()}
+        agreementName="Convenio X"
+        agreementSource="employee_assignment"
+        professionalGroup="Grupo III"
+        periodLabel="04/2026"
+        tableFound={true}
+        referenceAmounts={{
+          salarioBaseConvenio: 1850,
+          plusConvenioTabla: 120,
+          totalMinimoConvenio: 1970,
+        }}
+        referenceConcepts={[
+          // Filtered: percentage
+          { code: 'PCT_X', name: 'Plus porcentual', amount: 5, type: 'earning', isPercentage: true } as any,
+          // Filtered: zero
+          { code: 'ZERO_X', name: 'Concepto cero', amount: 0, type: 'earning' },
+          // Filtered: deduction
+          { code: 'DED_X', name: 'Cuota deducción', amount: 30, type: 'deduction' },
+          // Kept: valid
+          { code: 'PLUS_TRANSPORTE', name: 'Plus transporte', amount: 80, type: 'earning' },
+        ]}
+      />,
+    );
+
+    // Solo el válido debe estar visible.
+    expect(screen.getByText('Plus transporte')).toBeInTheDocument();
+    expect(screen.queryByText('Plus porcentual')).toBeNull();
+    expect(screen.queryByText('Concepto cero')).toBeNull();
+    expect(screen.queryByText('Cuota deducción')).toBeNull();
+  });
 });
