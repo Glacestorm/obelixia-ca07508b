@@ -1322,6 +1322,20 @@ export function HRPayrollEntryDialog({
       // proceden literalmente de tableEntry. Filtramos conceptos dinámicos
       // seguros (tipo earning, no porcentuales, importe positivo) que no
       // dependen del salario contractual ambiguo.
+      //
+      // S9.21u.2-VERIFY — INVARIANTE DE AISLAMIENTO (no romper):
+      //  · `referenceAmounts` y `safeReferenceConcepts` son SOLO para render
+      //    informativo dentro de PayrollSafeModeBlock.
+      //  · NUNCA deben inyectarse en `earnings` ni en `deductions` (en
+      //    SafeMode esos arrays mantienen amount=0 — ver líneas 977-1054).
+      //  · NUNCA deben alimentar `useESPayrollBridge` / preview / PDF
+      //    definitivo (`previewCalc`, `liveBridgeCalc`, `payslipRenderModel`).
+      //  · NUNCA deben formar parte de `performSave` / `payrollRecord`
+      //    (gross_salary, net_salary, total_cost, complements, base_salary).
+      //  · NUNCA deben persistirse como importes aplicados en
+      //    `erp_hr_payrolls`. Si se necesita rastrear que se mostraron, irían
+      //    en la traza enriquecida (`enrichedTrace`) como metadato, NUNCA
+      //    como amount aplicado.
       const tableEntry = agreementResolution?.tableEntry ?? null;
       const referenceAmounts = tableEntry
         ? {
@@ -1333,14 +1347,14 @@ export function HRPayrollEntryDialog({
           }
         : null;
       const safeReferenceConcepts = (agreementConcepts || [])
-        .filter(
-          (c) =>
-            c &&
-            c.type === 'earning' &&
-            !c.isPercentage &&
-            typeof c.amount === 'number' &&
-            Number.isFinite(c.amount) &&
-            c.amount > 0,
+        .filter((c) =>
+          isSafeReferenceConcept({
+            code: c?.erpConceptCode || c?.agreementConceptCode || null,
+            name: c?.agreementConceptName || null,
+            amount: c?.amount,
+            type: c?.type,
+            isPercentage: c?.isPercentage,
+          }),
         )
         .map((c) => ({
           code: c.erpConceptCode || c.agreementConceptCode || null,
