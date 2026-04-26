@@ -1423,11 +1423,20 @@ export function HRPayrollEntryDialog({
     }
 
     // Manual / degradation mode
+    // S9.21u.1 — Diferenciar caso "convenio asignado pero sin tabla" vs "sin convenio".
     return (
-      <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-warning/40 bg-warning/10">
-        <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
+      <div className="mb-4 flex items-start gap-2 p-3 rounded-lg border border-warning/40 bg-warning/10">
+        <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
         <div className="text-xs text-warning-foreground/90 dark:text-warning">
-          <p>Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.</p>
+          {agreementName ? (
+            <p>
+              Convenio asignado: <span className="font-medium">{agreementName}</span> — tabla salarial no encontrada para este periodo. Introduce el salario manualmente.
+            </p>
+          ) : (
+            <p>
+              Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.
+            </p>
+          )}
           <Badge variant="outline" className="mt-1 text-[10px] border-warning/50 text-warning">Salario manual</Badge>
         </div>
       </div>
@@ -1436,7 +1445,7 @@ export function HRPayrollEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92dvh] max-h-[92dvh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* S9.21i — Header fijo (shrink-0). NO sticky: el padre flex-col ya garantiza visibilidad. */}
         <DialogHeader className="shrink-0 bg-background border-b px-6 py-4 pr-12 space-y-2">
           <DialogTitle className="flex items-center gap-2 min-w-0 flex-wrap">
