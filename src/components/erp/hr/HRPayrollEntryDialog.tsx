@@ -849,6 +849,17 @@ export function HRPayrollEntryDialog({
     setSelectedEmployeeCategory(employee.job_title || 'Sin categoría');
     setResolutionLoading(true);
 
+    // S9.21u.1 — Fix stale closure de resolutionMode.
+    // Usamos un flag local porque `resolutionMode` (state) leído al final
+    // de esta función refleja el valor del render anterior, no las
+    // llamadas a setResolutionMode hechas durante este flujo. El flag
+    // local sí ve los cambios secuencialmente.
+    let resolutionModeWasSet = false;
+    const applyResolutionMode = (mode: AgreementResolutionMode) => {
+      setResolutionMode(mode);
+      resolutionModeWasSet = true;
+    };
+
     try {
       // Step 1: Get employee base_salary as fallback
       const { data: empData } = await supabase
@@ -960,7 +971,7 @@ export function HRPayrollEntryDialog({
 
           if (resolution.tableEntry) {
             // Auto-resolved from agreement tables
-            setResolutionMode('auto');
+            applyResolutionMode('auto');
 
             // Pre-fill earnings with classic trio
             const classicEarnings = DEFAULT_EARNINGS.map((e, i) => {
@@ -1049,13 +1060,13 @@ export function HRPayrollEntryDialog({
             return; // Done — agreement resolved
           } else {
             // No table found or ambiguous — resolution returned fallback
-            setResolutionMode('manual');
+            applyResolutionMode('manual');
           }
         }
       } else if (agreementId && !professionalGroup) {
         // Ajuste S9.14-4: Contract has agreement but missing professional_group
         // Show explicit warning, degrade to manual — do NOT attempt auto-resolution
-        setResolutionMode('missing_group');
+        applyResolutionMode('missing_group');
         const { data: agreement } = await supabase
           .from('erp_hr_collective_agreements')
           .select('name')
@@ -1065,7 +1076,7 @@ export function HRPayrollEntryDialog({
       }
 
       // Fallback: no agreement or no table → manual mode
-      if (!resolutionMode) setResolutionMode('manual');
+      if (!resolutionModeWasSet) applyResolutionMode('manual');
       // S9.21r — Causa raíz del bug "Salario base = 42000":
       // Antes se inyectaba `salarioPactado` (= contract.base_salary crudo)
       // como BASE mensual sin honrar el normalizer. Si el normalizer activó
@@ -1081,7 +1092,7 @@ export function HRPayrollEntryDialog({
       resetConcepts(baseSeguro, 15);
     } catch (err) {
       console.error('[HRPayrollEntryDialog] agreement resolution error:', err);
-      setResolutionMode('manual');
+      applyResolutionMode('manual');
       resetConcepts(0, 15);
     } finally {
       setResolutionLoading(false);
@@ -1412,11 +1423,20 @@ export function HRPayrollEntryDialog({
     }
 
     // Manual / degradation mode
+    // S9.21u.1 — Diferenciar caso "convenio asignado pero sin tabla" vs "sin convenio".
     return (
-      <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-warning/40 bg-warning/10">
-        <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
+      <div className="mb-4 flex items-start gap-2 p-3 rounded-lg border border-warning/40 bg-warning/10">
+        <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
         <div className="text-xs text-warning-foreground/90 dark:text-warning">
-          <p>Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.</p>
+          {agreementName ? (
+            <p>
+              Convenio asignado: <span className="font-medium">{agreementName}</span> — tabla salarial no encontrada para este periodo. Introduce el salario manualmente.
+            </p>
+          ) : (
+            <p>
+              Sin convenio aplicable — salario manual. No se ha podido resolver tabla salarial de convenio para este empleado y periodo.
+            </p>
+          )}
           <Badge variant="outline" className="mt-1 text-[10px] border-warning/50 text-warning">Salario manual</Badge>
         </div>
       </div>
@@ -1425,7 +1445,7 @@ export function HRPayrollEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92vh] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-4xl xl:max-w-[1800px] h-[92dvh] max-h-[92dvh] flex flex-col p-0 gap-0 overflow-hidden">
         {/* S9.21i — Header fijo (shrink-0). NO sticky: el padre flex-col ya garantiza visibilidad. */}
         <DialogHeader className="shrink-0 bg-background border-b px-6 py-4 pr-12 space-y-2">
           <DialogTitle className="flex items-center gap-2 min-w-0 flex-wrap">
@@ -1568,7 +1588,7 @@ export function HRPayrollEntryDialog({
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <Label className="text-xs">Empleado</Label>
+                <Label className="text-xs">Empleado <span className="text-destructive">*</span></Label>
                 {isEditMode ? (
                   <p className="text-sm font-medium mt-1">{selectedEmployeeName}</p>
                 ) : (

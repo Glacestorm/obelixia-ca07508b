@@ -1009,11 +1009,11 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
             <TabsContent value="personal" className="m-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nombre *</Label>
+                  <Label>Nombre <span className="text-destructive">*</span></Label>
                   <Input value={formData.first_name} onChange={(e) => handleChange('first_name', e.target.value)} placeholder="Nombre" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Apellidos *</Label>
+                  <Label>Apellidos <span className="text-destructive">*</span></Label>
                   <Input value={formData.last_name} onChange={(e) => handleChange('last_name', e.target.value)} placeholder="Apellidos" />
                 </div>
               </div>
@@ -1056,7 +1056,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Email *</Label>
+                  <Label>Email <span className="text-destructive">*</span></Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="email@empresa.com" className="pl-10" />
@@ -1159,7 +1159,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
             <TabsContent value="org" className="m-0 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>País de empleo *</Label>
+                  <Label>País de empleo <span className="text-destructive">*</span></Label>
                   <Select value={formData.country_code} onValueChange={(v) => handleChange('country_code', v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent portalContainer={selectPortalContainer} position="popper">
