@@ -849,6 +849,17 @@ export function HRPayrollEntryDialog({
     setSelectedEmployeeCategory(employee.job_title || 'Sin categoría');
     setResolutionLoading(true);
 
+    // S9.21u.1 — Fix stale closure de resolutionMode.
+    // Usamos un flag local porque `resolutionMode` (state) leído al final
+    // de esta función refleja el valor del render anterior, no las
+    // llamadas a setResolutionMode hechas durante este flujo. El flag
+    // local sí ve los cambios secuencialmente.
+    let resolutionModeWasSet = false;
+    const applyResolutionMode = (mode: AgreementResolutionMode) => {
+      setResolutionMode(mode);
+      resolutionModeWasSet = true;
+    };
+
     try {
       // Step 1: Get employee base_salary as fallback
       const { data: empData } = await supabase
