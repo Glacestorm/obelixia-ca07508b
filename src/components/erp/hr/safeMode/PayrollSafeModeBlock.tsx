@@ -127,6 +127,74 @@ function formatEUR(value: number | null | undefined): string {
 }
 
 /**
+ * S9.21u.2-VERIFY — Helper defensivo de filtrado de conceptos de convenio
+ * mostrados como REFERENCIA dentro de SafeMode.
+ *
+ * Reglas conservadoras (basadas únicamente en metadatos REALES expuestos por
+ * `agreementSalaryResolver`/`PayrollSafeModeBlockProps['referenceConcepts']`):
+ *  1. El concepto debe existir.
+ *  2. `amount` debe ser un número finito ESTRICTAMENTE positivo.
+ *  3. NO debe ser porcentual (`isPercentage === true` excluye, porque un
+ *     porcentaje aplicado sobre un salario contractual ambiguo no es seguro).
+ *  4. `type` (si existe) debe ser `'earning'`. Deducciones nunca se muestran
+ *     como referencia: deducciones del convenio aplican sobre bases que en
+ *     SafeMode no son fiables.
+ *  5. `code` (si existe) no puede pertenecer a un identificador clásico de
+ *     bases SS / IRPF / totales / neto. Filtro defensivo aunque no se espera
+ *     que el resolver entregue esos códigos como conceptos del convenio.
+ *
+ * No inventamos campos. Si en el futuro el resolver expone metadatos de
+ * dependencia de salario contractual (p. ej. `dependsOnContractSalary`),
+ * esta función debe ampliarse para excluirlos también.
+ */
+const FORBIDDEN_REFERENCE_CONCEPT_CODES = new Set<string>([
+  'IRPF',
+  'ES_IRPF',
+  'ES_BASE_CC',
+  'ES_BASE_AT',
+  'ES_BASE_IRPF',
+  'ES_SS_CC_TRAB',
+  'ES_SS_CC_EMP',
+  'ES_SS_DESEMPLEO_TRAB',
+  'ES_SS_DESEMPLEO_EMP',
+  'ES_SS_FOGASA',
+  'ES_SS_FP_TRAB',
+  'ES_SS_FP_EMP',
+  'ES_SS_MEI',
+  'ES_SS_AT_EP',
+  'ES_COSTE_EMPRESA_TOTAL',
+  'NETO',
+  'TOTAL_DEVENGOS',
+  'TOTAL_DEDUCCIONES',
+]);
+
+export interface SafeReferenceConceptInput {
+  code?: string | null;
+  name?: string | null;
+  label?: string | null;
+  amount?: number | null;
+  type?: string | null;
+  source?: string | null;
+  isPercentage?: boolean | null;
+}
+
+export function isSafeReferenceConcept(
+  concept: SafeReferenceConceptInput | null | undefined,
+): boolean {
+  if (!concept) return false;
+  const amount = concept.amount;
+  if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+    return false;
+  }
+  if (concept.isPercentage === true) return false;
+  if (concept.type && concept.type !== 'earning') return false;
+  if (concept.code && FORBIDDEN_REFERENCE_CONCEPT_CODES.has(concept.code)) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * S9.21u.2 — Subcomponente interno (no exportado). Renderiza importes de
  * convenio como REFERENCIA INFORMATIVA dentro del bloque safeMode. Reglas:
  *  - Solo se muestra si hay importes de tabla salarial.
