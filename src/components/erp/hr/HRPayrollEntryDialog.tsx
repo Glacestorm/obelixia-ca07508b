@@ -1319,6 +1319,11 @@ export function HRPayrollEntryDialog({
           agreementName={agreementName || null}
           agreementSource={agreementSource || 'none'}
           professionalGroup={agreementResolution?.trace?.professionalGroup ?? null}
+          agreementCode={agreementResolution?.trace?.agreementCode ?? null}
+          agreementResolutionStatus={normalizerResult?.agreementResolutionStatus ?? null}
+          tableFound={!!agreementResolution?.tableEntry}
+          agreementConflictDetected={agreementConflictDetected}
+          periodLabel={`${String(periodMonth).padStart(2, '0')}/${periodYear}`}
         />
       );
     }

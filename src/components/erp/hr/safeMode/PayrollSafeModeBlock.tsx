@@ -8,7 +8,7 @@
  */
 
 import { memo } from 'react';
-import { AlertTriangle, FileText, Info } from 'lucide-react';
+import { AlertTriangle, FileText, Info, Scale, CheckCircle2, XCircle, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,17 @@ export interface PayrollSafeModeBlockProps {
   agreementName?: string | null;
   agreementSource?: 'employee_assignment' | 'contract' | 'none' | null;
   professionalGroup?: string | null;
+  /**
+   * S9.21u.1h — Contexto adicional de convenio (estrictamente informativo).
+   * Ninguna prop nueva altera la lógica de safeMode ni desbloquea cálculos.
+   */
+  agreementCode?: string | null;
+  agreementResolutionStatus?: string | null;
+  /** true=tabla encontrada, false=no encontrada, undefined/null=no determinada. */
+  tableFound?: boolean | null;
+  agreementConflictDetected?: boolean;
+  /** Etiqueta de periodo legible, e.g. "04/2026". */
+  periodLabel?: string | null;
 }
 
 const unidadLabel: Record<NormalizeResult['unidadDetectada'], string> = {
@@ -43,11 +54,19 @@ const unidadLabel: Record<NormalizeResult['unidadDetectada'], string> = {
   no_informada: 'No informada',
 };
 
+// S9.21u.1h — Etiquetas humanas. El valor técnico se preserva en `title` (tooltip nativo).
 const divisorSourceLabel: Record<NormalizeResult['divisorSource'], string> = {
+  agreement_field: 'Convenio (pagas extra)',
+  table_total: 'Tabla salarial (total/mensual)',
+  table_annual: 'Tabla salarial (anual/mensual)',
+  none: 'No determinable',
+};
+
+const divisorSourceTechnical: Record<NormalizeResult['divisorSource'], string> = {
   agreement_field: 'agreement.extra_payments',
-  table_total: 'tabla salarial (total/mensual)',
-  table_annual: 'tabla salarial (anual/mensual)',
-  none: 'no determinable',
+  table_total: 'table_total',
+  table_annual: 'table_annual',
+  none: 'none',
 };
 
 const confianzaLabel: Record<NormalizeResult['confianza'], string> = {
@@ -55,6 +74,128 @@ const confianzaLabel: Record<NormalizeResult['confianza'], string> = {
   media: 'MEDIA',
   baja: 'BAJA',
 };
+
+/**
+ * S9.21u.1h — Subcomponente interno (no exportado). Renderiza el contexto de
+ * convenio identificado dentro del bloque safeMode SIN mostrar importes
+ * calculados de convenio (base, plus, mejora, fórmula, mínimo). Estrictamente
+ * informativo: no desbloquea cálculos ni relaja safeMode.
+ */
+function SafeModeAgreementContextCard({
+  agreementName,
+  agreementSource,
+  professionalGroup,
+  agreementCode,
+  tableFound,
+  agreementConflictDetected,
+  periodLabel,
+}: {
+  agreementName: string;
+  agreementSource?: 'employee_assignment' | 'contract' | 'none' | null;
+  professionalGroup?: string | null;
+  agreementCode?: string | null;
+  tableFound?: boolean | null;
+  agreementConflictDetected?: boolean;
+  periodLabel?: string | null;
+}) {
+  const originLabel =
+    agreementSource === 'employee_assignment'
+      ? 'Empleado'
+      : agreementSource === 'contract'
+        ? 'Contrato'
+        : null;
+
+  const tableState =
+    tableFound === true
+      ? { label: 'Encontrada', Icon: CheckCircle2, tone: 'text-success' as const }
+      : tableFound === false
+        ? { label: 'No encontrada', Icon: XCircle, tone: 'text-destructive' as const }
+        : { label: 'No determinada', Icon: HelpCircle, tone: 'text-muted-foreground' as const };
+
+  const TableIcon = tableState.Icon;
+
+  return (
+    <div className="rounded-md border border-warning/40 bg-background p-3 space-y-2">
+      {/* Cabecera */}
+      <div className="flex items-start gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Scale className="h-4 w-4 text-warning shrink-0" />
+          <span className="text-xs font-semibold text-foreground">
+            Convenio identificado
+          </span>
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          {originLabel && (
+            <Badge
+              variant="outline"
+              className="text-[10px] border-warning/50 text-foreground"
+              title={`Origen: ${originLabel}`}
+            >
+              Origen: {originLabel}
+            </Badge>
+          )}
+          {agreementConflictDetected && (
+            <Badge
+              variant="outline"
+              className="text-[10px] border-destructive/50 text-destructive"
+              title="El convenio del contrato difiere de la asignación activa del empleado. Se prioriza la asignación del empleado."
+            >
+              <AlertTriangle className="h-3 w-3 mr-0.5" />
+              Conflicto detectado
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Nombre del convenio */}
+      <p
+        className="text-sm font-medium text-foreground break-words leading-snug"
+        title={agreementName}
+      >
+        {agreementName}
+      </p>
+
+      {/* Grid informativo */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+        <div className="p-1.5 rounded border border-warning/20 bg-warning/5">
+          <span className="block text-muted-foreground">Grupo profesional</span>
+          <p className="font-medium text-foreground break-words">
+            {professionalGroup || 'No informado'}
+          </p>
+        </div>
+        <div className="p-1.5 rounded border border-warning/20 bg-warning/5">
+          <span className="block text-muted-foreground">Periodo</span>
+          <p className="font-medium text-foreground">
+            {periodLabel || 'No determinado'}
+          </p>
+        </div>
+        <div className="p-1.5 rounded border border-warning/20 bg-warning/5">
+          <span className="block text-muted-foreground">Tabla salarial</span>
+          <p className={cn('font-medium inline-flex items-center gap-1', tableState.tone)}>
+            <TableIcon className="h-3 w-3 shrink-0" />
+            {tableState.label}
+          </p>
+        </div>
+      </div>
+
+      {agreementCode && (
+        <p className="text-[10px] text-muted-foreground">
+          Código: <span className="font-mono text-foreground">{agreementCode}</span>
+        </p>
+      )}
+
+      {/* Mensaje legal/operativo */}
+      <div className="flex items-start gap-1.5 text-[11px] text-foreground/80 bg-warning/5 border border-warning/20 rounded p-2">
+        <Info className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+        <p className="break-words">
+          El convenio se ha identificado, pero el cálculo automático permanece
+          bloqueado porque la parametrización salarial del contrato es
+          incoherente o incompleta.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
   normalizer,
@@ -65,6 +206,11 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
   agreementName,
   agreementSource,
   professionalGroup,
+  agreementCode,
+  agreementResolutionStatus: _agreementResolutionStatus,
+  tableFound,
+  agreementConflictDetected,
+  periodLabel,
 }: PayrollSafeModeBlockProps) {
   const canOpenContract = !!contractId && !!employeeId;
   const hasAgreement = !!(agreementName && agreementName.trim().length > 0);
@@ -80,31 +226,19 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       role="alert"
       aria-live="polite"
     >
-      {/* S9.21u.1d — Cabecera contextual de convenio. Se muestra ANTES del
-          título de safeMode para preservar el contexto operativo aunque el
-          normalizer haya bloqueado el cálculo automático. */}
+      {/* S9.21u.1h — Tarjeta detallada de contexto de convenio. Se muestra ANTES
+          del título de safeMode. Estrictamente informativa: no muestra importes
+          calculados ni desbloquea el cálculo automático. */}
       {hasAgreement && (
-        <div className="rounded-md border border-warning/30 bg-background px-3 py-2 text-xs text-foreground">
-          <span className="font-semibold">Convenio asignado:</span>{' '}
-          <span>{agreementName}</span>
-          {agreementSource && agreementSource !== 'none' && (
-            <Badge
-              variant="outline"
-              className="ml-2 text-[10px] border-warning/50 text-foreground"
-            >
-              Origen:{' '}
-              {agreementSource === 'employee_assignment' ? 'Empleado' : 'Contrato'}
-            </Badge>
-          )}
-          {professionalGroup && (
-            <Badge
-              variant="outline"
-              className="ml-2 text-[10px] border-warning/50 text-foreground"
-            >
-              Grupo: {professionalGroup}
-            </Badge>
-          )}
-        </div>
+        <SafeModeAgreementContextCard
+          agreementName={agreementName as string}
+          agreementSource={agreementSource}
+          professionalGroup={professionalGroup}
+          agreementCode={agreementCode}
+          tableFound={tableFound}
+          agreementConflictDetected={agreementConflictDetected}
+          periodLabel={periodLabel}
+        />
       )}
       {noAgreementResolved && (
         <div className="rounded-md border border-warning/30 bg-background px-3 py-2 text-xs text-foreground">
@@ -143,7 +277,10 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
         </div>
         <div className="p-1.5 bg-background rounded border border-warning/30">
           <span className="text-muted-foreground block">Fuente divisor</span>
-          <p className="font-medium text-foreground truncate" title={divisorSourceLabel[normalizer.divisorSource]}>
+          <p
+            className="font-medium text-foreground break-words"
+            title={divisorSourceTechnical[normalizer.divisorSource]}
+          >
             {divisorSourceLabel[normalizer.divisorSource]}
           </p>
         </div>
@@ -159,7 +296,7 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       </div>
 
       {normalizer.safeModeReason && (
-        <div className="text-[11px] text-foreground bg-background rounded p-2 border border-warning/30">
+        <div className="text-[11px] text-foreground bg-background rounded p-2 border border-warning/30 break-words whitespace-normal">
           <span className="font-semibold text-foreground">Motivo del bloqueo: </span>
           {normalizer.safeModeReason}
         </div>
