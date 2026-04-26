@@ -25,13 +25,15 @@ const baseNormalizer: NormalizeResult = {
   safeMode: true,
   safeModeReason:
     'salario base 42000 y anual 42000 no coherentes con divisor 14',
-  agreementResolutionStatus: 'resolved',
+  agreementResolutionStatus: 'manual_review_required',
   trace: [],
   resolutionPath: 'incoherent_structural_safeMode',
   parametrizationDiagnostic: {
     status: 'incoherent',
     severity: 'structural',
-  } as NormalizeResult['parametrizationDiagnostic'],
+    reasons: [],
+    warnings: [],
+  } as unknown as NormalizeResult['parametrizationDiagnostic'],
 };
 
 describe('PayrollSafeModeBlock — S9.21u.1i SafeMode agreement context', () => {
