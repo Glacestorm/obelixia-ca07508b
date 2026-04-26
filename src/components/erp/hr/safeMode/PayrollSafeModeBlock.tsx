@@ -66,10 +66,10 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       <div className="flex items-start gap-2">
         <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-warning-foreground">
+          <p className="text-xs font-semibold text-foreground">
             Mejora voluntaria en modo seguro — pendiente de revisión manual
           </p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-[11px] text-foreground/80 mt-0.5">
             La unidad o el régimen de pagas del salario no son determinables con
             confianza suficiente. No se calcula automáticamente la mejora voluntaria
             para evitar reinterpretaciones erróneas del contrato.
@@ -78,27 +78,27 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
-        <div className="p-1.5 bg-background rounded border border-warning/20">
+        <div className="p-1.5 bg-background rounded border border-warning/30">
           <span className="text-muted-foreground block">Unidad detectada</span>
-          <p className="font-medium">{unidadLabel[normalizer.unidadDetectada]}</p>
+          <p className="font-medium text-foreground">{unidadLabel[normalizer.unidadDetectada]}</p>
         </div>
-        <div className="p-1.5 bg-background rounded border border-warning/20">
+        <div className="p-1.5 bg-background rounded border border-warning/30">
           <span className="text-muted-foreground block">Divisor (pagas/año)</span>
-          <p className="font-medium">
+          <p className="font-medium text-foreground">
             {normalizer.divisor ?? 'no determinable'}
           </p>
         </div>
-        <div className="p-1.5 bg-background rounded border border-warning/20">
+        <div className="p-1.5 bg-background rounded border border-warning/30">
           <span className="text-muted-foreground block">Fuente divisor</span>
-          <p className="font-medium truncate" title={divisorSourceLabel[normalizer.divisorSource]}>
+          <p className="font-medium text-foreground truncate" title={divisorSourceLabel[normalizer.divisorSource]}>
             {divisorSourceLabel[normalizer.divisorSource]}
           </p>
         </div>
-        <div className="p-1.5 bg-background rounded border border-warning/20">
+        <div className="p-1.5 bg-background rounded border border-warning/30">
           <span className="text-muted-foreground block">Confianza</span>
           <Badge
             variant="outline"
-            className="text-[10px] border-warning/50 text-warning"
+            className="text-[10px] border-warning/60 text-warning bg-warning/5"
           >
             {confianzaLabel[normalizer.confianza]}
           </Badge>
@@ -106,14 +106,14 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
       </div>
 
       {normalizer.safeModeReason && (
-        <div className="text-[11px] text-warning-foreground/90 dark:text-warning bg-background/50 rounded p-2 border border-warning/20">
-          <span className="font-medium">Motivo del bloqueo: </span>
+        <div className="text-[11px] text-foreground bg-background rounded p-2 border border-warning/30">
+          <span className="font-semibold text-foreground">Motivo del bloqueo: </span>
           {normalizer.safeModeReason}
         </div>
       )}
 
-      <div className="text-[11px] text-muted-foreground">
-        <span className="font-medium text-foreground">Acción requerida: </span>
+      <div className="text-[11px] text-foreground/80">
+        <span className="font-semibold text-foreground">Acción requerida: </span>
         corrige el contrato del empleado (informa <code className="text-[10px]">base_salary</code> o
         <code className="text-[10px]"> annual_salary</code> de forma coherente) o configura
         <code className="text-[10px]"> extra_payments</code> en el convenio aplicable.
@@ -125,20 +125,20 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
             size="sm"
             variant="outline"
             onClick={onOpenContract}
-            className="gap-1.5 border-warning/50 text-warning-foreground hover:bg-warning/20"
+            className="gap-1.5 border-warning/60 bg-background text-foreground hover:bg-warning/15 hover:text-foreground"
           >
             <FileText className="h-3.5 w-3.5" />
             Revisar contrato del empleado
           </Button>
         ) : (
-          <p className="text-[11px] italic text-muted-foreground">
-            <Info className="h-3 w-3 inline mr-1" />
+          <p className="text-[11px] italic text-foreground/70 inline-flex items-center gap-1 px-2 py-1 rounded border border-warning/30 bg-background">
+            <Info className="h-3 w-3 shrink-0" />
             No hay contrato activo localizable; revisar expediente.
           </p>
         )}
-        <p className="text-[11px] italic text-muted-foreground">
-          <Info className="h-3 w-3 inline mr-1" />
-          El convenio aplicable se gestiona en <span className="font-medium">HR → Compliance → Convenios Colectivos</span>.
+        <p className="text-[11px] italic text-foreground/70 inline-flex items-center gap-1">
+          <Info className="h-3 w-3 shrink-0" />
+          El convenio aplicable se gestiona en <span className="font-medium text-foreground">HR → Compliance → Convenios Colectivos</span>.
         </p>
       </div>
     </div>
