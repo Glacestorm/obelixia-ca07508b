@@ -874,6 +874,37 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           }
         }
 
+        // S9.21u.1f — Mirror convenio ES into canonical payroll source.
+        // People stores the selected agreement in hr_employee_extensions.extension_data.collective_agreement.
+        // Payroll (HRPayrollEntryDialog.resolveContractForPeriod) reads from
+        // hr_es_employee_labor_data.convenio_colectivo_id as primary source of truth.
+        // Keep this minimal: only mirror the agreement selected by the user.
+        // Do NOT infer or overwrite other ES labor fields (grupo SS, CNO, tipo contrato, NAF, etc.).
+        if (formData.country_code === 'ES' && employeeId) {
+          try {
+            const selectedAgreementId = esFields.collective_agreement || null;
+
+            const laborPayload = {
+              employee_id: employeeId,
+              company_id: companyId,
+              convenio_colectivo_id: selectedAgreementId,
+              updated_at: new Date().toISOString(),
+            };
+
+            const { error: laborErr } = await supabase
+              .from('hr_es_employee_labor_data')
+              .upsert(laborPayload as any, { onConflict: 'employee_id,company_id' });
+
+            if (laborErr) {
+              console.error('[S9.21u.1f][ES Labor Data] agreement mirror error:', laborErr);
+              saveErrors.push('Error al sincronizar el convenio laboral ES con nómina');
+            }
+          } catch (err) {
+            console.error('[S9.21u.1f][ES Labor Data] unexpected agreement mirror error:', err);
+            saveErrors.push('Error inesperado al sincronizar el convenio laboral ES');
+          }
+        }
+
         // H2.0: Save non-ES international extension data
         if (formData.country_code !== 'ES' && (intlFields.local_id_number || intlFields.immigration_status || intlFields.tax_residence_country)) {
           try {
