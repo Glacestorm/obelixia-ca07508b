@@ -1016,6 +1016,12 @@ export function HRPayrollEntryDialog({
                 }
               }
 
+              // S9.21u.2 — Doble carril: en safeMode, los conceptos dinámicos
+              // del convenio NUNCA se inyectan como aplicados a la nómina
+              // final. Se mantienen en el array para preservar la estructura
+              // pero con `amount: 0`. Los importes reales se exponen
+              // únicamente como REFERENCIA en PayrollSafeModeBlock.
+              const safeModeActive = !!normalized.safeMode;
               // Inject mapped concepts as additional earnings/deductions
               const dynamicEarnings = mapped
                 .filter(c => c.type === 'earning')
@@ -1025,7 +1031,7 @@ export function HRPayrollEntryDialog({
                   name: c.agreementConceptName,
                   type: 'earning' as const,
                   category: 'variable' as const,
-                  amount: c.amount,
+                  amount: safeModeActive ? 0 : c.amount,
                   isPercentage: c.isPercentage,
                   cotizaSS: c.cotizaSS,
                   tributaIRPF: c.tributaIRPF,
@@ -1040,7 +1046,7 @@ export function HRPayrollEntryDialog({
                   name: c.agreementConceptName,
                   type: 'deduction' as const,
                   category: 'other' as const,
-                  amount: c.amount,
+                  amount: safeModeActive ? 0 : c.amount,
                   isPercentage: c.isPercentage,
                   cotizaSS: c.cotizaSS,
                   tributaIRPF: c.tributaIRPF,
