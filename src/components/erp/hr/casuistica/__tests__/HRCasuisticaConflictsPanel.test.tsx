@@ -64,7 +64,9 @@ describe('HRCasuisticaConflictsPanel — C3B3A', () => {
     expect(
       screen.getByText(/datos locales y procesos persistidos/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Vista informativa/i)).toBeInTheDocument();
+    // C3B3B-paso1: el banner por defecto (local_only) sustituye al texto fijo
+    // anterior "Vista informativa…".
+    expect(screen.getByTestId('mode-banner-local-only')).toBeInTheDocument();
     expect(screen.getAllByText(/PNR/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Persistido prioridad/i)).toBeInTheDocument();
     // local ignorado
