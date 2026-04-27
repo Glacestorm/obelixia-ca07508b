@@ -13,13 +13,13 @@ const insertMock = vi.fn();
 const selectMock = vi.fn();
 const singleMock = vi.fn();
 
-const fromMock = vi.fn(() => ({
+const fromMock: ReturnType<typeof vi.fn> = vi.fn(() => ({
   insert: insertMock,
 }));
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: (...args: unknown[]) => fromMock(...args),
+    from: (table: string) => fromMock(table),
   },
 }));
 
