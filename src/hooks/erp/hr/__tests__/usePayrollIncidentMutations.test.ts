@@ -134,11 +134,10 @@ describe('usePayrollIncidentMutations — C3B1', () => {
       requires_ss_action: true,
       requires_external_filing: true,
     });
-    // Garantías de no-uso
-    const builder = fromMock.mock.results[0].value as Record<string, unknown>;
-    expect(builder.update).toBeUndefined();
-    expect(builder.upsert).toBeUndefined();
-    expect(builder.delete).toBeUndefined();
+    // Garantías de no-uso: el create no debe invocar update/upsert/delete.
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(upsertSpy).not.toHaveBeenCalled();
+    expect(deleteSpy).not.toHaveBeenCalled();
     expect(toast.success).toHaveBeenCalled();
   });
 
