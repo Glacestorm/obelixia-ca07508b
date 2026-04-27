@@ -42,6 +42,8 @@ import { IncidentStatusBadge, type IncidentStatusFlags } from './IncidentStatusB
 import { HRPayrollIncidentFormDialog } from './HRPayrollIncidentFormDialog';
 import { HRPromoteLocalCasuisticaDialog } from './HRPromoteLocalCasuisticaDialog';
 import { buildIncidentsFromLocalCasuistica } from '@/lib/hr/incidenciasPromotion';
+import { buildEffectiveCasuistica } from '@/lib/hr/effectiveCasuistica';
+import { HRCasuisticaConflictsPanel } from './HRCasuisticaConflictsPanel';
 import type {
   CasuisticaState,
   CasuisticaDatesExtension,
@@ -184,6 +186,20 @@ export function HRPersistedIncidentsPanel({
   }, [localCasuistica, companyId, employeeId, periodYear, periodMonth, payrollIncidents]);
   const canPromote = (promotionPreview?.toCreate.length ?? 0) > 0;
 
+  // C3B3A: cálculo del effective preview SOLO para visualización.
+  // No se pasa al motor de nómina ni se usa para guardar.
+  const effectivePreview = useMemo(() => {
+    if (!localCasuistica) return null;
+    return buildEffectiveCasuistica({
+      localCasuistica,
+      persistedLegacy: legacy,
+      mappingTraces: traces,
+      unmapped,
+      legalReviewRequired: legalReview,
+      mode: 'persisted_priority',
+    });
+  }, [localCasuistica, legacy, traces, unmapped, legalReview]);
+
   return (
     <Card className={cn('mb-4 border-info/30', className)}>
       <CardHeader className="pb-2">
@@ -249,6 +265,14 @@ export function HRPersistedIncidentsPanel({
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* C3B3A: panel de conflictos local vs persistido (vista informativa) */}
+        {effectivePreview && (
+          <HRCasuisticaConflictsPanel
+            result={effectivePreview}
+            mode="persisted_priority"
+          />
+        )}
+
         {/* Estado: error / loading / empty */}
         {error && (
           <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 text-[11px] text-destructive">
