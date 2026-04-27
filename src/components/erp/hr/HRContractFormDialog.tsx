@@ -645,6 +645,100 @@ export function HRContractFormDialog({
                   </div>
                 </div>
               </div>
+              {/* S9.21u.A — Ayuda visual: caso "base = anual" ambiguo.
+                  Estrictamente informativa. NO modifica formData ni autorrellena
+                  ningún campo. NO relaja SafeMode. NO interpreta el salario por
+                  el usuario: sólo muestra ambas lecturas matemáticas posibles
+                  para que el usuario elija conscientemente. */}
+              {(() => {
+                const baseSalary = parseFloat(formData.base_salary || '0');
+                const annualSalary = parseFloat(formData.annual_salary || '0');
+                const periodsNum = formData.salary_periods_per_year
+                  ? parseInt(formData.salary_periods_per_year, 10)
+                  : NaN;
+                const isSameBaseAndAnnual =
+                  baseSalary > 0 &&
+                  annualSalary > 0 &&
+                  Math.abs(baseSalary - annualSalary) < 1;
+                const unitPending = !formData.salary_amount_unit;
+                const diagnosticBlocks =
+                  liveDiagnostic.status === 'pending' ||
+                  liveDiagnostic.status === 'incoherent';
+                const showHelper =
+                  isSameBaseAndAnnual && (unitPending || diagnosticBlocks);
+
+                if (!showHelper) return null;
+
+                const effectivePeriods =
+                  Number.isFinite(periodsNum) && periodsNum > 1
+                    ? periodsNum
+                    : null;
+                const annualReadingMonthly =
+                  effectivePeriods != null ? annualSalary / effectivePeriods : null;
+                const monthlyReadingAnnual =
+                  effectivePeriods != null ? baseSalary * effectivePeriods : null;
+                const fmt = (n: number) =>
+                  new Intl.NumberFormat('es-ES', {
+                    style: 'currency',
+                    currency: 'EUR',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(n);
+
+                return (
+                  <div
+                    role="note"
+                    aria-label="Ayuda interpretación salario"
+                    data-testid="contract-salary-ambiguity-helper"
+                    className="p-3 rounded-md border border-amber-500/30 bg-amber-500/5 text-xs space-y-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                      <div className="space-y-1">
+                        <p className="font-semibold text-amber-700 dark:text-amber-300">
+                          Importe ambiguo: salario base e importe anual coinciden ({fmt(baseSalary)})
+                        </p>
+                        <p className="text-muted-foreground">
+                          El sistema no puede deducir si {fmt(baseSalary)} es <strong>anual</strong> o <strong>mensual</strong>.
+                          Selecciona la <strong>Unidad salarial</strong>
+                          {effectivePeriods == null && (
+                            <> y las <strong>Pagas por año</strong></>
+                          )}{' '}
+                          arriba para que la nómina pueda calcularse.
+                        </p>
+                      </div>
+                    </div>
+
+                    {effectivePeriods != null && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        <div className="p-2 rounded border border-border/60 bg-background/60">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            Si es <span className="font-semibold">anual</span> ({effectivePeriods} pagas)
+                          </p>
+                          <p className="font-mono text-sm text-foreground">
+                            {fmt(annualSalary)} ÷ {effectivePeriods} ={' '}
+                            <strong>{fmt(annualReadingMonthly ?? 0)}/mes</strong>
+                          </p>
+                        </div>
+                        <div className="p-2 rounded border border-border/60 bg-background/60">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            Si es <span className="font-semibold">mensual</span> ({effectivePeriods} pagas)
+                          </p>
+                          <p className="font-mono text-sm text-foreground">
+                            {fmt(baseSalary)} × {effectivePeriods} ={' '}
+                            <strong>{fmt(monthlyReadingAnnual ?? 0)}/año</strong>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-muted-foreground italic">
+                      Esta ayuda es sólo orientativa. Ningún campo se modifica
+                      automáticamente; el usuario debe seleccionar la unidad y guardar.
+                    </p>
+                  </div>
+                );
+              })()}
               {/* Diagnostic feedback */}
               {liveDiagnostic.status === 'incoherent' && (
                 <div className={`p-2 rounded-md text-xs ${
