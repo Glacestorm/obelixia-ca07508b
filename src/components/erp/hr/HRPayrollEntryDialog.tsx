@@ -2212,6 +2212,7 @@ export function HRPayrollEntryDialog({
               employeeId={selectedEmployeeId}
               periodYear={periodYear}
               periodMonth={periodMonth}
+              localCasuistica={casuistica}
             />
           )}
         </div>
