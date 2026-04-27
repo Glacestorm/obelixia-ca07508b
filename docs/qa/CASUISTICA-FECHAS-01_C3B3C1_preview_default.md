@@ -90,3 +90,59 @@ Procedimiento sin código BD ni migraciones:
 
 **Estado final:** Default operativo = `persisted_priority_preview`.
 Apply OFF. Cálculo real intacto. Sin código funcional del motor modificado.
+
+---
+
+# CASUISTICA-FECHAS-01 — Fase C3B3C1 CERRADA
+
+**Fecha de cierre:** 2026-04-27
+
+## 1. Resumen
+- Default cambiado a `persisted_priority_preview`.
+- Apply (`persisted_priority_apply`) sigue OFF.
+- UI muestra fuente persistida propuesta y conflictos por defecto.
+- Cálculo real sigue usando datos locales (payload del motor inalterado).
+- Conflictos local vs persistido visibles en producción sin afectar nómina.
+
+## 2. Archivos modificados
+- `src/lib/hr/payrollEffectiveCasuisticaFlag.ts`
+- `src/lib/hr/__tests__/payrollEffectiveCasuisticaFlag.test.ts`
+- `src/lib/hr/__tests__/effectiveCasuistica.engineWiring.test.ts`
+- `src/components/erp/hr/__tests__/HRPayrollEntryDialog.effectiveCasuistica.test.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRCasuisticaConflictsPanel.test.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRPersistedIncidentsPanel.test.tsx`
+
+## 3. Archivos creados
+- `docs/qa/CASUISTICA-FECHAS-01_C3B3C1_preview_default.md`
+
+## 4. Confirmaciones
+- ✅ Default = `persisted_priority_preview`.
+- ✅ `persisted_priority_apply` sigue **OFF**.
+- ❎ `simulateES` no tocado; firma del motor intacta.
+- ✅ Payload real al motor sigue siendo el local exacto.
+- ❎ Sin cambios en devengos, bases de cotización, IRPF, IT/AT, PNR, atrasos, nacimiento/cuidado menor.
+- ❎ Sin FDI / AFI / DELT@ ni comunicaciones oficiales.
+- ❎ Sin writes (insert/update/upsert/delete). Sin `service_role`.
+- ❎ Sin BD schema, RLS, migraciones, edge functions, dependencias ni CI.
+- ❎ Motores legales intactos (`salaryNormalizer`, `contractSalaryParametrization`, `agreementSalaryResolver`, `fdiArtifactEngine`, `afiInactivityEngine`, `deltaArtifactEngine`).
+
+## 5. Tests
+- **Total: 46/46 tests verdes.**
+  - `payrollEffectiveCasuisticaFlag`: 5 tests.
+  - `effectiveCasuistica.engineWiring`: 14 tests.
+  - `HRPayrollEntryDialog.effectiveCasuistica`: 4 tests.
+  - `HRCasuisticaConflictsPanel`: 11 tests.
+  - `HRPersistedIncidentsPanel`: 12 tests.
+
+## 6. Riesgos residuales
+- Preview muestra conflictos pero no los resuelve.
+- Cálculo real todavía usa casuística local.
+- Apply real requiere fase **C3B3C2**.
+- Checklist QA legal/manual de 12 puntos pendiente antes de cualquier activación de apply.
+- No se ha ejecutado ni preparado ningún envío oficial.
+
+## 7. Próximo paso recomendado
+- Crear y ejecutar el **checklist QA legal/manual de 12 puntos** antes de abrir C3B3C2 PLAN.
+- **No activar** `persisted_priority_apply` hasta validación legal/manual firmada por Legal/Operaciones.
+
+**Estado:** ✅ Fase C3B3C1 **CERRADA**. Apply OFF. Sin código funcional modificado en este cierre documental.
