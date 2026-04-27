@@ -89,3 +89,80 @@ Constante exportada: `FORBIDDEN_UPDATE_KEYS` en
 - `src/components/erp/hr/casuistica/HRPayrollIncidentFormDialog.tsx`
 - `src/components/erp/hr/casuistica/HRPersistedIncidentsPanel.tsx`
 - `src/hooks/erp/hr/__tests__/usePayrollIncidentMutations.test.ts`
+---
+
+## CASUISTICA-FECHAS-01 — Fase C3C CERRADA
+
+**Fecha de cierre:** 2026-04-27
+
+### 1. Resumen
+- Edición segura de incidencias persistidas implementada.
+- Cancelación segura mediante soft-delete implementada.
+- `HRCancelIncidentDialog` creado.
+- `HRPayrollIncidentFormDialog` reutilizado en modo `edit`.
+- `HRPersistedIncidentsPanel` muestra acciones Editar/Cancelar.
+- Incidencias aplicadas (`applied_at != null`) quedan bloqueadas.
+- Incidencias canceladas (`deleted_at != null`) quedan tachadas/badgeadas.
+- No hay DELETE físico en ningún punto del flujo.
+
+### 2. Archivos creados
+- `src/components/erp/hr/casuistica/HRCancelIncidentDialog.tsx`
+- `src/__tests__/security/casuisticaNoPhysicalDelete.test.ts`
+- `docs/qa/CASUISTICA-FECHAS-01_C3C_edit_cancel.md`
+
+### 3. Archivos modificados
+- `src/hooks/erp/hr/usePayrollIncidentMutations.ts`
+- `src/components/erp/hr/casuistica/HRPayrollIncidentFormDialog.tsx`
+- `src/components/erp/hr/casuistica/HRPersistedIncidentsPanel.tsx`
+- `src/hooks/erp/hr/__tests__/usePayrollIncidentMutations.test.ts`
+
+### 4. Confirmaciones
+- ❌ No `.delete()` funcional en scope C3C.
+- ❌ No DELETE físico.
+- ❌ No `service_role` (cliente Supabase autenticado con RLS del usuario).
+- ❌ No se toca `applied_at`.
+- ❌ No se toca `applied_to_record_id`.
+- ❌ No se toca `company_id`.
+- ❌ No se toca `employee_id`.
+- ❌ No se toca `incident_type`.
+- ❌ No se toca `concept_code`.
+- ❌ No se toca `version`.
+- ❌ No se tocan motores legales.
+- ❌ No se toca `simulateES`.
+- ❌ No se toca payload del motor de nómina.
+- ❌ No se generan FDI / AFI / DELT@.
+- ❌ No se envían comunicaciones oficiales.
+- ❌ No se tocan BD / RLS / migraciones / edge functions.
+- ❌ No se tocan dependencias / CI.
+- ✅ `PAYROLL_EFFECTIVE_CASUISTICA_MODE` sigue en `persisted_priority_preview`.
+- ✅ `persisted_priority_apply` sigue **OFF**.
+
+### 5. Tests
+- ✅ **32/32 tests verdes** en scope C3C.
+- ✅ Test estático `src/__tests__/security/casuisticaNoPhysicalDelete.test.ts`
+  ejecutado: **0 hits funcionales** de `.delete()` en el scope de casuística.
+- Cobertura: mutations (update/cancel), UI panel, dialog cancelación,
+  guardrails de claves prohibidas, bloqueo de incidencias aplicadas.
+
+### 6. Riesgos residuales
+- Editar/cancelar incidencias **aplicadas** queda bloqueado y diferido a **C4**
+  (requiere flujo de recálculo + reverso contable).
+- Concurrencia: last-write-wins. Locking optimista por `version` queda para C4.
+- Cambiar `incident_type` requiere **cancelar + crear nueva incidencia**
+  (no se permite mutar el tipo en edición).
+- **C3B3C2 sigue BLOQUEADO** hasta completar checklist legal/manual de 12
+  puntos con firma de Legal/RRHH/Compliance.
+
+### 7. Próximo paso recomendado
+- ❌ **NO avanzar a C3B3C2** hasta completar
+  `docs/qa/CASUISTICA-FECHAS-01_C3B3C_MANUAL_VALIDATION_PACK.md`
+  con evidencia y firma (puntos 9–12).
+- ✅ Tras completar y firmar el checklist → preparar **C3B3C2 PLAN**
+  (activación controlada de `persisted_priority_apply`).
+- ✅ **C4** (recálculo + apply + concurrencia optimista) **solo después**
+  de validación legal/operativa de C3B3C2.
+
+---
+
+**Estado final Fase C3C:** ✅ **CERRADA** — sin código funcional tocado en este
+cierre documental, `apply` sigue **OFF**, sin comunicaciones oficiales.
