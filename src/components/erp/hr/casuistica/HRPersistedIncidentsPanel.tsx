@@ -15,7 +15,7 @@
  * en Fase C3B".
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -25,7 +25,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   AlertTriangle,
   CalendarRange,
@@ -40,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { useHRPayrollIncidencias } from '@/hooks/erp/hr/useHRPayrollIncidencias';
 import { IncidentTypeBadge } from './IncidentTypeBadge';
 import { IncidentStatusBadge, type IncidentStatusFlags } from './IncidentStatusBadge';
+import { HRPayrollIncidentFormDialog } from './HRPayrollIncidentFormDialog';
 import type {
   ITProcessRow,
   LeaveRequestRow,
@@ -129,6 +129,7 @@ export function HRPersistedIncidentsPanel({
 }: HRPersistedIncidentsPanelProps) {
   const hook = useIncidenciasHook ?? useHRPayrollIncidencias;
   const result = hook({ companyId, employeeId, periodYear, periodMonth });
+  const [createOpen, setCreateOpen] = useState(false);
 
   const {
     payrollIncidents,
@@ -137,6 +138,7 @@ export function HRPersistedIncidentsPanel({
     mapping,
     isLoading,
     error,
+    refetch,
   } = result;
 
   const rows = useMemo(
@@ -187,28 +189,16 @@ export function HRPersistedIncidentsPanel({
             </div>
           </div>
 
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0}>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled
-                    aria-disabled="true"
-                    className="h-7 text-[11px] gap-1 opacity-60 cursor-not-allowed"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Añadir proceso
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="text-xs">
-                Disponible en Fase C3B.
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setCreateOpen(true)}
+            className="h-7 text-[11px] gap-1"
+          >
+            <Plus className="h-3 w-3" />
+            Añadir proceso
+          </Button>
         </div>
       </CardHeader>
 
@@ -359,6 +349,19 @@ export function HRPersistedIncidentsPanel({
           </div>
         )}
       </CardContent>
+      {createOpen && (
+        <HRPayrollIncidentFormDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          companyId={companyId}
+          employeeId={employeeId}
+          periodYear={periodYear}
+          periodMonth={periodMonth}
+          onCreated={() => {
+            void refetch?.();
+          }}
+        />
+      )}
     </Card>
   );
 }

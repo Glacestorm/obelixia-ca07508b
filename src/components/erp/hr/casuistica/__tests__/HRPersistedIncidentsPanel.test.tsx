@@ -121,13 +121,14 @@ describe('HRPersistedIncidentsPanel — C3A read-only', () => {
     expect(screen.getAllByText(/AFI pendiente/i).length).toBeGreaterThan(0);
   });
 
-  it('NO muestra acciones CRUD habilitadas', () => {
+  it('NO muestra acciones CRUD de edición/cancelación (alta C3B1 ya disponible)', () => {
     render(<HRPersistedIncidentsPanel {...baseProps} useIncidenciasHook={makeHook()} />);
     expect(screen.queryByRole('button', { name: /guardar/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /eliminar/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /editar/i })).not.toBeInTheDocument();
+    // C3B1: el botón "Añadir proceso" ya está habilitado (abre modal de alta).
     const addBtn = screen.getByRole('button', { name: /Añadir proceso/i });
-    expect(addBtn).toBeDisabled();
+    expect(addBtn).not.toBeDisabled();
   });
 
   it('no renderiza si falta companyId o employeeId', () => {
