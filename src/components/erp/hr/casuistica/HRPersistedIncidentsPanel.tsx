@@ -165,6 +165,8 @@ export function HRPersistedIncidentsPanel({
   const result = hook({ companyId, employeeId, periodYear, periodMonth });
   const [createOpen, setCreateOpen] = useState(false);
   const [promoteOpen, setPromoteOpen] = useState(false);
+  const [editIncident, setEditIncident] = useState<PayrollIncidentRow | null>(null);
+  const [cancelIncident, setCancelIncident] = useState<PayrollIncidentRow | null>(null);
 
   const {
     payrollIncidents,
