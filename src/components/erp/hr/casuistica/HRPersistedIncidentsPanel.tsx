@@ -330,30 +330,17 @@ export function HRPersistedIncidentsPanel({
                   <th className="text-left font-medium px-2 py-1.5">Inicio</th>
                   <th className="text-left font-medium px-2 py-1.5">Fin</th>
                   <th className="text-left font-medium px-2 py-1.5">Estado / Flags</th>
+                  <th className="text-right font-medium px-2 py-1.5">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.key} className="border-t border-border/60">
-                    <td className="px-2 py-1.5">
-                      <IncidentTypeBadge type={r.type} source={r.source} />
-                    </td>
-                    <td className="px-2 py-1.5 text-muted-foreground text-[10px]">
-                      {r.source === 'payroll_incidents' && 'payroll_incidents'}
-                      {r.source === 'it_processes' && 'it_processes'}
-                      {r.source === 'leave_requests' && 'leave_requests'}
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <span className="inline-flex items-center gap-1">
-                        <CalendarRange className="h-3 w-3 text-muted-foreground" />
-                        {fmtDate(r.from)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-1.5">{fmtDate(r.to)}</td>
-                    <td className="px-2 py-1.5">
-                      <IncidentStatusBadge flags={r.flags} />
-                    </td>
-                  </tr>
+                  <IncidentRow
+                    key={r.key}
+                    row={r}
+                    onEdit={(inc) => setEditIncident(inc)}
+                    onCancel={(inc) => setCancelIncident(inc)}
+                  />
                 ))}
               </tbody>
             </table>
