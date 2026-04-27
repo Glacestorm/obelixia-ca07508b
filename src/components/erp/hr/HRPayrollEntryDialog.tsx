@@ -2039,6 +2039,34 @@ export function HRPayrollEntryDialog({
                             />
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Origen desde</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.atrasosFechaDesde}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosFechaDesde: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Origen hasta</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.atrasosFechaHasta}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosFechaHasta: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                        {derivedDays.atrasosInverted && (
+                          <p className="text-[10px] text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                          </p>
+                        )}
+                        <p className="text-[9px] text-muted-foreground italic">
+                          Las fechas son trazabilidad complementaria; el motor sigue usando el período YYYY-MM y el importe.
+                        </p>
 
                         {/* Nacimiento */}
                         <Separator />
