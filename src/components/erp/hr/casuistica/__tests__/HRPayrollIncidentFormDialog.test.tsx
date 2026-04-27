@@ -121,9 +121,8 @@ describe('HRPayrollIncidentFormDialog — C3B1', () => {
         mutationsHook={hook}
       />,
     );
-    expect(
-      screen.getByText(/módulo especializado correspondiente/i),
-    ).toBeInTheDocument();
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/módulo especializado correspondiente/i);
     expect(screen.getByRole('button', { name: /crear incidencia/i })).toBeDisabled();
     expect(createPayrollIncident).not.toHaveBeenCalled();
   });
