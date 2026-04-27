@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useERPContext } from './useERPContext';
 import { toast } from 'sonner';
 
@@ -202,6 +203,24 @@ export interface LogisticsStats {
 
 // === HOOK ===
 export function useERPLogistics() {
+  // Helper: extrae solo columnas reales de erp_logistics_shipments,
+  // descartando relaciones expandidas (carrier_account) y campos virtuales del DTO Shipment.
+  const toShipmentDbPayload = (
+    input: Partial<Shipment>
+  ): TablesUpdate<'erp_logistics_shipments'> => {
+    const {
+      carrier_account,
+      // Campos del DTO que no son columnas reales de la tabla
+      service_type,
+      cash_on_delivery,
+      insurance_value,
+      picked_up_at,
+      estimated_delivery_at,
+      ...rest
+    } = input as Partial<Shipment> & Record<string, unknown>;
+    return rest as TablesUpdate<'erp_logistics_shipments'>;
+  };
+
   const erpContext = useERPContext();
   const selectedCompany = erpContext?.currentCompany || null;
   
@@ -386,7 +405,7 @@ export function useERPLogistics() {
     trackingData?: Partial<TrackingEvent>
   ) => {
     try {
-      const updates: Record<string, unknown> = { 
+      const updates: TablesUpdate<'erp_logistics_shipments'> = { 
         status: newStatus,
         updated_at: new Date().toISOString()
       };
@@ -698,12 +717,13 @@ export function useERPLogistics() {
     updates: Partial<Shipment>
   ) => {
     try {
+      const dbPayload: TablesUpdate<'erp_logistics_shipments'> = {
+        ...toShipmentDbPayload(updates),
+        updated_at: new Date().toISOString(),
+      };
       const { error: updateError } = await supabase
         .from('erp_logistics_shipments')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(dbPayload)
         .eq('id', shipmentId);
 
       if (updateError) throw updateError;
