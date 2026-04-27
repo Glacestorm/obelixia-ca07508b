@@ -224,28 +224,26 @@ describe('usePayrollIncidentMutations — C3C update', () => {
     setupUpdate({ data: { id: 'inc-1' } });
     const { result } = renderHook(() => usePayrollIncidentMutations(ctx), { wrapper });
 
+    const evilPatch = {
+      company_id: 'co-EVIL',
+      employee_id: 'emp-EVIL',
+      applied_at: '2026-03-01T00:00:00Z',
+      applied_to_record_id: 'pay-1',
+      incident_type: 'otra',
+      concept_code: 'ES_OTRA',
+      version: 99,
+      period_year: 1999,
+      period_month: 1,
+      deleted_at: '2026-03-01T00:00:00Z',
+      deleted_by: 'someone',
+      status: 'applied',
+      created_at: '2020-01-01',
+      created_by: 'fake',
+      id: 'inc-OTHER',
+      notes: 'sólo esto debería pasar',
+    };
     await act(async () => {
-      await result.current.updatePayrollIncident('inc-1', {
-        // Cast forzado para simular intento malicioso desde caller.
-        ...({
-          company_id: 'co-EVIL',
-          employee_id: 'emp-EVIL',
-          applied_at: '2026-03-01T00:00:00Z',
-          applied_to_record_id: 'pay-1',
-          incident_type: 'otra',
-          concept_code: 'ES_OTRA',
-          version: 99,
-          period_year: 1999,
-          period_month: 1,
-          deleted_at: '2026-03-01T00:00:00Z',
-          deleted_by: 'someone',
-          status: 'applied',
-          created_at: '2020-01-01',
-          created_by: 'fake',
-          id: 'inc-OTHER',
-        } as never),
-        notes: 'sólo esto debería pasar',
-      });
+      await result.current.updatePayrollIncident('inc-1', evilPatch as never);
     });
 
     const payload = updateMock.mock.calls[0][0] as Record<string, unknown>;
@@ -286,9 +284,7 @@ describe('usePayrollIncidentMutations — C3C update', () => {
     const { result } = renderHook(() => usePayrollIncidentMutations(ctx), { wrapper });
 
     await act(async () => {
-      await result.current.updatePayrollIncident('inc-1', {
-        ...({ company_id: 'evil' } as never),
-      });
+      await result.current.updatePayrollIncident('inc-1', { company_id: 'evil' } as never);
     });
     expect(updateMock).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalled();
