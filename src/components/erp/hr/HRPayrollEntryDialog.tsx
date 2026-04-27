@@ -259,7 +259,8 @@ export function HRPayrollEntryDialog({
   companyId = '',
   month = '',
   payrollId = null,
-  onSave
+  onSave,
+  effectiveCasuisticaModeOverride,
 }: HRPayrollEntryDialogProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
