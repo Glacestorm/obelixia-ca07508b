@@ -69,3 +69,75 @@ Metadata sembrada según tipo (`legal_guardianship`, `settlement_type`, `tax_rev
 
 ## Próximo paso recomendado
 CASUISTICA-FECHAS-01 Fase C3B2 PLAN: promoción de datos locales Fase B (`buildIncidentsFromLocalCasuistica` + UI "Promover datos actuales" con preview, duplicados y confirmación), sin tocar aún el payload del motor.
+
+---
+
+## CASUISTICA-FECHAS-01 — Fase C3B1 CERRADA
+
+**Fecha de cierre:** 2026-04-27
+
+### Resumen
+- Modal de alta manual creado.
+- Hook `usePayrollIncidentMutations` creado.
+- Botón "Añadir proceso" habilitado en el panel persistido.
+- Alta mediante `INSERT` en `erp_hr_payroll_incidents`.
+- `refetch()` tras crear.
+
+### Archivos creados
+- `src/hooks/erp/hr/usePayrollIncidentMutations.ts`
+- `src/components/erp/hr/casuistica/HRPayrollIncidentFormDialog.tsx`
+- `src/hooks/erp/hr/__tests__/usePayrollIncidentMutations.test.ts`
+- `src/components/erp/hr/casuistica/__tests__/HRPayrollIncidentFormDialog.test.tsx`
+- `docs/qa/CASUISTICA-FECHAS-01_C3B1_create_modal.md`
+
+### Archivos modificados mínimamente
+- `src/components/erp/hr/casuistica/HRPersistedIncidentsPanel.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRPersistedIncidentsPanel.test.tsx`
+
+### Confirmaciones
+- Solo `INSERT`.
+- Sin `update`.
+- Sin `upsert`.
+- Sin `delete`.
+- Sin `cancel`.
+- Sin version bump.
+- Sin `service_role`.
+- Sin `applied_at`.
+- Sin `applied_to_record_id`.
+- Sin recálculo.
+- Sin cambios en payload del motor.
+- Sin tocar motores.
+- Sin tocar engines FDI / AFI / DELT@.
+- Sin migraciones.
+- Sin RLS.
+- Sin edge functions.
+- Sin dependencias.
+- Sin CI.
+
+### Tipos creatables
+- `pnr`
+- `reduccion_jornada_guarda_legal`
+- `atrasos_regularizacion`
+- `desplazamiento_temporal`
+- `suspension_empleo_sueldo`
+- `otra`
+
+### Tipos excluidos (gestionados por módulos especializados)
+- IT / AT / EP.
+- Nacimiento / cuidado menor.
+- Maternidad / paternidad / corresponsabilidad / lactancia.
+
+### Tests
+- 48/48 tests verdes.
+
+### Riesgos residuales
+- Payload al motor sigue manual/local.
+- Posible doble conteo si el usuario informa local + persistido.
+- `concept_code` por defecto puede requerir alineación futura.
+- `legal_review_required` todavía sin workflow de aprobación.
+- Promoción local queda para C3B2.
+
+### Próximo paso
+- CASUISTICA-FECHAS-01 Fase C3B2 PLAN — promoción de datos locales con preview, duplicados y confirmación.
+
+**Estado:** ✅ CERRADA.
