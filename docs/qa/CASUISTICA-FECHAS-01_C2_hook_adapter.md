@@ -119,3 +119,99 @@ Resultado: **44/44 verdes** (3 archivos).
 3. Banderas visuales de `legalReviewRequired` y `unmapped[]`.
 4. Toggle de `includePending` para preview.
 5. Mocks de Supabase para tests del hook.
+
+---
+
+## CASUISTICA-FECHAS-01 — Fase C2 CERRADA
+
+**Fecha de cierre:** 2026-04-27
+
+### 1. Resumen de lo implementado
+
+- `src/lib/hr/casuisticaTypes.ts` — tipos compartidos (`CasuisticaState`,
+  `CasuisticaDatesExtension`, `CasuisticaActiveFlags`).
+- `src/lib/hr/casuisticaDates.ts` — helpers puros de fechas
+  (`calculateInclusiveDays`, `isInvertedRange`, `getPeriodBounds`,
+  `getDateIntersectionDays`).
+- `src/lib/hr/incidenciasTypes.ts` — tipos de filas BD + `MappingResult`.
+- `src/lib/hr/incidenciasMapper.ts` — adapter puro
+  `mapIncidenciasToLegacyCasuistica()`.
+- `src/hooks/erp/hr/useHRPayrollIncidencias.ts` — hook React Query
+  read-only con RLS multi-tenant.
+- `src/lib/hr/__tests__/casuisticaDates.test.ts` — tests de helpers.
+- `src/lib/hr/__tests__/incidenciasMapper.test.ts` — tests del adapter.
+- `src/components/erp/hr/HRPayrollEntryDialog.tsx` — **re-export mínimo**
+  de `calculateInclusiveDays` / `isInvertedRange` desde
+  `@/lib/hr/casuisticaDates` (sin cambios de UI, payload, motor, SafeMode
+  ni cálculos).
+
+### 2. Confirmaciones de no-impacto
+
+- ✅ No se tocó el motor de nómina (`salaryNormalizer.ts`,
+  `contractSalaryParametrization.ts`, `agreementSalaryResolver.ts`).
+- ✅ No se tocó UI funcional (sólo extracción/import de helpers puros).
+- ✅ No se tocó BD.
+- ✅ No se crearon migraciones.
+- ✅ No se tocó RLS.
+- ✅ No se tocaron edge functions.
+- ✅ No se tocaron dependencias (`package.json`, `bun.lock`).
+- ✅ No se tocó CI (`.github/workflows/*`).
+- ✅ No hay writes (`insert`/`update`/`upsert`/`delete`) en mapper ni hook.
+- ✅ No se usa `service_role` (sólo cliente Supabase autenticado).
+- ✅ No se generan FDI/AFI/DELT@ (engines oficiales intactos);
+  `isRealSubmissionBlocked() === true` respetado.
+
+### 3. Tests ejecutados — 44/44 verdes
+
+```
+✓ src/lib/hr/__tests__/casuisticaDates.test.ts                                 (18 tests)
+✓ src/lib/hr/__tests__/incidenciasMapper.test.ts                               (14 tests)
+✓ src/components/erp/hr/__tests__/HRPayrollEntryDialog.casuisticaDates.test.ts (12 tests)
+
+Test Files  3 passed (3)
+     Tests  44 passed (44)
+```
+
+- `casuisticaDates`: 18/18.
+- `incidenciasMapper`: 14/14.
+- `HRPayrollEntryDialog.casuisticaDates` (legacy Fase B vía re-export): 12/12.
+
+### 4. Mapping validado
+
+| Proceso | Fuente | Salida legacy |
+|---|---|---|
+| PNR | `erp_hr_payroll_incidents` | `pnrDias` |
+| IT EC | `erp_hr_it_processes` | `itAtDias` / `enfermedad_comun` |
+| AT | `erp_hr_it_processes` | `itAtDias` / `accidente_trabajo` |
+| EP / ANL | `erp_hr_it_processes` | `itAtDias` / `enfermedad_profesional` o `accidente_no_laboral` |
+| Reducción jornada | `erp_hr_payroll_incidents` | `reduccionJornadaPct` |
+| Atrasos | `erp_hr_payroll_incidents` | `atrasosITImporte` / `atrasosITPeriodo` |
+| Nacimiento / cuidado menor | `erp_hr_leave_requests` | `nacimientoTipo` / `nacimientoDias` |
+| Desplazamiento temporal | `erp_hr_payroll_incidents` | `unmapped[]` |
+| Suspensión empleo/sueldo | `erp_hr_payroll_incidents` | `unmapped[]` + `legalReviewRequired=true` |
+
+### 5. Riesgos residuales
+
+- ⚠️ Hook `useHRPayrollIncidencias` no testeado end-to-end (no hay patrón
+  consolidado de mock de Supabase en el repo). El adapter sí está
+  cubierto al 100% en su lógica determinista.
+- ⚠️ `nacimientoFechaHechoCausante` queda `undefined` en C2
+  (`erp_hr_leave_requests` no expone aún el campo `metadata`).
+- ⚠️ "Desplazamiento temporal" y "Suspensión empleo/sueldo" quedan en
+  `unmapped[]` por decisión legal deliberada (no se mapean a PNR
+  automáticamente aunque sean económicamente equivalentes).
+- ⚠️ La Fase C3 todavía debe integrar UI y CRUD persistente.
+- ⚠️ No hay aplicación a nómina todavía: el hook no se consume en UI ni
+  alimenta al motor; no se marca `applied_at`.
+
+### 6. Próximo paso recomendado
+
+**`CASUISTICA-FECHAS-01 — Fase C3 en PLAN`**, no Build directo.
+
+C3 introduce mutaciones (insert/update/soft-delete) sobre
+`erp_hr_payroll_incidents`, integración del bloque "Procesos persistentes"
+en `HRPayrollEntryDialog`, banderas visuales de `legalReviewRequired` /
+`unmapped[]`, toggle `includePending`, y patrón de mocks Supabase para
+tests del hook. Por su superficie funcional y legal, requiere PLAN previo.
+
+**Estado: Fase C2 CERRADA ✅**
