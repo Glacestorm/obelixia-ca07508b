@@ -168,7 +168,32 @@ type CasuisticaState = {
   periodMotivo: 'mes_completo' | 'alta_intramensual' | 'baja_intramensual' | 'cambio_contractual' | 'cambio_salarial' | 'suspension_parcial' | 'excedencia' | 'otro';
 };
 
-const DEFAULT_CASUISTICA: CasuisticaState = {
+// CASUISTICA-FECHAS-01 Fase B — Fechas inicio/fin por proceso.
+// Campos OPCIONALES. Mantienen compatibilidad con el modelo numérico legacy
+// (pnrDias, itAtDias, etc.) y NO modifican el contrato del motor de nómina.
+// El motor sigue recibiendo días como número; estas fechas sólo sirven para
+// trazabilidad y para derivar días automáticamente cuando ambas existan.
+type CasuisticaDatesExtension = {
+  // PNR
+  pnrFechaDesde: string;
+  pnrFechaHasta: string;
+  // IT/AT
+  itAtFechaDesde: string;
+  itAtFechaHasta: string;
+  itAtTipo: '' | 'enfermedad_comun' | 'accidente_no_laboral' | 'accidente_trabajo' | 'enfermedad_profesional';
+  // Reducción de jornada / guarda legal
+  reduccionFechaDesde: string;
+  reduccionFechaHasta: string;
+  // Atrasos / regularización
+  atrasosFechaDesde: string;
+  atrasosFechaHasta: string;
+  // Nacimiento / cuidado del menor
+  nacimientoFechaInicio: string;
+  nacimientoFechaFin: string;
+  nacimientoFechaHechoCausante: string;
+};
+
+const DEFAULT_CASUISTICA: CasuisticaState & CasuisticaDatesExtension = {
   enabled: false,
   pnrDias: 0,
   itAtDias: 0,
@@ -183,7 +208,59 @@ const DEFAULT_CASUISTICA: CasuisticaState = {
   periodDiasNaturales: 30,
   periodDiasEfectivos: 30,
   periodMotivo: 'mes_completo',
+  // Dates extension (Fase B) — todas opcionales, vacías por defecto.
+  pnrFechaDesde: '',
+  pnrFechaHasta: '',
+  itAtFechaDesde: '',
+  itAtFechaHasta: '',
+  itAtTipo: '',
+  reduccionFechaDesde: '',
+  reduccionFechaHasta: '',
+  atrasosFechaDesde: '',
+  atrasosFechaHasta: '',
+  nacimientoFechaInicio: '',
+  nacimientoFechaFin: '',
+  nacimientoFechaHechoCausante: '',
 };
+
+/**
+ * CASUISTICA-FECHAS-01 — Helper puro.
+ * Calcula días naturales inclusivos entre dos fechas YYYY-MM-DD.
+ * - Si faltan fechas o son inválidas → null (caller debe usar legacy manual).
+ * - Si fechaHasta < fechaDesde → null (caller debe mostrar warning).
+ * - Mismo día → 1.
+ * - 2026-03-01 a 2026-03-31 → 31.
+ *
+ * Pure function: sin side-effects, sin acceso a Date.now(), determinista.
+ * NO toca motor, NO modifica datos, sólo cálculo aritmético.
+ */
+export function calculateInclusiveDays(
+  from?: string | null,
+  to?: string | null,
+): number | null {
+  if (!from || !to) return null;
+  // Validación estricta de formato YYYY-MM-DD para evitar parseos ambiguos
+  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isoRe.test(from) || !isoRe.test(to)) return null;
+  const fromDate = new Date(`${from}T00:00:00Z`);
+  const toDate = new Date(`${to}T00:00:00Z`);
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) return null;
+  if (toDate.getTime() < fromDate.getTime()) return null;
+  const msPerDay = 86_400_000;
+  const diff = Math.round((toDate.getTime() - fromDate.getTime()) / msPerDay);
+  return diff + 1;
+}
+
+/**
+ * Devuelve true si ambas fechas están informadas pero el rango está invertido.
+ * Útil para mostrar warning visual sin romper la UI.
+ */
+export function isInvertedRange(from?: string | null, to?: string | null): boolean {
+  if (!from || !to) return false;
+  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isoRe.test(from) || !isoRe.test(to)) return false;
+  return to < from;
+}
 
 export function HRPayrollEntryDialog({
   open,
@@ -246,11 +323,35 @@ export function HRPayrollEntryDialog({
   // S9.21g: conceptos añadidos manualmente desde el Popover (visibles aunque estén a 0)
   const [manuallyAddedCodes, setManuallyAddedCodes] = useState<Set<string>>(new Set());
   // S9.21g: casuística entre fechas (acordeón)
-  const [casuistica, setCasuistica] = useState<CasuisticaState>(DEFAULT_CASUISTICA);
+  const [casuistica, setCasuistica] = useState<CasuisticaState & CasuisticaDatesExtension>(DEFAULT_CASUISTICA);
   const [casuisticaOpen, setCasuisticaOpen] = useState(false);
   // S9.21g: Popovers de "+ Añadir concepto"
   const [earnPickerOpen, setEarnPickerOpen] = useState(false);
   const [dedPickerOpen, setDedPickerOpen] = useState(false);
+
+  // CASUISTICA-FECHAS-01 Fase B — Derivación de días desde fechas por proceso.
+  // Si ambas fechas son válidas y coherentes, los días se derivan automáticamente
+  // y se usan en el payload del motor en lugar del valor manual legacy.
+  // Si NO hay fechas (o están invertidas), se respeta el campo numérico legacy.
+  // El motor sigue recibiendo SIEMPRE un número de días (contrato sin cambios).
+  const derivedDays = useMemo(() => {
+    return {
+      pnr: calculateInclusiveDays(casuistica.pnrFechaDesde, casuistica.pnrFechaHasta),
+      itAt: calculateInclusiveDays(casuistica.itAtFechaDesde, casuistica.itAtFechaHasta),
+      nacimiento: calculateInclusiveDays(casuistica.nacimientoFechaInicio, casuistica.nacimientoFechaFin),
+      pnrInverted: isInvertedRange(casuistica.pnrFechaDesde, casuistica.pnrFechaHasta),
+      itAtInverted: isInvertedRange(casuistica.itAtFechaDesde, casuistica.itAtFechaHasta),
+      reduccionInverted: isInvertedRange(casuistica.reduccionFechaDesde, casuistica.reduccionFechaHasta),
+      atrasosInverted: isInvertedRange(casuistica.atrasosFechaDesde, casuistica.atrasosFechaHasta),
+      nacimientoInverted: isInvertedRange(casuistica.nacimientoFechaInicio, casuistica.nacimientoFechaFin),
+    };
+  }, [
+    casuistica.pnrFechaDesde, casuistica.pnrFechaHasta,
+    casuistica.itAtFechaDesde, casuistica.itAtFechaHasta,
+    casuistica.reduccionFechaDesde, casuistica.reduccionFechaHasta,
+    casuistica.atrasosFechaDesde, casuistica.atrasosFechaHasta,
+    casuistica.nacimientoFechaInicio, casuistica.nacimientoFechaFin,
+  ]);
 
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
@@ -462,8 +563,15 @@ export function HRPayrollEntryDialog({
         grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
-        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
-        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        // CASUISTICA-FECHAS-01: derived days (de fechas) tienen prioridad sobre
+        // el campo numérico legacy. Si no hay fechas válidas, se usa legacy.
+        // Contrato del motor SIN CAMBIOS: sigue siendo número de días.
+        permisoNoRetribuido: useCas
+          ? ((derivedDays.pnr ?? (cas.pnrDias > 0 ? cas.pnrDias : undefined)))
+          : undefined,
+        itATDias: useCas
+          ? ((derivedDays.itAt ?? (cas.itAtDias > 0 ? cas.itAtDias : undefined)))
+          : undefined,
         reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
         atrasosIT,
         nacimientoTramos,
@@ -474,7 +582,7 @@ export function HRPayrollEntryDialog({
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       setLiveBridgeCalc(null);
     }
-  }, [earnings, casuistica, ssBasesReady, grupoCotizacion]);
+  }, [earnings, casuistica, derivedDays, ssBasesReady, grupoCotizacion]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
@@ -587,8 +695,13 @@ export function HRPayrollEntryDialog({
         grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
-        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
-        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        // CASUISTICA-FECHAS-01: ver comentario en effect de live calc.
+        permisoNoRetribuido: useCas
+          ? ((derivedDays.pnr ?? (cas.pnrDias > 0 ? cas.pnrDias : undefined)))
+          : undefined,
+        itATDias: useCas
+          ? ((derivedDays.itAt ?? (cas.itAtDias > 0 ? cas.itAtDias : undefined)))
+          : undefined,
         reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
         atrasosIT,
         nacimientoTramos,
@@ -602,7 +715,7 @@ export function HRPayrollEntryDialog({
     } finally {
       setPreviewLoading(false);
     }
-  }, [earnings, selectedEmployeeId, simulateES, casuistica, grupoCotizacion]);
+  }, [earnings, selectedEmployeeId, simulateES, casuistica, derivedDays, grupoCotizacion]);
 
   const updateConcept = (id: string, value: number) => {
     if (earnings.find(e => e.id === id)) {
@@ -1745,30 +1858,123 @@ export function HRPayrollEntryDialog({
                     {casuistica.enabled && (
                       <>
                         <Separator />
-                        {/* PNR + IT/AT días */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <Briefcase className="h-2.5 w-2.5" />PNR (días)
-                            </Label>
-                            <Input
-                              type="number" min={0} step={1}
-                              value={casuistica.pnrDias || ''}
-                              onChange={(e) => setCasuistica(c => ({ ...c, pnrDias: parseInt(e.target.value) || 0 }))}
-                              className="h-7 text-xs" placeholder="0"
-                            />
+                        {/* CASUISTICA-FECHAS-01 — PNR (Permiso No Retribuido) */}
+                        <div className="space-y-1.5 p-2 rounded-md border border-border/60 bg-muted/10">
+                          <p className="text-[10px] font-medium uppercase flex items-center gap-1 text-muted-foreground">
+                            <Briefcase className="h-2.5 w-2.5" />PNR — Permiso no retribuido
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-[10px]">Desde</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.pnrFechaDesde}
+                                onChange={(e) => setCasuistica(c => ({ ...c, pnrFechaDesde: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">Hasta</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.pnrFechaHasta}
+                                onChange={(e) => setCasuistica(c => ({ ...c, pnrFechaHasta: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">
+                                Días {derivedDays.pnr != null && <span className="text-success">(calc.)</span>}
+                              </Label>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={derivedDays.pnr ?? (casuistica.pnrDias || '')}
+                                onChange={(e) => setCasuistica(c => ({ ...c, pnrDias: parseInt(e.target.value) || 0 }))}
+                                disabled={derivedDays.pnr != null}
+                                className="h-7 text-xs" placeholder="0"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <Stethoscope className="h-2.5 w-2.5" />IT/AT 75% (días)
-                            </Label>
-                            <Input
-                              type="number" min={0} step={1}
-                              value={casuistica.itAtDias || ''}
-                              onChange={(e) => setCasuistica(c => ({ ...c, itAtDias: parseInt(e.target.value) || 0 }))}
-                              className="h-7 text-xs" placeholder="0"
-                            />
+                          {derivedDays.pnrInverted && (
+                            <p className="text-[10px] text-destructive flex items-center gap-1">
+                              <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                            </p>
+                          )}
+                          {derivedDays.pnr != null && (
+                            <p className="text-[9px] text-muted-foreground italic">
+                              Días calculados automáticamente desde fechas. Para editar manualmente, vacía las fechas.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* CASUISTICA-FECHAS-01 — IT / AT */}
+                        <div className="space-y-1.5 p-2 rounded-md border border-border/60 bg-muted/10">
+                          <p className="text-[10px] font-medium uppercase flex items-center gap-1 text-muted-foreground">
+                            <Stethoscope className="h-2.5 w-2.5" />IT / AT — Incapacidad temporal / accidente
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="col-span-2">
+                              <Label className="text-[10px]">Tipo</Label>
+                              <Select
+                                value={casuistica.itAtTipo || 'unset'}
+                                onValueChange={(v) => setCasuistica(c => ({ ...c, itAtTipo: (v === 'unset' ? '' : v) as CasuisticaDatesExtension['itAtTipo'] }))}
+                              >
+                                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Sin especificar" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unset">Sin especificar</SelectItem>
+                                  <SelectItem value="enfermedad_comun">Enfermedad común</SelectItem>
+                                  <SelectItem value="accidente_no_laboral">Accidente no laboral</SelectItem>
+                                  <SelectItem value="accidente_trabajo">Accidente de trabajo</SelectItem>
+                                  <SelectItem value="enfermedad_profesional">Enfermedad profesional</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-[10px]">Desde</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.itAtFechaDesde}
+                                onChange={(e) => setCasuistica(c => ({ ...c, itAtFechaDesde: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">Hasta</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.itAtFechaHasta}
+                                onChange={(e) => setCasuistica(c => ({ ...c, itAtFechaHasta: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">
+                                Días 75% {derivedDays.itAt != null && <span className="text-success">(calc.)</span>}
+                              </Label>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={derivedDays.itAt ?? (casuistica.itAtDias || '')}
+                                onChange={(e) => setCasuistica(c => ({ ...c, itAtDias: parseInt(e.target.value) || 0 }))}
+                                disabled={derivedDays.itAt != null}
+                                className="h-7 text-xs" placeholder="0"
+                              />
+                            </div>
+                          </div>
+                          {derivedDays.itAtInverted && (
+                            <p className="text-[10px] text-destructive flex items-center gap-1">
+                              <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                            </p>
+                          )}
+                          {derivedDays.itAt != null && (
+                            <p className="text-[9px] text-muted-foreground italic">
+                              Días calculados automáticamente desde fechas. Para editar manualmente, vacía las fechas.
+                            </p>
+                          )}
+                          <p className="text-[9px] text-muted-foreground italic">
+                            Este registro no genera aún comunicación oficial FDI/AFI/DELT@ en esta fase.
+                          </p>
                         </div>
 
                         {/* Reducción jornada */}
@@ -1780,6 +1986,34 @@ export function HRPayrollEntryDialog({
                             onChange={(e) => setCasuistica(c => ({ ...c, reduccionJornadaPct: parseFloat(e.target.value) || 0 }))}
                             className="h-7 text-xs" placeholder="0"
                           />
+                          <div className="grid grid-cols-2 gap-2 mt-1.5">
+                            <div>
+                              <Label className="text-[10px]">Desde</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.reduccionFechaDesde}
+                                onChange={(e) => setCasuistica(c => ({ ...c, reduccionFechaDesde: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">Hasta</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.reduccionFechaHasta}
+                                onChange={(e) => setCasuistica(c => ({ ...c, reduccionFechaHasta: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </div>
+                          {derivedDays.reduccionInverted && (
+                            <p className="text-[10px] text-destructive flex items-center gap-1 mt-1">
+                              <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                            </p>
+                          )}
+                          <p className="text-[9px] text-muted-foreground italic mt-1">
+                            Pendiente de validación legal si afecta a guarda legal / bases de cotización.
+                          </p>
                         </div>
 
                         {/* Atrasos IT */}
@@ -1805,6 +2039,34 @@ export function HRPayrollEntryDialog({
                             />
                           </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Origen desde</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.atrasosFechaDesde}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosFechaDesde: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Origen hasta</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.atrasosFechaHasta}
+                              onChange={(e) => setCasuistica(c => ({ ...c, atrasosFechaHasta: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                        {derivedDays.atrasosInverted && (
+                          <p className="text-[10px] text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                          </p>
+                        )}
+                        <p className="text-[9px] text-muted-foreground italic">
+                          Las fechas son trazabilidad complementaria; el motor sigue usando el período YYYY-MM y el importe.
+                        </p>
 
                         {/* Nacimiento */}
                         <Separator />
@@ -1828,11 +2090,14 @@ export function HRPayrollEntryDialog({
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-[10px]">Días</Label>
+                            <Label className="text-[10px]">
+                              Días {derivedDays.nacimiento != null && <span className="text-success">(calc.)</span>}
+                            </Label>
                             <Input
                               type="number" min={0} step={1}
-                              value={casuistica.nacimientoDias || ''}
+                              value={derivedDays.nacimiento ?? (casuistica.nacimientoDias || '')}
                               onChange={(e) => setCasuistica(c => ({ ...c, nacimientoDias: parseInt(e.target.value) || 0 }))}
+                              disabled={derivedDays.nacimiento != null}
                               className="h-7 text-xs" placeholder="0"
                             />
                           </div>
@@ -1846,6 +2111,43 @@ export function HRPayrollEntryDialog({
                             />
                           </div>
                         </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Hecho causante</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.nacimientoFechaHechoCausante}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoFechaHechoCausante: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Inicio</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.nacimientoFechaInicio}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoFechaInicio: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Fin</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.nacimientoFechaFin}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoFechaFin: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                        {derivedDays.nacimientoInverted && (
+                          <p className="text-[10px] text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                          </p>
+                        )}
+                        <p className="text-[9px] text-muted-foreground italic">
+                          Las semanas obligatorias y la prestación INSS requieren validación laboral. Esta fase sólo registra fechas.
+                        </p>
 
                         {/* Cobertura período */}
                         <Separator />
