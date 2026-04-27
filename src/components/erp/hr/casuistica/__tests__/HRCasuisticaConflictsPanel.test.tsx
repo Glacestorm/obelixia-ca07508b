@@ -64,7 +64,9 @@ describe('HRCasuisticaConflictsPanel — C3B3A', () => {
     expect(
       screen.getByText(/datos locales y procesos persistidos/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Vista informativa/i)).toBeInTheDocument();
+    // C3B3B-paso1: el banner por defecto (local_only) sustituye al texto fijo
+    // anterior "Vista informativa…".
+    expect(screen.getByTestId('mode-banner-local-only')).toBeInTheDocument();
     expect(screen.getAllByText(/PNR/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Persistido prioridad/i)).toBeInTheDocument();
     // local ignorado
@@ -144,5 +146,109 @@ describe('HRCasuisticaConflictsPanel — C3B3A', () => {
     };
     render(<HRCasuisticaConflictsPanel result={result} mode="persisted_priority" />);
     expect(screen.queryByRole('button')).toBeNull();
+  });
+});
+
+describe('HRCasuisticaConflictsPanel — C3B3B-paso1 (modo visual)', () => {
+  function withConflict(): EffectiveResult {
+    return {
+      ...emptyResult(),
+      conflicts: [
+        {
+          field: 'pnrDias',
+          process: 'pnr',
+          localValue: 3,
+          persistedValue: 5,
+          resolvedSource: 'persisted',
+          legalReviewRequired: false,
+          rationale: 'Persisted priority',
+        },
+      ],
+    };
+  }
+
+  it('en local_only muestra "Fuente aplicada al cálculo: Local"', () => {
+    render(
+      <HRCasuisticaConflictsPanel
+        result={withConflict()}
+        mode="persisted_priority"
+        effectiveMode="local_only"
+      />,
+    );
+    expect(screen.getByTestId('mode-banner-local-only')).toBeInTheDocument();
+    // Banner contiene la frase completa "Fuente aplicada al cálculo: Local…".
+    expect(
+      screen.getByTestId('mode-banner-local-only').textContent,
+    ).toMatch(/Fuente aplicada al cálculo: Local/i);
+    // La columna "Fuente aplicada al cálculo" existe.
+    expect(
+      screen.getByRole('columnheader', { name: /Fuente aplicada al cálculo/i }),
+    ).toBeInTheDocument();
+    // En la fila debe aparecer "Local aplicado" como fuente real.
+    expect(screen.getAllByText(/Local aplicado/i).length).toBeGreaterThan(0);
+  });
+
+  it('en persisted_priority_preview indica que el cálculo sigue usando local', () => {
+    render(
+      <HRCasuisticaConflictsPanel
+        result={withConflict()}
+        mode="persisted_priority"
+        effectiveMode="persisted_priority_preview"
+      />,
+    );
+    expect(screen.getByTestId('mode-banner-preview')).toBeInTheDocument();
+    expect(
+      screen.getByText(/el\s+cálculo sigue usando datos locales/i),
+    ).toBeInTheDocument();
+    // Fuente aplicada real sigue siendo "Local aplicado" + badge "Vista preview".
+    expect(screen.getAllByText(/Local aplicado/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Vista preview/i)).toBeInTheDocument();
+  });
+
+  it('en persisted_priority_apply muestra badge "Persistido aplicado" SOLO visualmente', () => {
+    render(
+      <HRCasuisticaConflictsPanel
+        result={withConflict()}
+        mode="persisted_priority"
+        effectiveMode="persisted_priority_apply"
+      />,
+    );
+    expect(screen.getByTestId('mode-banner-apply')).toBeInTheDocument();
+    expect(screen.getByText(/no está activado en esta fase/i)).toBeInTheDocument();
+    expect(screen.getByText(/Persistido aplicado/i)).toBeInTheDocument();
+  });
+
+  it('la columna "Fuente aplicada al cálculo" existe en la cabecera', () => {
+    render(
+      <HRCasuisticaConflictsPanel
+        result={withConflict()}
+        mode="persisted_priority"
+        effectiveMode="local_only"
+      />,
+    );
+    expect(
+      screen.getByRole('columnheader', { name: /Fuente aplicada al cálculo/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('unmapped sigue mostrándose como "No aplicado al motor" en cualquier modo', () => {
+    const result: EffectiveResult = {
+      ...emptyResult(),
+      unmappedInformative: [
+        {
+          source: 'payroll_incidents',
+          recordId: 'desp-1',
+          incidentType: 'desplazamiento_temporal',
+        },
+      ],
+    };
+    render(
+      <HRCasuisticaConflictsPanel
+        result={result}
+        mode="persisted_priority"
+        effectiveMode="persisted_priority_apply"
+      />,
+    );
+    expect(screen.getByText(/No aplicado al motor/i)).toBeInTheDocument();
   });
 });
