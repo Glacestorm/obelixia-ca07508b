@@ -79,6 +79,15 @@ interface HRPayrollEntryDialogProps {
   month?: string;
   payrollId?: string | null;
   onSave?: () => void;
+  /**
+   * CASUISTICA-FECHAS-01 — Fase C3B3B-paso2.
+   * Override TEST-ONLY del flag `PAYROLL_EFFECTIVE_CASUISTICA_MODE`.
+   * En producción NO se debe usar: el default operativo sigue siendo
+   * `local_only` (cálculo idéntico al comportamiento previo). Esta prop
+   * existe únicamente para validar el wiring de `casuisticaForEngine` en
+   * tests y futuras activaciones controladas (C3B3C).
+   */
+  effectiveCasuisticaModeOverride?: PayrollEffectiveCasuisticaMode;
 }
 
 type AgreementResolutionMode = 'auto' | 'manual' | 'missing_group' | null;
