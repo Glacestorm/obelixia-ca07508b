@@ -56,8 +56,8 @@ export function CreateAccountDialog({
     parent_id: parentAccountId || '',
     level: 1,
     is_header: false,
-    is_reconcilable: false,
-    is_tax_relevant: false,
+    reconcilable: false,
+    tax_related: false,
     notes: ''
   });
 
@@ -71,8 +71,8 @@ export function CreateAccountDialog({
         parent_id: editingAccount.parent_id || '',
         level: editingAccount.level || 1,
         is_header: editingAccount.is_header || false,
-        is_reconcilable: editingAccount.is_reconcilable || false,
-        is_tax_relevant: editingAccount.is_tax_relevant || false,
+        reconcilable: editingAccount.reconcilable || false,
+        tax_related: editingAccount.tax_related || false,
         notes: editingAccount.notes || ''
       });
     } else {
@@ -83,8 +83,8 @@ export function CreateAccountDialog({
         parent_id: parentAccountId || '',
         level: 1,
         is_header: false,
-        is_reconcilable: false,
-        is_tax_relevant: false,
+        reconcilable: false,
+        tax_related: false,
         notes: ''
       });
     }
@@ -131,8 +131,8 @@ export function CreateAccountDialog({
         parent_id: formData.parent_id || null,
         level: formData.level,
         is_header: formData.is_header,
-        is_reconcilable: formData.is_reconcilable,
-        is_tax_relevant: formData.is_tax_relevant,
+        reconcilable: formData.reconcilable,
+        tax_related: formData.tax_related,
         notes: formData.notes || null,
         is_active: true
       };
@@ -266,26 +266,26 @@ export function CreateAccountDialog({
 
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is_reconcilable"
-                checked={formData.is_reconcilable}
+                id="reconcilable"
+                checked={formData.reconcilable}
                 onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, is_reconcilable: checked as boolean }))
+                  setFormData(prev => ({ ...prev, reconcilable: checked as boolean }))
                 }
               />
-              <Label htmlFor="is_reconcilable" className="text-sm font-normal">
+              <Label htmlFor="reconcilable" className="text-sm font-normal">
                 Conciliable
               </Label>
             </div>
 
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is_tax_relevant"
-                checked={formData.is_tax_relevant}
+                id="tax_related"
+                checked={formData.tax_related}
                 onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, is_tax_relevant: checked as boolean }))
+                  setFormData(prev => ({ ...prev, tax_related: checked as boolean }))
                 }
               />
-              <Label htmlFor="is_tax_relevant" className="text-sm font-normal">
+              <Label htmlFor="tax_related" className="text-sm font-normal">
                 Relacionada con impuestos
               </Label>
             </div>
