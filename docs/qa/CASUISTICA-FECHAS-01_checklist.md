@@ -107,3 +107,74 @@
 ## Próxima fase (recomendada)
 
 **Fase C — Modelo persistente de incidencias**: nueva tabla `erp_hr_payroll_incidencias` (con RLS por tenant), array de incidencias estructuradas con tipo + rango + metadatos. Habilitará histórico, trazabilidad y comunicación oficial.
+
+---
+
+## CASUISTICA-FECHAS-01 — Fase B CERRADA
+
+**Fecha de cierre:** 2026-04-27
+**Estado:** ✅ CERRADA (BUILD aplicado + validación read-only confirmada).
+
+### 1. Resumen de cambios
+
+Fase B añade soporte de **fecha inicio / fecha fin por proceso principal** en
+el panel "Casuística entre fechas" del diálogo de Nueva Nómina, derivando los
+días automáticamente de forma inclusiva y manteniendo compatibilidad total con
+el flujo legacy de días manuales. Cero impacto en motor, BD, RLS, edge
+functions, migraciones, dependencias o CI.
+
+Procesos cubiertos:
+- **PNR:** fecha inicio/fin.
+- **IT/AT:** fecha inicio/fin + tipo (enfermedad común, accidente no laboral, accidente trabajo, enfermedad profesional).
+- **Reducción de jornada:** fecha inicio/fin (el % sigue entrando al motor sin ponderar por fechas).
+- **Atrasos / regularización:** fecha origen desde/hasta (importe + periodo legacy intactos).
+- **Nacimiento / cuidado menor:** fecha hecho causante + fecha inicio/fin.
+
+Helpers puros añadidos y exportados:
+- `calculateInclusiveDays(from, to)` — días naturales inclusivos (mismo día = 1).
+- `isInvertedRange(from, to)` — detecta fecha fin anterior a inicio (warning visual no bloqueante).
+
+Comportamiento confirmado:
+- Sin fechas → input manual de días editable (legacy intacto).
+- Con fechas válidas → input bloqueado con etiqueta "(calc.)" y días derivados al payload.
+- Payload al motor sigue recibiendo **números de días**, no objetos nuevos.
+- No se generan FDI/AFI/DELT@.
+
+### 2. Archivos modificados
+
+- `src/components/erp/hr/HRPayrollEntryDialog.tsx` (UI + estado + helpers + payload).
+- `src/components/erp/hr/__tests__/HRPayrollEntryDialog.casuisticaDates.test.ts` (nuevo).
+- `docs/qa/CASUISTICA-FECHAS-01_checklist.md` (este documento).
+
+### 3. Tests ejecutados
+
+- Suite: `HRPayrollEntryDialog.casuisticaDates.test.ts`.
+- 12 bloques `it()` cubriendo:
+  - `calculateInclusiveDays`: mismo día, mes completo marzo, febrero 28d, cambio de mes, cambio de año, rango invertido (null), fechas vacías/null/undefined (null), formatos no estrictos (null).
+  - `isInvertedRange`: rango invertido (true), válido + 1 día (false), fechas vacías (false), formato inválido (false).
+
+### 4. Resultado
+
+✅ **12/12 tests verdes**.
+
+### 5. Riesgos residuales
+
+1. **Fechas sólo en estado local** — viven en el `useState` del diálogo y se pierden al cerrarlo.
+2. **Sin persistencia** — no hay tabla `erp_hr_payroll_incidencias` ni inserts en BD.
+3. **Sin comunicaciones oficiales** — no se enlaza con FDI/AFI/DELT@ (fuera de scope).
+4. **Validación legal avanzada pendiente** — no se valida mínimo 16 semanas paternidad, ponderación de % reducción por días dentro del rango, ni guarda legal.
+
+### 6. Confirmaciones de no-cambio
+
+- ❌ No se tocó motor (`salaryNormalizer`, `contractSalaryParametrization`, `agreementSalaryResolver`, `fdiArtifactEngine`, `afiInactivityEngine`, `deltaArtifactEngine`).
+- ❌ No se tocó BD ni se crearon migraciones.
+- ❌ No se tocaron RLS ni edge functions.
+- ❌ No se tocaron `package.json`, `bun.lock`, ni workflows de CI.
+- ❌ No se generaron artefactos oficiales nuevos.
+
+### 7. Próximo paso recomendado
+
+1. **QA manual** del checklist funcional de este documento (12 escenarios) en preview, validando especialmente que SafeMode (caso Carlos Ruiz Martín) no presenta regresión visual con la nueva UI de fechas.
+2. Tras QA OK → **Fase C en PLAN**: modelo persistente de incidencias (`erp_hr_payroll_incidencias` con RLS por tenant, array estructurado tipo + rango + metadatos, migración + tipos regenerados).
+
+**CASUISTICA-FECHAS-01 Fase B queda CERRADA.**
