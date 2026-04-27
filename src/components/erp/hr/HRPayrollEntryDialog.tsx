@@ -224,43 +224,17 @@ const DEFAULT_CASUISTICA: CasuisticaState & CasuisticaDatesExtension = {
 };
 
 /**
- * CASUISTICA-FECHAS-01 — Helper puro.
- * Calcula días naturales inclusivos entre dos fechas YYYY-MM-DD.
- * - Si faltan fechas o son inválidas → null (caller debe usar legacy manual).
- * - Si fechaHasta < fechaDesde → null (caller debe mostrar warning).
- * - Mismo día → 1.
- * - 2026-03-01 a 2026-03-31 → 31.
+ * CASUISTICA-FECHAS-01 — Re-exports de helpers puros.
  *
- * Pure function: sin side-effects, sin acceso a Date.now(), determinista.
- * NO toca motor, NO modifica datos, sólo cálculo aritmético.
+ * Fase C2: la implementación se trasladó a `src/lib/hr/casuisticaDates.ts`
+ * para permitir reutilización desde el adapter de incidencias persistidas.
+ * Se mantiene el re-export para compatibilidad con tests existentes que
+ * importan desde este componente.
+ *
+ * NO se cambia el comportamiento. NO se toca el motor de nómina.
  */
-export function calculateInclusiveDays(
-  from?: string | null,
-  to?: string | null,
-): number | null {
-  if (!from || !to) return null;
-  // Validación estricta de formato YYYY-MM-DD para evitar parseos ambiguos
-  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
-  if (!isoRe.test(from) || !isoRe.test(to)) return null;
-  const fromDate = new Date(`${from}T00:00:00Z`);
-  const toDate = new Date(`${to}T00:00:00Z`);
-  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) return null;
-  if (toDate.getTime() < fromDate.getTime()) return null;
-  const msPerDay = 86_400_000;
-  const diff = Math.round((toDate.getTime() - fromDate.getTime()) / msPerDay);
-  return diff + 1;
-}
-
-/**
- * Devuelve true si ambas fechas están informadas pero el rango está invertido.
- * Útil para mostrar warning visual sin romper la UI.
- */
-export function isInvertedRange(from?: string | null, to?: string | null): boolean {
-  if (!from || !to) return false;
-  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
-  if (!isoRe.test(from) || !isoRe.test(to)) return false;
-  return to < from;
-}
+export { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
+import { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
 
 export function HRPayrollEntryDialog({
   open,
