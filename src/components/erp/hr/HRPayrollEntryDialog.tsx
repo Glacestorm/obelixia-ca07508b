@@ -695,8 +695,13 @@ export function HRPayrollEntryDialog({
         grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
-        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
-        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        // CASUISTICA-FECHAS-01: ver comentario en effect de live calc.
+        permisoNoRetribuido: useCas
+          ? ((derivedDays.pnr ?? (cas.pnrDias > 0 ? cas.pnrDias : undefined)))
+          : undefined,
+        itATDias: useCas
+          ? ((derivedDays.itAt ?? (cas.itAtDias > 0 ? cas.itAtDias : undefined)))
+          : undefined,
         reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
         atrasosIT,
         nacimientoTramos,
@@ -710,7 +715,7 @@ export function HRPayrollEntryDialog({
     } finally {
       setPreviewLoading(false);
     }
-  }, [earnings, selectedEmployeeId, simulateES, casuistica, grupoCotizacion]);
+  }, [earnings, selectedEmployeeId, simulateES, casuistica, derivedDays, grupoCotizacion]);
 
   const updateConcept = (id: string, value: number) => {
     if (earnings.find(e => e.id === id)) {
