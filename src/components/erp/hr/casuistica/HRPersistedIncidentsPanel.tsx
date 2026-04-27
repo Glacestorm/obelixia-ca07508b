@@ -34,6 +34,8 @@ import {
   Loader2,
   Plus,
   ShieldOff,
+  Pencil,
+  Ban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHRPayrollIncidencias } from '@/hooks/erp/hr/useHRPayrollIncidencias';
@@ -41,6 +43,7 @@ import { IncidentTypeBadge } from './IncidentTypeBadge';
 import { IncidentStatusBadge, type IncidentStatusFlags } from './IncidentStatusBadge';
 import { HRPayrollIncidentFormDialog } from './HRPayrollIncidentFormDialog';
 import { HRPromoteLocalCasuisticaDialog } from './HRPromoteLocalCasuisticaDialog';
+import { HRCancelIncidentDialog } from './HRCancelIncidentDialog';
 import { buildIncidentsFromLocalCasuistica } from '@/lib/hr/incidenciasPromotion';
 import { buildEffectiveCasuistica } from '@/lib/hr/effectiveCasuistica';
 import { HRCasuisticaConflictsPanel } from './HRCasuisticaConflictsPanel';
