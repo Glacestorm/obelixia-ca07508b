@@ -7,8 +7,16 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const ROOTS = [
-  'src/hooks/erp/hr',
+/**
+ * Alcance estricto C3C: archivos de casuística + el hook de mutaciones
+ * específico de incidencias persistidas. Otros hooks de RRHH (modelo190,
+ * official integrations, ledger, payroll engine) están fuera de este alcance.
+ */
+const FILE_TARGETS = [
+  'src/hooks/erp/hr/usePayrollIncidentMutations.ts',
+  'src/hooks/erp/hr/useHRPayrollIncidencias.ts',
+];
+const DIR_TARGETS = [
   'src/components/erp/hr/casuistica',
 ];
 
@@ -38,7 +46,10 @@ function stripCommentsAndStrings(src: string): string {
 
 describe('CASUISTICA C3C — no DELETE físico en casuística', () => {
   it('no existe `.delete(` funcional en hooks/components de casuística', () => {
-    const files = ROOTS.flatMap((r) => walk(r));
+    const files = [
+      ...FILE_TARGETS,
+      ...DIR_TARGETS.flatMap((r) => walk(r)),
+    ];
     const offenders: Array<{ file: string; line: number; text: string }> = [];
     for (const f of files) {
       const raw = readFileSync(f, 'utf8');
