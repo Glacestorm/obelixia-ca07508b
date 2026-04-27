@@ -50,6 +50,7 @@ import { HRContractFormDialog } from './HRContractFormDialog';
 import { HREmployeeFormDialog } from './HREmployeeFormDialog';
 import { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
 import { useAuth } from '@/hooks/useAuth';
+import { HRPersistedIncidentsPanel } from './casuistica/HRPersistedIncidentsPanel';
 
 interface PayrollConcept {
   id: string;
@@ -2200,6 +2201,18 @@ export function HRPayrollEntryDialog({
                 </Card>
               </CollapsibleContent>
             </Collapsible>
+          )}
+
+          {/* CASUISTICA-FECHAS-01 — Fase C3A: bloque READ-ONLY de procesos persistidos.
+              No escribe en BD, no genera FDI/AFI/DELT@, no modifica el motor.
+              El payload `casuistica` legacy enviado a simulateES NO se altera en C3A. */}
+          {selectedEmployeeId && companyId && periodYear && periodMonth && (
+            <HRPersistedIncidentsPanel
+              companyId={companyId}
+              employeeId={selectedEmployeeId}
+              periodYear={periodYear}
+              periodMonth={periodMonth}
+            />
           )}
         </div>
 
