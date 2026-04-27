@@ -323,7 +323,7 @@ export function HRPayrollEntryDialog({
   // S9.21g: conceptos añadidos manualmente desde el Popover (visibles aunque estén a 0)
   const [manuallyAddedCodes, setManuallyAddedCodes] = useState<Set<string>>(new Set());
   // S9.21g: casuística entre fechas (acordeón)
-  const [casuistica, setCasuistica] = useState<CasuisticaState>(DEFAULT_CASUISTICA);
+  const [casuistica, setCasuistica] = useState<CasuisticaState & CasuisticaDatesExtension>(DEFAULT_CASUISTICA);
   const [casuisticaOpen, setCasuisticaOpen] = useState(false);
   // S9.21g: Popovers de "+ Añadir concepto"
   const [earnPickerOpen, setEarnPickerOpen] = useState(false);
