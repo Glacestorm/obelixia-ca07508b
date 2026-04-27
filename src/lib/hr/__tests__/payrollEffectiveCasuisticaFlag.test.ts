@@ -1,5 +1,5 @@
 /**
- * CASUISTICA-FECHAS-01 — Fase C3B3B-paso1
+ * CASUISTICA-FECHAS-01 — Fase C3B3C1
  * Tests del feature flag `PAYROLL_EFFECTIVE_CASUISTICA_MODE`.
  */
 import { describe, it, expect } from 'vitest';
@@ -9,9 +9,9 @@ import {
   isEffectiveCasuisticaPreviewEnabled,
 } from '../payrollEffectiveCasuisticaFlag';
 
-describe('payrollEffectiveCasuisticaFlag — C3B3B-paso1', () => {
-  it('el modo por defecto es "local_only"', () => {
-    expect(PAYROLL_EFFECTIVE_CASUISTICA_MODE).toBe('local_only');
+describe('payrollEffectiveCasuisticaFlag — C3B3C1', () => {
+  it('el modo por defecto es "persisted_priority_preview" (C3B3C1)', () => {
+    expect(PAYROLL_EFFECTIVE_CASUISTICA_MODE).toBe('persisted_priority_preview');
   });
 
   it('isEffectiveCasuisticaApplyEnabled solo es true en apply', () => {
@@ -26,8 +26,13 @@ describe('payrollEffectiveCasuisticaFlag — C3B3B-paso1', () => {
     expect(isEffectiveCasuisticaPreviewEnabled('persisted_priority_apply')).toBe(true);
   });
 
-  it('sin argumento usa el default (local_only)', () => {
+  it('sin argumento usa el default (preview): apply=false, preview=true', () => {
     expect(isEffectiveCasuisticaApplyEnabled()).toBe(false);
-    expect(isEffectiveCasuisticaPreviewEnabled()).toBe(false);
+    expect(isEffectiveCasuisticaPreviewEnabled()).toBe(true);
+  });
+
+  it('garantía C3B3C1: el default NO es apply (cálculo no debe cambiar)', () => {
+    expect(PAYROLL_EFFECTIVE_CASUISTICA_MODE).not.toBe('persisted_priority_apply');
+    expect(isEffectiveCasuisticaApplyEnabled(PAYROLL_EFFECTIVE_CASUISTICA_MODE)).toBe(false);
   });
 });
