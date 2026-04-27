@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -280,7 +281,7 @@ const AccountingManager = () => {
 
     setSaving(true);
     try {
-      const updateData: Record<string, unknown> = { status: newStatus };
+      const updateData: TablesUpdate<'company_financial_statements'> = { status: newStatus };
       if (newStatus === 'approved') {
         updateData.approved_by = user.id;
         updateData.approved_at = new Date().toISOString();
