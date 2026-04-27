@@ -114,6 +114,7 @@ Apply OFF. Cálculo real intacto. Sin código funcional del motor modificado.
 
 ## 3. Archivos creados
 - `docs/qa/CASUISTICA-FECHAS-01_C3B3C1_preview_default.md`
+- `docs/qa/CASUISTICA-FECHAS-01_C3B3C_QA_LEGAL_MANUAL_CHECKLIST.md`
 
 ## 4. Confirmaciones
 - ✅ Default = `persisted_priority_preview`.
@@ -142,7 +143,11 @@ Apply OFF. Cálculo real intacto. Sin código funcional del motor modificado.
 - No se ha ejecutado ni preparado ningún envío oficial.
 
 ## 7. Próximo paso recomendado
-- Crear y ejecutar el **checklist QA legal/manual de 12 puntos** antes de abrir C3B3C2 PLAN.
-- **No activar** `persisted_priority_apply` hasta validación legal/manual firmada por Legal/Operaciones.
+- **Ejecutar manualmente** el checklist QA legal/manual de 12 puntos:
+  `docs/qa/CASUISTICA-FECHAS-01_C3B3C_QA_LEGAL_MANUAL_CHECKLIST.md`.
+- Solo si el checklist queda **12/12 OK con firma** de Legal/Operaciones,
+  plantear **CASUISTICA-FECHAS-01 — Fase C3B3C2 PLAN**.
+- **No activar** `persisted_priority_apply` hasta validación legal/manual
+  firmada.
 
 **Estado:** ✅ Fase C3B3C1 **CERRADA**. Apply OFF. Sin código funcional modificado en este cierre documental.
