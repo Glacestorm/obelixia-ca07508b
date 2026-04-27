@@ -65,7 +65,7 @@ describe('HRCasuisticaConflictsPanel — C3B3A', () => {
       screen.getByText(/datos locales y procesos persistidos/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Vista informativa/i)).toBeInTheDocument();
-    expect(screen.getByText(/PNR/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/PNR/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Persistido prioridad/i)).toBeInTheDocument();
     // local ignorado
     expect(screen.getByText(/Local ignorado en cálculo/i)).toBeInTheDocument();
