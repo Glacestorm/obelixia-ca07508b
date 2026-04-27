@@ -168,7 +168,32 @@ type CasuisticaState = {
   periodMotivo: 'mes_completo' | 'alta_intramensual' | 'baja_intramensual' | 'cambio_contractual' | 'cambio_salarial' | 'suspension_parcial' | 'excedencia' | 'otro';
 };
 
-const DEFAULT_CASUISTICA: CasuisticaState = {
+// CASUISTICA-FECHAS-01 Fase B — Fechas inicio/fin por proceso.
+// Campos OPCIONALES. Mantienen compatibilidad con el modelo numérico legacy
+// (pnrDias, itAtDias, etc.) y NO modifican el contrato del motor de nómina.
+// El motor sigue recibiendo días como número; estas fechas sólo sirven para
+// trazabilidad y para derivar días automáticamente cuando ambas existan.
+type CasuisticaDatesExtension = {
+  // PNR
+  pnrFechaDesde: string;
+  pnrFechaHasta: string;
+  // IT/AT
+  itAtFechaDesde: string;
+  itAtFechaHasta: string;
+  itAtTipo: '' | 'enfermedad_comun' | 'accidente_no_laboral' | 'accidente_trabajo' | 'enfermedad_profesional';
+  // Reducción de jornada / guarda legal
+  reduccionFechaDesde: string;
+  reduccionFechaHasta: string;
+  // Atrasos / regularización
+  atrasosFechaDesde: string;
+  atrasosFechaHasta: string;
+  // Nacimiento / cuidado del menor
+  nacimientoFechaInicio: string;
+  nacimientoFechaFin: string;
+  nacimientoFechaHechoCausante: string;
+};
+
+const DEFAULT_CASUISTICA: CasuisticaState & CasuisticaDatesExtension = {
   enabled: false,
   pnrDias: 0,
   itAtDias: 0,
@@ -183,7 +208,59 @@ const DEFAULT_CASUISTICA: CasuisticaState = {
   periodDiasNaturales: 30,
   periodDiasEfectivos: 30,
   periodMotivo: 'mes_completo',
+  // Dates extension (Fase B) — todas opcionales, vacías por defecto.
+  pnrFechaDesde: '',
+  pnrFechaHasta: '',
+  itAtFechaDesde: '',
+  itAtFechaHasta: '',
+  itAtTipo: '',
+  reduccionFechaDesde: '',
+  reduccionFechaHasta: '',
+  atrasosFechaDesde: '',
+  atrasosFechaHasta: '',
+  nacimientoFechaInicio: '',
+  nacimientoFechaFin: '',
+  nacimientoFechaHechoCausante: '',
 };
+
+/**
+ * CASUISTICA-FECHAS-01 — Helper puro.
+ * Calcula días naturales inclusivos entre dos fechas YYYY-MM-DD.
+ * - Si faltan fechas o son inválidas → null (caller debe usar legacy manual).
+ * - Si fechaHasta < fechaDesde → null (caller debe mostrar warning).
+ * - Mismo día → 1.
+ * - 2026-03-01 a 2026-03-31 → 31.
+ *
+ * Pure function: sin side-effects, sin acceso a Date.now(), determinista.
+ * NO toca motor, NO modifica datos, sólo cálculo aritmético.
+ */
+export function calculateInclusiveDays(
+  from?: string | null,
+  to?: string | null,
+): number | null {
+  if (!from || !to) return null;
+  // Validación estricta de formato YYYY-MM-DD para evitar parseos ambiguos
+  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isoRe.test(from) || !isoRe.test(to)) return null;
+  const fromDate = new Date(`${from}T00:00:00Z`);
+  const toDate = new Date(`${to}T00:00:00Z`);
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) return null;
+  if (toDate.getTime() < fromDate.getTime()) return null;
+  const msPerDay = 86_400_000;
+  const diff = Math.round((toDate.getTime() - fromDate.getTime()) / msPerDay);
+  return diff + 1;
+}
+
+/**
+ * Devuelve true si ambas fechas están informadas pero el rango está invertido.
+ * Útil para mostrar warning visual sin romper la UI.
+ */
+export function isInvertedRange(from?: string | null, to?: string | null): boolean {
+  if (!from || !to) return false;
+  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isoRe.test(from) || !isoRe.test(to)) return false;
+  return to < from;
+}
 
 export function HRPayrollEntryDialog({
   open,
