@@ -2,8 +2,16 @@
  * CASUISTICA-FECHAS-01 — Fase C3B1
  * Hook de mutaciones para incidencias persistentes (`erp_hr_payroll_incidents`).
  *
+ * CASUISTICA-FECHAS-01 — Fase C3C
+ * Añadidas operaciones seguras de edición y cancelación (soft-delete).
+ *
  * INVARIANTES:
- *  - Solo INSERT. No update / upsert / delete / cancel / version bump.
+ *  - INSERT (alta) + UPDATE (edición y soft-delete). NUNCA `.delete()` físico.
+ *  - NUNCA `.upsert()`. Las mutaciones se acotan vía `.eq('id', id)` y
+ *    guardrails `.is('deleted_at', null).is('applied_at', null)`.
+ *  - Filtro defensivo de claves prohibidas (company_id, employee_id,
+ *    incident_type, concept_code, applied_at, applied_to_record_id, version,
+ *    period_year, period_month, deleted_at, deleted_by, created_*).
  *  - Usa el cliente Supabase autenticado (RLS multi-tenant). Sin service_role.
  *  - No marca `applied_at` ni `applied_to_record_id`.
  *  - No genera comunicaciones oficiales (FDI/AFI/DELTA/INSS/TGSS/SEPE).
@@ -52,6 +60,77 @@ export interface NewPayrollIncidentInput {
   concept_code?: string;
 }
 
+/**
+ * CASUISTICA-FECHAS-01 — Fase C3C
+ * Patch admitido en `updatePayrollIncident`. Cualquier clave fuera de esta
+ * interfaz se filtra defensivamente antes de enviar a Supabase.
+ */
+export interface UpdatePayrollIncidentPatch {
+  applies_from?: string;
+  applies_to?: string;
+  units?: number | null;
+  amount?: number | null;
+  percent?: number | null;
+  notes?: string | null;
+  metadata?: Record<string, unknown> | null;
+  requires_ss_action?: boolean;
+  requires_tax_adjustment?: boolean;
+  requires_external_filing?: boolean;
+  legal_review_required?: boolean;
+  official_communication_type?: OfficialCommunicationType | null;
+}
+
+/**
+ * CASUISTICA-FECHAS-01 — Fase C3C
+ * Lista negra de claves que NUNCA pueden viajar en un UPDATE desde la UI.
+ * Filtrado defensivo en cliente; los triggers C1 son la red de seguridad.
+ */
+export const FORBIDDEN_UPDATE_KEYS = [
+  'id',
+  'company_id',
+  'employee_id',
+  'created_by',
+  'created_at',
+  'applied_at',
+  'applied_to_record_id',
+  'deleted_at',
+  'deleted_by',
+  'incident_type',
+  'concept_code',
+  'period_year',
+  'period_month',
+  'version',
+  'cancellation_reason',
+  'status',
+] as const;
+
+const ALLOWED_UPDATE_KEYS: ReadonlyArray<keyof UpdatePayrollIncidentPatch> = [
+  'applies_from',
+  'applies_to',
+  'units',
+  'amount',
+  'percent',
+  'notes',
+  'metadata',
+  'requires_ss_action',
+  'requires_tax_adjustment',
+  'requires_external_filing',
+  'legal_review_required',
+  'official_communication_type',
+];
+
+function sanitizeUpdatePatch(
+  patch: UpdatePayrollIncidentPatch,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of ALLOWED_UPDATE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(patch, k)) {
+      out[k] = (patch as Record<string, unknown>)[k];
+    }
+  }
+  return out;
+}
+
 export interface UsePayrollIncidentMutationsParams {
   companyId: string;
   employeeId: string;
@@ -98,6 +177,8 @@ export function usePayrollIncidentMutations(params: UsePayrollIncidentMutationsP
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const createPayrollIncident = useCallback(
     async (input: NewPayrollIncidentInput): Promise<{ id: string } | null> => {
@@ -162,9 +243,133 @@ export function usePayrollIncidentMutations(params: UsePayrollIncidentMutationsP
     [companyId, employeeId, periodYear, periodMonth, queryClient, user?.id, onSuccess],
   );
 
+  /**
+   * CASUISTICA-FECHAS-01 — Fase C3C
+   * UPDATE seguro. Guardrails:
+   *  - .eq('id', id)
+   *  - .is('deleted_at', null)  ← no edita canceladas
+   *  - .is('applied_at', null)  ← no edita aplicadas
+   * Filtra claves prohibidas. Nunca `.upsert()` ni `.delete()`.
+   */
+  const updatePayrollIncident = useCallback(
+    async (
+      id: string,
+      patch: UpdatePayrollIncidentPatch,
+    ): Promise<{ id: string } | null> => {
+      if (!id) {
+        toast.error('Falta identificador de incidencia.');
+        return null;
+      }
+      if (!companyId || !employeeId || !periodYear || !periodMonth) {
+        toast.error('Falta contexto (empresa/empleado/periodo).');
+        return null;
+      }
+      const safePatch = sanitizeUpdatePatch(patch);
+      if (Object.keys(safePatch).length === 0) {
+        toast.error('Sin cambios admitidos para guardar.');
+        return null;
+      }
+      setIsUpdating(true);
+      try {
+        const { data, error } = await supabase
+          .from('erp_hr_payroll_incidents')
+          .update(safePatch as never)
+          .eq('id', id)
+          .is('deleted_at', null)
+          .is('applied_at', null)
+          .select('id')
+          .single();
+
+        if (error) {
+          toast.error(`No se pudo actualizar la incidencia: ${safeIncidentErrorMessage(error)}`);
+          return null;
+        }
+        const updatedId = (data as { id: string }).id;
+
+        await queryClient.invalidateQueries({
+          queryKey: ['hr-payroll-incidents', companyId, employeeId, periodYear, periodMonth],
+        });
+        toast.success('Incidencia actualizada.');
+        return { id: updatedId };
+      } catch (err) {
+        toast.error(`No se pudo actualizar la incidencia: ${safeIncidentErrorMessage(err)}`);
+        return null;
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [companyId, employeeId, periodYear, periodMonth, queryClient],
+  );
+
+  /**
+   * CASUISTICA-FECHAS-01 — Fase C3C
+   * Cancelación = soft-delete con `cancellation_reason` obligatorio (≥5 chars).
+   * NUNCA `.delete()`. NUNCA toca `applied_at` / `applied_to_record_id`.
+   * Bloqueada si la incidencia ya está aplicada o ya cancelada (guardrails).
+   */
+  const cancelPayrollIncident = useCallback(
+    async (id: string, reason: string): Promise<{ id: string } | null> => {
+      if (!id) {
+        toast.error('Falta identificador de incidencia.');
+        return null;
+      }
+      if (!user?.id) {
+        toast.error('Sesión no válida para cancelar.');
+        return null;
+      }
+      const trimmed = (reason ?? '').trim();
+      if (trimmed.length < 5) {
+        toast.error('Indica un motivo de cancelación (mínimo 5 caracteres).');
+        return null;
+      }
+      if (!companyId || !employeeId || !periodYear || !periodMonth) {
+        toast.error('Falta contexto (empresa/empleado/periodo).');
+        return null;
+      }
+      setIsCancelling(true);
+      try {
+        const { data, error } = await supabase
+          .from('erp_hr_payroll_incidents')
+          .update({
+            deleted_at: new Date().toISOString(),
+            deleted_by: user.id,
+            cancellation_reason: trimmed,
+            status: 'cancelled',
+          } as never)
+          .eq('id', id)
+          .is('deleted_at', null)
+          .is('applied_at', null)
+          .select('id')
+          .single();
+
+        if (error) {
+          toast.error(`No se pudo cancelar la incidencia: ${safeIncidentErrorMessage(error)}`);
+          return null;
+        }
+        const cancelledId = (data as { id: string }).id;
+
+        await queryClient.invalidateQueries({
+          queryKey: ['hr-payroll-incidents', companyId, employeeId, periodYear, periodMonth],
+        });
+        toast.success('Incidencia cancelada (soft-delete).');
+        return { id: cancelledId };
+      } catch (err) {
+        toast.error(`No se pudo cancelar la incidencia: ${safeIncidentErrorMessage(err)}`);
+        return null;
+      } finally {
+        setIsCancelling(false);
+      }
+    },
+    [companyId, employeeId, periodYear, periodMonth, queryClient, user?.id],
+  );
+
   return {
     createPayrollIncident,
+    updatePayrollIncident,
+    cancelPayrollIncident,
     isCreating,
+    isUpdating,
+    isCancelling,
   };
 }
 

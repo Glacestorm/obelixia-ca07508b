@@ -34,6 +34,8 @@ import {
   Loader2,
   Plus,
   ShieldOff,
+  Pencil,
+  Ban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHRPayrollIncidencias } from '@/hooks/erp/hr/useHRPayrollIncidencias';
@@ -41,6 +43,7 @@ import { IncidentTypeBadge } from './IncidentTypeBadge';
 import { IncidentStatusBadge, type IncidentStatusFlags } from './IncidentStatusBadge';
 import { HRPayrollIncidentFormDialog } from './HRPayrollIncidentFormDialog';
 import { HRPromoteLocalCasuisticaDialog } from './HRPromoteLocalCasuisticaDialog';
+import { HRCancelIncidentDialog } from './HRCancelIncidentDialog';
 import { buildIncidentsFromLocalCasuistica } from '@/lib/hr/incidenciasPromotion';
 import { buildEffectiveCasuistica } from '@/lib/hr/effectiveCasuistica';
 import { HRCasuisticaConflictsPanel } from './HRCasuisticaConflictsPanel';
@@ -91,6 +94,8 @@ type Row = {
   from: string | null;
   to: string | null;
   flags: IncidentStatusFlags;
+  /** Sólo presente si source==='payroll_incidents'. */
+  payrollIncident?: PayrollIncidentRow;
 };
 
 function fmtDate(d: string | null | undefined): string {
@@ -122,6 +127,7 @@ function rowsFrom(
       requires_tax_adjustment: r.requires_tax_adjustment ?? null,
       official_communication_type: r.official_communication_type ?? null,
     },
+    payrollIncident: r,
   }));
   const b: Row[] = it.map((r) => ({
     key: `i:${r.id}`,
@@ -159,6 +165,8 @@ export function HRPersistedIncidentsPanel({
   const result = hook({ companyId, employeeId, periodYear, periodMonth });
   const [createOpen, setCreateOpen] = useState(false);
   const [promoteOpen, setPromoteOpen] = useState(false);
+  const [editIncident, setEditIncident] = useState<PayrollIncidentRow | null>(null);
+  const [cancelIncident, setCancelIncident] = useState<PayrollIncidentRow | null>(null);
 
   const {
     payrollIncidents,
@@ -322,30 +330,17 @@ export function HRPersistedIncidentsPanel({
                   <th className="text-left font-medium px-2 py-1.5">Inicio</th>
                   <th className="text-left font-medium px-2 py-1.5">Fin</th>
                   <th className="text-left font-medium px-2 py-1.5">Estado / Flags</th>
+                  <th className="text-right font-medium px-2 py-1.5">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.key} className="border-t border-border/60">
-                    <td className="px-2 py-1.5">
-                      <IncidentTypeBadge type={r.type} source={r.source} />
-                    </td>
-                    <td className="px-2 py-1.5 text-muted-foreground text-[10px]">
-                      {r.source === 'payroll_incidents' && 'payroll_incidents'}
-                      {r.source === 'it_processes' && 'it_processes'}
-                      {r.source === 'leave_requests' && 'leave_requests'}
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <span className="inline-flex items-center gap-1">
-                        <CalendarRange className="h-3 w-3 text-muted-foreground" />
-                        {fmtDate(r.from)}
-                      </span>
-                    </td>
-                    <td className="px-2 py-1.5">{fmtDate(r.to)}</td>
-                    <td className="px-2 py-1.5">
-                      <IncidentStatusBadge flags={r.flags} />
-                    </td>
-                  </tr>
+                  <IncidentRow
+                    key={r.key}
+                    row={r}
+                    onEdit={(inc) => setEditIncident(inc)}
+                    onCancel={(inc) => setCancelIncident(inc)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -460,7 +455,150 @@ export function HRPersistedIncidentsPanel({
           }}
         />
       )}
+      {editIncident && (
+        <HRPayrollIncidentFormDialog
+          open={!!editIncident}
+          onOpenChange={(o) => {
+            if (!o) setEditIncident(null);
+          }}
+          companyId={companyId}
+          employeeId={employeeId}
+          periodYear={periodYear}
+          periodMonth={periodMonth}
+          mode="edit"
+          initialIncident={editIncident}
+          onUpdated={() => {
+            setEditIncident(null);
+            void refetch?.();
+          }}
+        />
+      )}
+      {cancelIncident && (
+        <HRCancelIncidentDialog
+          open={!!cancelIncident}
+          onOpenChange={(o) => {
+            if (!o) setCancelIncident(null);
+          }}
+          incident={cancelIncident}
+          companyId={companyId}
+          employeeId={employeeId}
+          periodYear={periodYear}
+          periodMonth={periodMonth}
+          onCancelled={() => {
+            setCancelIncident(null);
+            void refetch?.();
+          }}
+        />
+      )}
     </Card>
+  );
+}
+
+/**
+ * CASUISTICA-FECHAS-01 — Fase C3C
+ * Fila de incidencia con columna de acciones. Reglas:
+ *  - Sólo `payroll_incidents` admite editar/cancelar (las otras fuentes
+ *    se gestionan desde sus módulos especializados).
+ *  - Si `applied_at`: botones disabled, badge "Aplicado a nómina".
+ *  - Si `deleted_at`: fila tachada/muted, badge "Cancelada", sin acciones.
+ */
+function IncidentRow({
+  row,
+  onEdit,
+  onCancel,
+}: {
+  row: Row;
+  onEdit: (inc: PayrollIncidentRow) => void;
+  onCancel: (inc: PayrollIncidentRow) => void;
+}) {
+  const inc = row.payrollIncident ?? null;
+  const isApplied = Boolean(inc?.applied_at);
+  const isCancelled = Boolean(inc?.deleted_at);
+  const canActOnRow =
+    row.source === 'payroll_incidents' && !!inc && !isApplied && !isCancelled;
+
+  return (
+    <tr
+      className={cn(
+        'border-t border-border/60',
+        isCancelled && 'opacity-60 line-through',
+      )}
+    >
+      <td className="px-2 py-1.5">
+        <IncidentTypeBadge type={row.type} source={row.source} />
+      </td>
+      <td className="px-2 py-1.5 text-muted-foreground text-[10px]">
+        {row.source === 'payroll_incidents' && 'payroll_incidents'}
+        {row.source === 'it_processes' && 'it_processes'}
+        {row.source === 'leave_requests' && 'leave_requests'}
+      </td>
+      <td className="px-2 py-1.5">
+        <span className="inline-flex items-center gap-1">
+          <CalendarRange className="h-3 w-3 text-muted-foreground" />
+          {fmtDate(row.from)}
+        </span>
+      </td>
+      <td className="px-2 py-1.5">{fmtDate(row.to)}</td>
+      <td className="px-2 py-1.5">
+        <IncidentStatusBadge flags={row.flags} />
+        {isCancelled && (
+          <Badge
+            variant="outline"
+            className="ml-1 text-[9px] h-4 border-muted-foreground/30 text-muted-foreground"
+          >
+            Cancelada
+          </Badge>
+        )}
+        {isApplied && (
+          <Badge
+            variant="outline"
+            className="ml-1 text-[9px] h-4 border-info/40 text-info bg-info/5"
+          >
+            Aplicado a nómina
+          </Badge>
+        )}
+      </td>
+      <td className="px-2 py-1.5 text-right">
+        {row.source === 'payroll_incidents' && !isCancelled && (
+          <div className="inline-flex items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px] gap-1"
+              disabled={!canActOnRow}
+              onClick={() => inc && onEdit(inc)}
+              title={
+                isApplied
+                  ? 'Aplicado a nómina. Requiere recálculo en fase C4.'
+                  : 'Editar incidencia'
+              }
+              aria-label="Editar incidencia"
+            >
+              <Pencil className="h-3 w-3" />
+              Editar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px] gap-1 text-destructive border-destructive/30 hover:bg-destructive/5"
+              disabled={!canActOnRow}
+              onClick={() => inc && onCancel(inc)}
+              title={
+                isApplied
+                  ? 'Aplicado a nómina. Requiere recálculo en fase C4.'
+                  : 'Cancelar incidencia'
+              }
+              aria-label="Cancelar incidencia"
+            >
+              <Ban className="h-3 w-3" />
+              Cancelar
+            </Button>
+          </div>
+        )}
+      </td>
+    </tr>
   );
 }
 

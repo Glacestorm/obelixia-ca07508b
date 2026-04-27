@@ -2,8 +2,14 @@
  * CASUISTICA-FECHAS-01 — Fase C3B1
  * Modal de alta de incidencias persistentes en `erp_hr_payroll_incidents`.
  *
+ * CASUISTICA-FECHAS-01 — Fase C3C
+ * Reutilizado en modo `edit` para editar incidencias NO aplicadas.
+ *
  * INVARIANTES:
- *  - Solo INSERT (vía `usePayrollIncidentMutations`). Sin update/delete/cancel.
+ *  - Modo `create`: INSERT (vía `createPayrollIncident`).
+ *  - Modo `edit`: UPDATE filtrado (vía `updatePayrollIncident`). Nunca .delete().
+ *  - En `edit`, `incident_type` queda DESHABILITADO (no se puede cambiar).
+ *  - Si la incidencia ya está aplicada (`applied_at`), submit deshabilitado.
  *  - No genera comunicaciones oficiales. Sólo marca flags pendientes.
  *  - No modifica el payload del motor de nómina.
  *  - Tipos especializados (IT/AT/EP, nacimiento, lactancia…) bloquean submit.
@@ -42,7 +48,9 @@ import {
   type NewPayrollIncidentInput,
   type OfficialCommunicationType,
   type PayrollIncidentCreatableType,
+  type UpdatePayrollIncidentPatch,
 } from '@/hooks/erp/hr/usePayrollIncidentMutations';
+import type { PayrollIncidentRow } from '@/lib/hr/incidenciasTypes';
 
 export type ExcludedSpecializedType =
   | 'it_enfermedad_comun'
@@ -202,6 +210,12 @@ export interface HRPayrollIncidentFormDialogProps {
   periodMonth: number;
   defaultType?: PayrollIncidentCreatableType;
   onCreated?: (id: string) => void;
+  /** CASUISTICA-FECHAS-01 — Fase C3C. */
+  mode?: 'create' | 'edit';
+  /** Sólo en mode='edit'. Carga inicial. */
+  initialIncident?: PayrollIncidentRow;
+  /** Callback tras edición exitosa. */
+  onUpdated?: (id: string) => void;
   /** Inyectable en tests para stubear la mutación. */
   mutationsHook?: typeof usePayrollIncidentMutations;
 }
@@ -215,10 +229,18 @@ export function HRPayrollIncidentFormDialog({
   periodMonth,
   defaultType,
   onCreated,
+  mode = 'create',
+  initialIncident,
+  onUpdated,
   mutationsHook,
 }: HRPayrollIncidentFormDialogProps) {
   const useMutations = mutationsHook ?? usePayrollIncidentMutations;
-  const { createPayrollIncident, isCreating } = useMutations({
+  const {
+    createPayrollIncident,
+    updatePayrollIncident,
+    isCreating,
+    isUpdating,
+  } = useMutations({
     companyId,
     employeeId,
     periodYear,
@@ -229,25 +251,64 @@ export function HRPayrollIncidentFormDialog({
     },
   });
 
-  const [type, setType] = useState<AnyType>(defaultType ?? 'pnr');
-  const [appliesFrom, setAppliesFrom] = useState('');
-  const [appliesTo, setAppliesTo] = useState('');
-  const [amount, setAmount] = useState<string>('');
-  const [percent, setPercent] = useState<string>('');
-  const [notes, setNotes] = useState('');
+  const isEdit = mode === 'edit';
+  const initialType: AnyType =
+    isEdit && initialIncident?.incident_type
+      ? (initialIncident.incident_type as AnyType)
+      : (defaultType ?? 'pnr');
+
+  const initialMeta = (initialIncident?.metadata ?? {}) as Record<string, unknown>;
+
+  const [type, setType] = useState<AnyType>(initialType);
+  const [appliesFrom, setAppliesFrom] = useState(
+    isEdit ? (initialIncident?.applies_from ?? '') : '',
+  );
+  const [appliesTo, setAppliesTo] = useState(
+    isEdit ? (initialIncident?.applies_to ?? '') : '',
+  );
+  const [amount, setAmount] = useState<string>(
+    isEdit && initialIncident?.amount != null ? String(initialIncident.amount) : '',
+  );
+  const [percent, setPercent] = useState<string>(
+    isEdit && initialIncident?.percent != null ? String(initialIncident.percent) : '',
+  );
+  const [notes, setNotes] = useState(isEdit ? (initialIncident?.notes ?? '') : '');
 
   // Flags (controlables por usuario, defaults sembrados al cambiar de tipo)
-  const [legalReview, setLegalReview] = useState(false);
-  const [reqSS, setReqSS] = useState(false);
-  const [reqTax, setReqTax] = useState(false);
-  const [reqFiling, setReqFiling] = useState(false);
-  const [comm, setComm] = useState<'NONE' | NonNullable<OfficialCommunicationType>>('NONE');
+  const [legalReview, setLegalReview] = useState(
+    isEdit ? Boolean(initialIncident?.legal_review_required) : false,
+  );
+  const [reqSS, setReqSS] = useState(
+    isEdit ? Boolean(initialIncident?.requires_ss_action) : false,
+  );
+  const [reqTax, setReqTax] = useState(
+    isEdit ? Boolean(initialIncident?.requires_tax_adjustment) : false,
+  );
+  const [reqFiling, setReqFiling] = useState(
+    isEdit ? Boolean(initialIncident?.requires_external_filing) : false,
+  );
+  const [comm, setComm] = useState<'NONE' | NonNullable<OfficialCommunicationType>>(
+    isEdit && initialIncident?.official_communication_type
+      ? (initialIncident.official_communication_type as NonNullable<OfficialCommunicationType>)
+      : 'NONE',
+  );
 
   // Metadata extra
-  const [destCountry, setDestCountry] = useState('');
-  const [destCity, setDestCity] = useState('');
-  const [reason, setReason] = useState('');
-  const [originPeriod, setOriginPeriod] = useState('');
+  const [destCountry, setDestCountry] = useState(
+    isEdit ? String(initialMeta.destination_country ?? '') : '',
+  );
+  const [destCity, setDestCity] = useState(
+    isEdit ? String(initialMeta.destination_city ?? '') : '',
+  );
+  const [reason, setReason] = useState(
+    isEdit ? String(initialMeta.reason ?? '') : '',
+  );
+  const [originPeriod, setOriginPeriod] = useState(
+    isEdit ? String(initialMeta.origin_period_from ?? '') : '',
+  );
+
+  const isApplied = Boolean(initialIncident?.applied_at);
+  const isCancelled = Boolean(initialIncident?.deleted_at);
 
   const excluded = isExcluded(type);
   const creatableType = excluded ? null : (type as PayrollIncidentCreatableType);
@@ -256,19 +317,20 @@ export function HRPayrollIncidentFormDialog({
     [creatableType],
   );
 
-  // Re-sembrar defaults al cambiar de tipo creatable
+  // Re-sembrar defaults al cambiar de tipo creatable.
+  // En modo edición NO re-sembramos: respetamos los valores actuales del registro.
   useEffect(() => {
-    if (!cfg) return;
+    if (!cfg || isEdit) return;
     setLegalReview(cfg.legal_review_required);
     setReqSS(cfg.requires_ss_action);
     setReqTax(cfg.requires_tax_adjustment);
     setReqFiling(cfg.requires_external_filing);
     setComm(cfg.official_communication_type ?? 'NONE');
-  }, [cfg]);
+  }, [cfg, isEdit]);
 
-  // Reset al cerrar
+  // Reset al cerrar (sólo en modo create; en edit no tiene sentido).
   useEffect(() => {
-    if (!open) {
+    if (!open && !isEdit) {
       setType(defaultType ?? 'pnr');
       setAppliesFrom('');
       setAppliesTo('');
@@ -280,7 +342,7 @@ export function HRPayrollIncidentFormDialog({
       setReason('');
       setOriginPeriod('');
     }
-  }, [open, defaultType]);
+  }, [open, defaultType, isEdit]);
 
   const days = useMemo(
     () => calculateInclusiveDays(appliesFrom, appliesTo),
@@ -307,13 +369,22 @@ export function HRPayrollIncidentFormDialog({
   if (percentNum !== null && (Number.isNaN(percentNum) || percentNum < 0 || percentNum > 100)) {
     errors.push('El porcentaje debe estar entre 0 y 100.');
   }
+  if (isEdit && isApplied) {
+    errors.push('Incidencia aplicada a nómina. Requiere flujo de recálculo en fase posterior.');
+  }
+  if (isEdit && isCancelled) {
+    errors.push('Incidencia cancelada. No se puede editar.');
+  }
 
-  const canSubmit = errors.length === 0 && !isCreating;
+  const busy = isCreating || isUpdating;
+  const canSubmit = errors.length === 0 && !busy;
 
   async function handleSubmit() {
     if (!canSubmit || !creatableType || !cfg) return;
 
-    const metadata: Record<string, unknown> = { ...(cfg.metadataSeed ?? {}) };
+    const metadata: Record<string, unknown> = isEdit
+      ? { ...initialMeta }
+      : { ...(cfg.metadataSeed ?? {}) };
     if (cfg.extraFields?.includes('destination_country') && destCountry) {
       metadata.destination_country = destCountry;
     }
@@ -325,6 +396,29 @@ export function HRPayrollIncidentFormDialog({
     }
     if (cfg.extraFields?.includes('origin_period') && originPeriod) {
       metadata.origin_period_from = originPeriod;
+    }
+
+    if (isEdit && initialIncident?.id) {
+      const patch: UpdatePayrollIncidentPatch = {
+        applies_from: appliesFrom,
+        applies_to: appliesTo,
+        units: days,
+        amount: amountNum,
+        percent: percentNum,
+        notes: notes || null,
+        metadata,
+        requires_ss_action: reqSS,
+        requires_tax_adjustment: reqTax,
+        requires_external_filing: reqFiling,
+        legal_review_required: legalReview,
+        official_communication_type: comm === 'NONE' ? null : comm,
+      };
+      const res = await updatePayrollIncident(initialIncident.id, patch);
+      if (res) {
+        onUpdated?.(res.id);
+        onOpenChange(false);
+      }
+      return;
     }
 
     const input: NewPayrollIncidentInput = {
@@ -350,10 +444,13 @@ export function HRPayrollIncidentFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Añadir proceso persistido</DialogTitle>
+          <DialogTitle>
+            {isEdit ? 'Editar proceso persistido' : 'Añadir proceso persistido'}
+          </DialogTitle>
           <DialogDescription>
-            Crea una incidencia entre fechas asociada al periodo en curso. No
-            se aplica a la nómina ni se envían comunicaciones oficiales.
+            {isEdit
+              ? 'Edita los datos de una incidencia no aplicada. No se aplica a la nómina ni se envían comunicaciones oficiales.'
+              : 'Crea una incidencia entre fechas asociada al periodo en curso. No se aplica a la nómina ni se envían comunicaciones oficiales.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -371,12 +468,29 @@ export function HRPayrollIncidentFormDialog({
           </p>
         </div>
 
+        {isEdit && isApplied && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+          >
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <p>
+              Incidencia aplicada a nómina. Requiere flujo de recálculo en fase
+              posterior (C4). La edición está bloqueada.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-4 py-2">
           {/* Tipo */}
           <div className="grid gap-1.5">
             <Label htmlFor="incident-type">Tipo de proceso</Label>
-            <Select value={type} onValueChange={(v) => setType(v as AnyType)}>
-              <SelectTrigger id="incident-type">
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as AnyType)}
+              disabled={isEdit}
+            >
+              <SelectTrigger id="incident-type" disabled={isEdit} aria-disabled={isEdit}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -398,6 +512,12 @@ export function HRPayrollIncidentFormDialog({
                 </SelectGroup>
               </SelectContent>
             </Select>
+            {isEdit && (
+              <p className="text-[10px] text-muted-foreground">
+                El tipo no es editable. Para cambiar de tipo, cancela esta
+                incidencia y crea una nueva.
+              </p>
+            )}
           </div>
 
           {/* Aviso tipo excluido */}
@@ -587,11 +707,17 @@ export function HRPayrollIncidentFormDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
-            {isCreating ? 'Creando…' : 'Crear incidencia'}
+            {isEdit
+              ? isUpdating
+                ? 'Guardando…'
+                : 'Guardar cambios'
+              : isCreating
+                ? 'Creando…'
+                : 'Crear incidencia'}
           </Button>
         </DialogFooter>
       </DialogContent>
