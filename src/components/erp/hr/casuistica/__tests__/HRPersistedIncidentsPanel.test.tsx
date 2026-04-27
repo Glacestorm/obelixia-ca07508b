@@ -281,8 +281,8 @@ describe('HRPersistedIncidentsPanel — C3B3A conflicts panel', () => {
     // C3B3B-paso1: el banner por defecto (local_only) indica fuente aplicada Local.
     expect(screen.getByTestId('mode-banner-local-only')).toBeInTheDocument();
     expect(
-      screen.getByText(/Fuente aplicada al cálculo: Local/i),
-    ).toBeInTheDocument();
+      screen.getByTestId('mode-banner-local-only').textContent,
+    ).toMatch(/Fuente aplicada al cálculo: Local/i);
     expect(screen.getAllByText(/Persistido prioridad/i).length).toBeGreaterThan(0);
   });
 
