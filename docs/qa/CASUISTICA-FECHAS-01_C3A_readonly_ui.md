@@ -97,3 +97,65 @@ promoción de datos locales.**
 
 No proceder con C3B en Build directo: requiere PLAN previo por introducir
 mutaciones, validación de duplicados y reglas de combinación persistido/manual.
+
+---
+
+## CASUISTICA-FECHAS-01 — Fase C3A CERRADA
+
+**Fecha de cierre:** 2026-04-27
+
+### Resumen
+
+- Panel read-only de procesos persistidos creado.
+- Badges de tipo y estado creados.
+- Integración mínima en `HRPayrollEntryDialog` (solo render).
+- Hook `useHRPayrollIncidencias` consumido únicamente en modo lectura.
+- Sin cambios en el payload entregado al motor de nómina.
+
+### Archivos creados
+
+- `src/components/erp/hr/casuistica/IncidentTypeBadge.tsx`
+- `src/components/erp/hr/casuistica/IncidentStatusBadge.tsx`
+- `src/components/erp/hr/casuistica/HRPersistedIncidentsPanel.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRPersistedIncidentsPanel.test.tsx`
+- `docs/qa/CASUISTICA-FECHAS-01_C3A_readonly_ui.md`
+
+### Archivo modificado mínimamente
+
+- `src/components/erp/hr/HRPayrollEntryDialog.tsx` — solo import + render del
+  panel. No se alteró la lógica de cálculo ni el payload del motor.
+
+### Confirmaciones
+
+- ❌ No `insert` / `update` / `upsert` / `delete`.
+- ❌ No uso de `service_role`.
+- ❌ No cambios en BD.
+- ❌ No migraciones.
+- ❌ No cambios en RLS.
+- ❌ No edge functions.
+- ❌ No cambios en motor de nómina (`simulateES`).
+- ❌ No cambios en SafeMode.
+- ❌ No FDI / AFI / DELT@.
+- ❌ No nuevas dependencias.
+- ❌ No cambios en CI.
+
+### Tests
+
+- ✅ 50/50 tests verdes.
+  - `casuisticaDates`: 18/18.
+  - `incidenciasMapper`: 14/14.
+  - `HRPayrollEntryDialog.casuisticaDates` (legacy): 12/12.
+  - `HRPersistedIncidentsPanel`: 6/6.
+
+### Riesgos residuales
+
+- Payload al motor sigue manual/local.
+- Combinación persistido/manual queda para C3B.
+- Acciones CRUD siguen deshabilitadas.
+- `unmapped[]` visible pero sin acción.
+
+### Próximo paso recomendado
+
+**CASUISTICA-FECHAS-01 — Fase C3B en PLAN**, no Build directo.
+
+**Estado:** ✅ Fase C3A CERRADA.
