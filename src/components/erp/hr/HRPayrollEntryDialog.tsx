@@ -348,6 +348,92 @@ export function HRPayrollEntryDialog({
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
 
+  // ──────────────────────────────────────────────────────────────────────
+  // CASUISTICA-FECHAS-01 — Fase C3B3B-paso2: wiring de effectiveCasuistica.
+  //
+  // Se calcula el modo activo y se construye `casuisticaForEngine`. Por
+  // defecto (`PAYROLL_EFFECTIVE_CASUISTICA_MODE = 'local_only'`) el motor
+  // sigue recibiendo la casuística local, idéntica al comportamiento
+  // anterior. Solo en `persisted_priority_apply` (test-only en esta fase)
+  // se sustituye por `effectiveCasuisticaResult.effective`, preservando
+  // SIEMPRE los campos `period*` desde local (invariante legal).
+  //
+  // INVARIANTES:
+  //  - No se cambia la firma de `simulateES`.
+  //  - No se generan FDI/AFI/DELT@.
+  //  - No se realizan writes ni se usa service_role.
+  //  - El default operativo en producción permanece `local_only`.
+  // ──────────────────────────────────────────────────────────────────────
+  const activeEffectiveCasuisticaMode: PayrollEffectiveCasuisticaMode =
+    effectiveCasuisticaModeOverride ?? PAYROLL_EFFECTIVE_CASUISTICA_MODE;
+
+  // Lectura read-only de incidencias persistidas para el wiring.
+  // React Query deduplica con el panel `HRPersistedIncidentsPanel`; no se
+  // genera tráfico adicional y se respeta RLS multi-tenant.
+  const _incidenciasForWiring = useHRPayrollIncidencias({
+    companyId: companyId || '',
+    employeeId: selectedEmployeeId || '',
+    periodYear: periodYear || 0,
+    periodMonth: periodMonth || 0,
+  });
+  const _legacyCasuistica = _incidenciasForWiring.legacyCasuistica;
+  const _mappingTraces = _incidenciasForWiring.mapping?.traces ?? [];
+  const _mappingUnmapped = _incidenciasForWiring.mapping?.unmapped ?? [];
+  const _mappingLegalReview = Boolean(
+    _incidenciasForWiring.mapping?.legalReviewRequired,
+  );
+
+  const effectiveCasuisticaResult = useMemo(() => {
+    return buildEffectiveCasuistica({
+      localCasuistica: casuistica,
+      persistedLegacy: _legacyCasuistica,
+      mappingTraces: _mappingTraces,
+      unmapped: _mappingUnmapped,
+      legalReviewRequired: _mappingLegalReview,
+      mode: 'persisted_priority',
+    });
+  }, [
+    casuistica,
+    _legacyCasuistica,
+    _mappingTraces,
+    _mappingUnmapped,
+    _mappingLegalReview,
+  ]);
+
+  const casuisticaForEngine = useMemo(() => {
+    if (!isEffectiveCasuisticaApplyEnabled(activeEffectiveCasuisticaMode)) {
+      // Default operativo y modo preview: el motor sigue recibiendo la
+      // casuística local exactamente como antes (sin doble conteo nuevo).
+      return casuistica;
+    }
+    // Apply (test-only en esta fase): se usa el effective, pero se fuerza
+    // que la cobertura del periodo provenga SIEMPRE de local (invariante
+    // legal/operativo definida en C3B3A).
+    return {
+      ...casuistica, // base local para preservar campos de fechas/extension no presentes en effective
+      ...effectiveCasuisticaResult.effective,
+      periodFechaDesde: casuistica.periodFechaDesde,
+      periodFechaHasta: casuistica.periodFechaHasta,
+      periodDiasNaturales: casuistica.periodDiasNaturales,
+      periodDiasEfectivos: casuistica.periodDiasEfectivos,
+      periodMotivo: casuistica.periodMotivo,
+    };
+  }, [activeEffectiveCasuisticaMode, casuistica, effectiveCasuisticaResult]);
+
+  /**
+   * Bloqueo legal de Guardar SOLO cuando el wiring está realmente activo
+   * (apply) y existe una revisión legal pendiente que afecta al cálculo.
+   * En `local_only` y `persisted_priority_preview` no se bloquea, porque
+   * el motor sigue usando la casuística local igual que antes.
+   *
+   * Implementación conservadora en C3B3B-paso2: warning + deshabilitación
+   * suave (sin diálogo de confirmación frágil); el bloqueo formal con
+   * confirmación explícita queda diferido a C3B3C.
+   */
+  const shouldBlockSaveByLegalReview =
+    activeEffectiveCasuisticaMode === 'persisted_priority_apply' &&
+    effectiveCasuisticaResult.blockingForClose;
+
   // S9.21h: cargar bases SS / IRPF del año del periodo automáticamente al abrir
   // Uso ref para no depender de la identidad cambiante del objeto esLocalization
   const lastFetchedYearRef = useRef<number | null>(null);
