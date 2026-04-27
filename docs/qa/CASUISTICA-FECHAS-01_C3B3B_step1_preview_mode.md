@@ -103,3 +103,68 @@ real al motor (`simulateES`) en modo `persisted_priority_apply`, con:
 ## Cierre
 C3B3B-paso1 queda **entregado**. El cálculo de nómina sigue idéntico al
 de C3B3A; solo cambia la visualización.
+
+---
+
+## CASUISTICA-FECHAS-01 — Fase C3B3B-paso1 CERRADA
+
+**Fecha de cierre:** 2026-04-27
+
+### 1. Resumen
+- Feature flag `PAYROLL_EFFECTIVE_CASUISTICA_MODE` creado.
+- Modos tipados: `local_only`, `persisted_priority_preview`, `persisted_priority_apply`.
+- Default operativo: `local_only`.
+- UI de conflictos ampliada con banner dinámico por modo.
+- Columna **"Fuente aplicada al cálculo"** añadida a la tabla.
+- `HRPersistedIncidentsPanel` propaga el modo al panel de conflictos.
+- Cálculo real de nómina **todavía sin cambios**.
+
+### 2. Archivos creados
+- `src/lib/hr/payrollEffectiveCasuisticaFlag.ts`
+- `src/lib/hr/__tests__/payrollEffectiveCasuisticaFlag.test.ts`
+- `docs/qa/CASUISTICA-FECHAS-01_C3B3B_step1_preview_mode.md`
+
+### 3. Archivos modificados
+- `src/components/erp/hr/casuistica/HRCasuisticaConflictsPanel.tsx`
+- `src/components/erp/hr/casuistica/HRPersistedIncidentsPanel.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRCasuisticaConflictsPanel.test.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRPersistedIncidentsPanel.test.tsx`
+
+### 4. Confirmaciones
+- ✅ `HRPayrollEntryDialog.tsx` **no tocado**.
+- ✅ `simulateES` **no tocado**.
+- ✅ Payload del motor **no modificado**.
+- ✅ No se sustituyó casuística local por `effectiveCasuistica`.
+- ✅ Default `local_only`.
+- ✅ Sin insert/update/upsert/delete.
+- ✅ Sin `service_role`.
+- ✅ Sin `applied_at`.
+- ✅ Sin `applied_to_record_id`.
+- ✅ Sin recálculos.
+- ✅ Sin FDI/AFI/DELT@.
+- ✅ Sin migraciones.
+- ✅ Sin RLS.
+- ✅ Sin edge functions.
+- ✅ Sin dependencias.
+- ✅ Sin CI.
+
+### 5. Tests
+- **43/43 tests verdes.**
+- `payrollEffectiveCasuisticaFlag`: 4 tests.
+- `effectiveCasuistica`: 16 tests.
+- `HRCasuisticaConflictsPanel`: 11 tests.
+- `HRPersistedIncidentsPanel`: 12 tests.
+
+### 6. Riesgos residuales
+- C3B3B-paso1 solo visualiza; no cambia cálculo real.
+- El modo `apply` existe como tipo, pero no está activado ni conectado al motor.
+- Override manual y `sum_explicit` siguen sin UI funcional.
+- La conexión real al motor queda para paso2 con QA legal.
+
+### 7. Próximo paso recomendado
+**CASUISTICA-FECHAS-01 Fase C3B3B-paso2 PLAN** — conexión real de
+`effectiveCasuistica` a `simulateES` con snapshot tests de regresión,
+bloqueo de cierre cuando `blockingForClose=true` y QA legal de la
+matriz fuente única.
+
+**Estado final:** Fase C3B3B-paso1 **CERRADA**.
