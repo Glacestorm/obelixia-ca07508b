@@ -44,7 +44,10 @@ import { HRPromoteLocalCasuisticaDialog } from './HRPromoteLocalCasuisticaDialog
 import { buildIncidentsFromLocalCasuistica } from '@/lib/hr/incidenciasPromotion';
 import { buildEffectiveCasuistica } from '@/lib/hr/effectiveCasuistica';
 import { HRCasuisticaConflictsPanel } from './HRCasuisticaConflictsPanel';
-import { PAYROLL_EFFECTIVE_CASUISTICA_MODE } from '@/lib/hr/payrollEffectiveCasuisticaFlag';
+import {
+  PAYROLL_EFFECTIVE_CASUISTICA_MODE,
+  type PayrollEffectiveCasuisticaMode,
+} from '@/lib/hr/payrollEffectiveCasuisticaFlag';
 import type {
   CasuisticaState,
   CasuisticaDatesExtension,
@@ -71,6 +74,13 @@ export interface HRPersistedIncidentsPanelProps {
    * No se mutará. No altera el payload del motor.
    */
   localCasuistica?: CasuisticaState & Partial<CasuisticaDatesExtension>;
+  /**
+   * CASUISTICA-FECHAS-01 — Fase C3B3B-paso2.
+   * Modo activo del flag de payroll, propagado desde el diálogo. Solo
+   * afecta a la visualización del panel de conflictos. NO altera por sí
+   * mismo el cálculo del motor (ese wiring vive en HRPayrollEntryDialog).
+   */
+  effectiveMode?: PayrollEffectiveCasuisticaMode;
   className?: string;
 }
 
@@ -142,6 +152,7 @@ export function HRPersistedIncidentsPanel({
   enabled = true,
   useIncidenciasHook,
   localCasuistica,
+  effectiveMode = PAYROLL_EFFECTIVE_CASUISTICA_MODE,
   className,
 }: HRPersistedIncidentsPanelProps) {
   const hook = useIncidenciasHook ?? useHRPayrollIncidencias;
@@ -271,7 +282,7 @@ export function HRPersistedIncidentsPanel({
           <HRCasuisticaConflictsPanel
             result={effectivePreview}
             mode="persisted_priority"
-            effectiveMode={PAYROLL_EFFECTIVE_CASUISTICA_MODE}
+            effectiveMode={effectiveMode}
           />
         )}
 
