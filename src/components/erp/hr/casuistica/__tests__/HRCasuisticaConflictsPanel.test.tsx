@@ -174,10 +174,14 @@ describe('HRCasuisticaConflictsPanel — C3B3B-paso1 (modo visual)', () => {
       />,
     );
     expect(screen.getByTestId('mode-banner-local-only')).toBeInTheDocument();
+    // Banner contiene la frase completa "Fuente aplicada al cálculo: Local…".
     expect(
-      screen.getByText(/Fuente aplicada al cálculo: Local/i),
+      screen.getByTestId('mode-banner-local-only').textContent,
+    ).toMatch(/Fuente aplicada al cálculo: Local/i);
+    // La columna "Fuente aplicada al cálculo" existe.
+    expect(
+      screen.getByRole('columnheader', { name: /Fuente aplicada al cálculo/i }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Fuente aplicada al cálculo/i)).toBeInTheDocument();
     // En la fila debe aparecer "Local aplicado" como fuente real.
     expect(screen.getAllByText(/Local aplicado/i).length).toBeGreaterThan(0);
   });
