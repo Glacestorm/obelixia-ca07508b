@@ -329,6 +329,30 @@ export function HRPayrollEntryDialog({
   const [earnPickerOpen, setEarnPickerOpen] = useState(false);
   const [dedPickerOpen, setDedPickerOpen] = useState(false);
 
+  // CASUISTICA-FECHAS-01 Fase B — Derivación de días desde fechas por proceso.
+  // Si ambas fechas son válidas y coherentes, los días se derivan automáticamente
+  // y se usan en el payload del motor en lugar del valor manual legacy.
+  // Si NO hay fechas (o están invertidas), se respeta el campo numérico legacy.
+  // El motor sigue recibiendo SIEMPRE un número de días (contrato sin cambios).
+  const derivedDays = useMemo(() => {
+    return {
+      pnr: calculateInclusiveDays(casuistica.pnrFechaDesde, casuistica.pnrFechaHasta),
+      itAt: calculateInclusiveDays(casuistica.itAtFechaDesde, casuistica.itAtFechaHasta),
+      nacimiento: calculateInclusiveDays(casuistica.nacimientoFechaInicio, casuistica.nacimientoFechaFin),
+      pnrInverted: isInvertedRange(casuistica.pnrFechaDesde, casuistica.pnrFechaHasta),
+      itAtInverted: isInvertedRange(casuistica.itAtFechaDesde, casuistica.itAtFechaHasta),
+      reduccionInverted: isInvertedRange(casuistica.reduccionFechaDesde, casuistica.reduccionFechaHasta),
+      atrasosInverted: isInvertedRange(casuistica.atrasosFechaDesde, casuistica.atrasosFechaHasta),
+      nacimientoInverted: isInvertedRange(casuistica.nacimientoFechaInicio, casuistica.nacimientoFechaFin),
+    };
+  }, [
+    casuistica.pnrFechaDesde, casuistica.pnrFechaHasta,
+    casuistica.itAtFechaDesde, casuistica.itAtFechaHasta,
+    casuistica.reduccionFechaDesde, casuistica.reduccionFechaHasta,
+    casuistica.atrasosFechaDesde, casuistica.atrasosFechaHasta,
+    casuistica.nacimientoFechaInicio, casuistica.nacimientoFechaFin,
+  ]);
+
   // Parse month
   const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
 
