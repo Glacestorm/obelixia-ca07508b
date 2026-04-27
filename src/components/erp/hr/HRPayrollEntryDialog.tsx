@@ -614,7 +614,11 @@ export function HRPayrollEntryDialog({
         complementos[persistCode] = e.amount;
       });
       const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
-      const cas = casuistica;
+      // CASUISTICA-FECHAS-01 — Fase C3B3B-paso2: el motor recibe
+      // `casuisticaForEngine`, que en `local_only` coincide exactamente con
+      // `casuistica` (default operativo). En `persisted_priority_apply`
+      // (test-only) usa el effective con `period*` siempre desde local.
+      const cas = casuisticaForEngine;
       const useCas = cas.enabled;
       const nacimientoTramos = useCas && (cas.nacimientoDias > 0 || cas.nacimientoImporte > 0) && cas.periodFechaDesde && cas.periodFechaHasta
         ? [{
@@ -660,7 +664,7 @@ export function HRPayrollEntryDialog({
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       setLiveBridgeCalc(null);
     }
-  }, [earnings, casuistica, derivedDays, ssBasesReady, grupoCotizacion]);
+  }, [earnings, casuistica, casuisticaForEngine, derivedDays, ssBasesReady, grupoCotizacion]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
