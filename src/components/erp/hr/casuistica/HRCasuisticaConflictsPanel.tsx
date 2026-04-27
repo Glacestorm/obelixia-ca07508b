@@ -7,6 +7,12 @@
  *  - No bloquea el cierre.
  *  - No altera el payload del motor de nómina.
  *  - No genera comunicaciones oficiales.
+ *
+ * CASUISTICA-FECHAS-01 — Fase C3B3B-paso1:
+ *  - Acepta prop `effectiveMode` (default: PAYROLL_EFFECTIVE_CASUISTICA_MODE).
+ *  - Banner dinámico según el modo activo.
+ *  - Nueva columna "Fuente aplicada al cálculo" (visual, sin conexión real
+ *    al motor; en `local_only` y `persisted_priority_preview` siempre = Local).
  */
 
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +23,22 @@ import type {
   EffectiveMode,
   CasuisticaConflict,
 } from '@/lib/hr/effectiveCasuistica';
+import {
+  PAYROLL_EFFECTIVE_CASUISTICA_MODE,
+  isEffectiveCasuisticaApplyEnabled,
+  isEffectiveCasuisticaPreviewEnabled,
+  type PayrollEffectiveCasuisticaMode,
+} from '@/lib/hr/payrollEffectiveCasuisticaFlag';
 
 export interface HRCasuisticaConflictsPanelProps {
   result: EffectiveResult;
   mode: EffectiveMode;
+  /**
+   * C3B3B-paso1: modo activo del flag de payroll. Solo afecta a la
+   * visualización (banner + columna "Fuente aplicada"). NO conecta el
+   * `effectiveCasuistica` al motor en esta fase.
+   */
+  effectiveMode?: PayrollEffectiveCasuisticaMode;
   className?: string;
 }
 
@@ -61,14 +79,114 @@ function SourceBadge({ src }: { src: CasuisticaConflict['resolvedSource'] }) {
   );
 }
 
+/**
+ * C3B3B-paso1: badge de "Fuente aplicada al cálculo" según el modo del flag.
+ * En `local_only` y `persisted_priority_preview` el motor sigue usando local
+ * → siempre se muestra "Local aplicado".
+ * En `persisted_priority_apply` (futuro) se usa `resolvedSource` propuesta,
+ * pero esta fase NO conecta al motor (badge "Vista preview" como advertencia).
+ */
+function AppliedSourceBadge({
+  proposed,
+  effectiveMode,
+}: {
+  proposed: CasuisticaConflict['resolvedSource'];
+  effectiveMode: PayrollEffectiveCasuisticaMode;
+}) {
+  if (effectiveMode === 'local_only') {
+    return (
+      <Badge variant="muted" className="text-[10px] gap-1">
+        Local aplicado
+      </Badge>
+    );
+  }
+  if (effectiveMode === 'persisted_priority_preview') {
+    return (
+      <span className="inline-flex items-center gap-1">
+        <Badge variant="muted" className="text-[10px] gap-1">
+          Local aplicado
+        </Badge>
+        <Badge variant="outline" className="text-[10px] gap-1">
+          Vista preview
+        </Badge>
+      </span>
+    );
+  }
+  // persisted_priority_apply — visual únicamente en C3B3B-paso1.
+  if (proposed === 'persisted') {
+    return (
+      <Badge variant="info" className="text-[10px] gap-1">
+        Persistido aplicado
+      </Badge>
+    );
+  }
+  if (proposed === 'manual_override') {
+    return (
+      <Badge variant="warning" className="text-[10px] gap-1">
+        Manual override
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="muted" className="text-[10px] gap-1">
+      Local aplicado
+    </Badge>
+  );
+}
+
+function ModeBanner({
+  effectiveMode,
+}: {
+  effectiveMode: PayrollEffectiveCasuisticaMode;
+}) {
+  if (effectiveMode === 'local_only') {
+    return (
+      <p
+        className="text-muted-foreground italic"
+        data-testid="mode-banner-local-only"
+      >
+        <Info className="h-2.5 w-2.5 inline mr-0.5" />
+        Fuente aplicada al cálculo: Local. Los procesos persistidos se muestran
+        solo como referencia. El cálculo de nómina no cambia.
+      </p>
+    );
+  }
+  if (effectiveMode === 'persisted_priority_preview') {
+    return (
+      <p
+        className="text-muted-foreground italic"
+        data-testid="mode-banner-preview"
+      >
+        <Info className="h-2.5 w-2.5 inline mr-0.5" />
+        Modo preview: se muestra la fuente persistida propuesta, pero el
+        cálculo sigue usando datos locales.
+      </p>
+    );
+  }
+  return (
+    <p
+      className="text-warning italic"
+      data-testid="mode-banner-apply"
+    >
+      <Info className="h-2.5 w-2.5 inline mr-0.5" />
+      Modo apply: el cálculo usaría la fuente persistida cuando exista. Este
+      modo no está activado en esta fase.
+    </p>
+  );
+}
+
 export function HRCasuisticaConflictsPanel({
   result,
   mode,
+  effectiveMode = PAYROLL_EFFECTIVE_CASUISTICA_MODE,
   className,
 }: HRCasuisticaConflictsPanelProps) {
   const { conflicts, unmappedInformative, ignoredLocal, blockingForClose } = result;
   const hasConflicts = conflicts.length > 0;
   const hasUnmapped = unmappedInformative.length > 0;
+  // Acalla unused-var sin alterar la API: ambos helpers se reutilizarán en C3B3B-paso2.
+  void isEffectiveCasuisticaApplyEnabled;
+  void isEffectiveCasuisticaPreviewEnabled;
 
   if (!hasConflicts && !hasUnmapped && !blockingForClose) {
     return null;
@@ -94,11 +212,7 @@ export function HRCasuisticaConflictsPanel({
             campo. Modo activo:{' '}
             <span className="font-mono font-medium">{mode}</span>.
           </p>
-          <p className="text-muted-foreground italic">
-            <Info className="h-2.5 w-2.5 inline mr-0.5" />
-            Vista informativa. El cálculo actual sigue usando datos locales hasta
-            C3B3B.
-          </p>
+          <ModeBanner effectiveMode={effectiveMode} />
         </div>
       </div>
 
@@ -112,6 +226,9 @@ export function HRCasuisticaConflictsPanel({
                 <th className="text-left font-medium px-2 py-1.5">Local</th>
                 <th className="text-left font-medium px-2 py-1.5">Persistido</th>
                 <th className="text-left font-medium px-2 py-1.5">Fuente propuesta</th>
+                <th className="text-left font-medium px-2 py-1.5">
+                  Fuente aplicada al cálculo
+                </th>
                 <th className="text-left font-medium px-2 py-1.5">Revisión legal</th>
                 <th className="text-left font-medium px-2 py-1.5">Motivo</th>
               </tr>
@@ -130,6 +247,12 @@ export function HRCasuisticaConflictsPanel({
                   </td>
                   <td className="px-2 py-1.5">
                     <SourceBadge src={c.resolvedSource} />
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <AppliedSourceBadge
+                      proposed={c.resolvedSource}
+                      effectiveMode={effectiveMode}
+                    />
                   </td>
                   <td className="px-2 py-1.5">
                     {c.legalReviewRequired ? (
