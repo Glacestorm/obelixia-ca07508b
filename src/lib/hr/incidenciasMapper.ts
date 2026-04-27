@@ -334,14 +334,9 @@ export function mapIncidenciasToLegacyCasuistica(input: {
         const mapped = NACIMIENTO_TYPE_MAP[code];
         // Prioridad estable: el primer tipo encontrado (orden de la query).
         if (!tipo && mapped) tipo = mapped;
-        const meta = getMetadata(r);
-        const birth =
-          typeof meta.birth_date === 'string'
-            ? meta.birth_date
-            : typeof meta.fecha_hecho_causante === 'string'
-              ? (meta.fecha_hecho_causante as string)
-              : null;
-        if (birth && !hechoCausante) hechoCausante = birth;
+        // `erp_hr_leave_requests` no tiene columna `metadata`. La fecha de
+        // hecho causante se inferirá en C3 desde otras fuentes (documentos
+        // adjuntos, tabla específica). En C2 lo dejamos undefined.
         traces.push({
           source: 'leave_requests',
           recordId: r.id,
