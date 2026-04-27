@@ -134,7 +134,7 @@ export function usePayrollIncidentMutations(params: UsePayrollIncidentMutationsP
 
         const { data, error } = await supabase
           .from('erp_hr_payroll_incidents')
-          .insert(payload)
+          .insert([payload])
           .select('id')
           .single();
 
