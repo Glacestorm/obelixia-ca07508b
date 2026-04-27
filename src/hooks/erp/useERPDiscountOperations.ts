@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 export interface CommercialDiscount {
@@ -104,6 +105,15 @@ export interface DiscountCalculation {
 }
 
 export function useERPDiscountOperations() {
+  // Helper: extrae solo columnas reales de erp_commercial_discounts,
+  // descartando relaciones expandidas (entity, customer) y arrays virtuales (effects).
+  const toDiscountOperationDbPayload = (
+    input: Partial<CommercialDiscount>
+  ): TablesUpdate<'erp_commercial_discounts'> => {
+    const { entity, customer, effects, ...rest } = input;
+    return rest as TablesUpdate<'erp_commercial_discounts'>;
+  };
+
   const [discounts, setDiscounts] = useState<CommercialDiscount[]>([]);
   const [effects, setEffects] = useState<DiscountEffect[]>([]);
   const [remittances, setRemittances] = useState<DiscountRemittance[]>([]);
@@ -253,7 +263,7 @@ export function useERPDiscountOperations() {
     try {
       const { error } = await supabase
         .from('erp_commercial_discounts')
-        .update(updates)
+        .update(toDiscountOperationDbPayload(updates))
         .eq('id', id);
 
       if (error) throw error;
@@ -406,12 +416,13 @@ export function useERPDiscountOperations() {
     additionalData?: Partial<CommercialDiscount>
   ) => {
     try {
+      const updatePayload: TablesUpdate<'erp_commercial_discounts'> = {
+        ...toDiscountOperationDbPayload(additionalData || {}),
+        status: newStatus,
+      };
       const { error } = await supabase
         .from('erp_commercial_discounts')
-        .update({ 
-          status: newStatus,
-          ...additionalData
-        })
+        .update(updatePayload)
         .eq('id', id);
 
       if (error) throw error;

@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 // === INTERFACES ===
@@ -237,9 +238,12 @@ export function useObelixiaIntegrations() {
     updates: Partial<ReconciliationRule>
   ) => {
     try {
+      const dbPayload: TablesUpdate<'obelixia_reconciliation_rules'> = {
+        ...(updates as TablesUpdate<'obelixia_reconciliation_rules'>),
+      };
       const { error } = await supabase
         .from('obelixia_reconciliation_rules')
-        .update(updates)
+        .update(dbPayload)
         .eq('id', ruleId);
 
       if (error) throw error;

@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 // === INTERFACES ===
@@ -128,9 +129,12 @@ export function useObelixiaPartners() {
   // === UPDATE PARTNER ===
   const updatePartner = useCallback(async (partnerId: string, updates: Partial<Partner>) => {
     try {
+      const dbPayload: TablesUpdate<'obelixia_partners'> = {
+        ...(updates as TablesUpdate<'obelixia_partners'>),
+      };
       const { error } = await supabase
         .from('obelixia_partners')
-        .update(updates as Record<string, unknown>)
+        .update(dbPayload)
         .eq('id', partnerId);
 
       if (error) throw error;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -238,9 +239,13 @@ const BalanceSheetForm = ({ statementId, isLocked, fiscalYear, companyId }: Bala
             : y
         ));
       } else {
+        const upsertPayload: TablesInsert<'balance_sheets'> = {
+          ...(data as TablesInsert<'balance_sheets'>),
+          statement_id: currentYearData.statementId || statementId,
+        };
         const { error } = await supabase
           .from('balance_sheets')
-          .upsert({ ...data, statement_id: currentYearData.statementId || statementId }, { onConflict: 'statement_id' });
+          .upsert(upsertPayload, { onConflict: 'statement_id' });
         
         if (error) throw error;
       }
