@@ -2771,7 +2771,13 @@ export function HRPayrollEntryDialog({
                 !month ||
                 ((earnings.find(e => e.code === 'BASE')?.amount || 0) <= 0) ||
                 (!liveBridgeCalc && totals.totalEarnings <= 0) ||
-                ssBasesMissing
+                ssBasesMissing ||
+                shouldBlockSaveByLegalReview
+              }
+              title={
+                shouldBlockSaveByLegalReview
+                  ? 'Guardar bloqueado: el modo apply tiene revisión legal pendiente sobre la casuística persistida. Resuelve la incidencia o desactiva apply.'
+                  : undefined
               }
             >
               {isSaving ? (
