@@ -563,8 +563,15 @@ export function HRPayrollEntryDialog({
         grupoCotizacion,
         horasExtraImporte: horasExtra,
         complementos,
-        permisoNoRetribuido: useCas && cas.pnrDias > 0 ? cas.pnrDias : undefined,
-        itATDias: useCas && cas.itAtDias > 0 ? cas.itAtDias : undefined,
+        // CASUISTICA-FECHAS-01: derived days (de fechas) tienen prioridad sobre
+        // el campo numérico legacy. Si no hay fechas válidas, se usa legacy.
+        // Contrato del motor SIN CAMBIOS: sigue siendo número de días.
+        permisoNoRetribuido: useCas
+          ? ((derivedDays.pnr ?? (cas.pnrDias > 0 ? cas.pnrDias : undefined)))
+          : undefined,
+        itATDias: useCas
+          ? ((derivedDays.itAt ?? (cas.itAtDias > 0 ? cas.itAtDias : undefined)))
+          : undefined,
         reduccionJornadaPct: useCas && cas.reduccionJornadaPct > 0 ? cas.reduccionJornadaPct : undefined,
         atrasosIT,
         nacimientoTramos,
@@ -575,7 +582,7 @@ export function HRPayrollEntryDialog({
       console.warn('[HRPayrollEntryDialog] live bridge calc failed:', err);
       setLiveBridgeCalc(null);
     }
-  }, [earnings, casuistica, ssBasesReady, grupoCotizacion]);
+  }, [earnings, casuistica, derivedDays, ssBasesReady, grupoCotizacion]);
 
   /**
    * S9.21g — Indicadores de casuística activa (para badges en cabecera y resumen).
