@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -102,14 +103,16 @@ const PDFImportDialog = ({
     setProgress(0);
 
     try {
-      const balanceSheetFields: Record<string, number> = {};
-      const incomeStatementFields: Record<string, number> = {};
+      const balanceSheetFields: Partial<TablesUpdate<'balance_sheets'>> = {};
+      const incomeStatementFields: Partial<TablesUpdate<'income_statements'>> = {};
 
       mappedFields.forEach(field => {
         if (field.field.startsWith('balance_')) {
-          balanceSheetFields[field.field.replace('balance_', '')] = field.value;
+          const key = field.field.replace('balance_', '') as keyof TablesUpdate<'balance_sheets'>;
+          (balanceSheetFields as Record<string, number>)[key as string] = field.value;
         } else if (field.field.startsWith('income_')) {
-          incomeStatementFields[field.field.replace('income_', '')] = field.value;
+          const key = field.field.replace('income_', '') as keyof TablesUpdate<'income_statements'>;
+          (incomeStatementFields as Record<string, number>)[key as string] = field.value;
         }
       });
 
