@@ -235,7 +235,6 @@ const DEFAULT_CASUISTICA: CasuisticaState & CasuisticaDatesExtension = {
  * NO se cambia el comportamiento. NO se toca el motor de nómina.
  */
 export { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
-import { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
 
 export function HRPayrollEntryDialog({
   open,
