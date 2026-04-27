@@ -40,6 +40,12 @@ import { useHRPayrollIncidencias } from '@/hooks/erp/hr/useHRPayrollIncidencias'
 import { IncidentTypeBadge } from './IncidentTypeBadge';
 import { IncidentStatusBadge, type IncidentStatusFlags } from './IncidentStatusBadge';
 import { HRPayrollIncidentFormDialog } from './HRPayrollIncidentFormDialog';
+import { HRPromoteLocalCasuisticaDialog } from './HRPromoteLocalCasuisticaDialog';
+import { buildIncidentsFromLocalCasuistica } from '@/lib/hr/incidenciasPromotion';
+import type {
+  CasuisticaState,
+  CasuisticaDatesExtension,
+} from '@/lib/hr/casuisticaTypes';
 import type {
   ITProcessRow,
   LeaveRequestRow,
@@ -55,6 +61,13 @@ export interface HRPersistedIncidentsPanelProps {
   enabled?: boolean;
   /** Permite inyectar un hook alternativo en tests. Por defecto usa el real. */
   useIncidenciasHook?: typeof useHRPayrollIncidencias;
+  /**
+   * CASUISTICA-FECHAS-01 — Fase C3B2:
+   * casuística local actual (Fase B). Si se informa, habilita el botón
+   * "Promover datos actuales" que abre el diálogo de promoción.
+   * No se mutará. No altera el payload del motor.
+   */
+  localCasuistica?: CasuisticaState & Partial<CasuisticaDatesExtension>;
   className?: string;
 }
 
@@ -125,11 +138,13 @@ export function HRPersistedIncidentsPanel({
   periodMonth,
   enabled = true,
   useIncidenciasHook,
+  localCasuistica,
   className,
 }: HRPersistedIncidentsPanelProps) {
   const hook = useIncidenciasHook ?? useHRPayrollIncidencias;
   const result = hook({ companyId, employeeId, periodYear, periodMonth });
   const [createOpen, setCreateOpen] = useState(false);
+  const [promoteOpen, setPromoteOpen] = useState(false);
 
   const {
     payrollIncidents,
@@ -157,6 +172,17 @@ export function HRPersistedIncidentsPanel({
   const externalFilingPending = payrollIncidents.some(
     (r) => r.requires_external_filing || r.official_communication_type,
   );
+
+  // Pre-evaluación de promoción para habilitar/deshabilitar el botón.
+  const promotionPreview = useMemo(() => {
+    if (!localCasuistica) return null;
+    return buildIncidentsFromLocalCasuistica({
+      casuistica: localCasuistica,
+      context: { companyId, employeeId, periodYear, periodMonth },
+      existingIncidents: payrollIncidents,
+    });
+  }, [localCasuistica, companyId, employeeId, periodYear, periodMonth, payrollIncidents]);
+  const canPromote = (promotionPreview?.toCreate.length ?? 0) > 0;
 
   return (
     <Card className={cn('mb-4 border-info/30', className)}>
@@ -189,16 +215,36 @@ export function HRPersistedIncidentsPanel({
             </div>
           </div>
 
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setCreateOpen(true)}
-            className="h-7 text-[11px] gap-1"
-          >
-            <Plus className="h-3 w-3" />
-            Añadir proceso
-          </Button>
+          <div className="flex items-center gap-1.5">
+            {localCasuistica && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPromoteOpen(true)}
+                disabled={!canPromote}
+                title={
+                  canPromote
+                    ? 'Convertir datos locales en incidencias persistidas'
+                    : 'No hay datos locales promovibles.'
+                }
+                className="h-7 text-[11px] gap-1"
+              >
+                <Plus className="h-3 w-3" />
+                Promover datos actuales
+              </Button>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setCreateOpen(true)}
+              className="h-7 text-[11px] gap-1"
+            >
+              <Plus className="h-3 w-3" />
+              Añadir proceso
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -358,6 +404,21 @@ export function HRPersistedIncidentsPanel({
           periodYear={periodYear}
           periodMonth={periodMonth}
           onCreated={() => {
+            void refetch?.();
+          }}
+        />
+      )}
+      {promoteOpen && localCasuistica && (
+        <HRPromoteLocalCasuisticaDialog
+          open={promoteOpen}
+          onOpenChange={setPromoteOpen}
+          casuistica={localCasuistica}
+          existingIncidents={payrollIncidents}
+          companyId={companyId}
+          employeeId={employeeId}
+          periodYear={periodYear}
+          periodMonth={periodMonth}
+          onPromoted={() => {
             void refetch?.();
           }}
         />
