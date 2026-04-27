@@ -40747,19 +40747,24 @@ export type Database = {
           applied_to_record_id: string | null
           applies_from: string | null
           applies_to: string | null
+          cancellation_reason: string | null
           company_id: string
           concept_code: string
           concept_id: string | null
           cotiza_ss: boolean | null
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           employee_id: string
           id: string
           incident_type: string
           is_prorrateado: boolean | null
+          legal_review_required: boolean
           metadata: Json | null
           notes: string | null
+          official_communication_type: string | null
           percent: number | null
           period_id: string | null
           period_month: number | null
@@ -40777,6 +40782,7 @@ export type Database = {
           updated_at: string | null
           validated_at: string | null
           validated_by: string | null
+          version: number
         }
         Insert: {
           admin_request_id?: string | null
@@ -40785,19 +40791,24 @@ export type Database = {
           applied_to_record_id?: string | null
           applies_from?: string | null
           applies_to?: string | null
+          cancellation_reason?: string | null
           company_id: string
           concept_code: string
           concept_id?: string | null
           cotiza_ss?: boolean | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           employee_id: string
           id?: string
           incident_type?: string
           is_prorrateado?: boolean | null
+          legal_review_required?: boolean
           metadata?: Json | null
           notes?: string | null
+          official_communication_type?: string | null
           percent?: number | null
           period_id?: string | null
           period_month?: number | null
@@ -40815,6 +40826,7 @@ export type Database = {
           updated_at?: string | null
           validated_at?: string | null
           validated_by?: string | null
+          version?: number
         }
         Update: {
           admin_request_id?: string | null
@@ -40823,19 +40835,24 @@ export type Database = {
           applied_to_record_id?: string | null
           applies_from?: string | null
           applies_to?: string | null
+          cancellation_reason?: string | null
           company_id?: string
           concept_code?: string
           concept_id?: string | null
           cotiza_ss?: boolean | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           employee_id?: string
           id?: string
           incident_type?: string
           is_prorrateado?: boolean | null
+          legal_review_required?: boolean
           metadata?: Json | null
           notes?: string | null
+          official_communication_type?: string | null
           percent?: number | null
           period_id?: string | null
           period_month?: number | null
@@ -40853,6 +40870,7 @@ export type Database = {
           updated_at?: string | null
           validated_at?: string | null
           validated_by?: string | null
+          version?: number
         }
         Relationships: [
           {

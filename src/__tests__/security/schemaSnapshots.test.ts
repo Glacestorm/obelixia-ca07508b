@@ -170,3 +170,49 @@ describe('Schema Contract: erp_user_companies', () => {
     expect(check).toBe(true);
   });
 });
+
+// ============================================================
+// CASUISTICA-FECHAS-01 Fase C1 — erp_hr_payroll_incidents hardening
+// Validates new columns added by C1 migration are present in generated types.
+// Triggers/functions are validated at DB level (not type-level).
+// ============================================================
+
+describe('Schema Contract: erp_hr_payroll_incidents (C1 hardening)', () => {
+  type Row = TableRow<'erp_hr_payroll_incidents'>;
+
+  it('Row includes deleted_at (soft-delete)', () => {
+    type Check = Row extends { deleted_at: string | null } ? true : false;
+    const r: Check = true;
+    expect(r).toBe(true);
+  });
+
+  it('Row includes deleted_by', () => {
+    type Check = Row extends { deleted_by: string | null } ? true : false;
+    const r: Check = true;
+    expect(r).toBe(true);
+  });
+
+  it('Row includes cancellation_reason', () => {
+    type Check = Row extends { cancellation_reason: string | null } ? true : false;
+    const r: Check = true;
+    expect(r).toBe(true);
+  });
+
+  it('Row includes version (NOT NULL, default 1)', () => {
+    type Check = Row extends { version: number } ? true : false;
+    const r: Check = true;
+    expect(r).toBe(true);
+  });
+
+  it('Row includes legal_review_required (NOT NULL, default false)', () => {
+    type Check = Row extends { legal_review_required: boolean } ? true : false;
+    const r: Check = true;
+    expect(r).toBe(true);
+  });
+
+  it('Row includes official_communication_type (FDI|AFI|DELTA|INSS|TGSS|SEPE)', () => {
+    type Check = Row extends { official_communication_type: string | null } ? true : false;
+    const r: Check = true;
+    expect(r).toBe(true);
+  });
+});
