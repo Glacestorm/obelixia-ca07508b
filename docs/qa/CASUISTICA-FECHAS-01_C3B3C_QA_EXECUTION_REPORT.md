@@ -116,3 +116,11 @@ Si en cualquier momento se detecta riesgo:
 
 **Veredicto:** 8/12 OK automático estricto · 3/12 OK parcial pendientes de firma · 1/12 (SafeMode) pendiente verificación manual completa.
 No se cumple el criterio "12/12 OK con firma" exigido por el checklist.
+
+---
+
+## Nota — Paquete de validación manual (2026-04-27)
+
+Se crea paquete de validación manual en
+`docs/qa/CASUISTICA-FECHAS-01_C3B3C_MANUAL_VALIDATION_PACK.md`.
+**C3B3C2 sigue bloqueado** hasta completar puntos 9–12 con evidencia y firma.
