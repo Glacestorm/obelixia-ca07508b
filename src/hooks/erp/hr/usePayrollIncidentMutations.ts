@@ -122,7 +122,7 @@ export function usePayrollIncidentMutations(params: UsePayrollIncidentMutationsP
           status: 'pending' as const,
           source: 'payroll_dialog' as const,
           notes: input.notes ?? null,
-          metadata: (input.metadata ?? {}) as Record<string, unknown>,
+          metadata: (input.metadata ?? {}) as unknown as never,
           requires_ss_action: input.requires_ss_action ?? false,
           requires_tax_adjustment: input.requires_tax_adjustment ?? false,
           requires_external_filing: input.requires_external_filing ?? false,
