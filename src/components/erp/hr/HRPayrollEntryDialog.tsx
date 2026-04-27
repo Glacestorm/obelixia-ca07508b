@@ -2090,11 +2090,14 @@ export function HRPayrollEntryDialog({
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-[10px]">Días</Label>
+                            <Label className="text-[10px]">
+                              Días {derivedDays.nacimiento != null && <span className="text-success">(calc.)</span>}
+                            </Label>
                             <Input
                               type="number" min={0} step={1}
-                              value={casuistica.nacimientoDias || ''}
+                              value={derivedDays.nacimiento ?? (casuistica.nacimientoDias || '')}
                               onChange={(e) => setCasuistica(c => ({ ...c, nacimientoDias: parseInt(e.target.value) || 0 }))}
+                              disabled={derivedDays.nacimiento != null}
                               className="h-7 text-xs" placeholder="0"
                             />
                           </div>
@@ -2108,6 +2111,43 @@ export function HRPayrollEntryDialog({
                             />
                           </div>
                         </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <Label className="text-[10px]">Hecho causante</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.nacimientoFechaHechoCausante}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoFechaHechoCausante: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Inicio</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.nacimientoFechaInicio}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoFechaInicio: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px]">Fin</Label>
+                            <Input
+                              type="date"
+                              value={casuistica.nacimientoFechaFin}
+                              onChange={(e) => setCasuistica(c => ({ ...c, nacimientoFechaFin: e.target.value }))}
+                              className="h-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                        {derivedDays.nacimientoInverted && (
+                          <p className="text-[10px] text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                          </p>
+                        )}
+                        <p className="text-[9px] text-muted-foreground italic">
+                          Las semanas obligatorias y la prestación INSS requieren validación laboral. Esta fase sólo registra fechas.
+                        </p>
 
                         {/* Cobertura período */}
                         <Separator />
