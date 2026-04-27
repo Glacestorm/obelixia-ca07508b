@@ -278,11 +278,12 @@ describe('HRPersistedIncidentsPanel — C3B3A conflicts panel', () => {
     expect(
       screen.getByTestId('hr-casuistica-conflicts-panel'),
     ).toBeInTheDocument();
-    // C3B3B-paso1: el banner por defecto (local_only) indica fuente aplicada Local.
-    expect(screen.getByTestId('mode-banner-local-only')).toBeInTheDocument();
+    // C3B3C1: default = persisted_priority_preview. Banner es de preview;
+    // el cálculo sigue usando datos locales.
+    expect(screen.getByTestId('mode-banner-preview')).toBeInTheDocument();
     expect(
-      screen.getByTestId('mode-banner-local-only').textContent,
-    ).toMatch(/Fuente aplicada al cálculo: Local/i);
+      screen.getByTestId('mode-banner-preview').textContent,
+    ).toMatch(/cálculo sigue usando datos locales/i);
     expect(screen.getAllByText(/Persistido prioridad/i).length).toBeGreaterThan(0);
   });
 
@@ -329,7 +330,7 @@ describe('HRPersistedIncidentsPanel — C3B3B-paso1 modo flag', () => {
     periodMotivo: 'mes_completo' as const,
   };
 
-  it('propaga el modo por defecto (local_only) al panel de conflictos', () => {
+  it('propaga el modo por defecto (preview C3B3C1) al panel de conflictos', () => {
     render(
       <HRPersistedIncidentsPanel
         {...baseProps}
@@ -361,8 +362,8 @@ describe('HRPersistedIncidentsPanel — C3B3B-paso1 modo flag', () => {
         })}
       />,
     );
-    // Default flag = local_only.
-    expect(screen.getByTestId('mode-banner-local-only')).toBeInTheDocument();
+    // Default flag C3B3C1 = persisted_priority_preview.
+    expect(screen.getByTestId('mode-banner-preview')).toBeInTheDocument();
     // Botones de promover/añadir siguen comportándose normalmente.
     expect(
       screen.getByRole('button', { name: /Promover datos actuales/i }),
