@@ -297,3 +297,58 @@ describe('casuisticaForEngine — C3B3B-paso2 wiring', () => {
     });
   });
 });
+
+/**
+ * C3B3C1 — regresión: con el default actual del flag
+ * (`persisted_priority_preview`) el motor SIGUE recibiendo el payload local
+ * exacto. Esta prueba protege la invariante "preview no cambia cálculo".
+ */
+import { PAYROLL_EFFECTIVE_CASUISTICA_MODE } from '../payrollEffectiveCasuisticaFlag';
+
+describe('casuisticaForEngine — C3B3C1 default flag', () => {
+  it('default flag = persisted_priority_preview (visibilidad sin apply)', () => {
+    expect(PAYROLL_EFFECTIVE_CASUISTICA_MODE).toBe('persisted_priority_preview');
+  });
+
+  it('con default flag, el motor recibe local idéntico aunque haya persistido', () => {
+    const local: LocalCas = { ...baseLocal, pnrDias: 3 };
+    const eff = buildEff({
+      local,
+      persistedLegacy: { pnrDias: 5 },
+      traces: [trace('payroll_incidents', 'pnr')],
+    });
+    const out = buildCasuisticaForEngine({
+      local,
+      effectiveResult: eff,
+      mode: PAYROLL_EFFECTIVE_CASUISTICA_MODE,
+    });
+    // Identidad estricta: en preview el wiring devuelve la misma referencia
+    // local, no un objeto fusionado.
+    expect(out).toBe(local);
+    expect(out.pnrDias).toBe(3);
+  });
+
+  it('rollback a local_only sigue produciendo el mismo payload local', () => {
+    const local: LocalCas = { ...baseLocal, pnrDias: 3 };
+    const eff = buildEff({
+      local,
+      persistedLegacy: { pnrDias: 5 },
+      traces: [trace('payroll_incidents', 'pnr')],
+    });
+    const outPreview = buildCasuisticaForEngine({
+      local,
+      effectiveResult: eff,
+      mode: 'persisted_priority_preview',
+    });
+    const outLocalOnly = buildCasuisticaForEngine({
+      local,
+      effectiveResult: eff,
+      mode: 'local_only',
+    });
+    // Ambos rutean a la misma referencia local: el rollback es no-op
+    // observable a nivel de payload del motor.
+    expect(outPreview).toBe(local);
+    expect(outLocalOnly).toBe(local);
+    expect(outPreview).toBe(outLocalOnly);
+  });
+});
