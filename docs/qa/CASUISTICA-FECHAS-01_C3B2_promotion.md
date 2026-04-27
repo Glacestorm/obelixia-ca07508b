@@ -72,3 +72,85 @@ Fallos restantes en la suite global (marketing, QuotationCalculator, agentApi, w
 - Alternativamente **C3C PLAN** — edición / cancelación / soft-delete de incidencias persistidas.
 
 **Estado final:** ✅ C3B2 CERRADA.
+
+---
+
+## CASUISTICA-FECHAS-01 — Fase C3B2 CERRADA
+
+**Fecha de cierre:** 2026-04-27.
+
+### 1. Resumen
+- Promoción de datos locales implementada.
+- Función pura `buildIncidentsFromLocalCasuistica`.
+- Diálogo `HRPromoteLocalCasuisticaDialog`.
+- Botón **"Promover datos actuales"** en panel persistido.
+- Preview de creadas / duplicadas / omitidas.
+- Confirmación explícita por checkbox.
+- Creación secuencial usando `createPayrollIncident` (C3B1).
+
+### 2. Archivos creados
+- `src/lib/hr/incidenciasPromotion.ts`
+- `src/lib/hr/__tests__/incidenciasPromotion.test.ts`
+- `src/components/erp/hr/casuistica/HRPromoteLocalCasuisticaDialog.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRPromoteLocalCasuisticaDialog.test.tsx`
+- `docs/qa/CASUISTICA-FECHAS-01_C3B2_promotion.md`
+
+### 3. Archivos modificados mínimamente
+- `src/components/erp/hr/casuistica/HRPersistedIncidentsPanel.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRPersistedIncidentsPanel.test.tsx`
+- `src/components/erp/hr/HRPayrollEntryDialog.tsx`
+
+### 4. Confirmaciones
+- Solo `INSERT`.
+- Sin `update`.
+- Sin `upsert`.
+- Sin `delete`.
+- Sin `cancel`.
+- Sin `soft-delete`.
+- Sin version bump.
+- Sin `service_role`.
+- Sin `applied_at`.
+- Sin `applied_to_record_id`.
+- Sin recálculo.
+- Sin cambios en payload del motor.
+- Sin tocar `simulateES`.
+- Sin tocar `liveBridgeCalc`.
+- Sin tocar `derivedDays`.
+- Sin tocar motores payroll.
+- Sin tocar engines FDI / AFI / DELT@.
+- Sin migraciones.
+- Sin RLS.
+- Sin edge functions.
+- Sin dependencias.
+- Sin CI.
+- No limpia campos locales.
+
+### 5. Mapping de promoción
+- PNR local → `incident_type='pnr'`.
+- Reducción local → `incident_type='reduccion_jornada_guarda_legal'`.
+- Atrasos local → `incident_type='atrasos_regularizacion'`.
+- IT / AT local → omitido (módulo IT/AT).
+- Nacimiento / cuidado del menor → omitido (módulo de permisos).
+- Suspensión / desplazamiento → no promovidos automáticamente (no existen en UI local Fase B).
+
+### 6. Tests
+- 40 / 40 tests verdes en archivos relevantes.
+- `incidenciasPromotion`: 14 tests.
+- `HRPromoteLocalCasuisticaDialog`: 7 tests.
+- `HRPersistedIncidentsPanel`: 9 tests.
+- `usePayrollIncidentMutations`: 3 tests.
+- `HRPayrollIncidentFormDialog`: 7 tests.
+
+### 7. Riesgos residuales
+- Posible doble conteo local + persistido (payload del motor sigue siendo el local).
+- Payload del motor aún manual / local.
+- Match de duplicados solo exacto, no detecta solape parcial.
+- `legal_review_required` sin workflow de aprobación.
+- Comunicación oficial solo marcada en metadata, no generada.
+
+### 8. Próximo paso recomendado
+Decidir entre:
+- **A) CASUISTICA-FECHAS-01 Fase C3B3 PLAN** — decisión sobre payload del motor (persistido vs. manual) y mitigación definitiva del doble conteo.
+- **B) CASUISTICA-FECHAS-01 Fase C3C PLAN** — edición / cancelación / soft-delete de incidencias persistidas.
+
+**Estado:** ✅ CASUISTICA-FECHAS-01 Fase C3B2 CERRADA.
