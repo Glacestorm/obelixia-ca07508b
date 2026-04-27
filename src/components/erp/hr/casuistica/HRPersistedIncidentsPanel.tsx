@@ -349,17 +349,19 @@ export function HRPersistedIncidentsPanel({
           </div>
         )}
       </CardContent>
-      <HRPayrollIncidentFormDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        companyId={companyId}
-        employeeId={employeeId}
-        periodYear={periodYear}
-        periodMonth={periodMonth}
-        onCreated={() => {
-          void refetch?.();
-        }}
-      />
+      {createOpen && (
+        <HRPayrollIncidentFormDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          companyId={companyId}
+          employeeId={employeeId}
+          periodYear={periodYear}
+          periodMonth={periodMonth}
+          onCreated={() => {
+            void refetch?.();
+          }}
+        />
+      )}
     </Card>
   );
 }
