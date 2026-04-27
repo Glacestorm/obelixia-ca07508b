@@ -48,6 +48,7 @@ import { isSafeReferenceConcept } from './safeMode/PayrollSafeModeBlock';
 import { PayrollSafeModeSaveDialog } from './safeMode/PayrollSafeModeSaveDialog';
 import { HRContractFormDialog } from './HRContractFormDialog';
 import { HREmployeeFormDialog } from './HREmployeeFormDialog';
+import { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
 import { useAuth } from '@/hooks/useAuth';
 
 interface PayrollConcept {
