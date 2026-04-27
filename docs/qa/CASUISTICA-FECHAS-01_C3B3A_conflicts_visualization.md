@@ -78,3 +78,67 @@ seguridad, snapshot tests de regresión y bloqueo opcional de cierre cuando
 
 ## Cierre
 C3B3A queda **entregado** y operativo como vista informativa.
+
+---
+
+## CASUISTICA-FECHAS-01 — Fase C3B3A CERRADA
+
+**Fecha de cierre:** 2026-04-27
+
+### 1. Resumen
+- Helper puro `buildEffectiveCasuistica` creado.
+- Panel `HRCasuisticaConflictsPanel` creado.
+- Integración visual en `HRPersistedIncidentsPanel`.
+- Detección de conflictos local vs persistido operativa.
+- Fuente recomendada visible por campo.
+- `unmapped` mostrado como "No aplicado al motor".
+- Cálculo real de nómina **todavía sin cambios**.
+
+### 2. Archivos creados
+- `src/lib/hr/effectiveCasuistica.ts`
+- `src/lib/hr/__tests__/effectiveCasuistica.test.ts`
+- `src/components/erp/hr/casuistica/HRCasuisticaConflictsPanel.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRCasuisticaConflictsPanel.test.tsx`
+- `docs/qa/CASUISTICA-FECHAS-01_C3B3A_conflicts_visualization.md`
+
+### 3. Archivos modificados mínimamente
+- `src/components/erp/hr/casuistica/HRPersistedIncidentsPanel.tsx`
+- `src/components/erp/hr/casuistica/__tests__/HRPersistedIncidentsPanel.test.tsx`
+
+### 4. Confirmaciones
+- ✅ Sin tocar `simulateES`.
+- ✅ Sin tocar `salaryNormalizer.ts`.
+- ✅ Sin tocar `contractSalaryParametrization.ts`.
+- ✅ Sin tocar `agreementSalaryResolver.ts`.
+- ✅ Sin tocar motores payroll.
+- ✅ Sin cambiar payload del motor.
+- ✅ Sin insert/update/upsert/delete.
+- ✅ Sin service_role.
+- ✅ Sin `applied_at`.
+- ✅ Sin `applied_to_record_id`.
+- ✅ Sin recálculos.
+- ✅ Sin FDI/AFI/DELT@.
+- ✅ Sin migraciones.
+- ✅ Sin RLS.
+- ✅ Sin edge functions.
+- ✅ Sin dependencias.
+- ✅ Sin CI.
+
+### 5. Tests
+- **33/33 tests verdes.**
+- `effectiveCasuistica`: 16 tests.
+- `HRCasuisticaConflictsPanel`: 6 tests.
+- `HRPersistedIncidentsPanel`: 11 tests.
+
+### 6. Riesgos residuales
+- Divergencia visual entre "fuente propuesta" y cálculo real hasta C3B3B.
+- Override manual modelado en helper pero sin UI funcional aún.
+- `sum_explicit` reservado para futuro; no debe activarse sin validación legal.
+- El motor de nómina sigue consumiendo solo datos locales.
+
+### 7. Próximo paso recomendado
+**CASUISTICA-FECHAS-01 Fase C3B3B PLAN** — conexión de `effectiveCasuistica`
+al motor (`simulateES`) con feature flag de seguridad, QA de regresión,
+snapshot tests y bloqueo opcional de cierre cuando `blockingForClose=true`.
+
+**Estado final:** Fase C3B3A **CERRADA**.
