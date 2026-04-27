@@ -142,3 +142,73 @@ describe('HRPersistedIncidentsPanel — C3A read-only', () => {
     expect(container.firstChild).toBeNull();
   });
 });
+
+describe('HRPersistedIncidentsPanel — C3B2 promoción local', () => {
+  const fullCasuistica = {
+    enabled: true,
+    pnrDias: 3,
+    pnrFechaDesde: '2026-03-05',
+    pnrFechaHasta: '2026-03-07',
+    itAtDias: 0,
+    itAtFechaDesde: '',
+    itAtFechaHasta: '',
+    itAtTipo: '' as const,
+    reduccionJornadaPct: 0,
+    reduccionFechaDesde: '',
+    reduccionFechaHasta: '',
+    atrasosITImporte: 0,
+    atrasosITPeriodo: '',
+    atrasosFechaDesde: '',
+    atrasosFechaHasta: '',
+    nacimientoTipo: 'paternidad' as const,
+    nacimientoDias: 0,
+    nacimientoImporte: 0,
+    nacimientoFechaInicio: '',
+    nacimientoFechaFin: '',
+    nacimientoFechaHechoCausante: '',
+    periodFechaDesde: '',
+    periodFechaHasta: '',
+    periodDiasNaturales: 30,
+    periodDiasEfectivos: 30,
+    periodMotivo: 'mes_completo' as const,
+  };
+
+  const emptyCasuistica = { ...fullCasuistica, pnrDias: 0, pnrFechaDesde: '', pnrFechaHasta: '' };
+
+  it('botón "Promover datos actuales" aparece y se habilita si hay datos promovibles', () => {
+    render(
+      <HRPersistedIncidentsPanel
+        {...baseProps}
+        useIncidenciasHook={makeHook()}
+        localCasuistica={fullCasuistica}
+      />,
+    );
+    const btn = screen.getByRole('button', { name: /Promover datos actuales/i });
+    expect(btn).toBeInTheDocument();
+    expect(btn).not.toBeDisabled();
+  });
+
+  it('botón "Promover datos actuales" está deshabilitado si no hay datos promovibles', () => {
+    render(
+      <HRPersistedIncidentsPanel
+        {...baseProps}
+        useIncidenciasHook={makeHook()}
+        localCasuistica={emptyCasuistica}
+      />,
+    );
+    const btn = screen.getByRole('button', { name: /Promover datos actuales/i });
+    expect(btn).toBeDisabled();
+  });
+
+  it('botón "Promover datos actuales" no se renderiza si no hay localCasuistica', () => {
+    render(
+      <HRPersistedIncidentsPanel
+        {...baseProps}
+        useIncidenciasHook={makeHook()}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: /Promover datos actuales/i }),
+    ).not.toBeInTheDocument();
+  });
+});
