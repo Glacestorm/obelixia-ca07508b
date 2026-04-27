@@ -750,7 +750,9 @@ export function HRPayrollEntryDialog({
         complementos[persistCode] = e.amount;
       });
       const horasExtra = earnings.find(e => e.code === 'HORAS_EXTRA')?.amount || 0;
-      const cas = casuistica;
+      // CASUISTICA-FECHAS-01 — Fase C3B3B-paso2: ver comentario en el effect
+      // de live calc. En default (`local_only`) coincide con `casuistica`.
+      const cas = casuisticaForEngine;
       const useCas = cas.enabled;
       const nacimientoTramos = useCas && (cas.nacimientoDias > 0 || cas.nacimientoImporte > 0) && cas.periodFechaDesde && cas.periodFechaHasta
         ? [{
@@ -797,7 +799,7 @@ export function HRPayrollEntryDialog({
     } finally {
       setPreviewLoading(false);
     }
-  }, [earnings, selectedEmployeeId, simulateES, casuistica, derivedDays, grupoCotizacion]);
+  }, [earnings, selectedEmployeeId, simulateES, casuistica, casuisticaForEngine, derivedDays, grupoCotizacion]);
 
   const updateConcept = (id: string, value: number) => {
     if (earnings.find(e => e.id === id)) {
