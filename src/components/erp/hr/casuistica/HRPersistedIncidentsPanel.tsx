@@ -94,6 +94,8 @@ type Row = {
   from: string | null;
   to: string | null;
   flags: IncidentStatusFlags;
+  /** Sólo presente si source==='payroll_incidents'. */
+  payrollIncident?: PayrollIncidentRow;
 };
 
 function fmtDate(d: string | null | undefined): string {
@@ -125,6 +127,7 @@ function rowsFrom(
       requires_tax_adjustment: r.requires_tax_adjustment ?? null,
       official_communication_type: r.official_communication_type ?? null,
     },
+    payrollIncident: r,
   }));
   const b: Row[] = it.map((r) => ({
     key: `i:${r.id}`,
