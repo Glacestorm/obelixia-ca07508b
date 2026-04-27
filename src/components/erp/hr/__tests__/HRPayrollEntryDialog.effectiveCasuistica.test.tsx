@@ -37,13 +37,12 @@ describe('HRPayrollEntryDialog — wiring effectiveCasuistica (C3B3B-paso2)', ()
     expect(typeof mod.default).toBe('function');
   });
 
-  it('el wiring por modo está cubierto en effectiveCasuistica.engineWiring.test.ts', async () => {
-    // Asserts de meta-cobertura: confirmamos la presencia del archivo de
-    // tests del wiring, evitando que se borre por accidente.
-    const wiringTests = await import(
-      '@/lib/hr/__tests__/effectiveCasuistica.engineWiring.test'
-    ).catch(() => null);
-    // El archivo exporta `describe` registrados; basta con que se cargue.
-    expect(wiringTests).not.toBeNull();
+  it('el helper isEffectiveCasuisticaApplyEnabled distingue apply de los demás modos', async () => {
+    const { isEffectiveCasuisticaApplyEnabled } = await import(
+      '@/lib/hr/payrollEffectiveCasuisticaFlag'
+    );
+    expect(isEffectiveCasuisticaApplyEnabled('local_only')).toBe(false);
+    expect(isEffectiveCasuisticaApplyEnabled('persisted_priority_preview')).toBe(false);
+    expect(isEffectiveCasuisticaApplyEnabled('persisted_priority_apply')).toBe(true);
   });
 });
