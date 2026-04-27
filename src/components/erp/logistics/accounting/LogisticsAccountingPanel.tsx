@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 interface PendingEntry {
   shipment_id: string;
@@ -187,33 +188,35 @@ export function LogisticsAccountingPanel() {
 
     try {
       if (editingRule) {
+        const updatePayload: TablesUpdate<'erp_logistics_accounting_rules'> = {
+          rule_name: ruleForm.rule_name,
+          rule_type: ruleForm.operation_type,
+          debit_account_code: ruleForm.debit_account_code,
+          credit_account_code: ruleForm.credit_account_code,
+          auto_post: ruleForm.auto_post,
+          is_active: ruleForm.is_active,
+          updated_at: new Date().toISOString(),
+        };
         const { error } = await supabase
           .from('erp_logistics_accounting_rules')
-          .update({
-            rule_name: ruleForm.rule_name,
-            operation_type: ruleForm.operation_type,
-            debit_account_code: ruleForm.debit_account_code,
-            credit_account_code: ruleForm.credit_account_code,
-            auto_post: ruleForm.auto_post,
-            is_active: ruleForm.is_active,
-            updated_at: new Date().toISOString()
-          })
+          .update(updatePayload)
           .eq('id', editingRule.id);
 
         if (error) throw error;
         toast.success('Regla actualizada');
       } else {
+        const insertPayload: TablesInsert<'erp_logistics_accounting_rules'> = {
+          company_id: currentCompany.id,
+          rule_name: ruleForm.rule_name,
+          rule_type: ruleForm.operation_type,
+          debit_account_code: ruleForm.debit_account_code,
+          credit_account_code: ruleForm.credit_account_code,
+          auto_post: ruleForm.auto_post,
+          is_active: ruleForm.is_active,
+        };
         const { error } = await supabase
           .from('erp_logistics_accounting_rules')
-          .insert([{
-            company_id: currentCompany.id,
-            rule_name: ruleForm.rule_name,
-            rule_type: ruleForm.operation_type,
-            debit_account_code: ruleForm.debit_account_code,
-            credit_account_code: ruleForm.credit_account_code,
-            auto_post: ruleForm.auto_post,
-            is_active: ruleForm.is_active
-          }]);
+          .insert([insertPayload]);
 
         if (error) throw error;
         toast.success('Regla creada');
