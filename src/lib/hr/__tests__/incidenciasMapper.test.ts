@@ -233,7 +233,7 @@ describe('mapIncidenciasToLegacyCasuistica — Nacimiento', () => {
           leave_type_code: 'PAT',
           start_date: '2026-03-01',
           end_date: '2026-03-15',
-          workflow_status: 'pending',
+          workflow_status: 'pending_hr',
           status: 'pending',
         }),
       ],
