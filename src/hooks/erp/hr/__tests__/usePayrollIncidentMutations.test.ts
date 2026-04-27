@@ -13,7 +13,7 @@ const insertMock = vi.fn();
 const selectMock = vi.fn();
 const singleMock = vi.fn();
 
-const fromMock: ReturnType<typeof vi.fn> = vi.fn(() => ({
+const fromMock = vi.fn((_table: string) => ({
   insert: insertMock,
 }));
 
