@@ -51,6 +51,13 @@ import { HREmployeeFormDialog } from './HREmployeeFormDialog';
 import { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
 import { useAuth } from '@/hooks/useAuth';
 import { HRPersistedIncidentsPanel } from './casuistica/HRPersistedIncidentsPanel';
+import {
+  PAYROLL_EFFECTIVE_CASUISTICA_MODE,
+  isEffectiveCasuisticaApplyEnabled,
+  type PayrollEffectiveCasuisticaMode,
+} from '@/lib/hr/payrollEffectiveCasuisticaFlag';
+import { buildEffectiveCasuistica } from '@/lib/hr/effectiveCasuistica';
+import { useHRPayrollIncidencias } from '@/hooks/erp/hr/useHRPayrollIncidencias';
 
 interface PayrollConcept {
   id: string;
