@@ -212,3 +212,85 @@ describe('HRPersistedIncidentsPanel — C3B2 promoción local', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe('HRPersistedIncidentsPanel — C3B3A conflicts panel', () => {
+  const fullCasuistica = {
+    enabled: true,
+    pnrDias: 3,
+    pnrFechaDesde: '2026-03-05',
+    pnrFechaHasta: '2026-03-07',
+    itAtDias: 0,
+    itAtFechaDesde: '',
+    itAtFechaHasta: '',
+    itAtTipo: '' as const,
+    reduccionJornadaPct: 0,
+    reduccionFechaDesde: '',
+    reduccionFechaHasta: '',
+    atrasosITImporte: 0,
+    atrasosITPeriodo: '',
+    atrasosFechaDesde: '',
+    atrasosFechaHasta: '',
+    nacimientoTipo: 'paternidad' as const,
+    nacimientoDias: 0,
+    nacimientoImporte: 0,
+    nacimientoFechaInicio: '',
+    nacimientoFechaFin: '',
+    nacimientoFechaHechoCausante: '',
+    periodFechaDesde: '',
+    periodFechaHasta: '',
+    periodDiasNaturales: 30,
+    periodDiasEfectivos: 30,
+    periodMotivo: 'mes_completo' as const,
+  };
+
+  it('renderiza panel de conflictos cuando coexisten PNR local y persistido', () => {
+    render(
+      <HRPersistedIncidentsPanel
+        {...baseProps}
+        localCasuistica={fullCasuistica}
+        useIncidenciasHook={makeHook({
+          payrollIncidents: [
+            {
+              id: 'p-pnr',
+              incident_type: 'pnr',
+              applies_from: '2026-03-05',
+              applies_to: '2026-03-07',
+              status: 'pending',
+            } as any,
+          ],
+          mapping: {
+            legacy: { pnrDias: 3 },
+            flags: { pnrActiva: true },
+            traces: [
+              {
+                source: 'payroll_incidents',
+                recordId: 'p-pnr',
+                incidentType: 'pnr',
+                contributedDays: 3,
+              },
+            ],
+            unmapped: [],
+            legalReviewRequired: false,
+          },
+        })}
+      />,
+    );
+    expect(
+      screen.getByTestId('hr-casuistica-conflicts-panel'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Vista informativa/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Persistido prioridad/i).length).toBeGreaterThan(0);
+  });
+
+  it('NO renderiza panel de conflictos cuando no hay localCasuistica', () => {
+    render(
+      <HRPersistedIncidentsPanel
+        {...baseProps}
+        useIncidenciasHook={makeHook()}
+      />,
+    );
+    expect(
+      screen.queryByTestId('hr-casuistica-conflicts-panel'),
+    ).not.toBeInTheDocument();
+  });
+});
