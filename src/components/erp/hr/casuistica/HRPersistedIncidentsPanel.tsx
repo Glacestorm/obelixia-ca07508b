@@ -44,6 +44,7 @@ import { HRPromoteLocalCasuisticaDialog } from './HRPromoteLocalCasuisticaDialog
 import { buildIncidentsFromLocalCasuistica } from '@/lib/hr/incidenciasPromotion';
 import { buildEffectiveCasuistica } from '@/lib/hr/effectiveCasuistica';
 import { HRCasuisticaConflictsPanel } from './HRCasuisticaConflictsPanel';
+import { PAYROLL_EFFECTIVE_CASUISTICA_MODE } from '@/lib/hr/payrollEffectiveCasuisticaFlag';
 import type {
   CasuisticaState,
   CasuisticaDatesExtension,
@@ -270,6 +271,7 @@ export function HRPersistedIncidentsPanel({
           <HRCasuisticaConflictsPanel
             result={effectivePreview}
             mode="persisted_priority"
+            effectiveMode={PAYROLL_EFFECTIVE_CASUISTICA_MODE}
           />
         )}
 
