@@ -1858,30 +1858,123 @@ export function HRPayrollEntryDialog({
                     {casuistica.enabled && (
                       <>
                         <Separator />
-                        {/* PNR + IT/AT días */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <Briefcase className="h-2.5 w-2.5" />PNR (días)
-                            </Label>
-                            <Input
-                              type="number" min={0} step={1}
-                              value={casuistica.pnrDias || ''}
-                              onChange={(e) => setCasuistica(c => ({ ...c, pnrDias: parseInt(e.target.value) || 0 }))}
-                              className="h-7 text-xs" placeholder="0"
-                            />
+                        {/* CASUISTICA-FECHAS-01 — PNR (Permiso No Retribuido) */}
+                        <div className="space-y-1.5 p-2 rounded-md border border-border/60 bg-muted/10">
+                          <p className="text-[10px] font-medium uppercase flex items-center gap-1 text-muted-foreground">
+                            <Briefcase className="h-2.5 w-2.5" />PNR — Permiso no retribuido
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-[10px]">Desde</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.pnrFechaDesde}
+                                onChange={(e) => setCasuistica(c => ({ ...c, pnrFechaDesde: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">Hasta</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.pnrFechaHasta}
+                                onChange={(e) => setCasuistica(c => ({ ...c, pnrFechaHasta: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">
+                                Días {derivedDays.pnr != null && <span className="text-success">(calc.)</span>}
+                              </Label>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={derivedDays.pnr ?? (casuistica.pnrDias || '')}
+                                onChange={(e) => setCasuistica(c => ({ ...c, pnrDias: parseInt(e.target.value) || 0 }))}
+                                disabled={derivedDays.pnr != null}
+                                className="h-7 text-xs" placeholder="0"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <Label className="text-[10px] flex items-center gap-1">
-                              <Stethoscope className="h-2.5 w-2.5" />IT/AT 75% (días)
-                            </Label>
-                            <Input
-                              type="number" min={0} step={1}
-                              value={casuistica.itAtDias || ''}
-                              onChange={(e) => setCasuistica(c => ({ ...c, itAtDias: parseInt(e.target.value) || 0 }))}
-                              className="h-7 text-xs" placeholder="0"
-                            />
+                          {derivedDays.pnrInverted && (
+                            <p className="text-[10px] text-destructive flex items-center gap-1">
+                              <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                            </p>
+                          )}
+                          {derivedDays.pnr != null && (
+                            <p className="text-[9px] text-muted-foreground italic">
+                              Días calculados automáticamente desde fechas. Para editar manualmente, vacía las fechas.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* CASUISTICA-FECHAS-01 — IT / AT */}
+                        <div className="space-y-1.5 p-2 rounded-md border border-border/60 bg-muted/10">
+                          <p className="text-[10px] font-medium uppercase flex items-center gap-1 text-muted-foreground">
+                            <Stethoscope className="h-2.5 w-2.5" />IT / AT — Incapacidad temporal / accidente
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="col-span-2">
+                              <Label className="text-[10px]">Tipo</Label>
+                              <Select
+                                value={casuistica.itAtTipo || 'unset'}
+                                onValueChange={(v) => setCasuistica(c => ({ ...c, itAtTipo: (v === 'unset' ? '' : v) as CasuisticaDatesExtension['itAtTipo'] }))}
+                              >
+                                <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Sin especificar" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unset">Sin especificar</SelectItem>
+                                  <SelectItem value="enfermedad_comun">Enfermedad común</SelectItem>
+                                  <SelectItem value="accidente_no_laboral">Accidente no laboral</SelectItem>
+                                  <SelectItem value="accidente_trabajo">Accidente de trabajo</SelectItem>
+                                  <SelectItem value="enfermedad_profesional">Enfermedad profesional</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-[10px]">Desde</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.itAtFechaDesde}
+                                onChange={(e) => setCasuistica(c => ({ ...c, itAtFechaDesde: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">Hasta</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.itAtFechaHasta}
+                                onChange={(e) => setCasuistica(c => ({ ...c, itAtFechaHasta: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">
+                                Días 75% {derivedDays.itAt != null && <span className="text-success">(calc.)</span>}
+                              </Label>
+                              <Input
+                                type="number" min={0} step={1}
+                                value={derivedDays.itAt ?? (casuistica.itAtDias || '')}
+                                onChange={(e) => setCasuistica(c => ({ ...c, itAtDias: parseInt(e.target.value) || 0 }))}
+                                disabled={derivedDays.itAt != null}
+                                className="h-7 text-xs" placeholder="0"
+                              />
+                            </div>
+                          </div>
+                          {derivedDays.itAtInverted && (
+                            <p className="text-[10px] text-destructive flex items-center gap-1">
+                              <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                            </p>
+                          )}
+                          {derivedDays.itAt != null && (
+                            <p className="text-[9px] text-muted-foreground italic">
+                              Días calculados automáticamente desde fechas. Para editar manualmente, vacía las fechas.
+                            </p>
+                          )}
+                          <p className="text-[9px] text-muted-foreground italic">
+                            Este registro no genera aún comunicación oficial FDI/AFI/DELT@ en esta fase.
+                          </p>
                         </div>
 
                         {/* Reducción jornada */}
@@ -1893,6 +1986,34 @@ export function HRPayrollEntryDialog({
                             onChange={(e) => setCasuistica(c => ({ ...c, reduccionJornadaPct: parseFloat(e.target.value) || 0 }))}
                             className="h-7 text-xs" placeholder="0"
                           />
+                          <div className="grid grid-cols-2 gap-2 mt-1.5">
+                            <div>
+                              <Label className="text-[10px]">Desde</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.reduccionFechaDesde}
+                                onChange={(e) => setCasuistica(c => ({ ...c, reduccionFechaDesde: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px]">Hasta</Label>
+                              <Input
+                                type="date"
+                                value={casuistica.reduccionFechaHasta}
+                                onChange={(e) => setCasuistica(c => ({ ...c, reduccionFechaHasta: e.target.value }))}
+                                className="h-7 text-xs"
+                              />
+                            </div>
+                          </div>
+                          {derivedDays.reduccionInverted && (
+                            <p className="text-[10px] text-destructive flex items-center gap-1 mt-1">
+                              <AlertTriangle className="h-2.5 w-2.5" />Fecha fin anterior a fecha inicio
+                            </p>
+                          )}
+                          <p className="text-[9px] text-muted-foreground italic mt-1">
+                            Pendiente de validación legal si afecta a guarda legal / bases de cotización.
+                          </p>
                         </div>
 
                         {/* Atrasos IT */}
