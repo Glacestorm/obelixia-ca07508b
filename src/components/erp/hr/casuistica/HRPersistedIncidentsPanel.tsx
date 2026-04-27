@@ -108,7 +108,7 @@ function rowsFrom(
   const c: Row[] = leave.map((r) => ({
     key: `l:${r.id}`,
     source: 'leave_requests',
-    type: r.leave_type ?? null,
+    type: r.leave_type_code ?? null,
     from: r.start_date ?? null,
     to: r.end_date ?? null,
     flags: {
