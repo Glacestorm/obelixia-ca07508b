@@ -78,6 +78,15 @@ Mirror of `HR_CURRENT_STATE_VERIFICATION.md` § 4.3. Any function that uses
 `SUPABASE_SERVICE_ROLE_KEY` MUST appear in the `DOCUMENTED_EXCEPTIONS` map of
 `scripts/audit/hr-edge-functions-audit.ts` AND in the source of truth.
 
+Only functions that genuinely use `SUPABASE_SERVICE_ROLE_KEY`, wire an
+`x-internal-secret` dual path, or act as a documented cron / global-catalog /
+seed-demo / anonymous-channel surface remain on this list. Functions that
+merely consume the post-validated `adminClient` returned by
+`validateTenantAccess()` are **not** listed here — they are classified by
+their real auth helper (typically `validateTenantAccess`). The static auditor
+enforces the same rule (`fileBindsServiceRole` heuristic) to avoid false
+positives on the `admin-client-tenant-table` rule.
+
 | Function | Type | Justification |
 |---|---|---|
 | `erp-hr-agreement-updater` | global-catalog/cron | BOE catalog without tenant RLS; cron path has no JWT. |
@@ -89,6 +98,13 @@ Mirror of `HR_CURRENT_STATE_VERIFICATION.md` § 4.3. Any function that uses
 | `legal-ai-advisor` | internal-path | `x-internal-secret` dual-path. |
 | `erp-legal-knowledge-loader` | global-catalog | Admin-gated catalog loader. |
 | `legal-knowledge-sync` | global-catalog/cron | Cron upserts; admin-gated user path. |
+
+> **Removed in this revision** (2026-04-28 cleanup): `erp-hr-compliance-enterprise`,
+> `erp-hr-enterprise-admin`, `erp-hr-innovation-discovery`. These functions do
+> not reference `SUPABASE_SERVICE_ROLE_KEY` in their own source — they consume
+> the post-validated `adminClient` from `validateTenantAccess()`. They are now
+> classified as `validateTenantAccess` and no longer trigger
+> `exception-without-sr` warnings.
 
 Adding a new function with `SERVICE_ROLE_KEY` requires:
 
@@ -146,3 +162,9 @@ documented invariants that the team must preserve across changes.
 ## 7. Changelog
 
 - **2026-04-28** — Initial version. Implements static + RLS audits and CI guidance.
+- **2026-04-28** — Cleanup: removed three post-validated functions from
+  `DOCUMENTED_EXCEPTIONS`; tightened `admin-client-tenant-table` heuristic
+  to require in-file `SUPABASE_SERVICE_ROLE_KEY` reference; added
+  `cron/service detected` and `x-internal-secret detected` summary metrics
+  and a `Cron/Service` column in the per-function classification table.
+  Audit remains 🟢 GREEN with 0 FAILs / 0 WARNs over 68 functions.
