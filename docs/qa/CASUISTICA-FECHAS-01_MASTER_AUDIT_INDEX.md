@@ -49,6 +49,8 @@
 | **C3B3C1** | Default operativo `persisted_priority_preview` | ✅ Cerrada | `CASUISTICA-FECHAS-01_C3B3C1_preview_default.md` | `src/lib/hr/payrollEffectiveCasuisticaFlag.ts` | `payrollEffectiveCasuisticaFlag.test` | Cálculo real sigue local | QA legal/manual C3B3C |
 | **QA legal/manual C3B3C** | Checklist 12 puntos + execution report + manual pack previo a C3B3C2 | 🟡 En espera de firma | `CASUISTICA-FECHAS-01_C3B3C_QA_LEGAL_MANUAL_CHECKLIST.md`, `CASUISTICA-FECHAS-01_C3B3C_QA_EXECUTION_REPORT.md`, `CASUISTICA-FECHAS-01_C3B3C_MANUAL_VALIDATION_PACK.md` | 62/62 verdes (auto) — puntos 9–12 manuales pendientes | Puntos 9 (unmapped), 10 (legal_review), 11 (SafeMode), 12 (oficiales) sin firma | Ejecución manual + firma |
 | **C3C** | Edición y cancelación segura (soft-delete) de incidencias persistidas no aplicadas | ✅ Cerrada | `CASUISTICA-FECHAS-01_C3C_edit_cancel.md` | `usePayrollIncidentMutations.ts` (update/cancel), `HRPayrollIncidentFormDialog.tsx` (modo edit), `HRPersistedIncidentsPanel.tsx`, `HRCancelIncidentDialog.tsx` | `usePayrollIncidentMutations.test`, `casuisticaNoPhysicalDelete.test` (estático) — 32/32 verdes | Last-write-wins; no se editan aplicadas; cambiar `incident_type` requiere cancelar+crear | Bloqueada hasta firma manual pack |
+| **C3C-UX** | Visual polish del modal `HRPayrollIncidentFormDialog`: cabecera, contraste, banners accesibles, asteriscos rojos en obligatorios y bloque de errores agrupado | ✅ Cerrada | `CASUISTICA-FECHAS-01_C3C_visual_polish_modal.md` | `src/components/erp/hr/casuistica/HRPayrollIncidentFormDialog.tsx`, `src/components/erp/hr/casuistica/__tests__/HRPayrollIncidentFormDialog.test.tsx` | Tests visuales del modal ampliados (suite C3C visual polish, 7 asserts) | Ninguno funcional; cambio visual/accesibilidad. Motor y cálculo intactos | Ninguno; bloque cerrado |
+| **WIZ-PLAN** | Diseño documental de guía asistida para nóminas con convenio dudoso, conceptos no claros, SafeMode o necesidad de intervención humana | 📋 PLAN cerrado — no implementado | `RRHH_NOMINA_GUIA_ASISTIDA_CONVENIO_DUDOSO_PLAN.md` | Documento Markdown únicamente | No aplica todavía; tests futuros definidos en el plan | Guía no implementada; requiere fase WIZ-A separada; no sustituye revisión humana ni asesoría legal/laboral | WIZ-A PLAN/BUILD separado, solo con aprobación explícita |
 | **C3B3C2** | Activación controlada de `persisted_priority_apply` | ⛔ BLOQUEADA | (sin documento aún) | (no aplica) | (no aplica) | Apply afectaría payload real al motor → requiere QA 12/12 firmado | Completar y firmar manual pack |
 | **C4** | Recálculo + aplicación a nómina + locking optimista por `version` + edición/cancelación de aplicadas con flujo de reverso | ⛔ FUTURA | (sin documento aún) | (no aplica) | (no aplica) | Requiere C3B3C2 cerrada y validada | C3B3C2 firmada |
 
@@ -140,6 +142,18 @@ Componentes operativos (sin cambios funcionales en este cierre):
 - **Bloqueos de UI:** filas con `applied_at != null` desactivan
   Editar/Cancelar; filas con `deleted_at != null` aparecen tachadas/
   badgeadas.
+- **Modal `HRPayrollIncidentFormDialog` visualmente corregido (C3C-UX):**
+  - cabecera sticky no truncada,
+  - banners accesibles (ámbar para legal permanente, sky para info por
+    tipo, red para excluidos / bloqueo),
+  - campos obligatorios con asterisco rojo (`<Req/>`) y `aria-required`,
+  - bloque de errores agrupado con cabecera "Revisa los siguientes
+    campos:".
+- **Guía asistida de nómina con convenio dudoso (WIZ-PLAN):**
+  - solo diseñada,
+  - no implementada,
+  - prevista como wizard futuro (`HRPayrollManualGuidanceWizard`,
+    Pasos 1–10, fases WIZ-A → WIZ-E).
 
 ---
 
@@ -187,6 +201,12 @@ Sin modificaciones en este cierre. Estado heredado de C1:
 - **Última milla oficial pendiente** (fase D futura): comunicaciones
   oficiales con `isRealSubmissionBlocked` siempre activo hasta firma
   legal/operativa.
+- **Guía asistida (WIZ-PLAN) todavía no existe en UI.** El documento es
+  diseño cerrado; no hay componente, hook ni tipos creados.
+- La implementación futura debe hacerse **por fases WIZ-A → WIZ-E**, sin
+  saltar etapas.
+- La guía **no debe activar comunicaciones oficiales** ni sustituir el
+  criterio humano / la asesoría legal/laboral.
 
 ---
 
@@ -222,6 +242,16 @@ Sin modificaciones en este cierre. Estado heredado de C1:
    `isRealSubmissionBlocked() === true` hasta validación legal/operativa
    independiente.
 
+**Opción independiente (no bloqueante del flujo principal):**
+
+- **WIZ-A PLAN/BUILD:** implementar solo Pasos 1–3 de la guía asistida
+  (`HRPayrollManualGuidanceWizard`), sin BD, sin tocar motor de nómina y
+  sin comunicaciones oficiales. Snapshot in-memory. Reusa el helper
+  `<Req/>` de la fase C3C-UX.
+- **Prioridad:** mantener prioridad superior del manual validation pack
+  C3B3C puntos 9–12 antes de avanzar a C3B3C2. WIZ-A es pista paralela
+  opcional, no condiciona ni desbloquea C3B3C2.
+
 ---
 
 ## 10. Anexo de archivos
@@ -241,6 +271,10 @@ Sin modificaciones en este cierre. Estado heredado de C1:
 - `docs/qa/CASUISTICA-FECHAS-01_C3B3C_QA_EXECUTION_REPORT.md`
 - `docs/qa/CASUISTICA-FECHAS-01_C3B3C_MANUAL_VALIDATION_PACK.md`
 - `docs/qa/CASUISTICA-FECHAS-01_C3C_edit_cancel.md`
+
+**Documentos QA adicionales (anexos cerrados posteriores):**
+- `docs/qa/CASUISTICA-FECHAS-01_C3C_visual_polish_modal.md`
+- `docs/qa/RRHH_NOMINA_GUIA_ASISTIDA_CONVENIO_DUDOSO_PLAN.md`
 
 ### 10.2 Componentes UI
 - `src/components/erp/hr/HRPayrollEntryDialog.tsx`
@@ -320,3 +354,16 @@ Sin modificaciones en este cierre. Estado heredado de C1:
 - ❌ No se generaron FDI / AFI / DELT@ ni comunicaciones oficiales.
 - ❌ No se marcó C3B3C2 como desbloqueada.
 - ❌ No se firmó el manual validation pack.
+
+---
+
+## Nota de actualización (anexos)
+
+Tras el cierre del índice maestro inicial, se incorporan como anexos
+cerrados el pulido visual del modal de incidencias
+(`CASUISTICA-FECHAS-01_C3C_visual_polish_modal.md`, ✅ CERRADO) y el
+plan de guía asistida para convenios dudosos
+(`RRHH_NOMINA_GUIA_ASISTIDA_CONVENIO_DUDOSO_PLAN.md`, 📋 PLAN CERRADO —
+NO IMPLEMENTADO). Ninguno altera el cálculo, el motor, los flags, la
+BD, la RLS ni las comunicaciones oficiales. `persisted_priority_apply`
+sigue **OFF** y **C3B3C2 sigue BLOQUEADA**.
