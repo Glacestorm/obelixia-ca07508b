@@ -459,3 +459,192 @@ export function computeVPTSnapshot(hook: any): VPTSnapshot {
 }
 
 export default useHRCommandCenter;
+
+// ── Legal snapshot computation ──────────────────────────────────────────────
+
+const LEGAL_DISCLAIMER =
+  'Lectura interna de cumplimiento. Requiere revisión laboral/legal antes de uso externo.';
+
+/** Defensive bullet definitions: we look for code/name/category matches. */
+const LEGAL_BULLET_DEFS: Array<{
+  key: string;
+  label: string;
+  patterns: RegExp[];
+}> = [
+  { key: 'whistleblowing', label: 'Canal denuncias', patterns: [/canal.*denuncia/i, /whistleblow/i, /informant/i, /ley\s*2\/?2023/i] },
+  { key: 'equality_plan', label: 'Plan de igualdad', patterns: [/plan.*igualdad/i, /igualdad/i, /equality/i] },
+  { key: 'pay_registry', label: 'Registro retributivo', patterns: [/registro.*retributiv/i, /pay.*registry/i, /retribuci/i] },
+  { key: 'pay_audit', label: 'Auditoría retributiva', patterns: [/auditor[ií]a.*retributiv/i, /pay.*audit/i] },
+  { key: 'digital_disconnect', label: 'Desconexión digital', patterns: [/desconexi[oó]n.*digital/i, /digital.*disconnect/i] },
+  { key: 'remote_work', label: 'Teletrabajo', patterns: [/teletrabajo/i, /remote.*work/i, /trabajo.*distancia/i] },
+  { key: 'prl', label: 'PRL / documentación preventiva', patterns: [/\bprl\b/i, /prevenci[oó]n.*riesgos/i, /occupational.*risk/i, /seguridad.*salud/i] },
+];
+
+function emptyLegalSnapshot(): LegalSnapshot {
+  return {
+    level: 'gray',
+    score: null,
+    label: 'Sin datos',
+    hasData: false,
+    blockers: 0,
+    warnings: 0,
+    disclaimer: LEGAL_DISCLAIMER,
+    criticalAlerts: null,
+    urgentAlerts: null,
+    overdueObligations: null,
+    pendingCommunications: null,
+    totalAlerts: null,
+    upcomingDeadlinesCount: null,
+    sanctionRiskCount: null,
+    potentialSanctionsMin: null,
+    potentialSanctionsMax: null,
+    coverageBullets: LEGAL_BULLET_DEFS.map(d => ({
+      key: d.key,
+      label: d.label,
+      status: 'gray' as const,
+      detail: 'Sin datos',
+    })),
+  };
+}
+
+function findObligation(obligations: any[], patterns: RegExp[]): any | null {
+  for (const o of obligations) {
+    const haystacks: string[] = [
+      o?.obligation_name,
+      o?.name,
+      o?.code,
+      o?.model_code,
+      o?.obligation_type,
+      o?.category,
+      o?.organism,
+      o?.legal_reference,
+    ].filter(Boolean).map((s: any) => String(s));
+    if (haystacks.length === 0) continue;
+    for (const p of patterns) {
+      if (haystacks.some(h => p.test(h))) return o;
+    }
+  }
+  return null;
+}
+
+function bulletStatusFor(
+  obligation: any | null,
+  deadlines: any[],
+  alerts: any[],
+): { status: LegalBulletStatus; detail: string } {
+  if (!obligation) return { status: 'gray', detail: 'Sin datos' };
+  const obId = obligation.id;
+  const relatedDeadlines = obId ? deadlines.filter(d => d?.obligation_id === obId) : [];
+  const overdue = relatedDeadlines.filter(d => d?.status === 'overdue');
+  const completed = relatedDeadlines.filter(d => d?.status === 'completed');
+  const relatedAlerts = alerts.filter(a =>
+    (obId && a?.obligation_id === obId)
+    || (a?.risk?.legal_reference && obligation?.legal_reference
+        && a.risk.legal_reference === obligation.legal_reference),
+  );
+  const critical = relatedAlerts.filter(a => a?.alert_level === 'critical').length;
+  const urgent = relatedAlerts.filter(a => a?.alert_level === 'urgent').length;
+
+  if (overdue.length > 0 || critical > 0) {
+    return { status: 'red', detail: `${overdue.length} vencidas · ${critical} críticas` };
+  }
+  if (urgent > 0) {
+    return { status: 'amber', detail: `${urgent} urgentes` };
+  }
+  if (completed.length > 0) {
+    return { status: 'green', detail: `${completed.length} completadas` };
+  }
+  return { status: 'gray', detail: 'Detectada · sin actividad' };
+}
+
+export function computeLegalSnapshot(hook: any): LegalSnapshot {
+  if (!hook) return emptyLegalSnapshot();
+
+  const obligations: any[] = Array.isArray(hook.obligations) ? hook.obligations : [];
+  const deadlines: any[] = Array.isArray(hook.deadlines) ? hook.deadlines : [];
+  const sanctionRisks: any[] = Array.isArray(hook.sanctionRisks) ? hook.sanctionRisks : [];
+  const alerts: any[] = Array.isArray(hook.alerts) ? hook.alerts : [];
+  const upcoming: any[] = Array.isArray(hook.upcomingDeadlines) ? hook.upcomingDeadlines : [];
+  const ra = hook.riskAssessment ?? null;
+
+  const hasNoData = obligations.length === 0 && (ra === null || ra === undefined);
+  if (hasNoData) {
+    return emptyLegalSnapshot();
+  }
+
+  const criticalAlerts = safeNumber(ra?.critical_alerts) ?? 0;
+  const urgentAlerts = safeNumber(ra?.urgent_alerts) ?? 0;
+  const overdueObligations = safeNumber(ra?.overdue_obligations) ?? 0;
+  const pendingCommunications = safeNumber(ra?.pending_communications) ?? 0;
+  const totalAlerts = safeNumber(ra?.total_alerts) ?? alerts.length;
+  const potentialSanctionsMin = safeNumber(ra?.potential_sanctions_min);
+  const potentialSanctionsMax = safeNumber(ra?.potential_sanctions_max);
+
+  // Score (formula from spec)
+  const score = Math.round(clamp(
+    100
+      - 25 * criticalAlerts
+      - 15 * urgentAlerts
+      - 10 * overdueObligations
+      - 5 * pendingCommunications,
+  ));
+
+  // Level
+  let level: ReadinessLevel = 'green';
+  let blockers = 0;
+  let warnings = 0;
+  let label = 'Compliance legal';
+
+  if (criticalAlerts > 0) {
+    level = 'red';
+    blockers += criticalAlerts;
+    label = 'Riesgo crítico legal';
+  }
+  if (overdueObligations > 0) {
+    level = 'red';
+    blockers += overdueObligations;
+    if (label === 'Compliance legal') label = 'Obligaciones vencidas';
+  }
+  if (urgentAlerts > 0 || pendingCommunications > 0) {
+    if (level !== 'red') {
+      level = 'amber';
+      label = 'Revisión legal pendiente';
+    }
+    warnings += urgentAlerts + pendingCommunications;
+  }
+  if (level === 'green') {
+    label = 'Sin bloqueos críticos';
+  }
+
+  // Coverage bullets (defensive — ghost match returns gray)
+  const coverageBullets: LegalCoverageBullet[] = LEGAL_BULLET_DEFS.map(def => {
+    const found = findObligation(obligations, def.patterns);
+    const bs = bulletStatusFor(found, deadlines, alerts);
+    return {
+      key: def.key,
+      label: def.label,
+      status: bs.status,
+      detail: bs.detail,
+    };
+  });
+
+  return {
+    level,
+    score,
+    label,
+    hasData: true,
+    blockers,
+    warnings,
+    disclaimer: LEGAL_DISCLAIMER,
+    criticalAlerts,
+    urgentAlerts,
+    overdueObligations,
+    pendingCommunications,
+    totalAlerts,
+    upcomingDeadlinesCount: upcoming.length,
+    sanctionRiskCount: sanctionRisks.length,
+    potentialSanctionsMin,
+    potentialSanctionsMax,
+    coverageBullets,
+  };
+}
