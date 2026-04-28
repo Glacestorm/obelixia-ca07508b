@@ -170,7 +170,7 @@ describe('B5A — buildAgreementMetadataImportRun', () => {
   });
 
   it('reports errors for invalid items without throwing', () => {
-    const items = [
+    const items: RawAgreementMetadata[] = [
       // missing officialName
       { source: 'BOE', sourceId: 'X' } as unknown as RawAgreementMetadata,
       // valid
