@@ -254,6 +254,7 @@ export async function runCollectiveAgreementMetadataImport(
 
   // 4. Dry run path: do not write registry/versions/sources.
   if (isDryRun) {
+    const totalSkipped = importRun.skipped + plan.skipped.length;
     let importRunId: string | null = null;
     try {
       const r = await adapter.insertImportRun({
@@ -261,7 +262,7 @@ export async function runCollectiveAgreementMetadataImport(
         total_found: importRun.totalFound,
         inserted: 0,
         updated: 0,
-        skipped: plan.skipped.length,
+        skipped: totalSkipped,
         errors: importRun.errors.length,
         report_json: {
           dryRun: true,
@@ -270,6 +271,7 @@ export async function runCollectiveAgreementMetadataImport(
             toUpdate: plan.toUpdate.map(r => r.internal_code),
             skipped: plan.skipped.map(r => r.internal_code),
           },
+          dedupedDuringNormalize: importRun.skipped,
           errors: importRun.errors,
         },
         status: importRun.errors.length > 0 ? 'completed_with_warnings' : 'completed',
@@ -284,7 +286,7 @@ export async function runCollectiveAgreementMetadataImport(
       normalized: importRun.normalized,
       inserted: 0,
       updated: 0,
-      skipped: plan.skipped.length,
+      skipped: totalSkipped,
       errors: importRun.errors,
       plan,
       importRunId,
@@ -391,13 +393,14 @@ export async function runCollectiveAgreementMetadataImport(
         : 'failed';
 
   let importRunId: string | null = null;
+  const totalSkipped = importRun.skipped + plan.skipped.length;
   try {
     const r = await adapter.insertImportRun({
       source: input.source,
       total_found: importRun.totalFound,
       inserted,
       updated,
-      skipped: plan.skipped.length,
+      skipped: totalSkipped,
       errors: allErrors.length,
       report_json: {
         dryRun: false,
@@ -405,6 +408,7 @@ export async function runCollectiveAgreementMetadataImport(
         insertedCodes: plan.toInsert.map(r => r.internal_code),
         updatedCodes: plan.toUpdate.map(r => r.internal_code),
         skippedCodes: plan.skipped.map(r => r.internal_code),
+        dedupedDuringNormalize: importRun.skipped,
       },
       status,
     });
@@ -420,7 +424,7 @@ export async function runCollectiveAgreementMetadataImport(
     normalized: importRun.normalized,
     inserted,
     updated,
-    skipped: plan.skipped.length,
+    skipped: totalSkipped,
     errors: allErrors,
     plan,
     importRunId,
