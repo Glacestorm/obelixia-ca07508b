@@ -2325,9 +2325,11 @@ export function HRPayrollEntryDialog({
               agreementStatus={
                 agreementSource === 'none'
                   ? 'missing'
-                  : (normalizerResult?.agreementResolutionStatus === 'doubtful'
+                  : (normalizerResult?.agreementResolutionStatus === 'manual_review_required'
                       ? 'doubtful'
-                      : (agreementConflictDetected ? 'manual' : 'clear'))
+                      : (normalizerResult?.agreementResolutionStatus === 'no_agreement'
+                          ? 'missing'
+                          : (agreementConflictDetected ? 'manual' : 'clear')))
               }
               contractStatus={
                 (normalizerResult as any)?.contractCoherence ?? 'complete'
