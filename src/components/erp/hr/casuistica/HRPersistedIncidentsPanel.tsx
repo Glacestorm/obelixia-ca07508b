@@ -44,6 +44,7 @@ import { IncidentStatusBadge, type IncidentStatusFlags } from './IncidentStatusB
 import { HRPayrollIncidentFormDialog } from './HRPayrollIncidentFormDialog';
 import { HRPromoteLocalCasuisticaDialog } from './HRPromoteLocalCasuisticaDialog';
 import { HRCancelIncidentDialog } from './HRCancelIncidentDialog';
+import { HRPersistedIncidentsStatusStrip } from './HRPersistedIncidentsStatusStrip';
 import { buildIncidentsFromLocalCasuistica } from '@/lib/hr/incidenciasPromotion';
 import { buildEffectiveCasuistica } from '@/lib/hr/effectiveCasuistica';
 import { HRCasuisticaConflictsPanel } from './HRCasuisticaConflictsPanel';
@@ -227,27 +228,9 @@ export function HRPersistedIncidentsPanel({
           <div className="flex items-start gap-2">
             <Database className="h-4 w-4 text-info mt-0.5" />
             <div>
-              <CardTitle className="text-xs font-medium flex items-center gap-2">
+              <CardTitle className="text-xs font-medium">
                 Procesos entre fechas persistidos
-                <Badge
-                  variant="outline"
-                  className="text-[9px] h-4 border-info/40 text-info bg-info/5"
-                >
-                  <Eye className="h-2.5 w-2.5 mr-0.5" />
-                  Read-only
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="text-[9px] h-4 border-muted-foreground/30 text-muted-foreground"
-                >
-                  <ShieldOff className="h-2.5 w-2.5 mr-0.5" />
-                  Sin envíos oficiales
-                </Badge>
               </CardTitle>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                Estos procesos alimentarán la casuística de nómina. En esta fase son
-                sólo lectura y no generan comunicaciones oficiales.
-              </p>
             </div>
           </div>
 
@@ -282,6 +265,8 @@ export function HRPersistedIncidentsPanel({
             </Button>
           </div>
         </div>
+        {/* Franja informativa NO interactiva (estado operativo + texto legal) */}
+        <HRPersistedIncidentsStatusStrip />
       </CardHeader>
 
       <CardContent className="space-y-3">
