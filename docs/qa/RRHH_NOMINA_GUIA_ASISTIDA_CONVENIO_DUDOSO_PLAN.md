@@ -314,3 +314,65 @@ fase oficial validada (última milla).
 
 ## 12. Estado
 📋 **PLAN APROBADO — implementación pendiente de prompt BUILD separado.**
+
+---
+
+## 13. Cierre formal
+
+**Fecha de cierre documental:** 2026-04-28
+**Estado:** 📋 **PLAN CERRADO — NO IMPLEMENTADO.**
+
+### Resumen de la guía asistida
+Wizard lateral (`HRPayrollManualGuidanceWizard`) que se activa cuando el
+cálculo determinista de la nómina no es seguro (SafeMode activo, convenio
+dudoso, parametrización contractual incompleta o tabla salarial ausente).
+Conduce a un operador humano paso a paso para completar la nómina de forma
+trazable y conforme a Ley, Convenio Colectivo, ET, LGSS, IRPF y procedimientos
+oficiales TGSS/SEPE/AEAT/INSS/DELT@, sin sustituir el criterio humano ni al
+asesor laboral, y sin generar comunicaciones oficiales automáticas.
+
+### 10 pasos definidos
+1. Identificación del empleado.
+2. Identificación del convenio.
+3. Revisión del contrato y salario pactado.
+4. Conceptos salariales mínimos.
+5. Incidencias del periodo (reusa C3).
+6. Bases SS e IRPF (sólo lectura).
+7. Comprobaciones de coherencia (checklist 12 ítems).
+8. Validación humana (firma + confirmación Ley/CC/ET).
+9. Resultado final (`FinalReadiness`).
+10. Documentación / trazabilidad (snapshot interno, sin artefactos oficiales).
+
+### Fases futuras de implementación
+- **WIZ-A**: Pasos 1–3 + esqueleto wizard + disparador. Snapshot in-memory.
+- **WIZ-B**: Pasos 4–5 (conceptos manuales + reuso C3 incidencias).
+- **WIZ-C**: Pasos 6–7 (bases sólo lectura + checklist coherencia).
+- **WIZ-D**: Paso 8 (validación humana) y Paso 9 (resultado final).
+- **WIZ-E**: Paso 10 (snapshot persistente — requiere migración separada
+  fuera de alcance hasta aprobación explícita).
+
+### Confirmaciones
+- **No se creó ningún componente, hook ni tipo en este turno.** El plan es
+  puramente documental.
+- No se tocó motor de nómina, `simulateES`, `salaryNormalizer.ts`,
+  `contractSalaryParametrization.ts`, `agreementSalaryResolver.ts`,
+  `fdiArtifactEngine.ts`, `afiInactivityEngine.ts`, `deltaArtifactEngine.ts`.
+- No se cambió `PAYROLL_EFFECTIVE_CASUISTICA_MODE`.
+- `persisted_priority_apply` sigue **OFF**.
+- Sin BD, RLS, migraciones, edge functions, dependencias ni CI.
+- Sin `service_role`. Sin FDI/AFI/DELT@. Sin comunicaciones oficiales.
+- `isRealSubmissionBlocked() === true` continúa estrictamente en vigor.
+
+### Próximo paso recomendado
+**WIZ-A PLAN/BUILD separado**, sólo cuando se apruebe explícitamente:
+
+> "Implementar **WIZ-A** de `HRPayrollManualGuidanceWizard` siguiendo
+> `docs/qa/RRHH_NOMINA_GUIA_ASISTIDA_CONVENIO_DUDOSO_PLAN.md`. Sólo Pasos
+> 1–3 + esqueleto del Sheet lateral + disparador en NewPayrollDialog. Sin
+> tocar engines, sin tocar `PAYROLL_EFFECTIVE_CASUISTICA_MODE`, sin tabla en
+> BD (snapshot in-memory). Tests por paso (asteriscos rojos, no avance sin
+> obligatorios, 0 llamadas a engines). Reusar el helper `<Req/>` de la Fase
+> C3C."
+
+**Estado final:** 📋 PLAN CERRADO — implementación queda condicionada a
+aprobación explícita posterior.
