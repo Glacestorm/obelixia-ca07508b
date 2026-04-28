@@ -176,7 +176,7 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
       const malicious = rawBoeBakery();
       // Inject extra fields to simulate a tampered payload — they should
       // be ignored by the normalizer and overridden by forceSafetyFlags.
-      (malicious as Record<string, unknown>).ready_for_payroll = true;
+      (malicious as unknown as Record<string, unknown>).ready_for_payroll = true;
       await runCollectiveAgreementMetadataImport(
         { source: 'BOIB', items: [malicious] },
         adapter
@@ -187,7 +187,7 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
     it('3. input con salary_tables_loaded=true queda forzado a false', async () => {
       const { adapter, rows } = createMemoryAdapter();
       const malicious = rawBoeBakery();
-      (malicious as Record<string, unknown>).salary_tables_loaded = true;
+      (malicious as unknown as Record<string, unknown>).salary_tables_loaded = true;
       await runCollectiveAgreementMetadataImport(
         { source: 'BOIB', items: [malicious] },
         adapter
@@ -198,7 +198,7 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
     it('4. input con requires_human_review=false queda forzado a true', async () => {
       const { adapter, rows } = createMemoryAdapter();
       const malicious = rawBoeBakery();
-      (malicious as Record<string, unknown>).requires_human_review = false;
+      (malicious as unknown as Record<string, unknown>).requires_human_review = false;
       await runCollectiveAgreementMetadataImport(
         { source: 'BOIB', items: [malicious] },
         adapter
@@ -209,7 +209,7 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
     it('5. input con official_submission_blocked=false queda forzado a true', async () => {
       const { adapter, rows } = createMemoryAdapter();
       const malicious = rawBoeBakery();
-      (malicious as Record<string, unknown>).official_submission_blocked = false;
+      (malicious as unknown as Record<string, unknown>).official_submission_blocked = false;
       await runCollectiveAgreementMetadataImport(
         { source: 'BOIB', items: [malicious] },
         adapter
