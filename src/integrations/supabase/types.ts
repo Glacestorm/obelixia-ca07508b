@@ -29567,6 +29567,404 @@ export type Database = {
           },
         ]
       }
+      erp_hr_collective_agreements_registry: {
+        Row: {
+          agreement_code: string | null
+          autonomous_region: string | null
+          checksum: string | null
+          cnae_codes: string[]
+          created_at: string
+          data_completeness: string
+          effective_end_date: string | null
+          effective_start_date: string | null
+          functional_scope_text: string | null
+          id: string
+          internal_code: string
+          jurisdiction_code: string
+          last_verified_at: string | null
+          notes: string | null
+          official_name: string
+          official_submission_blocked: boolean
+          province_code: string | null
+          publication_date: string | null
+          publication_source: string | null
+          publication_url: string | null
+          ready_for_payroll: boolean
+          requires_human_review: boolean
+          salary_tables_loaded: boolean
+          scope_type: string
+          sector: string | null
+          short_name: string | null
+          source_document_hash: string | null
+          source_quality: string
+          status: string
+          territorial_scope_text: string | null
+          ultraactivity_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          agreement_code?: string | null
+          autonomous_region?: string | null
+          checksum?: string | null
+          cnae_codes?: string[]
+          created_at?: string
+          data_completeness?: string
+          effective_end_date?: string | null
+          effective_start_date?: string | null
+          functional_scope_text?: string | null
+          id?: string
+          internal_code: string
+          jurisdiction_code: string
+          last_verified_at?: string | null
+          notes?: string | null
+          official_name: string
+          official_submission_blocked?: boolean
+          province_code?: string | null
+          publication_date?: string | null
+          publication_source?: string | null
+          publication_url?: string | null
+          ready_for_payroll?: boolean
+          requires_human_review?: boolean
+          salary_tables_loaded?: boolean
+          scope_type: string
+          sector?: string | null
+          short_name?: string | null
+          source_document_hash?: string | null
+          source_quality?: string
+          status?: string
+          territorial_scope_text?: string | null
+          ultraactivity_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agreement_code?: string | null
+          autonomous_region?: string | null
+          checksum?: string | null
+          cnae_codes?: string[]
+          created_at?: string
+          data_completeness?: string
+          effective_end_date?: string | null
+          effective_start_date?: string | null
+          functional_scope_text?: string | null
+          id?: string
+          internal_code?: string
+          jurisdiction_code?: string
+          last_verified_at?: string | null
+          notes?: string | null
+          official_name?: string
+          official_submission_blocked?: boolean
+          province_code?: string | null
+          publication_date?: string | null
+          publication_source?: string | null
+          publication_url?: string | null
+          ready_for_payroll?: boolean
+          requires_human_review?: boolean
+          salary_tables_loaded?: boolean
+          scope_type?: string
+          sector?: string | null
+          short_name?: string | null
+          source_document_hash?: string | null
+          source_quality?: string
+          status?: string
+          territorial_scope_text?: string | null
+          ultraactivity_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      erp_hr_collective_agreements_registry_import_runs: {
+        Row: {
+          created_at: string
+          errors: number
+          finished_at: string | null
+          id: string
+          inserted: number
+          report_json: Json
+          skipped: number
+          source: string
+          started_at: string
+          status: string
+          total_found: number
+          updated: number
+        }
+        Insert: {
+          created_at?: string
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          report_json?: Json
+          skipped?: number
+          source: string
+          started_at?: string
+          status?: string
+          total_found?: number
+          updated?: number
+        }
+        Update: {
+          created_at?: string
+          errors?: number
+          finished_at?: string | null
+          id?: string
+          inserted?: number
+          report_json?: Json
+          skipped?: number
+          source?: string
+          started_at?: string
+          status?: string
+          total_found?: number
+          updated?: number
+        }
+        Relationships: []
+      }
+      erp_hr_collective_agreements_registry_rules: {
+        Row: {
+          agreement_id: string
+          created_at: string
+          id: string
+          requires_human_review: boolean
+          rule_json: Json
+          rule_type: string
+          source_excerpt: string | null
+          version_id: string | null
+        }
+        Insert: {
+          agreement_id: string
+          created_at?: string
+          id?: string
+          requires_human_review?: boolean
+          rule_json?: Json
+          rule_type: string
+          source_excerpt?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          agreement_id?: string
+          created_at?: string
+          id?: string
+          requires_human_review?: boolean
+          rule_json?: Json
+          rule_type?: string
+          source_excerpt?: string | null
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registry_rules_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registry_rules_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreements_registry_salary_tables: {
+        Row: {
+          agreement_id: string
+          category: string | null
+          created_at: string
+          currency: string
+          extra_pay_amount: number | null
+          id: string
+          level: string | null
+          other_pluses_json: Json
+          plus_antiguedad: number | null
+          plus_convenio: number | null
+          plus_festivo: number | null
+          plus_nocturnidad: number | null
+          plus_responsabilidad: number | null
+          plus_transport: number | null
+          professional_group: string | null
+          requires_human_review: boolean
+          salary_base_annual: number | null
+          salary_base_monthly: number | null
+          source_page: string | null
+          version_id: string
+          year: number
+        }
+        Insert: {
+          agreement_id: string
+          category?: string | null
+          created_at?: string
+          currency?: string
+          extra_pay_amount?: number | null
+          id?: string
+          level?: string | null
+          other_pluses_json?: Json
+          plus_antiguedad?: number | null
+          plus_convenio?: number | null
+          plus_festivo?: number | null
+          plus_nocturnidad?: number | null
+          plus_responsabilidad?: number | null
+          plus_transport?: number | null
+          professional_group?: string | null
+          requires_human_review?: boolean
+          salary_base_annual?: number | null
+          salary_base_monthly?: number | null
+          source_page?: string | null
+          version_id: string
+          year: number
+        }
+        Update: {
+          agreement_id?: string
+          category?: string | null
+          created_at?: string
+          currency?: string
+          extra_pay_amount?: number | null
+          id?: string
+          level?: string | null
+          other_pluses_json?: Json
+          plus_antiguedad?: number | null
+          plus_convenio?: number | null
+          plus_festivo?: number | null
+          plus_nocturnidad?: number | null
+          plus_responsabilidad?: number | null
+          plus_transport?: number | null
+          professional_group?: string | null
+          requires_human_review?: boolean
+          salary_base_annual?: number | null
+          salary_base_monthly?: number | null
+          source_page?: string | null
+          version_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registry_salary__agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registry_salary_ta_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreements_registry_sources: {
+        Row: {
+          agreement_id: string
+          created_at: string
+          document_hash: string | null
+          document_url: string | null
+          downloaded_at: string | null
+          id: string
+          source_quality: string
+          source_type: string
+          source_url: string | null
+          status: string
+        }
+        Insert: {
+          agreement_id: string
+          created_at?: string
+          document_hash?: string | null
+          document_url?: string | null
+          downloaded_at?: string | null
+          id?: string
+          source_quality?: string
+          source_type: string
+          source_url?: string | null
+          status?: string
+        }
+        Update: {
+          agreement_id?: string
+          created_at?: string
+          document_hash?: string | null
+          document_url?: string | null
+          downloaded_at?: string | null
+          id?: string
+          source_quality?: string
+          source_type?: string
+          source_url?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registry_sources_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreements_registry_versions: {
+        Row: {
+          agreement_id: string
+          change_type: string
+          created_at: string
+          effective_end_date: string | null
+          effective_start_date: string | null
+          id: string
+          is_current: boolean
+          parsed_summary: Json
+          publication_date: string | null
+          raw_text: string | null
+          source_hash: string | null
+          source_url: string | null
+          superseded_by: string | null
+          version_label: string
+        }
+        Insert: {
+          agreement_id: string
+          change_type: string
+          created_at?: string
+          effective_end_date?: string | null
+          effective_start_date?: string | null
+          id?: string
+          is_current?: boolean
+          parsed_summary?: Json
+          publication_date?: string | null
+          raw_text?: string | null
+          source_hash?: string | null
+          source_url?: string | null
+          superseded_by?: string | null
+          version_label: string
+        }
+        Update: {
+          agreement_id?: string
+          change_type?: string
+          created_at?: string
+          effective_end_date?: string | null
+          effective_start_date?: string | null
+          id?: string
+          is_current?: boolean
+          parsed_summary?: Json
+          publication_date?: string | null
+          raw_text?: string | null
+          source_hash?: string | null
+          source_url?: string | null
+          superseded_by?: string | null
+          version_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registry_versio_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registry_version_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_communication_templates: {
         Row: {
           checklist_items: Json | null
@@ -86303,6 +86701,8 @@ export type Database = {
         Returns: undefined
       }
       seed_default_taxes: { Args: { p_company_id: string }; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       storage_hr_doc_company_id: {
         Args: { object_name: string }
         Returns: string
