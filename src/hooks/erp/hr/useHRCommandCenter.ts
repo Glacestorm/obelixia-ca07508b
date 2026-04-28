@@ -24,6 +24,10 @@ import {
   useOfficialIntegrationsSnapshot,
   type OfficialIntegrationsSnapshot,
 } from '@/hooks/erp/hr/useOfficialIntegrationsSnapshot';
+import {
+  computeAlertsSnapshot,
+  type HRCommandCenterAlertsSnapshot,
+} from '@/hooks/erp/hr/hrCommandCenterAlerts';
 
 export type ReadinessLevel = 'green' | 'amber' | 'red' | 'gray';
 
@@ -116,7 +120,7 @@ export interface HRCommandCenterData {
   legal: LegalSnapshot;
   vpt: VPTSnapshot;
   officialIntegrations: OfficialIntegrationsSnapshot;
-  alerts: PlaceholderSnapshot;
+  alerts: HRCommandCenterAlertsSnapshot;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -284,11 +288,14 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
     const vpt = computeVPTSnapshot(vptHook);
 
     const officialIntegrations = officialSnap.snapshot;
-    const alerts = placeholder(
-      'Alertas y bloqueos',
-      'Agregación completa en Fase 3',
-      'phase-3',
-    );
+    const alerts = computeAlertsSnapshot({
+      payroll,
+      documentary,
+      legal,
+      vpt,
+      officialIntegrations,
+      global,
+    });
 
     // ── Global readiness (Phase 2B: payroll + documentary + legal + VPT + global) ──
     // Only sections with non-null score enter the weighted denominator.
