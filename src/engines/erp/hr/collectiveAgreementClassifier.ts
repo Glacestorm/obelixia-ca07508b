@@ -129,10 +129,16 @@ export function buildAgreementClassificationWarnings(
 export function scoreAgreementCandidate(
   agreement: UnifiedCollectiveAgreement,
   input: ClassifierInput
-): { score: number; reasons: string[]; activityWarnings: ClassifierWarningCode[] } {
+): {
+  score: number;
+  reasons: string[];
+  activityWarnings: ClassifierWarningCode[];
+  hasSubstantiveMatch: boolean;
+} {
   const reasons: string[] = [];
   const activityWarnings: ClassifierWarningCode[] = [];
   let score = 0;
+  let hasSubstantiveMatch = false;
 
   const cnae = (input.cnae ?? '').trim();
   const cnaePrefix2 = cnae.slice(0, 2);
@@ -142,9 +148,11 @@ export function scoreAgreementCandidate(
   if (cnae && aCnaes.includes(cnae)) {
     score += W_CNAE_EXACT;
     reasons.push(`Coincidencia CNAE exacta (${cnae}).`);
+    hasSubstantiveMatch = true;
   } else if (cnae && aCnaes.some(c => c.startsWith(cnaePrefix2))) {
     score += W_CNAE_PREFIX2;
     reasons.push(`Coincidencia CNAE por prefijo (${cnaePrefix2}).`);
+    hasSubstantiveMatch = true;
   }
 
   // Territorial matching
@@ -179,19 +187,23 @@ export function scoreAgreementCandidate(
     score += W_BAKERY_WORKSHOP_BONUS;
     reasons.push('Empresa con obrador de panadería/pastelería.');
     activityWarnings.push('BAKERY_WORKSHOP_REQUIRES_HUMAN_VALIDATION');
+    hasSubstantiveMatch = true;
   }
   if (input.hasRetailShop && isRetailAgreement && !input.hasBakeryWorkshop) {
     score += W_RETAIL_GENERIC_BONUS;
     reasons.push('Punto de venta minorista sin obrador.');
     activityWarnings.push('RETAIL_WITHOUT_WORKSHOP_REVIEW');
+    hasSubstantiveMatch = true;
   }
   if ((input.hasOnPremiseConsumption || cnae.startsWith('56') || cnae.startsWith('55')) && isHospitalityAgreement) {
     score += W_HOSPITALITY_BONUS;
     reasons.push('Actividad de hostelería con consumo en local.');
+    hasSubstantiveMatch = true;
   }
   if (input.hasBroadFoodManufacturing && isFoodIndustryAgreement) {
     score += W_FOOD_INDUSTRY_BONUS;
     reasons.push('Fabricación alimentaria amplia.');
+    hasSubstantiveMatch = true;
   }
 
   // Sector keywords
@@ -200,6 +212,7 @@ export function scoreAgreementCandidate(
     if (matches.length > 0) {
       score += W_KEYWORD_MATCH * matches.length;
       reasons.push(`Coincidencia por palabras clave de sector: ${matches.join(', ')}.`);
+      hasSubstantiveMatch = true;
     }
   }
 
@@ -216,7 +229,7 @@ export function scoreAgreementCandidate(
     activityWarnings.push('TAKE_AWAY_VS_ON_PREMISE_REVIEW_REQUIRED');
   }
 
-  return { score, reasons, activityWarnings };
+  return { score, reasons, activityWarnings, hasSubstantiveMatch };
 }
 
 /**
