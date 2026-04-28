@@ -29,11 +29,9 @@ import {
   AlertTriangle,
   CalendarRange,
   Database,
-  Eye,
   Info,
   Loader2,
   Plus,
-  ShieldOff,
   Pencil,
   Ban,
 } from 'lucide-react';
