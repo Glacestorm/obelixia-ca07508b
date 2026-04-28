@@ -13,17 +13,26 @@ import { Beaker, Power, Database, RefreshCw } from "lucide-react";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { cn } from "@/lib/utils";
 
-export function DemoModeToggle() {
+interface DemoModeToggleProps {
+  /**
+   * Render inline (no fixed positioning). Useful when embedding inside a header
+   * or another layout container instead of floating at the bottom-left corner.
+   */
+  inline?: boolean;
+}
+
+export function DemoModeToggle({ inline = false }: DemoModeToggleProps = {}) {
   const { isDemoActive, isLoading, toggleDemoMode } = useDemoMode();
 
   return (
-    <div className="fixed bottom-20 left-6 z-40">
+    <div className={cn(inline ? "relative inline-flex" : "fixed bottom-20 left-6 z-40")}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
             variant={isDemoActive ? "destructive" : "default"}
             className={cn(
               "shadow-lg gap-2 transition-all duration-300",
+              inline && "h-9 px-3 text-sm",
               isDemoActive 
                 ? "bg-amber-600 hover:bg-amber-700 animate-pulse text-white" 
                 : "bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -72,7 +81,7 @@ export function DemoModeToggle() {
         </DropdownMenuContent>
       </DropdownMenu>
       
-      {isDemoActive && (
+      {isDemoActive && !inline && (
         <div className="absolute -top-12 right-0 bg-amber-100 text-amber-800 px-3 py-1 rounded-md text-xs font-medium border border-amber-200 shadow-sm whitespace-nowrap dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800">
           Datos ficticios visibles
         </div>

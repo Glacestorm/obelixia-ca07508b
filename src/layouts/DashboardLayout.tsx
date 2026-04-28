@@ -27,6 +27,8 @@ interface DashboardLayoutProps {
   titleActions?: ReactNode;
   /** Slot derecho del header */
   rightSlot?: ReactNode;
+  /** Oculta el botón flotante "Activar Demo" (útil cuando se embebe inline en el header) */
+  hideFloatingDemoToggle?: boolean;
 }
 
 export function DashboardLayout({
@@ -38,6 +40,7 @@ export function DashboardLayout({
   contentPadding = 'md',
   titleActions,
   rightSlot,
+  hideFloatingDemoToggle = false,
 }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -102,7 +105,7 @@ export function DashboardLayout({
       </motion.main>
       
       {/* Demo Mode Toggle - Only for authorized users (controlled by internal logic) */}
-      <DemoModeToggle />
+      {!hideFloatingDemoToggle && <DemoModeToggle />}
     </div>
   );
 }

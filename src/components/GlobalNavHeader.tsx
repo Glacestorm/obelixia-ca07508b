@@ -57,8 +57,15 @@ export function GlobalNavHeader({
             )}
           </div>
         )}
+
         
-        {/* Navigation Arrows - after title */}
+        {/* Title Actions (badges, buttons next to title) */}
+        {titleActions}
+      </div>
+      
+      {/* Right Section: Actions */}
+      <nav className="flex items-center gap-2" aria-label="Acciones principales">
+        {/* Navigation Arrows - moved to right side */}
         {(onGoBack || onGoForward) && (
           <div className="flex items-center gap-1">
             <button
@@ -94,13 +101,6 @@ export function GlobalNavHeader({
           </div>
         )}
 
-        
-        {/* Title Actions (badges, buttons next to title) */}
-        {titleActions}
-      </div>
-      
-      {/* Right Section: Actions */}
-      <nav className="flex items-center gap-2" aria-label="Acciones principales">
         {rightSlot}
 
         {/* Status Indicators */}
