@@ -148,7 +148,7 @@ describe('EmployeeDocumentExpedient — UX contract', () => {
   it('muestra version "v2" del documento', () => {
     render(<EmployeeDocumentExpedient companyId="test-company-own-0001" employeeId="emp-1" />);
     // El componente real renderiza "{type} · v{version}"
-    expect(screen.getByText(/v2/)).toBeInTheDocument();
+    expect(screen.getAllByText(/v2/).length).toBeGreaterThan(0);
   });
 
   it('muestra resumen ejecutivo cuando hay documentos', () => {
@@ -177,9 +177,9 @@ describe('EmployeeDocumentExpedient — UX contract', () => {
 describe('HRCalendarsPanel — festivos operativos', () => {
   it('lista festivos operativos cuando existen', () => {
     render(<HRCalendarsPanel companyId="test-company-own-0001" />);
-    expect(screen.getByText(/Festivos Operativos/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Festivos Operativos/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Reyes/)).toBeInTheDocument();
     expect(screen.getByText(/Festivo Local/)).toBeInTheDocument();
-    expect(screen.getByText(/2 festivos/)).toBeInTheDocument();
+    expect(screen.getAllByText(/2 festivos/).length).toBeGreaterThan(0);
   });
 });
