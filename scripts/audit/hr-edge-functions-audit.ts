@@ -152,21 +152,29 @@ function classify(name: string, src: string): FunctionReport {
   const hasInternalSecret = /x-internal-secret/i.test(src);
 
   const serviceRoleMatches = src.match(/SUPABASE_SERVICE_ROLE_KEY/g) ?? [];
+  const fileBindsServiceRole = serviceRoleMatches.length > 0;
 
   const bearerSR =
     /Authorization[^\n]{0,80}Bearer[^\n]{0,80}SERVICE_ROLE_KEY/i.test(src) ||
     /Bearer\s*\$\{[^}]*SERVICE_ROLE_KEY[^}]*\}/i.test(src);
 
-  // Variables bound to a service-role client.
+  // Variables bound to a service-role client *inside this file*.
+  // We deliberately do NOT flag `adminClient` symbols that originate from the
+  // shared `validateTenantAccess()` helper (post-validated). To stay strict,
+  // we only consider `adminClient` / `supabaseAdmin` / `serviceClient` symbols
+  // when the file itself references SUPABASE_SERVICE_ROLE_KEY — otherwise the
+  // symbol is either unrelated or the helper-provided post-validated client.
   const adminVars = new Set<string>();
   const reAdminBind =
     /(?:const|let|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*createClient\s*\([^)]*SERVICE_ROLE_KEY[^)]*\)/g;
   for (const m of src.matchAll(reAdminBind)) {
     adminVars.add(m[1]);
   }
-  ["adminClient", "supabaseAdmin", "serviceClient"].forEach((v) => {
-    if (new RegExp(`\\b${v}\\b`).test(src)) adminVars.add(v);
-  });
+  if (fileBindsServiceRole) {
+    ["adminClient", "supabaseAdmin", "serviceClient"].forEach((v) => {
+      if (new RegExp(`\\b${v}\\b`).test(src)) adminVars.add(v);
+    });
+  }
 
   const adminClientHits: string[] = [];
   for (const v of adminVars) {
