@@ -296,6 +296,11 @@ async function main() {
     unsafe: reports.filter((r) => r.category === "unsafe").length,
   };
 
+  // Cross-cutting metric: cron/service auth detected, regardless of primary
+  // classification (e.g. an exception may also wire a cron path).
+  const cronOrServiceDetected = reports.filter((r) => r.hasCronAuth).length;
+  const internalSecretDetected = reports.filter((r) => r.hasInternalSecret).length;
+
   const fails = findings.filter((f) => f.severity === "FAIL");
   const warns = findings.filter((f) => f.severity === "WARN");
   const status = fails.length === 0 ? "🟢 GREEN" : "🔴 RED";
@@ -317,14 +322,16 @@ async function main() {
   md += `| validateCronOrServiceAuth | ${counts.cron} |\n`;
   md += `| documented_exception | ${counts.exception} |\n`;
   md += `| 🔴 unsafe | ${counts.unsafe} |\n`;
+  md += `| cron/service detected (any path) | ${cronOrServiceDetected} |\n`;
+  md += `| x-internal-secret detected (any path) | ${internalSecretDetected} |\n`;
   md += `| FAIL findings | ${fails.length} |\n`;
   md += `| WARN findings | ${warns.length} |\n\n`;
 
   md += `## 2. Per-function classification\n\n`;
-  md += `| Function | Category | SR uses | Bearer SR downstream | Admin→tenant tables |\n`;
-  md += `|---|---|---:|:---:|---|\n`;
+  md += `| Function | Category | SR uses | Cron/Service | Bearer SR downstream | Admin→tenant tables |\n`;
+  md += `|---|---|---:|:---:|:---:|---|\n`;
   for (const r of reports) {
-    md += `| \`${r.name}\` | ${badge(r.category)} | ${r.serviceRoleUses} | ${r.bearerServiceRoleDownstream ? "❌" : "—"} | ${r.adminClientTenantTableHits.join(", ") || "—"} |\n`;
+    md += `| \`${r.name}\` | ${badge(r.category)} | ${r.serviceRoleUses} | ${r.hasCronAuth ? "✓" : "—"} | ${r.bearerServiceRoleDownstream ? "❌" : "—"} | ${r.adminClientTenantTableHits.join(", ") || "—"} |\n`;
   }
   md += `\n`;
 
