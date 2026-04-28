@@ -43,12 +43,12 @@ describe('HRPayrollReadinessGate', () => {
 
   it('estado BLOCKED si SafeMode activo', () => {
     render(<HRPayrollReadinessGate {...baseProps} safeModeActive />);
-    expect(screen.getByText(/BLOQUEADA/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/BLOQUEADA/i).length).toBeGreaterThan(0);
   });
 
   it('estado BLOCKED si falta employeeId', () => {
     render(<HRPayrollReadinessGate {...baseProps} employeeId={null} />);
-    expect(screen.getByText(/BLOQUEADA/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/BLOQUEADA/i).length).toBeGreaterThan(0);
   });
 
   it('muestra texto informativo de no envíos oficiales', () => {
