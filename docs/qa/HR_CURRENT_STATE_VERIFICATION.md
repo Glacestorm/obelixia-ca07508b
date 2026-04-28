@@ -41,7 +41,7 @@ _(Algunas funciones combinan dual-path: `validateTenantAccess` + `x-internal-sec
 
 | Ámbito | Verificación | Fichero(s) revisado(s) | Resultado | Riesgo residual | Acción recomendada |
 |---|---|---|:---:|---|---|
-| **S6 · Auth HR/Payroll** | Toda función user-facing usa `validateTenantAccess` / `validateAuth` / `validateCronOrServiceAuth`. | `supabase/functions/_shared/{tenant-auth,cron-auth}.ts` + 56 índices HR/Payroll. | 🟢 OK | Bajo | Mantener gate de revisión en PR para nuevas funciones. |
+| **S6 · Auth HR/Payroll** | Toda función user-facing usa `validateTenantAccess` / `validateAuth` / `validateCronOrServiceAuth`. | `supabase/functions/_shared/{tenant-auth,cron-auth}.ts` + 68 funciones brutas HR/Payroll/Legal reconciliadas; 66 user-facing efectivas tras excluir 2 seed/demo. | 🟢 OK | Bajo | Mantener gate de revisión en PR para nuevas funciones. |
 | **S6 · SR como Bearer downstream** | Búsqueda `Bearer.*SERVICE_ROLE` en HR/Payroll/Legal. | grep global. | 🟢 0 hits en scope | Medio (fuera de scope: `check-alerts`, `check-goal-achievements`, `galia-expert-agent`) | Tracking aparte para esos 3 ficheros. |
 | **S6 · `erp_hr_doc_action_queue` RLS** | `pg_policies` real (4 políticas SELECT/INSERT/UPDATE/DELETE). | Query a `pg_policies`. | 🟢 OK — todas usan `EXISTS … user_has_erp_company_access(e.company_id)`. **Sin `USING(true)` ni `WITH CHECK(true)`.** | Bajo | — |
 | **S6 · Excepciones SR documentadas** | 9 usos legítimos en HR scope: `erp-hr-agreement-updater`, `erp-hr-whistleblower-agent`, `erp-hr-seed-demo-data`, `erp-hr-seed-demo-master`, `hr-labor-copilot`, `hr-workforce-simulation`. | Memoria `service-role-legitimate-exceptions`. | 🟢 OK | Bajo | Vigilar nuevas apariciones. |
@@ -79,7 +79,7 @@ _(Algunas funciones combinan dual-path: `validateTenantAccess` + `x-internal-sec
 |---|---|:---:|---|
 | R1 | 9 usos de SR en HR scope, todos justificados por excepción documentada. | baja | Vigilar que no aparezcan nuevos sin entrada en `service-role-legitimate-exceptions`. |
 | R2 | Funciones legacy fuera de scope HR/Payroll/Legal aún reenvían SR como Bearer (`check-alerts`, `check-goal-achievements`, `galia-expert-agent`). | media | Tracking aparte; no afecta a esta auditoría. |
-| R3 | Cobertura S8 parcial: las 7 funciones core están migradas, pero no toda la familia HR/Legal importa aún `error-contract.ts`. | baja | 0 leaks detectados; ampliar adopción incremental. |
+| R3 | La adopción directa de `error-contract.ts` no es uniforme en todos los ficheros, pero no se han detectado leaks `error.message` ni respuestas inseguras en el scope revisado. | baja | Mantener convergencia progresiva hacia helper común. |
 | R4 | Etiqueta VPT `internal_ready` depende de no añadir flujos que la emitan como oficial. | baja | Mantener disclaimer + `version_id` antes de cualquier export futuro. |
 
 ---
@@ -95,6 +95,69 @@ _(Algunas funciones combinan dual-path: `validateTenantAccess` + `x-internal-sec
 - **UX expediente:** `EmployeeDocumentExpedient.tsx:25,28,87,148,233,251,284,297`.
 - **UX calendarios:** `HRCalendarsPanel.tsx:3,49` + `useHRHolidayCalendar.ts`.
 
+### 4.1 Queries SQL exactas usadas / recomendadas
+
+Política puntual sobre `erp_hr_doc_action_queue` (ejecutada en esta auditoría):
+
+```sql
+SELECT
+  schemaname,
+  tablename,
+  policyname,
+  cmd,
+  qual,
+  with_check
+FROM pg_policies
+WHERE tablename = 'erp_hr_doc_action_queue';
+```
+
+Barrido recomendado para detectar políticas permisivas (`USING(true)` / `WITH CHECK(true)`) en escrituras de cualquier tabla HR:
+
+```sql
+SELECT
+  schemaname,
+  tablename,
+  policyname,
+  cmd,
+  qual,
+  with_check
+FROM pg_policies
+WHERE tablename LIKE 'erp_hr_%'
+  AND cmd IN ('INSERT', 'UPDATE', 'DELETE')
+  AND (
+    qual ILIKE '%true%'
+    OR with_check ILIKE '%true%'
+  );
+```
+
+---
+
+## 4.2 No oficialidad / prudencia legal
+
+Ningún output relativo a **VPT, auditoría retributiva, inspección, TGSS, SEPE, AEAT, SILTRA, CRA, RLC/RNT, Contrat@, Certific@, DELT@ o preflight** debe marcarse como **oficial** salvo que concurran simultáneamente:
+
+1. Credencial / certificado válido del organismo correspondiente.
+2. Envío real (o UAT homologada) realizado contra el endpoint oficial.
+3. Respuesta oficial del organismo recibida.
+4. Evidencia archivada en el ledger inmutable HR (SHA-256 + timestamp).
+
+Mientras no se cumplan las cuatro condiciones, todo artefacto debe etiquetarse como **interno / preparatorio** (badge `internal_ready` o equivalente) y nunca como oficial, definitivo o regulatorio. Esto aplica a UI, PDFs, exports, copilots y respuestas de IA.
+
+---
+
+## 4.3 Excepciones service_role (HR scope)
+
+| # | Función | Uso service_role | Tipo | Justificación | Mitigación | Estado |
+|---|---|---|---|---|---|:---:|
+| 1 | `erp-hr-agreement-updater` | `createClient(URL, SERVICE_ROLE)` para sync de catálogo de convenios | Catálogo global / cron | Tabla sin RLS por diseño (catálogo BOE); ruta cron sin JWT de usuario | `validateCronOrServiceAuth` + admin-role check en ruta humana | 🟢 OK |
+| 2 | `erp-hr-whistleblower-agent` | `serviceKey` para INSERT anónimo | Canal anónimo (Ley 2/2023) | El denunciante no tiene sesión por diseño legal | Solo INSERT en tablas whistleblower; sin SELECT de identidad | 🟢 OK |
+| 3 | `erp-hr-seed-demo-data` | `createClient(URL, SERVICE_ROLE)` | Seed/demo | Pobla entornos demo | Bloqueada en prod por `environment-coexistence-strategy` | 🟢 OK (no user-facing) |
+| 4 | `erp-hr-seed-demo-master` | `createClient(URL, SERVICE_ROLE)` | Seed/demo | Pobla entornos demo (master) | Bloqueada en prod por `environment-coexistence-strategy` | 🟢 OK (no user-facing) |
+| 5 | `hr-labor-copilot` | `createClient(URL, SERVICE_ROLE)` para fallback de asesor laboral | Advisor portfolio | Asesor multi-empresa sin RLS de tenant directo | Fallback documentado en `advisor-access-pattern`; JWT-first | 🟢 OK |
+| 6 | `hr-workforce-simulation` | `createClient(URL, SERVICE_ROLE)` para chaining de simulación | Chaining controlado | Necesita escribir snapshots de simulación cross-tenant validados | JWT del usuario validado antes; simulación aislada | 🟢 OK |
+
+**Recuento:** 6 funciones únicas. La cifra previa de "9 usos" se refería a 9 **ocurrencias** (líneas) de `SUPABASE_SERVICE_ROLE_KEY` en el grep, no a 9 funciones. Reconciliado: **6 funciones, 9 ocurrencias**, todas justificadas y trazadas en `mem://security/global/service-role-legitimate-exceptions`.
+
 ---
 
 ## 5. Confirmación de no-cambios
@@ -105,7 +168,7 @@ _(Algunas funciones combinan dual-path: `validateTenantAccess` + `x-internal-sec
 - ❌ No se ha tocado RLS ni `service_role`.
 - ❌ No se ha modificado `supabase/config.toml`.
 - ❌ No se han cambiado flags. `PAYROLL_EFFECTIVE_CASUISTICA_MODE` sigue en `persisted_priority_preview`. `persisted_priority_apply` sigue **OFF**.
-- ✅ Único cambio: creación de este archivo.
+- ✅ Único cambio (incluido este micro-fix): edición exclusivamente documental de este archivo. Sin código funcional, sin migraciones, sin RLS, sin edge functions, sin menús, sin flags.
 
 ---
 
