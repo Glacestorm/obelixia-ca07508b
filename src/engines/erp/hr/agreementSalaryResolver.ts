@@ -18,6 +18,19 @@ import type {
   SalaryConfidence,
   DivisorSource,
 } from './salaryNormalizer';
+import {
+  evaluateAgreementForPayroll,
+  type AgreementOrigin,
+  type AgreementSafetyDecision,
+  type AgreementSafetyCode,
+} from './agreementSafetyGate';
+
+// Re-export for downstream consumers (B4.c bridge/UI).
+export type {
+  AgreementOrigin,
+  AgreementSafetyDecision,
+  AgreementSafetyCode,
+};
 
 // ── Types ──
 
@@ -63,6 +76,8 @@ export interface SalaryResolutionResult {
   divisorSource?: DivisorSource;
   confianza?: SalaryConfidence;
   agreementResolutionStatus?: AgreementResolutionStatus;
+  /** B4.b — Decisión defensiva del agreementSafetyGate. */
+  agreementSafety?: AgreementSafetyDecision;
 }
 
 export interface SalaryResolutionTrace {
@@ -88,6 +103,32 @@ export interface SalaryResolutionTrace {
   /** Auditoría: el usuario confirmó conscientemente guardar pese al modo seguro. */
   manual_review_confirmation_at?: string;
   manual_review_confirmed_by?: string | null;
+  /** B4.b — Origen del convenio aplicado (operative por defecto). */
+  agreement_origin?: AgreementOrigin;
+  /** B4.b — Bloqueo emitido por el safety gate, si lo hubo. */
+  agreement_safety_block?: AgreementSafetyCode;
+  /** B4.b — Warnings emitidos por el safety gate. */
+  agreement_safety_warnings?: AgreementSafetyCode[];
+  /** B4.b — Campos faltantes para considerar el convenio apto. */
+  agreement_safety_missing?: string[];
+  /** B4.b — Allowed flag explícito (útil para registry validados). */
+  agreement_safety_allowed?: boolean;
+}
+
+// ── B4.b — Safety context (opcional, retro-compatible) ──
+
+export interface AgreementSafetyContext {
+  /** Defaults to 'operative' to preserve current behaviour. */
+  agreementOrigin?: AgreementOrigin;
+  /** True si el contrato/empleado declara salario manual válido. */
+  hasManualSalary?: boolean;
+  /**
+   * Registro de convenio (registry / legacy / operative). Si se omite
+   * en origin='operative', se asume el flujo actual y no se evalúa.
+   */
+  agreementRecord?: unknown;
+  /** Permite inyectar una decisión ya evaluada (testing / bridge). */
+  precomputedDecision?: AgreementSafetyDecision;
 }
 
 // ── Engine ──
