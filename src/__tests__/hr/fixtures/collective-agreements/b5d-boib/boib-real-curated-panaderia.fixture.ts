@@ -13,20 +13,15 @@ export const boibCuratedPanaderiaPayload = {
   manualPayload: {
     items: [
       {
-        source: 'BOIB' as const,
-        sourceId: 'BOIB-2024-PAN-PAST-IB-001',
-        agreementCode: undefined,
-        officialName:
+        id: 'BOIB-2024-PAN-PAST-IB-001',
+        titulo:
           'Conveni col·lectiu del sector de panaderia, pasteleria, bolleria i obradors de les Illes Balears',
-        publicationDate: '2024-11-05',
-        publicationUrl:
+        fecha: '2024-11-05',
+        url:
           'https://www.caib.es/eboibfront/ca/2024/PAN-PAST-IB-001',
-        documentUrl: undefined,
-        jurisdictionCode: 'ES',
-        autonomousRegion: 'IB',
-        scopeType: 'autonomous',
+        ambito: 'autonomico',
+        ccaa: 'IB',
         sector: 'Panadería, pastelería y obrador',
-        cnaeCodes: undefined,
       },
     ],
   },

@@ -13,20 +13,15 @@ export const boibCuratedHosteleriaPayload = {
   manualPayload: {
     items: [
       {
-        source: 'BOIB' as const,
-        sourceId: 'BOIB-2024-HOST-IB-001',
-        agreementCode: undefined,
-        officialName:
+        id: 'BOIB-2024-HOST-IB-001',
+        titulo:
           'Conveni col·lectiu del sector d\'hostaleria de les Illes Balears',
-        publicationDate: '2024-07-22',
-        publicationUrl:
+        fecha: '2024-07-22',
+        url:
           'https://www.caib.es/eboibfront/ca/2024/HOST-IB-001',
-        documentUrl: undefined,
-        jurisdictionCode: 'ES',
-        autonomousRegion: 'IB',
-        scopeType: 'autonomous',
+        ambito: 'autonomico',
+        ccaa: 'IB',
         sector: 'Hostelería',
-        cnaeCodes: undefined,
       },
     ],
   },

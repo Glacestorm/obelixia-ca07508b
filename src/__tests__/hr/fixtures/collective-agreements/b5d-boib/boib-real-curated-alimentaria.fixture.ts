@@ -13,20 +13,15 @@ export const boibCuratedAlimentariaPayload = {
   manualPayload: {
     items: [
       {
-        source: 'BOIB' as const,
-        sourceId: 'BOIB-2024-IND-ALIM-IB-001',
-        agreementCode: undefined,
-        officialName:
+        id: 'BOIB-2024-IND-ALIM-IB-001',
+        titulo:
           'Conveni col·lectiu del sector de la indústria alimentària de les Illes Balears',
-        publicationDate: '2024-10-03',
-        publicationUrl:
+        fecha: '2024-10-03',
+        url:
           'https://www.caib.es/eboibfront/ca/2024/IND-ALIM-IB-001',
-        documentUrl: undefined,
-        jurisdictionCode: 'ES',
-        autonomousRegion: 'IB',
-        scopeType: 'autonomous',
+        ambito: 'autonomico',
+        ccaa: 'IB',
         sector: 'Industria alimentaria',
-        cnaeCodes: undefined,
       },
     ],
   },
