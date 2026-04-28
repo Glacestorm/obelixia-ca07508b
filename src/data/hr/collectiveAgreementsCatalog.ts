@@ -299,6 +299,25 @@ export const SPANISH_COLLECTIVE_AGREEMENTS: CollectiveAgreement[] = [
     vacation_days: 30,
     is_system: true
   },
+  // COMERCIO EN GENERAL — ILLES BALEARS (provincial)
+  // Ámbito territorial: Comunidad Autónoma de las Illes Balears.
+  // Subsector: Comercio en General (detallista no especializado).
+  // NOTA LEGAL: Carga sólo metadatos + referencia BOIB. Las tablas salariales,
+  // antigüedad, jornada exacta y pluses NO están cargados — requiere
+  // validación humana antes de aplicar a nómina real.
+  {
+    code: 'COM-GEN-IB',
+    name: 'Convenio Colectivo de Comercio en General de las Illes Balears',
+    cnae_codes: ['47'],
+    jurisdiction_code: 'ES-IB',
+    effective_date: '2024-01-01',
+    expiration_date: '2027-12-31',
+    extra_payments: 14,
+    working_hours_week: 40,
+    vacation_days: 30,
+    source_url: 'https://www.caib.es/eboibfront/es/2024',
+    is_system: true
+  },
 ];
 
 /**
