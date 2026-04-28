@@ -149,3 +149,17 @@ Result: **12 files / 163 tests passed** (143 baseline B1–B6 + B5B +
 - **B7** — salary table parser (PDF/HTML) with real SHA-256 over
   document bytes, replacing the FNV-1a fingerprint.
 
+## 10. B5D update — BOIB curated dry-run
+
+B5D (see `HR_COLLECTIVE_AGREEMENTS_B5D_BOIB_DRYRUN_REPORT.md`) uses
+`manual_upload` over BOIB because there is no stable, documented
+public JSON endpoint for full-text BOIB search at this time. As a
+result:
+
+- The BOIB `http_adapter` mode is NOT used in B5D.
+- No scraping is performed against `caib.es` or `eboibfront`.
+- Curated payloads are fed to `fetchBoibAgreementMetadata` via
+  `manualPayload`, which forces `sourceAccessMode: 'fixture'`.
+- An HTTP adapter for BOIB is deferred to a later phase and only if a
+  contractually stable endpoint becomes available.
+
