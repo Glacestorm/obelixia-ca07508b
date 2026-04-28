@@ -97,7 +97,23 @@ function emptyData(): HRCommandCenterData {
       approvedWithoutVersionId: null,
       incoherencesCount: null,
     },
-    officialIntegrations: { ...placeholder, label: 'Integraciones oficiales', disclaimer: 'Sin evidencia oficial archivada · no se marca accepted/official_ready' },
+    officialIntegrations: {
+      level: 'gray' as const,
+      score: null,
+      label: 'Sin datos oficiales',
+      hasData: false,
+      blockers: 0,
+      warnings: 0,
+      disclaimer: 'Lectura interna de readiness. Ningún estado equivale a presentación oficial sin credencial, envío/UAT, respuesta oficial y evidencia archivada.',
+      items: [
+        { key: 'tgss_afiliacion', label: 'TGSS / Afiliación', rawState: 'not_configured' as const, displayedState: 'not_configured' as const, hasEvidence: false, hasOfficialResponse: false, hasProductionCertificate: false, degraded: false, warning: null, score: 0, lastUpdated: null },
+      ],
+      degradedCount: 0,
+      evidenceBackedCount: 0,
+      acceptedCount: 0,
+      rejectedCount: 0,
+      correctionRequiredCount: 0,
+    },
     alerts: { ...placeholder, label: 'Alertas y bloqueos', disclaimer: 'Agregación completa en Fase 3', phase: 'phase-3' as const },
   };
 }
