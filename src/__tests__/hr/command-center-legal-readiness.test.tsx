@@ -174,6 +174,10 @@ describe('Legal snapshot · readiness rules', () => {
           { id: 'eq', obligation_name: 'Plan de Igualdad anual' },
           { id: 'rr', obligation_name: 'Registro retributivo obligatorio' },
         ],
+        deadlines: [
+          { id: 'd1', obligation_id: 'eq', status: 'completed' },
+          { id: 'd2', obligation_id: 'rr', status: 'completed' },
+        ],
         riskAssessment: {
           total_alerts: 0, critical_alerts: 0, urgent_alerts: 0,
           overdue_obligations: 0, pending_communications: 0,
@@ -183,8 +187,12 @@ describe('Legal snapshot · readiness rules', () => {
     );
     const eq = snap.coverageBullets.find(b => b.key === 'equality_plan');
     const rr = snap.coverageBullets.find(b => b.key === 'pay_registry');
-    expect(eq?.status).not.toBe('gray');
-    expect(rr?.status).not.toBe('gray');
+    // Both detected and have completed activity ⇒ green
+    expect(eq?.status).toBe('green');
+    expect(rr?.status).toBe('green');
+    // Other defined bullets remain gray "Sin datos" (no false positives)
+    const wb = snap.coverageBullets.find(b => b.key === 'whistleblowing');
+    expect(wb?.status).toBe('gray');
   });
 
   it('missing obligation ⇒ bullet "Sin datos" without affecting score', () => {
