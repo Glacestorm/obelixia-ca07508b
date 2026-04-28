@@ -511,13 +511,15 @@ export async function resolveEmployeeSalary(
   year: number,
   salarioPactado: number,
   level?: string,
+  /** B4.b — Contexto opcional. Default operative (sin cambios). */
+  safetyContext?: AgreementSafetyContext,
 ): Promise<SalaryResolutionResult> {
   const { entry: tableEntry, ambiguous } = await fetchAgreementSalaryTable(
     companyId, agreementCode, professionalGroup, year, level
   );
 
   const result = resolveSalaryFromAgreement(
-    salarioPactado, tableEntry, agreementCode, professionalGroup, year
+    salarioPactado, tableEntry, agreementCode, professionalGroup, year, undefined, safetyContext
   );
 
   // Propagate ambiguity flag
