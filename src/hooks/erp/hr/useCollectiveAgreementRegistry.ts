@@ -10,9 +10,14 @@ import {
   getCollectiveAgreementsByCnae,
   rankCollectiveAgreementsForActivity,
   canUseAgreementForPayroll,
+  attachAgreementSafety,
+  buildBridgeSafetyContext,
+  mapSourceLayerToOrigin,
   type UnifiedCollectiveAgreement,
   type RankingInput,
   type PayrollGuardResult,
+  type BridgeSafetyContext,
+  type ExtendedSourceLayer,
 } from '@/lib/hr/collectiveAgreementRegistry';
 
 export function useCollectiveAgreementRegistry() {
@@ -66,7 +71,18 @@ export function useCollectiveAgreementRegistry() {
     fetchByCnae,
     rank,
     checkPayrollGuard,
+    /** B4.c — Attach a fresh safety decision (default hasManualSalary=false). */
+    attachSafety: attachAgreementSafety,
+    /** B4.c — Build the safetyContext expected by the resolver/bridge. */
+    buildBridgeSafetyContext,
+    /** B4.c — sourceLayer→AgreementOrigin pure mapping. */
+    mapSourceLayerToOrigin,
   };
 }
+
+export type {
+  BridgeSafetyContext,
+  ExtendedSourceLayer,
+};
 
 export default useCollectiveAgreementRegistry;
