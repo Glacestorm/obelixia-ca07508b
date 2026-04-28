@@ -72,18 +72,6 @@ const DOCUMENTED_EXCEPTIONS: Record<string, { type: string; justification: strin
     type: "global-catalog",
     justification: "Global catalog tables without tenant RLS; admin-gated.",
   },
-  "erp-hr-compliance-enterprise": {
-    type: "post-validated-seed",
-    justification: "S6.2B: adminClient only for seed_demo + DELETE on tables without DELETE RLS policy; tenant verified via validateTenantAccess upstream and company_id always pinned in WHERE.",
-  },
-  "erp-hr-enterprise-admin": {
-    type: "post-validated-seed",
-    justification: "S6.2B: adminClient only for seed_enterprise_data on global-catalog-style tables (erp_hr_enterprise_permissions has no write RLS); tenant verified upstream.",
-  },
-  "erp-hr-innovation-discovery": {
-    type: "post-validated-async",
-    justification: "S6.2A: adminClient only inside setTimeout after JWT may expire; tenant verified upstream and company_id pinned in WHERE.",
-  },
   "legal-knowledge-sync": {
     type: "global-catalog/cron",
     justification: "Global catalog upserts; cron path has no user JWT.",
@@ -164,21 +152,29 @@ function classify(name: string, src: string): FunctionReport {
   const hasInternalSecret = /x-internal-secret/i.test(src);
 
   const serviceRoleMatches = src.match(/SUPABASE_SERVICE_ROLE_KEY/g) ?? [];
+  const fileBindsServiceRole = serviceRoleMatches.length > 0;
 
   const bearerSR =
     /Authorization[^\n]{0,80}Bearer[^\n]{0,80}SERVICE_ROLE_KEY/i.test(src) ||
     /Bearer\s*\$\{[^}]*SERVICE_ROLE_KEY[^}]*\}/i.test(src);
 
-  // Variables bound to a service-role client.
+  // Variables bound to a service-role client *inside this file*.
+  // We deliberately do NOT flag `adminClient` symbols that originate from the
+  // shared `validateTenantAccess()` helper (post-validated). To stay strict,
+  // we only consider `adminClient` / `supabaseAdmin` / `serviceClient` symbols
+  // when the file itself references SUPABASE_SERVICE_ROLE_KEY — otherwise the
+  // symbol is either unrelated or the helper-provided post-validated client.
   const adminVars = new Set<string>();
   const reAdminBind =
     /(?:const|let|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*createClient\s*\([^)]*SERVICE_ROLE_KEY[^)]*\)/g;
   for (const m of src.matchAll(reAdminBind)) {
     adminVars.add(m[1]);
   }
-  ["adminClient", "supabaseAdmin", "serviceClient"].forEach((v) => {
-    if (new RegExp(`\\b${v}\\b`).test(src)) adminVars.add(v);
-  });
+  if (fileBindsServiceRole) {
+    ["adminClient", "supabaseAdmin", "serviceClient"].forEach((v) => {
+      if (new RegExp(`\\b${v}\\b`).test(src)) adminVars.add(v);
+    });
+  }
 
   const adminClientHits: string[] = [];
   for (const v of adminVars) {
@@ -300,6 +296,11 @@ async function main() {
     unsafe: reports.filter((r) => r.category === "unsafe").length,
   };
 
+  // Cross-cutting metric: cron/service auth detected, regardless of primary
+  // classification (e.g. an exception may also wire a cron path).
+  const cronOrServiceDetected = reports.filter((r) => r.hasCronAuth).length;
+  const internalSecretDetected = reports.filter((r) => r.hasInternalSecret).length;
+
   const fails = findings.filter((f) => f.severity === "FAIL");
   const warns = findings.filter((f) => f.severity === "WARN");
   const status = fails.length === 0 ? "🟢 GREEN" : "🔴 RED";
@@ -321,14 +322,16 @@ async function main() {
   md += `| validateCronOrServiceAuth | ${counts.cron} |\n`;
   md += `| documented_exception | ${counts.exception} |\n`;
   md += `| 🔴 unsafe | ${counts.unsafe} |\n`;
+  md += `| cron/service detected (any path) | ${cronOrServiceDetected} |\n`;
+  md += `| x-internal-secret detected (any path) | ${internalSecretDetected} |\n`;
   md += `| FAIL findings | ${fails.length} |\n`;
   md += `| WARN findings | ${warns.length} |\n\n`;
 
   md += `## 2. Per-function classification\n\n`;
-  md += `| Function | Category | SR uses | Bearer SR downstream | Admin→tenant tables |\n`;
-  md += `|---|---|---:|:---:|---|\n`;
+  md += `| Function | Category | SR uses | Cron/Service | Bearer SR downstream | Admin→tenant tables |\n`;
+  md += `|---|---|---:|:---:|:---:|---|\n`;
   for (const r of reports) {
-    md += `| \`${r.name}\` | ${badge(r.category)} | ${r.serviceRoleUses} | ${r.bearerServiceRoleDownstream ? "❌" : "—"} | ${r.adminClientTenantTableHits.join(", ") || "—"} |\n`;
+    md += `| \`${r.name}\` | ${badge(r.category)} | ${r.serviceRoleUses} | ${r.hasCronAuth ? "✓" : "—"} | ${r.bearerServiceRoleDownstream ? "❌" : "—"} | ${r.adminClientTenantTableHits.join(", ") || "—"} |\n`;
   }
   md += `\n`;
 
