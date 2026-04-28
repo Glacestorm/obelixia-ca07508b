@@ -1,19 +1,18 @@
 /**
  * HR Command Center — Phase 4A mount flag tests.
  *
- * Verifies the safe mount of HRCommandCenterPanel inside HRExecutiveDashboard
- * behind the static flag `HR_COMMAND_CENTER_ENABLED`.
+ * Verifies HRCommandCenterPanel mount inside HRExecutiveDashboard behind
+ * the static flag `HR_COMMAND_CENTER_ENABLED`.
  *
  * Invariants:
- *  - Flag OFF by default → no mount, no useHRCommandCenter call.
- *  - Flag ON (forced via vi.mock) → mount renders with experimental disclaimer.
+ *  - Flag OFF by default → no mount, useHRCommandCenter not called.
+ *  - Flag ON (forced via vi.mock) → mount with experimental disclaimer.
  *  - persisted_priority_apply OFF · C3B3C2 BLOCKED.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 
-// Shared mock for useHRCommandCenter — reused across modules.
 const mockUseHRCommandCenter = vi.fn(() => ({
   isLoading: false,
   globalReadiness: { level: 'gray', score: null, label: 'Sin datos', hasData: false, blockers: 0, warnings: 0 },
@@ -30,22 +29,37 @@ vi.mock('@/hooks/erp/hr/useHRCommandCenter', () => ({
   useHRCommandCenter: (companyId: string) => mockUseHRCommandCenter(companyId),
 }));
 
-// Minimal mock of useHRExecutiveData — returns just enough to render.
+// Mock recharts to avoid heavy SVG rendering.
+vi.mock('recharts', () => {
+  const Stub = ({ children }: any) => React.createElement('div', null, children);
+  return new Proxy({}, {
+    get: () => Stub,
+  });
+});
+
+// Rich fixture for useHRExecutiveData so HRExecutiveDashboard renders.
 vi.mock('@/hooks/admin/useHRExecutiveData', () => ({
   useHRExecutiveData: () => ({
     isLoading: false,
     error: null,
     lastRefresh: new Date(),
-    workforceStats: { total: 0, active: 0, onLeave: 0, newHires: 0, departures: 0, avgTenure: 0, employees: [] },
-    laborCosts: { totalMonthly: 0, costPerEmployee: 0 },
+    workforceStats: {
+      totalEmployees: 0, newHiresMonth: 0, departuresMonth: 0,
+      onLeave: 0, avgTenureYears: 0, total: 0, active: 0,
+    },
+    laborCosts: {
+      totalMonthly: 0, costPerEmployee: 0, annualProjection: 0,
+      baseSalaries: 0, socialSecurity: 0, supplements: 0,
+      overtime: 0, training: 0, others: 0,
+    },
     departments: [],
     alerts: [],
     monthlyTrends: [],
-    metrics: [],
-    predictions: null,
-    insights: null,
-    risks: null,
-    benchmarks: null,
+    metrics: { headcountChange: 0 },
+    predictions: [],
+    insights: [],
+    risks: [],
+    benchmarks: [],
     isLoadingAI: false,
     refreshData: vi.fn(),
     fetchPredictions: vi.fn(),
