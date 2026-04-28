@@ -14,6 +14,14 @@ export type ConceptSubtype =
 export type CalculationType = 'fixed' | 'percentage' | 'formula' | 'units' | 'days';
 export type ConceptSign = 'positive' | 'negative';
 
+/**
+ * C3 — Estado de clasificación fiscal del concepto frente a Modelo 190.
+ * - resolved: clave/subclave fiscal AEAT determinada con seguridad.
+ * - pending_review: requiere validación humana antes de presentación oficial.
+ * - out_of_scope: concepto no soportado para presentación oficial automática.
+ */
+export type FiscalClassificationStatus = 'resolved' | 'pending_review' | 'out_of_scope';
+
 export interface PayrollConceptEnriched {
   id: string;
   company_id: string;
@@ -75,6 +83,18 @@ export interface ESConceptDefinition {
   percentage_base?: string;
   sort_order: number;
   legal_reference?: string;
+
+  // ── C3 · Mapping fiscal AEAT (no destructivo) ──
+  /** Clave de percepción AEAT (Modelo 190). Solo si está resuelta de forma segura. */
+  modelo190_clave?: string;
+  /** Subclave AEAT (Modelo 190). Solo si está resuelta de forma segura. */
+  modelo190_subclave?: string;
+  /** Si true, el concepto requiere revisión humana fiscal antes de presentación oficial. */
+  modelo190_review_required?: boolean;
+  /** Motivo legible del review flag (referencias legales, casuística sensible). */
+  modelo190_review_reason?: string;
+  /** Estado actual de clasificación fiscal frente a 190. */
+  fiscal_classification_status?: FiscalClassificationStatus;
 }
 
 /**
