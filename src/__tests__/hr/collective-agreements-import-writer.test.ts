@@ -19,6 +19,7 @@ import {
   type InsertRegistryArgs,
   type UpdateRegistryArgs,
 } from '@/engines/erp/hr/collectiveAgreementsImportWriter';
+import { computeSourceDocumentFingerprint } from '@/engines/erp/hr/collectiveAgreementsSourceFetchers';
 import type {
   RawAgreementMetadata,
   NormalizedAgreementRegistryRecord,
@@ -280,6 +281,7 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
   describe('update path', () => {
     let seedId: string;
     let env: ReturnType<typeof createMemoryAdapter>;
+    let initialFingerprint: string;
 
     beforeEach(async () => {
       seedId = 'seed-1';
@@ -290,6 +292,17 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
           source_document_hash: 'https://caib.es/eboib/2025/pan-past-ib',
         },
       ]);
+      // The writer (B5E) versions on FNV-1a fingerprints over
+      // (title|date|documentUrl|sourceUrl). Seed the initial current
+      // version with the matching fingerprint so the "no change" path
+      // is exercised correctly.
+      initialFingerprint = computeSourceDocumentFingerprint({
+        title:
+          'Convenio colectivo de Panaderías y Pastelerías de las Illes Balears',
+        publicationDate: '2025-07-22',
+        sourceUrl: 'https://caib.es/eboib/2025/pan-past-ib',
+        documentUrl: 'https://caib.es/eboib/2025/pan-past-ib',
+      });
       // Seed an initial current version with the same hash.
       await env.adapter.insertVersion({
         agreement_id: seedId,
@@ -299,7 +312,7 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
         effective_start_date: null,
         effective_end_date: null,
         change_type: 'initial_text',
-        source_hash: 'https://caib.es/eboib/2025/pan-past-ib',
+        source_hash: initialFingerprint,
         parsed_summary: {},
         is_current: true,
       });
@@ -340,7 +353,10 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
       expect(all).toHaveLength(2);
       const current = all.filter(v => v.is_current);
       expect(current).toHaveLength(1);
-      expect(current[0].source_hash).toContain('rev2');
+      // New version carries a fresh FNV-1a fingerprint distinct from
+      // the seeded one (publication_url changed to *-rev2).
+      expect(current[0].source_hash).toMatch(/^fnv1a32:[0-9a-f]{8}$/);
+      expect(current[0].source_hash).not.toBe(initialFingerprint);
       expect(current[0].args.change_type).toBe('correction');
     });
   });
