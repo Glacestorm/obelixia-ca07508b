@@ -3,7 +3,7 @@
  * Fase 4 - Dashboard con datos reales + IA Predictiva
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,15 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useHRExecutiveData } from '@/hooks/admin/useHRExecutiveData';
+import { HR_COMMAND_CENTER_ENABLED } from './command-center/featureFlag';
+
+const LazyHRCommandCenterPanel = HR_COMMAND_CENTER_ENABLED
+  ? lazy(() =>
+      import('./command-center/HRCommandCenterPanel').then((m) => ({
+        default: m.HRCommandCenterPanel,
+      })),
+    )
+  : null;
 
 interface HRExecutiveDashboardProps {
   companyId: string;
@@ -832,6 +841,29 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
           </div>
         </TabsContent>
       </Tabs>
+      {HR_COMMAND_CENTER_ENABLED && LazyHRCommandCenterPanel && (
+        <section
+          data-testid="hr-command-center-mount"
+          aria-label="HR Command Center experimental"
+          className="mt-6"
+        >
+          <div className="mb-2 flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-xs">
+              Experimental · Internal readiness
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Vista interna no oficial. No sustituye dashboards existentes.
+            </span>
+          </div>
+          <Suspense
+            fallback={
+              <div className="h-32 animate-pulse bg-muted/30 rounded-lg" />
+            }
+          >
+            <LazyHRCommandCenterPanel companyId={companyId} />
+          </Suspense>
+        </section>
+      )}
     </div>
   );
 }
