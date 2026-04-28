@@ -51,6 +51,7 @@ import { HREmployeeFormDialog } from './HREmployeeFormDialog';
 import { calculateInclusiveDays, isInvertedRange } from '@/lib/hr/casuisticaDates';
 import { useAuth } from '@/hooks/useAuth';
 import { HRPersistedIncidentsPanel } from './casuistica/HRPersistedIncidentsPanel';
+import { HRPayrollReadinessGate } from './payroll/HRPayrollReadinessGate';
 import {
   PAYROLL_EFFECTIVE_CASUISTICA_MODE,
   isEffectiveCasuisticaApplyEnabled,
@@ -2315,6 +2316,31 @@ export function HRPayrollEntryDialog({
           {/* CASUISTICA-FECHAS-01 — Fase C3A: bloque READ-ONLY de procesos persistidos.
               No escribe en BD, no genera FDI/AFI/DELT@, no modifica el motor.
               El payload `casuistica` legacy enviado a simulateES NO se altera en C3A. */}
+          {selectedEmployeeId && companyId && periodYear && periodMonth && (
+            <HRPayrollReadinessGate
+              employeeId={selectedEmployeeId}
+              contractId={resolvedContractId}
+              companyId={companyId}
+              safeModeActive={!!normalizerResult?.safeMode}
+              agreementStatus={
+                agreementSource === 'none'
+                  ? 'missing'
+                  : (normalizerResult?.agreementResolutionStatus === 'manual_review_required'
+                      ? 'doubtful'
+                      : (normalizerResult?.agreementResolutionStatus === 'no_agreement'
+                          ? 'missing'
+                          : (agreementConflictDetected ? 'manual' : 'clear')))
+              }
+              contractStatus={
+                (normalizerResult as any)?.contractCoherence ?? 'complete'
+              }
+              legalReviewRequired={_mappingLegalReview}
+              hasPersistedIncidents={(_incidenciasForWiring.payrollIncidents?.length ?? 0) > 0}
+              hasLocalPersistedConflicts={((effectiveCasuisticaResult as any)?.conflicts?.length ?? 0) > 0}
+              hasUnmappedIncidents={_mappingUnmapped.length > 0}
+              hasOfficialPendingFlags={false}
+            />
+          )}
           {selectedEmployeeId && companyId && periodYear && periodMonth && (
             <HRPersistedIncidentsPanel
               companyId={companyId}
