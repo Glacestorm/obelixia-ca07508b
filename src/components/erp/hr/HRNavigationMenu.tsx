@@ -20,7 +20,7 @@ import {
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
   Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane, CreditCard,
-  Wifi, Home
+  Wifi, Home, Route
 } from 'lucide-react';
 
 // ─── Types ───
@@ -439,6 +439,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           icon: Gauge,
           color: 'text-primary',
           items: [
+            { id: 'util-demo-journey', label: '▶ Recorrido demo', icon: Route, description: 'Circuito Demo Maestro · 15 pasos · Empleado DEMO' },
             { id: 'util-premium-dash', label: 'Dashboard Premium', icon: Gauge, description: 'KPIs ejecutivos 8 módulos' },
             { id: 'util-orchestration', label: 'Orquestación', icon: Zap, description: 'Reglas reactivas inter-módulo' },
             { id: 'util-alerts', label: 'Alertas', icon: Search, description: 'Notificaciones críticas' },
