@@ -18,6 +18,19 @@ import type {
   SalaryConfidence,
   DivisorSource,
 } from './salaryNormalizer';
+import {
+  evaluateAgreementForPayroll,
+  type AgreementOrigin,
+  type AgreementSafetyDecision,
+  type AgreementSafetyCode,
+} from './agreementSafetyGate';
+
+// Re-export for downstream consumers (B4.c bridge/UI).
+export type {
+  AgreementOrigin,
+  AgreementSafetyDecision,
+  AgreementSafetyCode,
+};
 
 // ── Types ──
 
@@ -63,6 +76,8 @@ export interface SalaryResolutionResult {
   divisorSource?: DivisorSource;
   confianza?: SalaryConfidence;
   agreementResolutionStatus?: AgreementResolutionStatus;
+  /** B4.b — Decisión defensiva del agreementSafetyGate. */
+  agreementSafety?: AgreementSafetyDecision;
 }
 
 export interface SalaryResolutionTrace {
@@ -88,6 +103,32 @@ export interface SalaryResolutionTrace {
   /** Auditoría: el usuario confirmó conscientemente guardar pese al modo seguro. */
   manual_review_confirmation_at?: string;
   manual_review_confirmed_by?: string | null;
+  /** B4.b — Origen del convenio aplicado (operative por defecto). */
+  agreement_origin?: AgreementOrigin;
+  /** B4.b — Bloqueo emitido por el safety gate, si lo hubo. */
+  agreement_safety_block?: AgreementSafetyCode;
+  /** B4.b — Warnings emitidos por el safety gate. */
+  agreement_safety_warnings?: AgreementSafetyCode[];
+  /** B4.b — Campos faltantes para considerar el convenio apto. */
+  agreement_safety_missing?: string[];
+  /** B4.b — Allowed flag explícito (útil para registry validados). */
+  agreement_safety_allowed?: boolean;
+}
+
+// ── B4.b — Safety context (opcional, retro-compatible) ──
+
+export interface AgreementSafetyContext {
+  /** Defaults to 'operative' to preserve current behaviour. */
+  agreementOrigin?: AgreementOrigin;
+  /** True si el contrato/empleado declara salario manual válido. */
+  hasManualSalary?: boolean;
+  /**
+   * Registro de convenio (registry / legacy / operative). Si se omite
+   * en origin='operative', se asume el flujo actual y no se evalúa.
+   */
+  agreementRecord?: unknown;
+  /** Permite inyectar una decisión ya evaluada (testing / bridge). */
+  precomputedDecision?: AgreementSafetyDecision;
 }
 
 // ── Engine ──
@@ -206,8 +247,134 @@ export function resolveSalaryFromAgreement(
   year: number,
   /** S9.21o — Metadatos del normalizer. Si se provee con safeMode, mejora=0 y traza ampliada. */
   normalizer?: NormalizeResult,
+  /** B4.b — Contexto opcional del safety gate. Default operative (sin cambios). */
+  safetyContext?: AgreementSafetyContext,
 ): SalaryResolutionResult {
   const ts = new Date().toISOString();
+
+  // ── B4.b — Safety gate defensivo ──
+  const agreementOrigin: AgreementOrigin =
+    safetyContext?.agreementOrigin ?? 'operative';
+  const hasManualSalary =
+    safetyContext?.hasManualSalary ?? salarioPactado > 0;
+
+  let safetyDecision: AgreementSafetyDecision | undefined =
+    safetyContext?.precomputedDecision;
+
+  // Solo evaluamos cuando el caller explicita un origin distinto a operative,
+  // o cuando ya pasó una decisión precomputada. El default 'operative' sin
+  // safetyContext mantiene EXACTAMENTE el comportamiento previo.
+  const shouldEvaluateGate =
+    safetyContext !== undefined &&
+    (safetyContext.agreementOrigin !== undefined ||
+      safetyContext.precomputedDecision !== undefined);
+
+  if (shouldEvaluateGate && !safetyDecision) {
+    safetyDecision = evaluateAgreementForPayroll({
+      agreement: safetyContext?.agreementRecord ?? null,
+      origin: agreementOrigin,
+      hasManualSalary,
+    });
+  }
+
+  const buildSafetyTrace = () =>
+    safetyDecision
+      ? {
+          agreement_origin: safetyDecision.origin,
+          agreement_safety_allowed: safetyDecision.allowed,
+          agreement_safety_block: safetyDecision.blockReason,
+          agreement_safety_warnings: safetyDecision.warnings,
+          agreement_safety_missing: safetyDecision.missing,
+        }
+      : {};
+
+  // Bloqueo defensivo: si el gate dice que NO se puede calcular salario base
+  // automáticamente, devolvemos un resultado en safe mode equivalente.
+  if (safetyDecision && !safetyDecision.canComputeBaseSalary) {
+    // Excepción: salario manual con unknown agreement permite continuar el
+    // flujo (sin tabla y sin conceptos automáticos), igual que cuando no hay
+    // tableEntry. No bloqueamos; sólo añadimos warnings.
+    const allowManualPath =
+      safetyDecision.allowed === true && hasManualSalary === true;
+
+    if (!allowManualPath) {
+      return {
+        salarioBaseConvenio: 0,
+        plusConvenioTabla: 0,
+        mejoraVoluntaria: 0,
+        hasMejoraVoluntaria: false,
+        tableEntry,
+        safeMode: true,
+        safeModeReason:
+          safetyDecision.blockReason ?? 'AGREEMENT_NOT_READY_FOR_PAYROLL',
+        unidadDetectada: normalizer?.unidadDetectada,
+        divisor: normalizer?.divisor,
+        divisorSource: normalizer?.divisorSource,
+        confianza: normalizer?.confianza,
+        agreementResolutionStatus: 'manual_review_required',
+        agreementSafety: safetyDecision,
+        trace: {
+          agreementCode,
+          professionalGroup,
+          year,
+          salarioPactado,
+          salarioBaseConvenio: 0,
+          plusConvenioTabla: 0,
+          totalMinimoConvenio: 0,
+          mejoraVoluntaria: 0,
+          formula:
+            'Convenio bloqueado por safety gate — sin cálculo automático.',
+          legalReference:
+            'B4.b — Registro Maestro de Convenios: requiere validación humana.',
+          timestamp: ts,
+          agreement_resolution_status: 'manual_review_required',
+          unidadDetectada: normalizer?.unidadDetectada,
+          divisor: normalizer?.divisor,
+          divisorSource: normalizer?.divisorSource,
+          confianza: normalizer?.confianza,
+          normalizerTrace: normalizer?.trace,
+          ...buildSafetyTrace(),
+        },
+      };
+    }
+
+    // Manual path con unknown: degradar a "sin tabla" pero respetando warnings.
+    return {
+      salarioBaseConvenio: salarioPactado,
+      plusConvenioTabla: 0,
+      mejoraVoluntaria: 0,
+      hasMejoraVoluntaria: false,
+      tableEntry: null,
+      safeMode: false,
+      unidadDetectada: normalizer?.unidadDetectada,
+      divisor: normalizer?.divisor,
+      divisorSource: normalizer?.divisorSource,
+      confianza: normalizer?.confianza,
+      agreementResolutionStatus: 'no_agreement',
+      agreementSafety: safetyDecision,
+      trace: {
+        agreementCode,
+        professionalGroup,
+        year,
+        salarioPactado,
+        salarioBaseConvenio: salarioPactado,
+        plusConvenioTabla: 0,
+        totalMinimoConvenio: salarioPactado,
+        mejoraVoluntaria: 0,
+        formula:
+          'Salario manual aceptado; convenio sin validar no alimenta conceptos automáticos.',
+        legalReference: 'ET Art. 26 + B4.b safety gate',
+        timestamp: ts,
+        agreement_resolution_status: 'no_agreement',
+        unidadDetectada: normalizer?.unidadDetectada,
+        divisor: normalizer?.divisor,
+        divisorSource: normalizer?.divisorSource,
+        confianza: normalizer?.confianza,
+        normalizerTrace: normalizer?.trace,
+        ...buildSafetyTrace(),
+      },
+    };
+  }
 
   // ── S9.21o: modo seguro estricto ──
   if (normalizer?.safeMode) {
@@ -224,6 +391,7 @@ export function resolveSalaryFromAgreement(
       divisorSource: normalizer.divisorSource,
       confianza: normalizer.confianza,
       agreementResolutionStatus: 'manual_review_required',
+      agreementSafety: safetyDecision,
       trace: {
         agreementCode,
         professionalGroup,
@@ -243,6 +411,7 @@ export function resolveSalaryFromAgreement(
         divisorSource: normalizer.divisorSource,
         confianza: normalizer.confianza,
         normalizerTrace: normalizer.trace,
+        ...buildSafetyTrace(),
       },
     };
   }
@@ -261,6 +430,7 @@ export function resolveSalaryFromAgreement(
       divisorSource: normalizer?.divisorSource,
       confianza: normalizer?.confianza,
       agreementResolutionStatus: 'no_agreement',
+      agreementSafety: safetyDecision,
       trace: {
         agreementCode,
         professionalGroup,
@@ -279,6 +449,7 @@ export function resolveSalaryFromAgreement(
         divisorSource: normalizer?.divisorSource,
         confianza: normalizer?.confianza,
         normalizerTrace: normalizer?.trace,
+        ...buildSafetyTrace(),
       },
     };
   }
@@ -304,6 +475,7 @@ export function resolveSalaryFromAgreement(
     divisorSource: normalizer?.divisorSource,
     confianza: normalizer?.confianza,
     agreementResolutionStatus: 'computed',
+    agreementSafety: safetyDecision,
     trace: {
       agreementCode,
       professionalGroup,
@@ -324,6 +496,7 @@ export function resolveSalaryFromAgreement(
       divisorSource: normalizer?.divisorSource,
       confianza: normalizer?.confianza,
       normalizerTrace: normalizer?.trace,
+      ...buildSafetyTrace(),
     },
   };
 }
@@ -338,13 +511,15 @@ export async function resolveEmployeeSalary(
   year: number,
   salarioPactado: number,
   level?: string,
+  /** B4.b — Contexto opcional. Default operative (sin cambios). */
+  safetyContext?: AgreementSafetyContext,
 ): Promise<SalaryResolutionResult> {
   const { entry: tableEntry, ambiguous } = await fetchAgreementSalaryTable(
     companyId, agreementCode, professionalGroup, year, level
   );
 
   const result = resolveSalaryFromAgreement(
-    salarioPactado, tableEntry, agreementCode, professionalGroup, year
+    salarioPactado, tableEntry, agreementCode, professionalGroup, year, undefined, safetyContext
   );
 
   // Propagate ambiguity flag
