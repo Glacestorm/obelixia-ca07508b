@@ -442,25 +442,28 @@ export function HRPayrollIncidentFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {isEdit ? 'Editar proceso persistido' : 'Añadir proceso persistido'}
-          </DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? 'Edita los datos de una incidencia no aplicada. No se aplica a la nómina ni se envían comunicaciones oficiales.'
-              : 'Crea una incidencia entre fechas asociada al periodo en curso. No se aplica a la nómina ni se envían comunicaciones oficiales.'}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+        <div className="sticky top-0 z-10 bg-background border-b border-border px-6 pt-6 pb-4">
+          <DialogHeader className="pr-8 space-y-1.5">
+            <DialogTitle className="text-lg leading-tight">
+              {isEdit ? 'Editar proceso persistido' : 'Añadir proceso persistido'}
+            </DialogTitle>
+            <DialogDescription className="text-sm">
+              {isEdit
+                ? 'Edita los datos de una incidencia no aplicada. No se aplica a la nómina ni se envían comunicaciones oficiales.'
+                : 'Crea una incidencia entre fechas asociada al periodo en curso. No se aplica a la nómina ni se envían comunicaciones oficiales.'}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        {/* Banner legal permanente */}
+        <div className="px-6 py-4 space-y-4">
+        {/* Banner legal permanente — ámbar accesible WCAG AA */}
         <div
           role="note"
-          className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground"
+          className="flex items-start gap-2.5 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-100"
         >
-          <ShieldOff className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
-          <p>
+          <ShieldOff className="h-4 w-4 mt-0.5 shrink-0 text-amber-700 dark:text-amber-300" />
+          <p className="leading-relaxed">
             Este registro no envía comunicaciones oficiales, no recalcula
             nóminas y no modifica el resultado de la nómina actual. Solo crea
             una incidencia persistida pendiente para revisión y fases
@@ -471,9 +474,9 @@ export function HRPayrollIncidentFormDialog({
         {isEdit && isApplied && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+            className="flex items-start gap-2.5 rounded-md border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-700/60 dark:bg-red-950/40 dark:text-red-100"
           >
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-red-700 dark:text-red-300" />
             <p>
               Incidencia aplicada a nómina. Requiere flujo de recálculo en fase
               posterior (C4). La edición está bloqueada.
@@ -481,16 +484,18 @@ export function HRPayrollIncidentFormDialog({
           </div>
         )}
 
-        <div className="grid gap-4 py-2">
+        <div className="grid gap-4">
           {/* Tipo */}
           <div className="grid gap-1.5">
-            <Label htmlFor="incident-type">Tipo de proceso</Label>
+            <Label htmlFor="incident-type">
+              Tipo de proceso<Req />
+            </Label>
             <Select
               value={type}
               onValueChange={(v) => setType(v as AnyType)}
               disabled={isEdit}
             >
-              <SelectTrigger id="incident-type" disabled={isEdit} aria-disabled={isEdit}>
+              <SelectTrigger id="incident-type" disabled={isEdit} aria-disabled={isEdit} aria-required="true">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -524,9 +529,9 @@ export function HRPayrollIncidentFormDialog({
           {excluded && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+              className="flex items-start gap-2.5 rounded-md border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-700/60 dark:bg-red-950/40 dark:text-red-100"
             >
-              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-red-700 dark:text-red-300" />
               <p>
                 Este proceso debe gestionarse desde el módulo especializado
                 correspondiente para conservar su trazabilidad legal.
@@ -536,8 +541,8 @@ export function HRPayrollIncidentFormDialog({
 
           {/* Banner por tipo */}
           {cfg && (
-            <div className="flex items-start gap-2 rounded-md border border-info/30 bg-info/5 p-3 text-xs text-foreground">
-              <Info className="h-4 w-4 mt-0.5 shrink-0 text-info" />
+            <div className="flex items-start gap-2.5 rounded-md border border-sky-300 bg-sky-50 p-3 text-xs text-sky-900 dark:border-sky-700/60 dark:bg-sky-950/40 dark:text-sky-100">
+              <Info className="h-4 w-4 mt-0.5 shrink-0 text-sky-700 dark:text-sky-300" />
               <p>{cfg.banner}</p>
             </div>
           )}
@@ -545,19 +550,25 @@ export function HRPayrollIncidentFormDialog({
           {/* Fechas */}
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="applies-from">Fecha inicio</Label>
+              <Label htmlFor="applies-from">
+                Fecha inicio<Req />
+              </Label>
               <Input
                 id="applies-from"
                 type="date"
+                aria-required="true"
                 value={appliesFrom}
                 onChange={(e) => setAppliesFrom(e.target.value)}
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="applies-to">Fecha fin</Label>
+              <Label htmlFor="applies-to">
+                Fecha fin<Req />
+              </Label>
               <Input
                 id="applies-to"
                 type="date"
+                aria-required="true"
                 value={appliesTo}
                 onChange={(e) => setAppliesTo(e.target.value)}
               />
@@ -577,13 +588,16 @@ export function HRPayrollIncidentFormDialog({
           {/* Importe / porcentaje */}
           {(cfg?.showAmount ?? true) && (
             <div className="grid gap-1.5">
-              <Label htmlFor="amount">Importe (€)</Label>
+              <Label htmlFor="amount">
+                Importe (€){type === 'atrasos_regularizacion' && <Req />}
+              </Label>
               <Input
                 id="amount"
                 type="number"
                 inputMode="decimal"
                 min={0}
                 step="0.01"
+                aria-required={type === 'atrasos_regularizacion' ? 'true' : undefined}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
@@ -591,7 +605,9 @@ export function HRPayrollIncidentFormDialog({
           )}
           {(cfg?.showPercent ?? false) && (
             <div className="grid gap-1.5">
-              <Label htmlFor="percent">Porcentaje (%)</Label>
+              <Label htmlFor="percent">
+                Porcentaje (%){type === 'reduccion_jornada_guarda_legal' && <Req />}
+              </Label>
               <Input
                 id="percent"
                 type="number"
@@ -599,6 +615,7 @@ export function HRPayrollIncidentFormDialog({
                 min={0}
                 max={100}
                 step="0.01"
+                aria-required={type === 'reduccion_jornada_guarda_legal' ? 'true' : undefined}
                 value={percent}
                 onChange={(e) => setPercent(e.target.value)}
               />
@@ -628,7 +645,10 @@ export function HRPayrollIncidentFormDialog({
           )}
           {cfg?.extraFields?.includes('reason') && (
             <div className="grid gap-1.5">
-              <Label htmlFor="reason">Motivo</Label>
+              <Label htmlFor="reason">
+                Motivo
+                {(type === 'desplazamiento_temporal' || type === 'suspension_empleo_sueldo') && <Req />}
+              </Label>
               <Input
                 id="reason"
                 value={reason}
@@ -692,21 +712,27 @@ export function HRPayrollIncidentFormDialog({
             </div>
           </div>
 
-          {/* Errores */}
+          {/* Errores agrupados */}
           {errors.length > 0 && (
-            <ul
+            <div
               role="alert"
               aria-label="Errores de validación"
-              className="text-xs text-destructive space-y-0.5 list-disc pl-5"
+              className="rounded-md border border-red-300 bg-red-50 p-3 dark:border-red-700/60 dark:bg-red-950/30"
             >
-              {errors.map((e, i) => (
-                <li key={i}>{e}</li>
-              ))}
-            </ul>
+              <p className="text-xs font-semibold text-red-900 dark:text-red-100 mb-1">
+                Revisa los siguientes campos:
+              </p>
+              <ul className="text-xs text-red-800 dark:text-red-200 space-y-0.5 list-disc pl-5">
+                {errors.map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="sticky bottom-0 border-t border-border bg-background px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancelar
           </Button>
@@ -723,6 +749,11 @@ export function HRPayrollIncidentFormDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/** Asterisco rojo accesible para campos obligatorios. */
+function Req() {
+  return <span aria-hidden="true" className="ml-0.5 text-red-600">*</span>;
 }
 
 function FlagRow({
