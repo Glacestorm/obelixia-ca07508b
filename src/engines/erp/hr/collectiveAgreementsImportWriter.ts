@@ -37,6 +37,7 @@ import type {
   NormalizedAgreementRegistryRecord,
   RawAgreementMetadata,
 } from './collectiveAgreementsImportTypes';
+import { computeSourceDocumentFingerprint } from './collectiveAgreementsSourceFetchers';
 
 // =============================================================
 // Adapter contract
@@ -64,7 +65,13 @@ export interface InsertVersionArgs {
   source_url: string | null;
   effective_start_date: string | null;
   effective_end_date: string | null;
-  change_type: 'initial_text' | 'modificacion' | 'prorroga' | 'denuncia' | 'sustitucion';
+  change_type:
+    | 'initial_text'
+    | 'salary_revision'
+    | 'correction'
+    | 'extension'
+    | 'denunciation'
+    | 'new_agreement';
   source_hash: string | null;
   parsed_summary: Record<string, unknown>;
   is_current: boolean;
@@ -94,6 +101,22 @@ export interface InsertImportRunArgs {
 export interface RegistryDbAdapter {
   fetchExistingByInternalCodes(codes: string[]): Promise<ExistingRegistryRecord[]>;
   fetchCurrentVersionHash(agreementId: string): Promise<string | null>;
+  /**
+   * B5E — Returns the id of the current `is_current=true` version for
+   * an agreement, or null. Used to populate `previousCurrentVersionId`
+   * in the import_run report so a future rollback can restore the prior
+   * is_current pointer without touching the operational table.
+   *
+   * Optional for backward compatibility with B5B adapters that do not
+   * implement it; callers must tolerate `undefined`.
+   */
+  fetchCurrentVersionId?(agreementId: string): Promise<string | null>;
+  /**
+   * B5E — Returns a snapshot of the SAFE_UPDATE_FIELDS for an existing
+   * agreement so we can record `preUpdateSnapshots` in the import_run
+   * for metadata-only rollback. Optional.
+   */
+  fetchSafeMetadataSnapshot?(agreementId: string): Promise<Record<string, unknown> | null>;
   insertRegistryRecord(args: InsertRegistryArgs): Promise<{ id: string }>;
   updateRegistryMetadata(args: UpdateRegistryArgs): Promise<void>;
   insertVersion(args: InsertVersionArgs): Promise<{ id: string }>;
@@ -171,10 +194,21 @@ function forceSafetyFlags(
 // =============================================================
 
 function extractDocumentHash(rec: NormalizedAgreementRegistryRecord): string | null {
-  // The normalizer doesn't compute hashes; downstream parsers (B7) will.
-  // For B5B we rely on `publication_url` as a stable proxy: a URL change
-  // is treated as a content change for versioning purposes.
-  return rec.publication_url ?? null;
+  // B5E — replace plain `publication_url` proxy with a deterministic
+  // FNV-1a fingerprint that combines title + date + documentUrl +
+  // publicationUrl, mirroring B5C/B5D. This is still NOT a real
+  // SHA-256 (that lands in B7) but it stabilizes change-detection
+  // across re-runs and matches the `fingerprint` reported by the
+  // dry-run pipeline.
+  if (!rec.publication_url && !rec.official_name && !rec.publication_date) {
+    return null;
+  }
+  return computeSourceDocumentFingerprint({
+    title: rec.official_name,
+    publicationDate: rec.publication_date ?? undefined,
+    sourceUrl: rec.publication_url ?? undefined,
+    documentUrl: rec.publication_url ?? undefined,
+  });
 }
 
 // =============================================================
@@ -185,6 +219,19 @@ export interface RunImportInput {
   source: AgreementImportSource;
   items: RawAgreementMetadata[];
   dryRun?: boolean;
+  /**
+   * B5E — operator-supplied flag attesting that every item in the
+   * batch was reviewed by a human against the canonical official
+   * publication BEFORE invocation. The writer simply records this in
+   * the import_run report; it never bypasses any safety flag.
+   * Default: false.
+   */
+  manualReviewed?: boolean;
+  /**
+   * B5E — id of a previous dryRun import_run that produced the same
+   * plan. Recorded in the import_run report for traceability. Optional.
+   */
+  dryRunReference?: string;
 }
 
 export interface RunImportPlan {
@@ -299,9 +346,36 @@ export async function runCollectiveAgreementMetadataImport(
   let updated = 0;
   const writeErrors: Array<{ sourceId?: string; reason: string }> = [];
 
+  // B5E — collected per-record evidence for the import_run report.
+  const candidateMapping: Record<
+    string,
+    { boibId?: string; fingerprint: string | null; publicationUrl: string | null }
+  > = {};
+  const preUpdateSnapshots: Record<string, Record<string, unknown> | null> = {};
+  const previousCurrentVersionId: Record<string, string | null> = {};
+
+  // Helper to enrich candidateMapping from the original raw items.
+  const rawByCode = new Map<string, RawAgreementMetadata>();
+  for (const raw of input.items ?? []) {
+    if (!raw || typeof raw !== 'object' || !raw.officialName) continue;
+    const code = (raw.agreementCode ?? '').trim().toUpperCase();
+    if (code) rawByCode.set(code, raw);
+  }
+  function recordMapping(rec: NormalizedAgreementRegistryRecord) {
+    const fp = extractDocumentHash(rec);
+    const codeKey = rec.internal_code.trim().toUpperCase();
+    const raw = rawByCode.get(codeKey);
+    candidateMapping[rec.internal_code] = {
+      boibId: raw?.sourceId,
+      fingerprint: fp,
+      publicationUrl: rec.publication_url ?? null,
+    };
+  }
+
   // 5.a INSERT new records — also create initial version + source row.
   for (const rec of plan.toInsert) {
     try {
+      recordMapping(rec);
       const { id } = await adapter.insertRegistryRecord({ record: rec });
       const docHash = extractDocumentHash(rec);
       await adapter.insertVersion({
@@ -338,6 +412,7 @@ export async function runCollectiveAgreementMetadataImport(
   //     the document hash (proxied by publication_url) changed.
   const nowIso = nowFn().toISOString();
   for (const rec of plan.toUpdate) {
+    recordMapping(rec);
     const codeKey = rec.internal_code.trim().toUpperCase();
     const ex = existingByCode.get(codeKey);
     if (!ex) {
@@ -348,6 +423,15 @@ export async function runCollectiveAgreementMetadataImport(
       continue;
     }
     try {
+      // B5E — capture pre-update snapshot for rollback (best-effort).
+      if (typeof adapter.fetchSafeMetadataSnapshot === 'function') {
+        try {
+          preUpdateSnapshots[rec.internal_code] =
+            await adapter.fetchSafeMetadataSnapshot(ex.id);
+        } catch {
+          preUpdateSnapshots[rec.internal_code] = null;
+        }
+      }
       const patch = buildSafeMetadataPatch(rec, nowIso);
       await adapter.updateRegistryMetadata({ id: ex.id, metadataPatch: patch });
 
@@ -356,6 +440,16 @@ export async function runCollectiveAgreementMetadataImport(
         .fetchCurrentVersionHash(ex.id)
         .catch(() => null);
       if (newHash && newHash !== previousHash) {
+        // B5E — capture previous current version id (best-effort) for
+        // metadata rollback BEFORE we unset is_current.
+        if (typeof adapter.fetchCurrentVersionId === 'function') {
+          try {
+            previousCurrentVersionId[rec.internal_code] =
+              await adapter.fetchCurrentVersionId(ex.id);
+          } catch {
+            previousCurrentVersionId[rec.internal_code] = null;
+          }
+        }
         await adapter.unsetCurrentVersions(ex.id);
         await adapter.insertVersion({
           agreement_id: ex.id,
@@ -364,7 +458,8 @@ export async function runCollectiveAgreementMetadataImport(
           source_url: rec.publication_url ?? null,
           effective_start_date: rec.effective_start_date ?? null,
           effective_end_date: rec.effective_end_date ?? null,
-          change_type: 'modificacion',
+          // Schema-allowed change_type for metadata-only republication.
+          change_type: 'correction',
           source_hash: newHash,
           parsed_summary: {
             data_completeness: 'metadata_only',
@@ -373,6 +468,26 @@ export async function runCollectiveAgreementMetadataImport(
           },
           is_current: true,
         });
+        // B5E — also refresh the BOIB source row with the new
+        // fingerprint so downstream readers see the latest hash.
+        try {
+          await adapter.insertSource({
+            agreement_id: ex.id,
+            source_type: rec.publication_source ?? input.source,
+            source_url: rec.publication_url ?? null,
+            document_url: rec.publication_url ?? null,
+            document_hash: newHash,
+            status: 'pending',
+            source_quality: rec.source_quality,
+          });
+        } catch (sourceErr) {
+          writeErrors.push({
+            sourceId: rec.internal_code,
+            reason: `source_refresh_failed: ${
+              sourceErr instanceof Error ? sourceErr.message : 'unknown'
+            }`,
+          });
+        }
       }
       updated += 1;
     } catch (err) {
@@ -394,6 +509,22 @@ export async function runCollectiveAgreementMetadataImport(
 
   let importRunId: string | null = null;
   const totalSkipped = importRun.skipped + plan.skipped.length;
+
+  // B5E — derive the safety summary from the records actually planned
+  // (post forceSafetyFlags). All five flags MUST be safe by construction.
+  const allPlanned = [...plan.toInsert, ...plan.toUpdate];
+  const safetySummary = {
+    allReadyForPayrollFalse: allPlanned.every(r => r.ready_for_payroll === false),
+    allRequireHumanReview: allPlanned.every(r => r.requires_human_review === true),
+    allOfficialSubmissionBlocked: allPlanned.every(
+      r => r.official_submission_blocked === true
+    ),
+    allMetadataOnly: allPlanned.every(r => r.data_completeness === 'metadata_only'),
+    allBlockedFromPayroll: allPlanned.every(
+      r => r.ready_for_payroll === false && r.salary_tables_loaded === false
+    ),
+  };
+
   try {
     const r = await adapter.insertImportRun({
       source: input.source,
@@ -404,6 +535,12 @@ export async function runCollectiveAgreementMetadataImport(
       errors: allErrors.length,
       report_json: {
         dryRun: false,
+        manual_reviewed: input.manualReviewed === true,
+        dryRunReference: input.dryRunReference ?? null,
+        candidateMapping,
+        safetySummary,
+        preUpdateSnapshots,
+        previousCurrentVersionId,
         errors: allErrors,
         insertedCodes: plan.toInsert.map(r => r.internal_code),
         updatedCodes: plan.toUpdate.map(r => r.internal_code),
