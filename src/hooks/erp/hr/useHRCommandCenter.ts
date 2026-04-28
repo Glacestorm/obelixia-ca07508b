@@ -20,6 +20,10 @@ import { usePayrollPreflight } from '@/hooks/erp/hr/usePayrollPreflight';
 import { useHRDocumentExpedient } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { useS9VPT } from '@/hooks/erp/hr/useS9VPT';
 import { useHRLegalCompliance } from '@/hooks/admin/useHRLegalCompliance';
+import {
+  useOfficialIntegrationsSnapshot,
+  type OfficialIntegrationsSnapshot,
+} from '@/hooks/erp/hr/useOfficialIntegrationsSnapshot';
 
 export type ReadinessLevel = 'green' | 'amber' | 'red' | 'gray';
 
@@ -111,7 +115,7 @@ export interface HRCommandCenterData {
   documentary: DocumentarySnapshot;
   legal: LegalSnapshot;
   vpt: VPTSnapshot;
-  officialIntegrations: PlaceholderSnapshot;
+  officialIntegrations: OfficialIntegrationsSnapshot;
   alerts: PlaceholderSnapshot;
 }
 
@@ -143,6 +147,7 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
   // Read-only consumption: we do NOT call refreshAll / startAutoRefresh.
   // The hook performs its own initial load on mount; we just read state.
   const legalHook = useHRLegalCompliance(companyId);
+  const officialSnap = useOfficialIntegrationsSnapshot(companyId);
 
   return useMemo<HRCommandCenterData>(() => {
     const isLoading = Boolean(
@@ -150,7 +155,8 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
         || preflight?.isLoading
         || (docs as any)?.isLoadingDocuments
         || (vptHook as any)?.isLoading
-        || (legalHook as any)?.isLoading,
+        || (legalHook as any)?.isLoading
+        || officialSnap?.isLoading,
     );
 
     // ── Global state ──
@@ -277,10 +283,7 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
     // ── VPT / S9 (real wiring) ──
     const vpt = computeVPTSnapshot(vptHook);
 
-    const officialIntegrations = placeholder(
-      'Integraciones oficiales',
-      'Sin evidencia oficial archivada · no se marca accepted/official_ready',
-    );
+    const officialIntegrations = officialSnap.snapshot;
     const alerts = placeholder(
       'Alertas y bloqueos',
       'Agregación completa en Fase 3',
@@ -291,10 +294,13 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
     // Only sections with non-null score enter the weighted denominator.
     const realScores: Array<{ score: number; weight: number }> = [];
     if (global.score !== null) realScores.push({ score: global.score, weight: 0.10 });
-    if (payroll.score !== null) realScores.push({ score: payroll.score, weight: 0.30 });
-    if (documentary.score !== null) realScores.push({ score: documentary.score, weight: 0.20 });
-    if (legal.score !== null) realScores.push({ score: legal.score, weight: 0.25 });
-    if (vpt.score !== null) realScores.push({ score: vpt.score, weight: 0.15 });
+    if (payroll.score !== null) realScores.push({ score: payroll.score, weight: 0.25 });
+    if (documentary.score !== null) realScores.push({ score: documentary.score, weight: 0.15 });
+    if (legal.score !== null) realScores.push({ score: legal.score, weight: 0.20 });
+    if (vpt.score !== null) realScores.push({ score: vpt.score, weight: 0.10 });
+    if (officialIntegrations.score !== null) {
+      realScores.push({ score: officialIntegrations.score, weight: 0.20 });
+    }
 
     let globalReadinessScore: number | null = null;
     if (realScores.length > 0) {
@@ -304,14 +310,22 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
     }
     const totalBlockers =
       global.blockers + payroll.blockers + documentary.blockers
-      + legal.blockers + vpt.blockers;
+      + legal.blockers + vpt.blockers + officialIntegrations.blockers;
     const totalWarnings =
-      payroll.warnings + documentary.warnings + legal.warnings + vpt.warnings;
+      payroll.warnings + documentary.warnings + legal.warnings + vpt.warnings
+      + officialIntegrations.warnings;
 
-    // Hard rule: any RED section among payroll / legal / VPT forces global RED,
-    // regardless of weighted average. Prudence rule: any blocker > 0 ⇒ RED.
+    // Hard rule: any RED section among payroll / legal / VPT / official
+    // forces global RED, regardless of weighted average.
+    // Prudence rule: any blocker > 0 ⇒ RED.
     const hardRed =
-      payroll.level === 'red' || legal.level === 'red' || vpt.level === 'red';
+      payroll.level === 'red'
+      || legal.level === 'red'
+      || vpt.level === 'red'
+      || officialIntegrations.level === 'red';
+
+    // Soft rule: official degradations force global at least AMBER (when no RED).
+    const officialDegraded = officialIntegrations.degradedCount > 0;
 
     let globalLevel: ReadinessLevel;
     if (globalReadinessScore === null) {
@@ -320,6 +334,9 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       globalLevel = 'red';
     } else {
       globalLevel = levelFromScore(globalReadinessScore, totalBlockers);
+      if (officialDegraded && globalLevel === 'green') {
+        globalLevel = 'amber';
+      }
     }
 
     const globalReadiness: SectionReadiness = {
@@ -342,7 +359,7 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       officialIntegrations,
       alerts,
     };
-  }, [exec, preflight, docs, vptHook, legalHook]);
+  }, [exec, preflight, docs, vptHook, legalHook, officialSnap]);
 }
 
 // ── VPT snapshot computation ────────────────────────────────────────────────
