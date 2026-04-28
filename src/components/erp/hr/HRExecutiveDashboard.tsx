@@ -841,6 +841,29 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
           </div>
         </TabsContent>
       </Tabs>
+      {HR_COMMAND_CENTER_ENABLED && LazyHRCommandCenterPanel && (
+        <section
+          data-testid="hr-command-center-mount"
+          aria-label="HR Command Center experimental"
+          className="mt-6"
+        >
+          <div className="mb-2 flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-xs">
+              Experimental · Internal readiness
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Vista interna no oficial. No sustituye dashboards existentes.
+            </span>
+          </div>
+          <Suspense
+            fallback={
+              <div className="h-32 animate-pulse bg-muted/30 rounded-lg" />
+            }
+          >
+            <LazyHRCommandCenterPanel companyId={companyId} />
+          </Suspense>
+        </section>
+      )}
     </div>
   );
 }
