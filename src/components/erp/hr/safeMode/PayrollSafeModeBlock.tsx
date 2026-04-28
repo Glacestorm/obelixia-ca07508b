@@ -672,6 +672,8 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
   periodLabel,
   referenceAmounts,
   referenceConcepts,
+  agreementSafetyDecision,
+  agreementSafetyWarnings,
 }: PayrollSafeModeBlockProps) {
   const canOpenContract = !!contractId && !!employeeId;
   const hasAgreement = !!(agreementName && agreementName.trim().length > 0);
@@ -695,6 +697,11 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
   );
   const showReferenceCard =
     hasAgreement && (hasReferenceAmounts || hasReferenceConcepts);
+
+  const hasSafetyContent =
+    !!agreementSafetyDecision?.blockReason ||
+    (agreementSafetyDecision?.warnings?.length ?? 0) > 0 ||
+    (agreementSafetyWarnings?.length ?? 0) > 0;
 
   return (
     <div
@@ -731,6 +738,14 @@ export const PayrollSafeModeBlock = memo(function PayrollSafeModeBlock({
         <SafeModeReferenceAmountsCard
           referenceAmounts={referenceAmounts}
           referenceConcepts={referenceConcepts}
+        />
+      )}
+      {/* B4.c — Avisos de seguridad del convenio (registry/legacy/unknown).
+          Estrictamente informativo. NO se ofrece CTA de activación. */}
+      {hasSafetyContent && (
+        <SafeModeAgreementSafetyCard
+          decision={agreementSafetyDecision}
+          extraWarnings={agreementSafetyWarnings}
         />
       )}
       {noAgreementResolved && (
