@@ -147,7 +147,17 @@ export const ES_CONCEPT_DEFINITIONS: ESConceptDefinition[] = [
   { code: 'ES_IT_CC_EMPRESA', name: 'Complemento IT cont. común', concept_type: 'earning', subcategory: 'variable', is_salary: true, is_taxable: true, is_ss_contributable: false, impacts_cra: true, impacts_irpf: true, impacts_net_payment: true, calculation_type: 'days', default_sign: 'positive', is_percentage: false, is_prorrateado: false, sort_order: 90, legal_reference: 'ET Art. 45.1.c' },
   { code: 'ES_IT_AT_EMPRESA', name: 'Complemento IT acc. trabajo', concept_type: 'earning', subcategory: 'variable', is_salary: true, is_taxable: true, is_ss_contributable: false, impacts_cra: true, impacts_irpf: true, impacts_net_payment: true, calculation_type: 'days', default_sign: 'positive', is_percentage: false, is_prorrateado: false, sort_order: 91 },
   { code: 'ES_NACIMIENTO', name: 'Prestación nacimiento/cuidado', concept_type: 'earning', subcategory: 'variable', is_salary: false, is_taxable: false, is_ss_contributable: false, impacts_cra: false, impacts_irpf: false, impacts_net_payment: false, calculation_type: 'days', default_sign: 'positive', is_percentage: false, is_prorrateado: false, sort_order: 92, legal_reference: 'LGSS Art. 177-182' },
-  { code: 'ES_STOCK_OPTIONS', name: 'Stock options', concept_type: 'earning', subcategory: 'variable', is_salary: true, is_taxable: true, is_ss_contributable: true, impacts_cra: true, impacts_irpf: true, impacts_net_payment: true, calculation_type: 'fixed', default_sign: 'positive', is_percentage: false, is_prorrateado: false, sort_order: 80 },
+  { code: 'ES_STOCK_OPTIONS', name: 'Stock options', concept_type: 'earning', subcategory: 'variable', is_salary: true, is_taxable: true, is_ss_contributable: true, impacts_cra: true, impacts_irpf: true, impacts_net_payment: true, calculation_type: 'fixed', default_sign: 'positive', is_percentage: false, is_prorrateado: false, sort_order: 80,
+    // ── C3 · Mapping fiscal Modelo 190 ──
+    // No se asigna clave/subclave automática: la naturaleza del plan (Standard /
+    // Ley 28/2022 startups / RSU / phantom shares / expatriados) condiciona la
+    // clave de percepción y eventuales exenciones (LIRPF Art. 42.3.f, Art. 18.2).
+    // Se obliga revisión humana antes de cualquier presentación oficial.
+    modelo190_review_required: true,
+    fiscal_classification_status: 'pending_review',
+    modelo190_review_reason:
+      'Stock Options requieren validación fiscal de clave/subclave AEAT (Modelo 190) según naturaleza del plan, ejercicio, posibles exenciones (LIRPF Art. 42.3.f) y reducciones por irregularidad (LIRPF Art. 18.2). No se auto-resuelve.',
+  },
   { code: 'ES_REGULARIZACION', name: 'Regularización / atrasos', concept_type: 'earning', subcategory: 'regularization', is_salary: true, is_taxable: true, is_ss_contributable: true, impacts_cra: true, impacts_irpf: true, impacts_net_payment: true, calculation_type: 'fixed', default_sign: 'positive', is_percentage: false, is_prorrateado: false, sort_order: 95 },
 
   // ─── Deducciones trabajador ───
