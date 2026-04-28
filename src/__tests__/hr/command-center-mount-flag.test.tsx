@@ -119,7 +119,7 @@ function emptyData(): HRCommandCenterData {
   } as HRCommandCenterData;
 }
 
-const mockUseHRCommandCenter = vi.fn(() => emptyData());
+const mockUseHRCommandCenter = vi.fn((_companyId: string) => emptyData());
 
 vi.mock('@/hooks/erp/hr/useHRCommandCenter', () => ({
   useHRCommandCenter: (companyId: string) => mockUseHRCommandCenter(companyId),
