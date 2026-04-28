@@ -18,6 +18,7 @@ import { useHRExecutiveData } from '@/hooks/admin/useHRExecutiveData';
 import { usePayrollPreflight } from '@/hooks/erp/hr/usePayrollPreflight';
 import { useHRDocumentExpedient } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { useS9VPT } from '@/hooks/erp/hr/useS9VPT';
+import { useHRLegalCompliance } from '@/hooks/admin/useHRLegalCompliance';
 
 export type ReadinessLevel = 'green' | 'amber' | 'red' | 'gray';
 
@@ -56,6 +57,35 @@ export interface PlaceholderSnapshot extends SectionReadiness {
 }
 
 /**
+ * Legal/Compliance snapshot — Phase 2B real wiring.
+ * Read-only consumption of `useHRLegalCompliance`. The Command Center never
+ * triggers `refreshAll` / `startAutoRefresh` on its own. If the hook returns
+ * empty arrays + null risk assessment ⇒ gris "Sin datos" (never green).
+ * This is INTERNAL READING, not an official legal certification.
+ */
+export type LegalBulletStatus = 'green' | 'amber' | 'red' | 'gray';
+export interface LegalCoverageBullet {
+  key: string;
+  label: string;
+  status: LegalBulletStatus;
+  detail: string;
+}
+
+export interface LegalSnapshot extends SectionReadiness {
+  disclaimer: string;
+  criticalAlerts: number | null;
+  urgentAlerts: number | null;
+  overdueObligations: number | null;
+  pendingCommunications: number | null;
+  totalAlerts: number | null;
+  upcomingDeadlinesCount: number | null;
+  sanctionRiskCount: number | null;
+  potentialSanctionsMin: number | null;
+  potentialSanctionsMax: number | null;
+  coverageBullets: LegalCoverageBullet[];
+}
+
+/**
  * VPT/S9 snapshot — Phase 2A real wiring.
  * VPT remains internal_ready always: score is capped at 80 and the badge
  * never reflects official_ready / accepted / regulatory_ready.
@@ -78,7 +108,7 @@ export interface HRCommandCenterData {
   global: GlobalStateSnapshot;
   payroll: PayrollSnapshot;
   documentary: DocumentarySnapshot;
-  legal: PlaceholderSnapshot;
+  legal: LegalSnapshot;
   vpt: VPTSnapshot;
   officialIntegrations: PlaceholderSnapshot;
   alerts: PlaceholderSnapshot;
@@ -109,10 +139,17 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
   const preflight = usePayrollPreflight(companyId);
   const docs = useHRDocumentExpedient(companyId);
   const vptHook = useS9VPT(companyId);
+  // Read-only consumption: we do NOT call refreshAll / startAutoRefresh.
+  // The hook performs its own initial load on mount; we just read state.
+  const legalHook = useHRLegalCompliance(companyId);
 
   return useMemo<HRCommandCenterData>(() => {
     const isLoading = Boolean(
-      (exec as any)?.isLoading || preflight?.isLoading || (docs as any)?.isLoadingDocuments || (vptHook as any)?.isLoading,
+      (exec as any)?.isLoading
+        || preflight?.isLoading
+        || (docs as any)?.isLoadingDocuments
+        || (vptHook as any)?.isLoading
+        || (legalHook as any)?.isLoading,
     );
 
     // ── Global state ──
@@ -233,10 +270,8 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       disclaimer,
     });
 
-    const legal = placeholder(
-      'Compliance legal',
-      'Sin evidencia oficial archivada — pendiente Fase 2',
-    );
+    // ── Legal / Compliance (real wiring) ──
+    const legal = computeLegalSnapshot(legalHook);
 
     // ── VPT / S9 (real wiring) ──
     const vpt = computeVPTSnapshot(vptHook);
@@ -286,7 +321,7 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       officialIntegrations,
       alerts,
     };
-  }, [exec, preflight, docs, vptHook]);
+  }, [exec, preflight, docs, vptHook, legalHook]);
 }
 
 // ── VPT snapshot computation ────────────────────────────────────────────────
