@@ -274,7 +274,8 @@ export function classifyCollectiveAgreementsForCompany(
 
   const scored = input.agreements
     .map(agreement => {
-      const { score, reasons, activityWarnings } = scoreAgreementCandidate(agreement, input);
+      const { score, reasons, activityWarnings, hasSubstantiveMatch } =
+        scoreAgreementCandidate(agreement, input);
       const safetyWarnings = buildAgreementClassificationWarnings(agreement);
       const candidate: AgreementCandidate = {
         internal_code: agreement.internal_code,
@@ -287,10 +288,12 @@ export function classifyCollectiveAgreementsForCompany(
         ready_for_payroll: agreement.ready_for_payroll,
         requires_human_review: agreement.requires_human_review,
       };
-      return candidate;
+      return { candidate, hasSubstantiveMatch };
     })
-    // Drop pure noise: candidates with score 0 and no CNAE/territory tie
-    .filter(c => c.score > 0);
+    // Drop pure noise: candidates without any substantive (CNAE/activity)
+    // match. Territorial-only matches are insufficient to be a candidate.
+    .filter(x => x.hasSubstantiveMatch && x.candidate.score > 0)
+    .map(x => x.candidate);
 
   const candidates = sortAgreementCandidates(scored);
 
