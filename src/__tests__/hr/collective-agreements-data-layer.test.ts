@@ -364,3 +364,50 @@ describe('B3 — read-only invariant', () => {
     expect(writeAttempts).toBe(0);
   });
 });
+
+// ============================================================
+// 6. B4.c — Safety attached automatically
+// ============================================================
+
+describe('B4.c — safety decision attached to data-layer results', () => {
+  it('PAN-PAST-IB metadata_only has safety.allowed=false', async () => {
+    const r = await getCollectiveAgreementByCode('PAN-PAST-IB');
+    expect(r).not.toBeNull();
+    expect(r?.sourceLayer).toBe('registry');
+    expect(r?.safety).toBeDefined();
+    expect(r?.safety?.allowed).toBe(false);
+    expect(r?.safety?.canComputeBaseSalary).toBe(false);
+    expect(r?.safety?.canComputePlusConvenio).toBe(false);
+    // Block reason should belong to the registry priority list
+    expect(r?.safety?.blockReason).toBeDefined();
+    expect(r?.safety?.missing.length).toBeGreaterThan(0);
+  });
+
+  it('legacy TS fallback exposes safety with LEGACY warning and no compute capabilities', async () => {
+    const r = await getCollectiveAgreementByCode('CONST-GEN');
+    expect(r).not.toBeNull();
+    expect(r?.sourceLayer).toBe('legacy_static');
+    expect(r?.safety).toBeDefined();
+    expect(r?.safety?.warnings).toContain('LEGACY_STATIC_FALLBACK_REQUIRES_REVIEW');
+    expect(r?.safety?.canComputeBaseSalary).toBe(false);
+    expect(r?.safety?.canComputePlusConvenio).toBe(false);
+  });
+
+  it('CNAE search results all carry a safety decision', async () => {
+    const r = await getCollectiveAgreementsByCnae('47', 'ES-IB');
+    expect(r.length).toBeGreaterThan(0);
+    for (const a of r) {
+      expect(a.safety).toBeDefined();
+      // No registry seed is currently ready_for_payroll (B2 invariant).
+      expect(a.safety?.allowed).toBe(false);
+    }
+  });
+
+  it('attaching safety does not write to the database', async () => {
+    const before = writeAttempts;
+    await getCollectiveAgreementByCode('PAN-PAST-IB');
+    await getCollectiveAgreementByCode('CONST-GEN');
+    await getCollectiveAgreementsByCnae('47', 'ES-IB');
+    expect(writeAttempts).toBe(before);
+  });
+});
