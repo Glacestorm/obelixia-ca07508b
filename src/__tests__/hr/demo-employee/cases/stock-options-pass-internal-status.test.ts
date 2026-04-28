@@ -192,11 +192,11 @@ function evaluatePassInternal(): PassInternalEvaluation {
     Array.isArray(irpfReal.legalReferences);
 
   // ── 4. Casos sensibles ────────────────────────────────
-  const startupPlan: EquityPlan = { ...plan, isStartup: true, planType: 'standard_stock_options' };
+  const startupPlan: EquityPlan = { ...plan, isStartup: true, planType: 'startup_stock_options' };
   const startupClass = classifyGrant(startupPlan, grant);
   const phantomPlan: EquityPlan = { ...plan, planType: 'phantom_shares' };
   const phantomClass = classifyGrant(phantomPlan, grant);
-  const rsuPlan: EquityPlan = { ...plan, planType: 'rsu' };
+  const rsuPlan: EquityPlan = { ...plan, planType: 'restricted_stock_units' };
   const rsuClass = classifyGrant(rsuPlan, grant);
   // Todos los sensibles deben caer en niveles que NO son producción limpia.
   const sensitiveCasesHumanReview =
