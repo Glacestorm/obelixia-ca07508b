@@ -47,8 +47,22 @@ describe('HRPersistedIncidentsPanel — C3A read-only', () => {
   it('muestra estado vacío cuando no hay procesos', () => {
     render(<HRPersistedIncidentsPanel {...baseProps} useIncidenciasHook={makeHook()} />);
     expect(screen.getByText(/Sin procesos persistidos/i)).toBeInTheDocument();
-    expect(screen.getByText(/Read-only/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sin envíos oficiales/i)).toBeInTheDocument();
+    // UI hardening: chips "Read-only" / "Sin envíos oficiales" sustituidos por
+    // franja informativa no interactiva con estado operativo + texto legal.
+    expect(screen.getByTestId('hr-persisted-status-strip')).toBeInTheDocument();
+    expect(screen.getByText(/Estado operativo: Preview persistido/i)).toBeInTheDocument();
+    expect(screen.getByText(/Solo lectura/i)).toBeInTheDocument();
+    expect(screen.getByText(/Cálculo oficial sin cambios/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Comunicaciones oficiales desactivadas/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/TGSS, SEPE, AEAT, INSS o DELT@/i)).toBeInTheDocument();
+    // El strip no debe ser interactivo.
+    const strip = screen.getByTestId('hr-persisted-status-strip');
+    expect(strip.getAttribute('role')).toBeNull();
+    // Antiguos textos no deben seguir presentes.
+    expect(screen.queryByText(/^Read-only$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sin envíos oficiales/i)).not.toBeInTheDocument();
   });
 
   it('muestra loading', () => {
