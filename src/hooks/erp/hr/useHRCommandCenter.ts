@@ -17,6 +17,7 @@ import { useMemo } from 'react';
 import { useHRExecutiveData } from '@/hooks/admin/useHRExecutiveData';
 import { usePayrollPreflight } from '@/hooks/erp/hr/usePayrollPreflight';
 import { useHRDocumentExpedient } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useS9VPT } from '@/hooks/erp/hr/useS9VPT';
 
 export type ReadinessLevel = 'green' | 'amber' | 'red' | 'gray';
 
@@ -54,6 +55,23 @@ export interface PlaceholderSnapshot extends SectionReadiness {
   disclaimer: string;
 }
 
+/**
+ * VPT/S9 snapshot — Phase 2A real wiring.
+ * VPT remains internal_ready always: score is capped at 80 and the badge
+ * never reflects official_ready / accepted / regulatory_ready.
+ */
+export interface VPTSnapshot extends SectionReadiness {
+  status: 'internal_ready';
+  disclaimer: string;
+  totalPositions: number | null;
+  valuatedPositions: number | null;
+  coverage: number | null;
+  approvedCount: number | null;
+  approvedWithVersionId: number | null;
+  approvedWithoutVersionId: number | null;
+  incoherencesCount: number | null;
+}
+
 export interface HRCommandCenterData {
   isLoading: boolean;
   globalReadiness: SectionReadiness;
@@ -61,7 +79,7 @@ export interface HRCommandCenterData {
   payroll: PayrollSnapshot;
   documentary: DocumentarySnapshot;
   legal: PlaceholderSnapshot;
-  vpt: PlaceholderSnapshot;
+  vpt: VPTSnapshot;
   officialIntegrations: PlaceholderSnapshot;
   alerts: PlaceholderSnapshot;
 }
@@ -90,10 +108,11 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
   const exec = useHRExecutiveData(companyId);
   const preflight = usePayrollPreflight(companyId);
   const docs = useHRDocumentExpedient(companyId);
+  const vptHook = useS9VPT(companyId);
 
   return useMemo<HRCommandCenterData>(() => {
     const isLoading = Boolean(
-      (exec as any)?.isLoading || preflight?.isLoading || (docs as any)?.isLoadingDocuments,
+      (exec as any)?.isLoading || preflight?.isLoading || (docs as any)?.isLoadingDocuments || (vptHook as any)?.isLoading,
     );
 
     // ── Global state ──
@@ -218,10 +237,10 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       'Compliance legal',
       'Sin evidencia oficial archivada — pendiente Fase 2',
     );
-    const vpt = placeholder(
-      'VPT / S9',
-      'internal_ready · no constituye certificación oficial regulatoria',
-    );
+
+    // ── VPT / S9 (real wiring) ──
+    const vpt = computeVPTSnapshot(vptHook);
+
     const officialIntegrations = placeholder(
       'Integraciones oficiales',
       'Sin evidencia oficial archivada · no se marca accepted/official_ready',
@@ -267,7 +286,141 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       officialIntegrations,
       alerts,
     };
-  }, [exec, preflight, docs]);
+  }, [exec, preflight, docs, vptHook]);
+}
+
+// ── VPT snapshot computation ────────────────────────────────────────────────
+
+const VPT_DISCLAIMER =
+  'internal_ready · herramienta interna de soporte; no constituye certificación oficial regulatoria';
+const VPT_SCORE_CAP = 80;
+
+function emptyVPTSnapshot(label: string): VPTSnapshot {
+  return {
+    level: 'gray',
+    score: null,
+    label,
+    hasData: false,
+    blockers: 0,
+    warnings: 0,
+    status: 'internal_ready',
+    disclaimer: VPT_DISCLAIMER,
+    totalPositions: null,
+    valuatedPositions: null,
+    coverage: null,
+    approvedCount: null,
+    approvedWithVersionId: null,
+    approvedWithoutVersionId: null,
+    incoherencesCount: null,
+  };
+}
+
+export function computeVPTSnapshot(hook: any): VPTSnapshot {
+  // Defensive: hook missing or no analytics → gris "Sin datos"
+  if (!hook || !hook.analytics) {
+    return emptyVPTSnapshot('Sin datos');
+  }
+  const analytics = hook.analytics;
+  const totalPositions = safeNumber(analytics.totalPositions);
+
+  // No positions configured → gris (nothing to value yet)
+  if (totalPositions === null) {
+    return emptyVPTSnapshot('Sin datos');
+  }
+  if (totalPositions === 0) {
+    return {
+      ...emptyVPTSnapshot('Sin puestos configurados'),
+      totalPositions: 0,
+      valuatedPositions: 0,
+      coverage: 0,
+      approvedCount: 0,
+      approvedWithVersionId: 0,
+      approvedWithoutVersionId: 0,
+      incoherencesCount: 0,
+      hasData: true,
+    };
+  }
+
+  const valuations: any[] = Array.isArray(hook.valuations) ? hook.valuations : [];
+  const incoherences: any[] = Array.isArray(hook.incoherences) ? hook.incoherences : [];
+
+  const valuatedPositions = safeNumber(analytics.valuatedPositions) ?? 0;
+  const coverage = safeNumber(analytics.coverage) ?? 0;
+  const approvedCount = safeNumber(analytics?.byStatus?.approved) ?? 0;
+  const approvedWithVersionId = valuations.filter(
+    (v: any) => v?.status === 'approved' && !!v?.version_id,
+  ).length;
+  const approvedWithoutVersionId = Math.max(approvedCount - approvedWithVersionId, 0);
+  const incoherencesCount = incoherences.length;
+
+  // ── Readiness rules ──
+  let level: ReadinessLevel = 'gray';
+  let score: number | null = null;
+  let blockers = 0;
+  let warnings = 0;
+  let label = 'VPT / S9';
+
+  if (approvedCount === 0) {
+    // totalPositions > 0 and no approvals → red, coverage 0%
+    level = 'red';
+    score = 0;
+    blockers = 1;
+    label = 'VPT sin aprobar';
+  } else if (approvedWithoutVersionId > 0) {
+    // Critical blocker: approved without immutable snapshot
+    level = 'red';
+    score = Math.min(20, VPT_SCORE_CAP);
+    blockers = approvedWithoutVersionId;
+    label = 'VPT sin version_id';
+  } else {
+    // Coverage-driven scoring (capped at 80, internal_ready)
+    const coverageScore = Math.round(clamp(coverage)); // 0..100
+    let computed = coverageScore;
+    if (incoherencesCount > 0) {
+      computed -= incoherencesCount * 5;
+    }
+    computed = Math.round(clamp(computed));
+    score = Math.min(computed, VPT_SCORE_CAP);
+
+    if (incoherencesCount > 5) {
+      level = 'red';
+      blockers = 1;
+      warnings = incoherencesCount;
+      label = 'VPT con incoherencias';
+    } else if (incoherencesCount > 0) {
+      level = 'amber';
+      warnings = incoherencesCount;
+      label = 'VPT con avisos';
+    } else if (coverage < 25) {
+      level = 'red';
+      label = 'VPT cobertura baja';
+    } else if (coverage < 80) {
+      level = 'amber';
+      label = 'VPT cobertura parcial';
+    } else {
+      // coverage >= 80, no incoherences, no missing version_id
+      level = 'green';
+      label = 'VPT operativo';
+    }
+  }
+
+  return {
+    level,
+    score,
+    label,
+    hasData: true,
+    blockers,
+    warnings,
+    status: 'internal_ready',
+    disclaimer: VPT_DISCLAIMER,
+    totalPositions,
+    valuatedPositions,
+    coverage: Math.round(coverage * 10) / 10,
+    approvedCount,
+    approvedWithVersionId,
+    approvedWithoutVersionId,
+    incoherencesCount,
+  };
 }
 
 export default useHRCommandCenter;
