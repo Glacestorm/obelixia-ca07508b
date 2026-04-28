@@ -23,12 +23,25 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { SPANISH_COLLECTIVE_AGREEMENTS } from '@/data/hr/collectiveAgreementsCatalog';
+import {
+  evaluateAgreementForPayroll,
+  type AgreementOrigin,
+  type AgreementSafetyDecision,
+} from '@/engines/erp/hr/agreementSafetyGate';
 
 // =============================================================
 // Types
 // =============================================================
 
 export type SourceLayer = 'registry' | 'legacy_static';
+
+/**
+ * Extended source layer used by callers that may also be working against
+ * the operational table (`erp_hr_collective_agreements`) or have not yet
+ * resolved the origin. The data layer itself only ever produces
+ * 'registry' or 'legacy_static'.
+ */
+export type ExtendedSourceLayer = SourceLayer | 'operative' | 'unknown';
 
 export type RegistrySourceQuality =
   | 'official'
@@ -80,6 +93,13 @@ export interface UnifiedCollectiveAgreement {
   official_submission_blocked: boolean;
   notes?: string | null;
   warnings: AgreementWarningCode[];
+  /**
+   * B4.c — Safety decision attached after evaluation against
+   * `agreementSafetyGate`. Optional because some legacy callers may still
+   * receive the bare unified record. When present, the decision is
+   * read-only and never causes DB writes nor payroll activation.
+   */
+  safety?: AgreementSafetyDecision;
 }
 
 export interface RankingInput {
