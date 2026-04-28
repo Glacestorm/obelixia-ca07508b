@@ -1,5 +1,5 @@
 /**
- * useHRCommandCenter — Phase 1 (read-only aggregator)
+ * useHRCommandCenter — Phase 2B (read-only aggregator)
  *
  * Single-tenant executive HR Command Center hook. Composes existing hooks
  * defensively: if any source returns no data, the corresponding section
@@ -10,8 +10,9 @@
  *    beyond what the composed hooks already perform.
  *  - VPT/S9 stays internal_ready. No official_ready / accepted / submitted.
  *  - persisted_priority_apply remains OFF. C3B3C2 stays BLOCKED.
- *  - Phase 1 scoring covers ONLY: globalReadiness, payrollReadiness,
- *    documentaryReadiness. Other sections return `null` score + gris.
+ *  - Phase 2B scoring includes payroll, documentary, legal and VPT when
+ *    real scores are available; official integrations remain placeholder
+ *    until 2C.
  */
 import { useMemo } from 'react';
 import { useHRExecutiveData } from '@/hooks/admin/useHRExecutiveData';
@@ -286,11 +287,14 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       'phase-3',
     );
 
-    // ── Global readiness (Phase 1: only weighted over real sections) ──
+    // ── Global readiness (Phase 2B: payroll + documentary + legal + VPT + global) ──
+    // Only sections with non-null score enter the weighted denominator.
     const realScores: Array<{ score: number; weight: number }> = [];
-    if (global.score !== null) realScores.push({ score: global.score, weight: 0.2 });
-    if (payroll.score !== null) realScores.push({ score: payroll.score, weight: 0.5 });
-    if (documentary.score !== null) realScores.push({ score: documentary.score, weight: 0.3 });
+    if (global.score !== null) realScores.push({ score: global.score, weight: 0.10 });
+    if (payroll.score !== null) realScores.push({ score: payroll.score, weight: 0.30 });
+    if (documentary.score !== null) realScores.push({ score: documentary.score, weight: 0.20 });
+    if (legal.score !== null) realScores.push({ score: legal.score, weight: 0.25 });
+    if (vpt.score !== null) realScores.push({ score: vpt.score, weight: 0.15 });
 
     let globalReadinessScore: number | null = null;
     if (realScores.length > 0) {
@@ -298,16 +302,33 @@ export function useHRCommandCenter(companyId: string): HRCommandCenterData {
       const weighted = realScores.reduce((acc, s) => acc + s.score * s.weight, 0);
       globalReadinessScore = Math.round(weighted / totalWeight);
     }
-    const totalBlockers = global.blockers + payroll.blockers + documentary.blockers;
+    const totalBlockers =
+      global.blockers + payroll.blockers + documentary.blockers
+      + legal.blockers + vpt.blockers;
+    const totalWarnings =
+      payroll.warnings + documentary.warnings + legal.warnings + vpt.warnings;
+
+    // Hard rule: any RED section among payroll / legal / VPT forces global RED,
+    // regardless of weighted average. Prudence rule: any blocker > 0 ⇒ RED.
+    const hardRed =
+      payroll.level === 'red' || legal.level === 'red' || vpt.level === 'red';
+
+    let globalLevel: ReadinessLevel;
+    if (globalReadinessScore === null) {
+      globalLevel = 'gray';
+    } else if (hardRed || totalBlockers > 0) {
+      globalLevel = 'red';
+    } else {
+      globalLevel = levelFromScore(globalReadinessScore, totalBlockers);
+    }
+
     const globalReadiness: SectionReadiness = {
-      level: globalReadinessScore === null
-        ? 'gray'
-        : levelFromScore(globalReadinessScore, totalBlockers),
+      level: globalLevel,
       score: globalReadinessScore,
       label: globalReadinessScore === null ? 'Sin datos suficientes' : 'Readiness global',
       hasData: globalReadinessScore !== null,
       blockers: totalBlockers,
-      warnings: payroll.warnings + documentary.warnings,
+      warnings: totalWarnings,
     };
 
     return {
