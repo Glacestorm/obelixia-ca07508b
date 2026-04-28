@@ -194,11 +194,11 @@ describe('HRCommandCenterPanel · Phase 1 render', () => {
     expect(states.length).toBeGreaterThan(0);
     for (const s of states) {
       const txt = (s.textContent || '').toLowerCase();
-      expect(txt).toBe('not_configured');
-      expect(txt).not.toMatch(/accepted|official_ready|submitted/);
+      expect(txt).toMatch(/no configurado|not_configured/);
+      expect(txt).not.toMatch(/^accepted$|^official_ready$|^submitted$/);
     }
     const disclaimer = screen.getByTestId('hr-cc-officials-disclaimer');
-    expect(disclaimer.textContent || '').toMatch(/no se marca accepted\/official_ready/i);
+    expect(disclaimer.textContent || '').toMatch(/ning[uú]n estado equivale a presentaci[oó]n oficial/i);
   });
 
   it('renders an empty placeholder when companyId is missing', () => {
