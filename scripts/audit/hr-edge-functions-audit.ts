@@ -72,6 +72,18 @@ const DOCUMENTED_EXCEPTIONS: Record<string, { type: string; justification: strin
     type: "global-catalog",
     justification: "Global catalog tables without tenant RLS; admin-gated.",
   },
+  "erp-hr-compliance-enterprise": {
+    type: "post-validated-seed",
+    justification: "S6.2B: adminClient only for seed_demo + DELETE on tables without DELETE RLS policy; tenant verified via validateTenantAccess upstream and company_id always pinned in WHERE.",
+  },
+  "erp-hr-enterprise-admin": {
+    type: "post-validated-seed",
+    justification: "S6.2B: adminClient only for seed_enterprise_data on global-catalog-style tables (erp_hr_enterprise_permissions has no write RLS); tenant verified upstream.",
+  },
+  "erp-hr-innovation-discovery": {
+    type: "post-validated-async",
+    justification: "S6.2A: adminClient only inside setTimeout after JWT may expire; tenant verified upstream and company_id pinned in WHERE.",
+  },
   "legal-knowledge-sync": {
     type: "global-catalog/cron",
     justification: "Global catalog upserts; cron path has no user JWT.",
