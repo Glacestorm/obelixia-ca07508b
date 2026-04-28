@@ -146,7 +146,7 @@ function normalizeRegistryRow(
   row: RegistryRow,
   warnings: AgreementWarningCode[] = []
 ): UnifiedCollectiveAgreement {
-  return {
+  const base: UnifiedCollectiveAgreement = {
     id: row.id,
     internal_code: row.internal_code,
     agreement_code: row.agreement_code,
@@ -168,6 +168,7 @@ function normalizeRegistryRow(
     notes: row.notes,
     warnings: [...warnings],
   };
+  return attachAgreementSafety(base);
 }
 
 function normalizeLegacyEntry(
@@ -175,7 +176,7 @@ function normalizeLegacyEntry(
   extraWarnings: AgreementWarningCode[] = []
 ): UnifiedCollectiveAgreement {
   // Legacy TS entries are NEVER payroll-ready, regardless of how they look.
-  return {
+  const base: UnifiedCollectiveAgreement = {
     internal_code: legacy.code,
     official_name: legacy.name,
     short_name: legacy.name,
@@ -198,6 +199,83 @@ function normalizeLegacyEntry(
       'METADATA_ONLY_NOT_PAYROLL_READY',
       ...extraWarnings,
     ],
+  };
+  return attachAgreementSafety(base);
+}
+
+// =============================================================
+// B4.c — Safety attachment + sourceLayer→origin mapping
+// =============================================================
+
+/**
+ * Pure mapping between the data layer's `sourceLayer` (or extended source
+ * layer used by the bridge) and the safety gate's `AgreementOrigin`.
+ *
+ * - `'registry'` → `'registry'`
+ * - `'legacy_static'` → `'legacy_ts_fallback'`
+ * - `'operative'` → `'operative'` (no-op for the legacy DB table)
+ * - `'unknown'` or undefined → `'unknown'`
+ */
+export function mapSourceLayerToOrigin(
+  layer: ExtendedSourceLayer | undefined | null
+): AgreementOrigin {
+  switch (layer) {
+    case 'registry':
+      return 'registry';
+    case 'legacy_static':
+      return 'legacy_ts_fallback';
+    case 'operative':
+      return 'operative';
+    case 'unknown':
+    case undefined:
+    case null:
+    default:
+      return 'unknown';
+  }
+}
+
+/**
+ * Attaches a `safety` decision (from `agreementSafetyGate`) to a unified
+ * agreement record. Pure: never writes to DB, never mutates the input.
+ * Defaults `hasManualSalary` to false because the data layer does not
+ * know about contracts; callers that DO know should re-evaluate.
+ */
+export function attachAgreementSafety(
+  agreement: UnifiedCollectiveAgreement,
+  options?: { hasManualSalary?: boolean }
+): UnifiedCollectiveAgreement {
+  const origin = mapSourceLayerToOrigin(agreement.sourceLayer);
+  const safety = evaluateAgreementForPayroll({
+    agreement,
+    origin,
+    hasManualSalary: options?.hasManualSalary ?? false,
+  });
+  return { ...agreement, safety };
+}
+
+/**
+ * Bridge helper (pure): given the resolved agreement (from any source) and
+ * whether the contract declares a manual salary, returns the
+ * `safetyContext` that the resolver expects. Defaults are SAFE: when no
+ * agreement is provided and origin cannot be resolved, returns
+ * `origin='unknown'` so the resolver enters defensive mode.
+ */
+export interface BridgeSafetyContext {
+  agreementOrigin: AgreementOrigin;
+  hasManualSalary: boolean;
+  agreementRecord?: unknown;
+}
+
+export function buildBridgeSafetyContext(input: {
+  agreement?: UnifiedCollectiveAgreement | null;
+  sourceLayer?: ExtendedSourceLayer | null;
+  hasManualSalary?: boolean;
+}): BridgeSafetyContext {
+  const layer = input.sourceLayer ?? input.agreement?.sourceLayer ?? 'unknown';
+  return {
+    agreementOrigin: mapSourceLayerToOrigin(layer),
+    hasManualSalary: input.hasManualSalary ?? false,
+    agreementRecord: input.agreement ?? undefined,
   };
 }
 
