@@ -141,3 +141,83 @@ describe('HRPayrollIncidentFormDialog — C3B1', () => {
     // por convención: fallaría si en el futuro se añadieran imports reales).
   });
 });
+
+describe('HRPayrollIncidentFormDialog — C3C visual polish', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renderiza el título completo "Añadir proceso persistido"', () => {
+    const { hook } = makeMutationsHook();
+    render(<HRPayrollIncidentFormDialog {...baseProps} mutationsHook={hook} />);
+    expect(
+      screen.getByRole('heading', { name: /añadir proceso persistido/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('banner legal usa paleta ámbar accesible (no clases warning genéricas)', () => {
+    const { hook } = makeMutationsHook();
+    render(<HRPayrollIncidentFormDialog {...baseProps} mutationsHook={hook} />);
+    const note = screen
+      .getByText(/no envía comunicaciones oficiales/i)
+      .closest('div[role="note"]') as HTMLElement;
+    expect(note).not.toBeNull();
+    expect(note.className).toMatch(/bg-amber-50/);
+    expect(note.className).toMatch(/text-amber-900/);
+    expect(note.className).toMatch(/border-amber-300/);
+    expect(note.className).not.toMatch(/text-warning-foreground/);
+  });
+
+  it('label "Tipo de proceso" muestra asterisco rojo', () => {
+    const { hook } = makeMutationsHook();
+    render(<HRPayrollIncidentFormDialog {...baseProps} mutationsHook={hook} />);
+    const label = screen.getByText(/tipo de proceso/i).closest('label') as HTMLElement;
+    expect(label).not.toBeNull();
+    const star = within(label).getByText('*');
+    expect(star.className).toMatch(/text-red-600/);
+  });
+
+  it('labels de fechas muestran asterisco rojo y aria-required', () => {
+    const { hook } = makeMutationsHook();
+    render(<HRPayrollIncidentFormDialog {...baseProps} mutationsHook={hook} />);
+    const fromLabel = screen.getByText(/fecha inicio/i).closest('label') as HTMLElement;
+    const toLabel = screen.getByText(/fecha fin/i).closest('label') as HTMLElement;
+    expect(within(fromLabel).getByText('*').className).toMatch(/text-red-600/);
+    expect(within(toLabel).getByText('*').className).toMatch(/text-red-600/);
+    expect(screen.getByLabelText(/fecha inicio/i)).toHaveAttribute('aria-required', 'true');
+    expect(screen.getByLabelText(/fecha fin/i)).toHaveAttribute('aria-required', 'true');
+  });
+
+  it('porcentaje muestra asterisco cuando tipo es reducción de jornada', () => {
+    const { hook } = makeMutationsHook();
+    render(
+      <HRPayrollIncidentFormDialog
+        {...baseProps}
+        defaultType="reduccion_jornada_guarda_legal"
+        mutationsHook={hook}
+      />,
+    );
+    const label = screen.getByText(/porcentaje/i).closest('label') as HTMLElement;
+    expect(within(label).getByText('*').className).toMatch(/text-red-600/);
+  });
+
+  it('importe muestra asterisco cuando tipo es atrasos/regularización', () => {
+    const { hook } = makeMutationsHook();
+    render(
+      <HRPayrollIncidentFormDialog
+        {...baseProps}
+        defaultType="atrasos_regularizacion"
+        mutationsHook={hook}
+      />,
+    );
+    const label = screen.getByText(/importe/i).closest('label') as HTMLElement;
+    expect(within(label).getByText('*').className).toMatch(/text-red-600/);
+  });
+
+  it('bloque de errores aparece agrupado con cabecera "Revisa los siguientes campos:"', () => {
+    const { hook } = makeMutationsHook();
+    render(<HRPayrollIncidentFormDialog {...baseProps} mutationsHook={hook} />);
+    // Sin fechas → debe haber al menos un alert con la cabecera.
+    expect(screen.getByText(/revisa los siguientes campos/i)).toBeInTheDocument();
+  });
+});
