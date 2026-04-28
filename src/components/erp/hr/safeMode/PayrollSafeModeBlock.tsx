@@ -390,6 +390,115 @@ function SafeModeReferenceAmountsCard({
   );
 }
 
+// =============================================================
+// B4.c — Agreement safety warnings card
+// =============================================================
+
+const AGREEMENT_SAFETY_MESSAGES: Record<AgreementSafetyCode, string> = {
+  AGREEMENT_NOT_READY_FOR_PAYROLL:
+    'El convenio seleccionado aún no está validado para cálculo automático de nómina.',
+  AGREEMENT_MISSING_SALARY_TABLES:
+    'Faltan tablas salariales oficiales del convenio.',
+  AGREEMENT_REQUIRES_HUMAN_REVIEW:
+    'El convenio requiere revisión humana antes de aplicarse a nómina.',
+  AGREEMENT_NON_OFFICIAL_SOURCE:
+    'La fuente del convenio no está verificada como oficial.',
+  AGREEMENT_STATUS_NOT_VIGENTE:
+    'El convenio no está en estado vigente; no puede alimentar nómina automática.',
+  LEGACY_STATIC_FALLBACK_REQUIRES_REVIEW:
+    'El convenio procede del catálogo legacy y debe revisarse antes de uso real.',
+  MANUAL_SALARY_WITH_UNVALIDATED_AGREEMENT:
+    'Se usará el salario manual informado; el convenio no validado no alimentará conceptos automáticos.',
+  OPERATIVE_TABLE_AGREEMENT_NOT_MIRRORED:
+    'El convenio operativo no está espejado en el Registro Maestro; pendiente de validación.',
+  AGREEMENT_CONFLICT_EMPLOYEE_VS_CONTRACT:
+    'Se ha detectado un conflicto de convenio entre empleado y contrato.',
+};
+
+function SafeModeAgreementSafetyCard({
+  decision,
+  extraWarnings,
+}: {
+  decision?: AgreementSafetyDecision | null;
+  extraWarnings?: AgreementSafetyCode[] | null;
+}) {
+  // Merge dedup of all codes (block + warnings + extras).
+  const codes = new Set<AgreementSafetyCode>();
+  if (decision?.blockReason) codes.add(decision.blockReason);
+  decision?.warnings?.forEach((c) => codes.add(c));
+  extraWarnings?.forEach((c) => codes.add(c));
+
+  if (codes.size === 0) return null;
+
+  const list = Array.from(codes);
+  const allowed = decision?.allowed === true;
+  const headerLabel = allowed
+    ? 'Avisos de convenio'
+    : 'Convenio no validado para cálculo automático';
+
+  return (
+    <div
+      className="rounded-md border border-warning/40 bg-background p-3 space-y-2"
+      role="region"
+      aria-label="Avisos de seguridad del convenio colectivo"
+      data-testid="agreement-safety-warnings"
+    >
+      <div className="flex items-start gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Scale className="h-4 w-4 text-warning shrink-0" />
+          <span className="text-xs font-semibold text-foreground">
+            {headerLabel}
+          </span>
+        </div>
+        {!allowed && (
+          <Badge
+            variant="outline"
+            className="text-[10px] border-warning/60 bg-warning/10 text-foreground whitespace-normal"
+            title="El convenio no puede alimentar conceptos automáticos hasta su validación humana."
+          >
+            Pendiente de validación humana
+          </Badge>
+        )}
+      </div>
+
+      <ul className="space-y-1.5">
+        {list.map((code) => (
+          <li
+            key={code}
+            data-testid={`agreement-safety-${code}`}
+            className="flex items-start gap-1.5 text-[11px] text-foreground/85 bg-warning/5 border border-warning/20 rounded p-2"
+          >
+            <Info className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+            <div className="min-w-0 break-words">
+              <p>{AGREEMENT_SAFETY_MESSAGES[code]}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Código: <span className="font-mono">{code}</span>
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {decision?.missing && decision.missing.length > 0 && (
+        <p className="text-[10px] text-muted-foreground break-words">
+          Falta:{' '}
+          <span className="font-mono text-foreground">
+            {decision.missing.join(', ')}
+          </span>
+        </p>
+      )}
+
+      <p className="text-[10px] italic text-muted-foreground">
+        La validación de convenios se gestiona en{' '}
+        <span className="font-medium text-foreground">
+          HR → Compliance → Convenios Colectivos
+        </span>
+        . No se ofrece activación automática desde aquí.
+      </p>
+    </div>
+  );
+}
+
 /**
  * S9.21u.1h — Subcomponente interno (no exportado). Renderiza el contexto de
  * convenio identificado dentro del bloque safeMode SIN mostrar importes
