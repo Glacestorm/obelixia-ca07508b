@@ -341,7 +341,7 @@ describe('B5B — runCollectiveAgreementMetadataImport', () => {
       const current = all.filter(v => v.is_current);
       expect(current).toHaveLength(1);
       expect(current[0].source_hash).toContain('rev2');
-      expect(current[0].args.change_type).toBe('modificacion');
+      expect(current[0].args.change_type).toBe('correction');
     });
   });
 
