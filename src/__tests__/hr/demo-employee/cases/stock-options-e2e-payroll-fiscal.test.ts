@@ -333,10 +333,10 @@ describe('HR · DEMO · Stock Options E2E (Fase C2 · Caso 3c)', () => {
 
     expect(agg.perceptorLines.length).toBeGreaterThanOrEqual(1);
     const line = agg.perceptorLines[0];
-    expect(line.totalPercepciones).toBeGreaterThan(0);
+    expect(line.percepciones_integras).toBeGreaterThan(0);
     // Coherencia: percepciones agregadas ≈ grossSalary del mes
-    expect(Math.abs(line.totalPercepciones - monthly.grossSalary)).toBeLessThanOrEqual(0.05);
-    expect(Math.abs(line.totalRetenciones - monthly.retencionIRPF)).toBeLessThanOrEqual(0.05);
+    expect(Math.abs(line.percepciones_integras - monthly.grossSalary)).toBeLessThanOrEqual(0.05);
+    expect(Math.abs(line.retenciones_practicadas - monthly.retencionIRPF)).toBeLessThanOrEqual(0.05);
   });
 
   // === 5. Validation status honesto =========================================
