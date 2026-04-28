@@ -9,6 +9,7 @@
  */
 
 import type { Modelo190LineItem } from './fiscalMonthlyExpedientEngine';
+import { getESConceptByCode } from './payrollConceptCatalog';
 
 // ── Types ──
 
@@ -20,6 +21,22 @@ export interface Modelo190PerceptorInput {
   familySituationChanges?: FamilySituationChange[];
   irregularIncome?: IrregularIncomeEntry[];
   regionalDeductions?: RegionalDeductionEntry[];
+  // ── C3 · Trazabilidad por concepto (no destructivo) ──
+  /**
+   * Desglose anual por concepto retributivo. Permite identificar conceptos
+   * sensibles (Stock Options, RSU, etc.) que requieren revisión fiscal antes
+   * de presentación oficial.
+   */
+  conceptBreakdown?: ConceptBreakdownEntry[];
+}
+
+export interface ConceptBreakdownEntry {
+  /** Código del catálogo (p.ej. ES_STOCK_OPTIONS). */
+  conceptCode: string;
+  /** Importe anual agregado de este concepto. */
+  amount: number;
+  /** Importe sujeto a IRPF de este concepto (opcional). */
+  taxableAmount?: number;
 }
 
 export interface MonthlyPerceptorData {
@@ -249,9 +266,79 @@ export function aggregatePerceptorsForModelo190(
       }
     }
 
-    // Determine clave/subclave
-    const clave = 'A'; // Default: empleados cuenta ajena
-    const subclave = '01';
+    // ── C3 · Determinar clave/subclave con resolución honesta ──
+    // Reglas:
+    //  1. Si hay un único concepto en breakdown con clave/subclave resuelta en
+    //     el catálogo, se usa esa.
+    //  2. Si cualquier concepto del breakdown está marcado
+    //     `modelo190_review_required` o `pending_review`, la línea queda
+    //     marcada para revisión humana y bloqueada para envío oficial.
+    //  3. En ausencia de información: A/01 como FALLBACK técnico, pero
+    //     SIEMPRE marcado como `clave_is_fallback` (no silencioso).
+    const breakdown = input.conceptBreakdown ?? [];
+    let clave = 'A';
+    let subclave = '01';
+    let claveIsFallback = true;
+    let requiresHumanReview = false;
+    const reviewReasons: string[] = [];
+    let fiscalStatus: 'resolved' | 'pending_review' | 'out_of_scope' = 'pending_review';
+    const conceptCodes: string[] = [];
+
+    for (const entry of breakdown) {
+      conceptCodes.push(entry.conceptCode);
+      const def = getESConceptByCode(entry.conceptCode);
+      if (!def) continue;
+      if (def.modelo190_review_required) {
+        requiresHumanReview = true;
+        if (def.modelo190_review_reason) {
+          reviewReasons.push(`${entry.conceptCode}: ${def.modelo190_review_reason}`);
+        }
+      }
+      if (def.fiscal_classification_status === 'out_of_scope') {
+        fiscalStatus = 'out_of_scope';
+        requiresHumanReview = true;
+      }
+      if (def.modelo190_clave && def.modelo190_subclave && !def.modelo190_review_required) {
+        // Solo se considera resuelta si el concepto trae clave/subclave Y NO
+        // exige revisión.
+        clave = def.modelo190_clave;
+        subclave = def.modelo190_subclave;
+        claveIsFallback = false;
+        if (fiscalStatus !== 'out_of_scope') {
+          fiscalStatus = 'resolved';
+        }
+      }
+    }
+
+    // Si no hay breakdown alguno, A/01 sigue siendo fallback (no resuelto).
+    if (breakdown.length === 0) {
+      claveIsFallback = true;
+      fiscalStatus = 'pending_review';
+    }
+
+    // Si hay revisión exigida, sobreescribe estado y bloquea envío oficial.
+    const officialSubmissionBlocked = requiresHumanReview || claveIsFallback || fiscalStatus !== 'resolved';
+    if (requiresHumanReview) {
+      fiscalStatus = 'pending_review';
+    }
+
+    if (requiresHumanReview) {
+      // Cuenta como estimación a efectos de calidad.
+      perceptorsWithEstimation++;
+      issues.push({
+        employeeId: input.employeeId,
+        employeeName: input.employeeName,
+        issue: `Modelo 190: requiere revisión fiscal humana — ${reviewReasons.join(' | ') || 'concepto sensible detectado'}`,
+        severity: 'warning',
+      });
+    } else if (claveIsFallback && breakdown.length > 0) {
+      issues.push({
+        employeeId: input.employeeId,
+        employeeName: input.employeeName,
+        issue: 'Modelo 190: clave/subclave A/01 usada como fallback técnico — no presentar oficialmente sin validar.',
+        severity: 'warning',
+      });
+    }
 
     // Quarterly aggregation
     quarterlyTotals.q1.percepciones += r2(q.q1.p);
@@ -273,6 +360,13 @@ export function aggregatePerceptorsForModelo190(
       retenciones_practicadas: r2(totalRetenciones),
       percepciones_en_especie: r2(totalEspecie),
       ingresos_a_cuenta: r2(totalIngresosCuenta),
+      // C3
+      requires_human_review: requiresHumanReview,
+      review_reason: reviewReasons.length > 0 ? reviewReasons.join(' | ') : undefined,
+      concept_codes: conceptCodes.length > 0 ? conceptCodes : undefined,
+      fiscal_classification_status: fiscalStatus,
+      official_submission_blocked: officialSubmissionBlocked,
+      clave_is_fallback: claveIsFallback,
     });
   }
 
