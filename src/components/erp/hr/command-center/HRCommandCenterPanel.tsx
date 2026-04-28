@@ -85,7 +85,15 @@ export function HRCommandCenterPanel(props: HRCommandCenterPanelProps) {
         />
       </div>
 
-      <HRCCAlertsAndBlockersCard data={data} onOpenAlerts={props.onOpenAlerts} />
+      <HRCCAlertsAndBlockersCard
+        data={data}
+        onOpenAlerts={props.onOpenAlerts}
+        onOpenPayroll={props.onOpenPayroll}
+        onOpenExpedient={props.onOpenExpedient}
+        onOpenCompliance={props.onOpenCompliance}
+        onOpenVPT={props.onOpenVPT}
+        onOpenIntegrations={props.onOpenIntegrations}
+      />
     </div>
   );
 }

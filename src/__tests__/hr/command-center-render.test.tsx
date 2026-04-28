@@ -114,7 +114,17 @@ function emptyData(): HRCommandCenterData {
       rejectedCount: 0,
       correctionRequiredCount: 0,
     },
-    alerts: { ...placeholder, label: 'Alertas y bloqueos', disclaimer: 'Agregación completa en Fase 3', phase: 'phase-3' as const },
+    alerts: {
+      blockers: [],
+      warnings: [],
+      topRisks: [],
+      topActions: [],
+      nextDeadlines: [],
+      criticalCount: 0,
+      warningCount: 0,
+      actionCount: 0,
+      disclaimer: 'Lectura interna de riesgos y acciones. No constituye certificación legal ni presentación oficial. Las acciones legales u oficiales requieren revisión humana.',
+    },
   };
 }
 
