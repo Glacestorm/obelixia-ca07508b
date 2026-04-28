@@ -103,3 +103,44 @@ La lista de errores se reagrupa en una caja roja accesible con cabecera
 
 ## Estado
 ✅ CERRADA — pulido visual aplicado, tests verdes, sin impacto funcional.
+
+---
+
+## Cierre formal
+
+**Fecha de cierre:** 2026-04-28
+
+### Resumen de cambios visuales
+- Cabecera del modal sticky, sin truncado, con `pr-8` para no colisionar con el botón ✕.
+- `DialogContent` con `max-h-[90vh] overflow-y-auto p-0` y footer sticky inferior.
+- Banner legal permanente migrado a paleta ámbar accesible (`bg-amber-50 / border-amber-300 / text-amber-900`) con dark mode.
+- Banner informativo por tipo migrado a paleta sky accesible (`bg-sky-50 / border-sky-300 / text-sky-900`) con dark mode.
+- Aviso de tipo excluido y bloqueo de incidencia aplicada migrados a paleta red accesible (`bg-red-50 / border-red-300 / text-red-900`) con dark mode.
+- Helper local `<Req/>` añadido para asteriscos rojos accesibles (`aria-hidden="true"` + `text-red-600`).
+- Bloque de errores reagrupado en caja roja accesible con cabecera "Revisa los siguientes campos:".
+
+### Archivo modificado
+- `src/components/erp/hr/casuistica/HRPayrollIncidentFormDialog.tsx` (solo JSX/clases/Helper visual).
+
+### Tests añadidos (suite C3C visual polish)
+- `src/components/erp/hr/casuistica/__tests__/HRPayrollIncidentFormDialog.test.tsx`:
+  1. Renderiza el título completo "Añadir proceso persistido".
+  2. Banner legal usa paleta ámbar accesible (no `text-warning-foreground`).
+  3. Label "Tipo de proceso" muestra `*` con `text-red-600`.
+  4. Labels "Fecha inicio" y "Fecha fin" muestran `*` rojo y `aria-required="true"`.
+  5. Porcentaje muestra `*` cuando `defaultType='reduccion_jornada_guarda_legal'`.
+  6. Importe muestra `*` cuando `defaultType='atrasos_regularizacion'`.
+  7. Bloque de errores aparece agrupado con cabecera "Revisa los siguientes campos:".
+
+### Confirmaciones
+- Cabecera corregida: título completo visible, sin clipping, sticky al hacer scroll.
+- Banners accesibles WCAG AA en modo claro y dark mode.
+- Asteriscos rojos visibles y accesibles en todos los campos obligatorios (Tipo, Fecha inicio, Fecha fin, Importe en atrasos, Porcentaje en reducción jornada, Motivo en desplazamiento/suspensión).
+- Sin cambios funcionales: `handleSubmit`, validaciones, mutaciones, defaults, metadata, flags y tipos intactos.
+- Sin tocar motor de nómina, `simulateES`, `salaryNormalizer`, `contractSalaryParametrization`, `agreementSalaryResolver`, `fdiArtifactEngine`, `afiInactivityEngine`, `deltaArtifactEngine`.
+- `PAYROLL_EFFECTIVE_CASUISTICA_MODE` permanece `'persisted_priority_preview'`.
+- `persisted_priority_apply` sigue **OFF**.
+- Sin BD, RLS, migraciones, edge functions, dependencias ni CI.
+- Sin `service_role`. Sin FDI/AFI/DELT@. Sin comunicaciones oficiales.
+
+**Estado final:** ✅ CERRADA.
