@@ -103,16 +103,16 @@ describe('HR · DEMO · IRPF real con Stock Options (Fase C3)', () => {
     expect(completo.complete).toBe(true);
   });
 
-  it('CCAA foral (Bizkaia): genera limitación y HUMAN_REVIEW_REQUIRED, no PASS', () => {
-    expect(isCCAAForal('Bizkaia')).toBe(true);
+  it('CCAA foral (País Vasco): genera limitación y HUMAN_REVIEW_REQUIRED, no PASS', () => {
+    expect(isCCAAForal('País Vasco')).toBe(true);
     const result = computeIRPF(
-      carlosRuizIRPFContext({ includeStockOptions: true, ccaa: 'Bizkaia' }),
+      carlosRuizIRPFContext({ includeStockOptions: true, ccaa: 'País Vasco' }),
       null,
       null,
     );
     // Debe haber al menos una limitación foral.
     const tieneLimitacionForal = result.limitations.some((l) =>
-      /foral/i.test(l) || /Bizkaia/i.test(l),
+      /foral/i.test(l) || /vasco/i.test(l),
     );
     expect(tieneLimitacionForal).toBe(true);
 
