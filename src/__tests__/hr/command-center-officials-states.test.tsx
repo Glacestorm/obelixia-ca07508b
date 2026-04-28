@@ -255,6 +255,87 @@ describe('buildOfficialIntegrationsSnapshot · Phase 2C', () => {
     expect(item.hasEvidence).toBe(true);
     expect(item.hasOfficialResponse).toBe(true);
   });
+
+  it('7A. accepted with ONLY external_reference (no response/receipt/accepted_at) → degraded to uat_passed', () => {
+    const snap = buildOfficialIntegrationsSnapshot({
+      submissions: [
+        {
+          submission_domain: 'tgss',
+          submission_type: 'afiliacion',
+          status: 'accepted',
+          external_reference: 'LOCAL-TRACK-001',
+          updated_at: '2026-04-01T00:00:00Z',
+        },
+      ],
+      certificates: [],
+      adapters: [],
+    });
+    const item = findItem(snap, 'tgss_afiliacion');
+    expect(item.rawState).toBe('accepted');
+    expect(item.hasOfficialResponse).toBe(false);
+    expect(item.displayedState).toBe('uat_passed');
+    expect(item.degraded).toBe(true);
+    expect(snap.items.some(i => i.displayedState === 'accepted')).toBe(false);
+    expect(snap.acceptedCount).toBe(0);
+  });
+
+  it('7B. official_ready with production cert but status cert_ready_preparatory → degraded to sandbox_ready', () => {
+    const snap = buildOfficialIntegrationsSnapshot({
+      submissions: [
+        {
+          submission_domain: 'aeat',
+          submission_type: 'modelo 111',
+          status: 'official_ready',
+          updated_at: '2026-04-01T00:00:00Z',
+        },
+      ],
+      certificates: [
+        {
+          domain: 'aeat',
+          certificate_status: 'cert_ready_preparatory',
+          environment: 'production',
+          expiration_date: '2030-01-01',
+        },
+      ],
+      adapters: [],
+    });
+    const item = findItem(snap, 'aeat_111');
+    expect(item.rawState).toBe('official_ready');
+    expect(item.hasProductionCertificate).toBe(false);
+    expect(item.displayedState).toBe('sandbox_ready');
+    expect(item.degraded).toBe(true);
+    expect(item.warning).toMatch(/certificado productivo/i);
+  });
+
+  it('7C. official_ready with production cert and status active → keeps official_ready, score <= 70, no accepted', () => {
+    const snap = buildOfficialIntegrationsSnapshot({
+      submissions: [
+        {
+          submission_domain: 'aeat',
+          submission_type: 'modelo 190',
+          status: 'official_ready',
+          updated_at: '2026-04-01T00:00:00Z',
+        },
+      ],
+      certificates: [
+        {
+          domain: 'aeat',
+          certificate_status: 'active',
+          environment: 'production',
+          expiration_date: '2030-01-01',
+        },
+      ],
+      adapters: [],
+    });
+    const item = findItem(snap, 'aeat_190');
+    expect(item.rawState).toBe('official_ready');
+    expect(item.hasProductionCertificate).toBe(true);
+    expect(item.displayedState).toBe('official_ready');
+    expect(item.degraded).toBe(false);
+    expect(item.score).toBeLessThanOrEqual(70);
+    expect(snap.items.some(i => i.displayedState === 'accepted')).toBe(false);
+    expect(snap.disclaimer).toMatch(/Lectura interna de readiness/i);
+  });
 });
 
 describe('useHRCommandCenter · Phase 2C aggregation', () => {

@@ -218,7 +218,11 @@ function detectEvidence(row: any): boolean {
   );
 }
 
-/** Has an official response artifact (payload / receipt / accepted_at). */
+/**
+ * Has an OFFICIAL response artifact.
+ * NOTE: `external_reference` is NOT enough on its own — it can be a local
+ * tracking id without any official acknowledgement.
+ */
 function detectOfficialResponse(row: any): boolean {
   if (!row) return false;
   return (
@@ -227,19 +231,25 @@ function detectOfficialResponse(row: any): boolean {
     isNonEmptyString(row.receipt_id) ||
     isNonEmptyString(row.receipt_url) ||
     isNonEmptyString(row.accepted_at) ||
-    isNonEmptyString(row.rejected_at) ||
-    isNonEmptyString(row.external_reference)
+    isNonEmptyString(row.rejected_at)
   );
 }
 
-/** Has a valid production certificate (active/valid + production env + not expired). */
+/**
+ * Has a VALID production certificate.
+ * Strict rules: status must be `active` or `valid` (preparatory / configured
+ * / pending / draft do NOT count), environment must be production/prod,
+ * and the expiration date (if present) must be in the future.
+ */
 function detectProductionCertificate(certs: any[]): boolean {
   if (!Array.isArray(certs) || certs.length === 0) return false;
   const now = Date.now();
   return certs.some(c => {
-    const status = String(c?.certificate_status || c?.status || '').toLowerCase();
-    const env = String(c?.environment || '').toLowerCase();
-    const isActive = /^(active|valid|cert_ready_preparatory|configured)/.test(status);
+    const status = String(c?.certificate_status || c?.status || '')
+      .toLowerCase()
+      .trim();
+    const env = String(c?.environment || '').toLowerCase().trim();
+    const isActive = status === 'active' || status === 'valid';
     const isProd = env === 'production' || env === 'prod';
     if (!isActive || !isProd) return false;
     const exp = c?.expiration_date ?? c?.expires_at ?? null;
