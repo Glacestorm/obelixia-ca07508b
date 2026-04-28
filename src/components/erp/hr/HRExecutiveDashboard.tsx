@@ -3,7 +3,7 @@
  * Fase 4 - Dashboard con datos reales + IA Predictiva
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,15 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useHRExecutiveData } from '@/hooks/admin/useHRExecutiveData';
+import { HR_COMMAND_CENTER_ENABLED } from './command-center/featureFlag';
+
+const LazyHRCommandCenterPanel = HR_COMMAND_CENTER_ENABLED
+  ? lazy(() =>
+      import('./command-center/HRCommandCenterPanel').then((m) => ({
+        default: m.HRCommandCenterPanel,
+      })),
+    )
+  : null;
 
 interface HRExecutiveDashboardProps {
   companyId: string;
