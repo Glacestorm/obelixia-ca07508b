@@ -66,6 +66,20 @@ export interface Modelo190LineItem {
   retenciones_practicadas: number;
   percepciones_en_especie: number;
   ingresos_a_cuenta: number;
+
+  // ── C3 · Trazabilidad fiscal y bloqueo de presentación oficial ──
+  /** Si true, esta línea no puede ser presentada oficialmente sin revisión humana. */
+  requires_human_review?: boolean;
+  /** Motivo legible de la revisión requerida. */
+  review_reason?: string;
+  /** Códigos de concepto que han generado esta línea (trazabilidad). */
+  concept_codes?: string[];
+  /** Estado de clasificación fiscal frente a Modelo 190. */
+  fiscal_classification_status?: 'resolved' | 'pending_review' | 'out_of_scope';
+  /** Si true, bloquea explícitamente cualquier intento de envío oficial AEAT. */
+  official_submission_blocked?: boolean;
+  /** Si la línea usa A/01 como fallback técnico no resuelto. */
+  clave_is_fallback?: boolean;
 }
 
 export interface FiscalExpedientSnapshot {
