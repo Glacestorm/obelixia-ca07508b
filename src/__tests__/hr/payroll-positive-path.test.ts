@@ -9,6 +9,12 @@
  *  - Sin salida oficial real (todo DRYRUN-*)
  *  - Contrato de error envelope S8
  *
+ * NOTE: `erp-hr-payroll-preflight` no existe aún como edge function desplegada.
+ * Estos son **contract tests** del shape de respuesta esperado para un futuro
+ * endpoint de readiness/preflight; NO asertan una función realmente desplegada.
+ * Los invariantes (DRYRUN-only, persisted_priority_apply OFF, C3B3C2 bloqueada)
+ * y el contrato S8 sí son reales y deben mantenerse al implementarlo.
+ *
  * Cómo ejecutar:
  *   bunx vitest run src/__tests__/hr/payroll-positive-path.test.ts
  *
