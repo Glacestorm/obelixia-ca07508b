@@ -13,6 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { NormalizeResult } from '@/engines/erp/hr/salaryNormalizer';
+import type {
+  AgreementSafetyCode,
+  AgreementSafetyDecision,
+} from '@/engines/erp/hr/agreementSafetyGate';
 
 export interface PayrollSafeModeBlockProps {
   normalizer: NormalizeResult;
@@ -68,6 +72,17 @@ export interface PayrollSafeModeBlockProps {
     type?: string | null;
     source?: string | null;
   }> | null;
+  /**
+   * B4.c — Decisión del agreementSafetyGate. Se renderiza un panel
+   * informativo con los warnings/bloqueos legibles. Estrictamente
+   * informativo: no se ofrece CTA para activar el convenio.
+   */
+  agreementSafetyDecision?: AgreementSafetyDecision | null;
+  /**
+   * B4.c — Lista plana de códigos de warning/bloqueo si el caller no
+   * dispone de la decisión completa. Si se pasan ambos, se mergean.
+   */
+  agreementSafetyWarnings?: AgreementSafetyCode[] | null;
 }
 
 const unidadLabel: Record<NormalizeResult['unidadDetectada'], string> = {
