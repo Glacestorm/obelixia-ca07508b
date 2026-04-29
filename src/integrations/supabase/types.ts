@@ -30522,6 +30522,81 @@ export type Database = {
           },
         ]
       }
+      erp_hr_company_agreement_registry_mappings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          confidence_score: number | null
+          contract_id: string | null
+          created_at: string
+          created_by: string
+          employee_id: string | null
+          evidence_urls: string[]
+          id: string
+          is_current: boolean
+          mapping_status: string
+          rationale_json: Json
+          registry_agreement_id: string
+          registry_version_id: string
+          source_type: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          confidence_score?: number | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string
+          employee_id?: string | null
+          evidence_urls?: string[]
+          id?: string
+          is_current?: boolean
+          mapping_status?: string
+          rationale_json?: Json
+          registry_agreement_id: string
+          registry_version_id: string
+          source_type: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          confidence_score?: number | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string
+          employee_id?: string | null
+          evidence_urls?: string[]
+          id?: string
+          is_current?: boolean
+          mapping_status?: string
+          rationale_json?: Json
+          registry_agreement_id?: string
+          registry_version_id?: string
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_ma_registry_agreement_id_fkey"
+            columns: ["registry_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_mapp_registry_version_id_fkey"
+            columns: ["registry_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_compensation: {
         Row: {
           approved_at: string | null
