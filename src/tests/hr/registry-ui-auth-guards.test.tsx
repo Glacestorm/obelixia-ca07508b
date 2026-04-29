@@ -154,7 +154,7 @@ describe('useRegistryPilotMonitor — no session', () => {
 
 describe('useRegistryPilotCandidateDiscovery — no session', () => {
   it('exposes authRequired=true after run() and does NOT call edge', async () => {
-    const { renderHook, act, waitFor } = await import('@testing-library/react');
+    const { renderHook, act } = await import('@testing-library/react');
     const { useRegistryPilotCandidateDiscovery } = await import(
       '@/hooks/erp/hr/useRegistryPilotCandidateDiscovery'
     );
@@ -162,13 +162,11 @@ describe('useRegistryPilotCandidateDiscovery — no session', () => {
     await act(async () => {
       await result.current.run({ companyId: 'c-1', targetYear: 2026 });
     });
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
     expect(invokeMock).not.toHaveBeenCalled();
     expect(result.current.authRequired).toBe(true);
     expect(result.current.error).toBeNull();
     expect(result.current.report).toBeNull();
+    expect(result.current.loading).toBe(false);
   });
 });
 
