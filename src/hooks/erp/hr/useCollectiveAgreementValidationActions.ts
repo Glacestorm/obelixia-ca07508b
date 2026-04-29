@@ -58,7 +58,7 @@ export interface SupersedePayload {
 async function invoke(action: string, payload: object) {
   const r = await authSafeInvoke<unknown>(EDGE_FN, { action, ...(payload as Record<string, unknown>) });
   if (r.success) return { success: true as const, data: r.data };
-  return { success: false as const, error: r.error };
+  return { success: false as const, error: r.error, skipped: r.skipped, reason: r.reason };
 }
 
 export function useCollectiveAgreementValidationActions() {
