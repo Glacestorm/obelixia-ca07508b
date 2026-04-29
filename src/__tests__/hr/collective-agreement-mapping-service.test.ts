@@ -513,7 +513,8 @@ describe('B10C.2B.2A — static contract checks', () => {
   });
 
   it('service does not contain .delete( anywhere', () => {
-    expect(SRC).not.toMatch(/\.delete\(/);
+    const code = stripComments(SRC);
+    expect(code).not.toMatch(/\.delete\(/);
   });
 
   it('service does not reference operational table without _registry', () => {
