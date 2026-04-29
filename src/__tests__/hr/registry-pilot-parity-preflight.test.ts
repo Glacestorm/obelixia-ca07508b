@@ -7,7 +7,10 @@ import {
   type RegistryPilotParityPreflightInput,
 } from '@/engines/erp/hr/registryPilotParityPreflight';
 import type { OperativeAgreementResolutionSnapshot } from '@/engines/erp/hr/agreementResolutionComparator';
-import type { RegistryResolutionPreview } from '@/engines/erp/hr/registryAwareAgreementResolver';
+import type {
+  RegistryResolutionPreview,
+  RegistryAgreementPreviewConcept,
+} from '@/engines/erp/hr/registryAwareAgreementResolver';
 
 const SOURCE_PATH = resolve(
   __dirname,
@@ -39,60 +42,49 @@ function makeOperative(
   };
 }
 
+function c(
+  code: string,
+  amount: number,
+): RegistryAgreementPreviewConcept {
+  return {
+    code,
+    label: code,
+    amount,
+    source: 'registry_salary_table',
+  };
+}
+
 function makePreview(
+  conceptsPreview: RegistryAgreementPreviewConcept[],
   overrides: Partial<RegistryResolutionPreview> = {},
 ): RegistryResolutionPreview {
   return {
+    source: 'registry',
     canUseForPayroll: true,
-    concepts: [
-      { code: 'REGISTRY_SALARY_BASE_MONTHLY', amount: 1500, cadence: 'monthly' },
-      { code: 'REGISTRY_SALARY_BASE_ANNUAL', amount: 21000, cadence: 'annual' },
-      { code: 'REGISTRY_PLUS_CONVENIO', amount: 100, cadence: 'monthly' },
-      { code: 'REGISTRY_PLUS_TRANSPORT', amount: 50, cadence: 'monthly' },
-      { code: 'REGISTRY_EXTRA_PAY_AMOUNT', amount: 1500, cadence: 'monthly' },
-    ],
+    salaryRowsMatched: conceptsPreview.length,
+    conceptsPreview,
     warnings: [],
     blockers: [],
     ...overrides,
   } as unknown as RegistryResolutionPreview;
 }
 
-function makeWarningPreview(deltaMonthly = 2): RegistryResolutionPreview {
-  return makePreview({
-    concepts: [
-      {
-        code: 'REGISTRY_SALARY_BASE_MONTHLY',
-        amount: 1500 + deltaMonthly,
-        cadence: 'monthly',
-      },
-      { code: 'REGISTRY_SALARY_BASE_ANNUAL', amount: 21000, cadence: 'annual' },
-      { code: 'REGISTRY_PLUS_CONVENIO', amount: 100, cadence: 'monthly' },
-      { code: 'REGISTRY_PLUS_TRANSPORT', amount: 50, cadence: 'monthly' },
-      { code: 'REGISTRY_EXTRA_PAY_AMOUNT', amount: 1500, cadence: 'monthly' },
-    ],
-  } as Partial<RegistryResolutionPreview>);
-}
-
-function makeCriticalPreview(): RegistryResolutionPreview {
-  return makePreview({
-    concepts: [
-      { code: 'REGISTRY_SALARY_BASE_MONTHLY', amount: 1800, cadence: 'monthly' },
-      { code: 'REGISTRY_SALARY_BASE_ANNUAL', amount: 21000, cadence: 'annual' },
-      { code: 'REGISTRY_PLUS_CONVENIO', amount: 100, cadence: 'monthly' },
-      { code: 'REGISTRY_PLUS_TRANSPORT', amount: 50, cadence: 'monthly' },
-      { code: 'REGISTRY_EXTRA_PAY_AMOUNT', amount: 1500, cadence: 'monthly' },
-    ],
-  } as Partial<RegistryResolutionPreview>);
-}
+const MATCHED_CONCEPTS: RegistryAgreementPreviewConcept[] = [
+  c('REGISTRY_SALARY_BASE_MONTHLY', 1500),
+  c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+  c('REGISTRY_PLUS_CONVENIO', 100),
+  c('REGISTRY_PLUS_TRANSPORT', 50),
+  c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+];
 
 describe('B10F.2 — registryPilotParityPreflight (logic)', () => {
   it('blocks when registry preview canUseForPayroll=false', () => {
     const input: RegistryPilotParityPreflightInput = {
       operative: makeOperative(),
-      registryPreview: makePreview({
+      registryPreview: makePreview(MATCHED_CONCEPTS, {
         canUseForPayroll: false,
         blockers: ['not_ready_for_payroll', 'requires_human_review'],
-      } as Partial<RegistryResolutionPreview>),
+      }),
     };
     const r = runRegistryPilotParityPreflight(input);
     expect(r.allowApply).toBe(false);
@@ -103,41 +95,64 @@ describe('B10F.2 — registryPilotParityPreflight (logic)', () => {
   });
 
   it('blocks when there are critical diffs', () => {
+    const preview = makePreview([
+      c('REGISTRY_SALARY_BASE_MONTHLY', 1800), // delta 300 -> critical (monthly > 5)
+      c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+      c('REGISTRY_PLUS_CONVENIO', 100),
+      c('REGISTRY_PLUS_TRANSPORT', 50),
+      c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+    ]);
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
-      registryPreview: makeCriticalPreview(),
+      registryPreview: preview,
     });
+    expect(r.summary.critical).toBeGreaterThan(0);
     expect(r.allowApply).toBe(false);
     expect(r.reason).toBe('critical_diffs');
     expect(r.blockers).toEqual(['critical_diffs']);
-    expect(r.summary.critical).toBeGreaterThan(0);
   });
 
   it('allows when there are no diffs', () => {
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
-      registryPreview: makePreview(),
+      registryPreview: makePreview(MATCHED_CONCEPTS),
     });
+    expect(r.summary.critical).toBe(0);
+    expect(r.summary.warning).toBe(0);
     expect(r.allowApply).toBe(true);
     expect(r.reason).toBe('parity_ok');
     expect(r.blockers).toEqual([]);
-    expect(r.summary.critical).toBe(0);
   });
 
   it('allows warning diffs with default threshold (undefined)', () => {
+    const preview = makePreview([
+      c('REGISTRY_SALARY_BASE_MONTHLY', 1502), // delta 2 -> warning
+      c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+      c('REGISTRY_PLUS_CONVENIO', 100),
+      c('REGISTRY_PLUS_TRANSPORT', 50),
+      c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+    ]);
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
-      registryPreview: makeWarningPreview(2),
+      registryPreview: preview,
     });
     expect(r.summary.warning).toBeGreaterThan(0);
+    expect(r.summary.critical).toBe(0);
     expect(r.allowApply).toBe(true);
     expect(r.reason).toBe('parity_ok');
   });
 
   it('blocks warning diffs with warningThreshold=0', () => {
+    const preview = makePreview([
+      c('REGISTRY_SALARY_BASE_MONTHLY', 1502),
+      c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+      c('REGISTRY_PLUS_CONVENIO', 100),
+      c('REGISTRY_PLUS_TRANSPORT', 50),
+      c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+    ]);
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
-      registryPreview: makeWarningPreview(2),
+      registryPreview: preview,
       warningThreshold: 0,
     });
     expect(r.summary.warning).toBeGreaterThan(0);
@@ -147,27 +162,31 @@ describe('B10F.2 — registryPilotParityPreflight (logic)', () => {
   });
 
   it('allows when warnings <= threshold (threshold=2, 1 warning)', () => {
+    const preview = makePreview([
+      c('REGISTRY_SALARY_BASE_MONTHLY', 1502),
+      c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+      c('REGISTRY_PLUS_CONVENIO', 100),
+      c('REGISTRY_PLUS_TRANSPORT', 50),
+      c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+    ]);
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
-      registryPreview: makeWarningPreview(2),
+      registryPreview: preview,
       warningThreshold: 2,
     });
-    expect(r.summary.warning).toBeLessThanOrEqual(2);
+    expect(r.summary.warning).toBe(1);
     expect(r.allowApply).toBe(true);
     expect(r.reason).toBe('parity_ok');
   });
 
-  it('blocks when warnings > threshold (threshold=1, multiple warnings)', () => {
-    // Two warning diffs: monthly base off by 2, plus convenio off by 2.
-    const preview = makePreview({
-      concepts: [
-        { code: 'REGISTRY_SALARY_BASE_MONTHLY', amount: 1502, cadence: 'monthly' },
-        { code: 'REGISTRY_SALARY_BASE_ANNUAL', amount: 21000, cadence: 'annual' },
-        { code: 'REGISTRY_PLUS_CONVENIO', amount: 102, cadence: 'monthly' },
-        { code: 'REGISTRY_PLUS_TRANSPORT', amount: 50, cadence: 'monthly' },
-        { code: 'REGISTRY_EXTRA_PAY_AMOUNT', amount: 1500, cadence: 'monthly' },
-      ],
-    } as Partial<RegistryResolutionPreview>);
+  it('blocks when warnings > threshold (threshold=1, 2 warnings)', () => {
+    const preview = makePreview([
+      c('REGISTRY_SALARY_BASE_MONTHLY', 1502),
+      c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+      c('REGISTRY_PLUS_CONVENIO', 102),
+      c('REGISTRY_PLUS_TRANSPORT', 50),
+      c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+    ]);
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
       registryPreview: preview,
@@ -179,9 +198,16 @@ describe('B10F.2 — registryPilotParityPreflight (logic)', () => {
   });
 
   it('preserves comparison summary in result', () => {
+    const preview = makePreview([
+      c('REGISTRY_SALARY_BASE_MONTHLY', 1502),
+      c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+      c('REGISTRY_PLUS_CONVENIO', 100),
+      c('REGISTRY_PLUS_TRANSPORT', 50),
+      c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+    ]);
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
-      registryPreview: makeWarningPreview(2),
+      registryPreview: preview,
     });
     expect(r.summary).toEqual({
       critical: r.comparison.summary.critical,
@@ -190,13 +216,13 @@ describe('B10F.2 — registryPilotParityPreflight (logic)', () => {
     });
   });
 
-  it('propagates registryPreview blockers into result on preview_blocked', () => {
+  it('propagates registryPreview blockers when preview is blocked', () => {
     const r = runRegistryPilotParityPreflight({
       operative: makeOperative(),
-      registryPreview: makePreview({
+      registryPreview: makePreview(MATCHED_CONCEPTS, {
         canUseForPayroll: false,
         blockers: ['version_not_current', 'no_salary_tables'],
-      } as Partial<RegistryResolutionPreview>),
+      }),
     });
     expect(r.blockers).toEqual(
       expect.arrayContaining([
@@ -208,9 +234,16 @@ describe('B10F.2 — registryPilotParityPreflight (logic)', () => {
   });
 
   it('is deterministic for the same input', () => {
+    const preview = makePreview([
+      c('REGISTRY_SALARY_BASE_MONTHLY', 1502),
+      c('REGISTRY_SALARY_BASE_ANNUAL', 21000),
+      c('REGISTRY_PLUS_CONVENIO', 100),
+      c('REGISTRY_PLUS_TRANSPORT', 50),
+      c('REGISTRY_EXTRA_PAY_AMOUNT', 1500),
+    ]);
     const input: RegistryPilotParityPreflightInput = {
       operative: makeOperative(),
-      registryPreview: makeWarningPreview(2),
+      registryPreview: preview,
       warningThreshold: 1,
     };
     const a = runRegistryPilotParityPreflight(input);
@@ -230,7 +263,9 @@ describe('B10F.2 — registryPilotParityPreflight (static guards)', () => {
 
   it('source does not contain React or hooks', () => {
     expect(SOURCE).not.toMatch(/from ['"]react['"]/);
-    expect(SOURCE).not.toMatch(/\buseState\b|\buseEffect\b|\buseCallback\b|\buseMemo\b|\buseRef\b/);
+    expect(SOURCE).not.toMatch(
+      /\buseState\b|\buseEffect\b|\buseCallback\b|\buseMemo\b|\buseRef\b/,
+    );
   });
 
   it('source does not contain DB write/select APIs', () => {
@@ -256,9 +291,9 @@ describe('B10F.2 — registryPilotParityPreflight (static guards)', () => {
   });
 
   it('source does not reference operative collective agreements table', () => {
-    // Only `*_registry` table references are allowed; operative table must
-    // not appear bare.
-    const operativeMatches = SOURCE.match(/erp_hr_collective_agreements(?!_registry)/g);
+    const operativeMatches = SOURCE.match(
+      /erp_hr_collective_agreements(?!_registry)/g,
+    );
     expect(operativeMatches).toBeNull();
   });
 
@@ -276,6 +311,8 @@ describe('B10F.2 — registryPilotParityPreflight (static guards)', () => {
   it('registryPilotGate.ts still has HR_REGISTRY_PILOT_MODE=false and empty allow-list', () => {
     const gateSrc = readFileSync(PILOT_GATE_PATH, 'utf8');
     expect(gateSrc).toMatch(/HR_REGISTRY_PILOT_MODE\s*=\s*false/);
-    expect(gateSrc).toMatch(/REGISTRY_PILOT_SCOPE_ALLOWLIST[^=]*=\s*\[\s*\]/);
+    expect(gateSrc).toMatch(
+      /REGISTRY_PILOT_SCOPE_ALLOWLIST[^=]*=\s*\[\s*\]/,
+    );
   });
 });
