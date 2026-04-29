@@ -361,7 +361,20 @@ export function buildRegistryPayrollResolution(
     return buildEmpty('version_not_current', ['version_not_current']);
   }
 
-  // 6) Delegate to B10A resolver as a defensive cross-check.
+  // 6) Salary table match (must precede B10A so year-scoped misses surface
+  //    with the canonical `missing_salary_table` reason rather than B10A's
+  //    `no_salary_tables`).
+  const match = matchSalaryRow(salaryTables ?? [], targetYear, input.professionalGroup, input.category);
+  const warnings: string[] = [...match.warnings];
+
+  if (!match.row) {
+    return buildEmpty('missing_salary_table', ['missing_salary_table'], warnings);
+  }
+  const row = match.row;
+
+  // 7) Delegate to B10A resolver as a defensive cross-check (using only the
+  //    matched row so its salary/rules pre-conditions are satisfied without
+  //    masking the builder's canonical reasons).
   const b10aAgreement: B10AAgreementSnapshot = {
     id: agreement.id,
     internal_code: agreement.internal_code ?? '',
@@ -382,23 +395,32 @@ export function buildRegistryPayrollResolution(
     source_quality: source.source_quality,
     document_hash: source.document_hash ?? null,
   };
-  const b10aSalaryTables: B10ASalaryTableSnapshot[] = (salaryTables ?? []).map((r, idx) => ({
-    id: r.id ?? `row-${idx}`,
-    agreement_id: agreement.id,
-    version_id: version.id,
-    year: r.year,
-    professional_group: r.professional_group ?? null,
-    category: r.category ?? null,
-    level: r.level ?? null,
-    salary_base_monthly: r.salary_base_monthly ?? null,
-    salary_base_annual: r.salary_base_annual ?? null,
-    extra_pay_amount: r.extra_pay_amount ?? null,
-    plus_convenio: r.plus_convenio ?? null,
-    plus_transport: r.plus_transport ?? null,
-    plus_antiguedad: r.plus_antiguedad ?? null,
-    row_confidence: r.row_confidence ?? null,
-  }));
-  const b10aRules: B10ARuleSnapshot[] = (rules ?? []).map((r, idx) => ({
+  const b10aSalaryTables: B10ASalaryTableSnapshot[] = [
+    {
+      id: row.id ?? 'matched-row',
+      agreement_id: agreement.id,
+      version_id: version.id,
+      year: row.year,
+      professional_group: row.professional_group ?? null,
+      category: row.category ?? null,
+      level: row.level ?? null,
+      salary_base_monthly: row.salary_base_monthly ?? null,
+      salary_base_annual: row.salary_base_annual ?? null,
+      extra_pay_amount: row.extra_pay_amount ?? null,
+      plus_convenio: row.plus_convenio ?? null,
+      plus_transport: row.plus_transport ?? null,
+      plus_antiguedad: row.plus_antiguedad ?? null,
+      row_confidence: row.row_confidence ?? null,
+    },
+  ];
+  // Provide a synthetic placeholder rule when callers omit rules so B10A's
+  // generic `no_rules` precondition does not mask builder-level reasons. The
+  // builder still surfaces explicit warnings for missing payroll rules.
+  const b10aRulesSource: RegistryPayrollRuleSnapshot[] =
+    rules && rules.length > 0
+      ? rules
+      : [{ id: 'placeholder', rule_kind: 'placeholder', rule_value_json: null }];
+  const b10aRules: B10ARuleSnapshot[] = b10aRulesSource.map((r, idx) => ({
     id: r.id ?? `rule-${idx}`,
     agreement_id: agreement.id,
     version_id: version.id,
@@ -417,17 +439,8 @@ export function buildRegistryPayrollResolution(
     targetCategory: input.category ?? undefined,
   });
   if (!b10a.canUseForPayroll) {
-    return buildEmpty('b10a_blocked', b10a.blockers);
+    return buildEmpty('b10a_blocked', b10a.blockers, warnings);
   }
-
-  // 7) Salary table match
-  const match = matchSalaryRow(salaryTables ?? [], targetYear, input.professionalGroup, input.category);
-  const warnings: string[] = [...match.warnings];
-
-  if (!match.row) {
-    return buildEmpty('missing_salary_table', ['missing_salary_table'], warnings);
-  }
-  const row = match.row;
 
   // 8) Rules
   const annualHoursRule = pickRule(rules ?? [], ['annual_hours', 'working_hours']);
