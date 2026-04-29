@@ -55,9 +55,9 @@ export interface SupersedePayload {
   reason: string;
 }
 
-async function invoke(action: string, payload: Record<string, unknown>) {
+async function invoke(action: string, payload: object) {
   const { data, error } = await supabase.functions.invoke(EDGE_FN, {
-    body: { action, ...payload },
+    body: { action, ...(payload as Record<string, unknown>) },
   });
   if (error) {
     return {
