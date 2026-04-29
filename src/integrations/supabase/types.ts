@@ -29461,6 +29461,215 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_collective_agreement_registry_validation_items: {
+        Row: {
+          comment: string | null
+          created_at: string
+          evidence_excerpt: string | null
+          evidence_url: string | null
+          id: string
+          item_key: string
+          item_status: string
+          updated_at: string
+          validation_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          evidence_excerpt?: string | null
+          evidence_url?: string | null
+          id?: string
+          item_key: string
+          item_status?: string
+          updated_at?: string
+          validation_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          evidence_excerpt?: string | null
+          evidence_url?: string | null
+          id?: string
+          item_key?: string
+          item_status?: string
+          updated_at?: string
+          validation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_registry_validat_validation_id_fkey"
+            columns: ["validation_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_registry_validations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreement_registry_validation_signatures: {
+        Row: {
+          algorithm: string
+          id: string
+          payload_canonical: Json
+          previous_signature_id: string | null
+          signature_hash: string
+          signed_at: string
+          signed_by: string
+          signed_by_role: string
+          validation_id: string
+        }
+        Insert: {
+          algorithm?: string
+          id?: string
+          payload_canonical: Json
+          previous_signature_id?: string | null
+          signature_hash: string
+          signed_at?: string
+          signed_by: string
+          signed_by_role: string
+          validation_id: string
+        }
+        Update: {
+          algorithm?: string
+          id?: string
+          payload_canonical?: Json
+          previous_signature_id?: string | null
+          signature_hash?: string
+          signed_at?: string
+          signed_by?: string
+          signed_by_role?: string
+          validation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_registry_previous_signature_id_fkey"
+            columns: ["previous_signature_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_registry_validation_signatures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_registry_valida_validation_id_fkey1"
+            columns: ["validation_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_registry_validations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreement_registry_validations: {
+        Row: {
+          agreement_id: string
+          checklist_json: Json
+          created_at: string
+          evidence_urls: string[]
+          id: string
+          is_current: boolean
+          notes: string | null
+          previous_validation_id: string | null
+          resolved_warnings: Json
+          sha256_hash: string
+          signature_algorithm: string
+          signature_hash: string | null
+          source_id: string
+          triggered_by_import_run_id: string | null
+          unresolved_warnings: Json
+          updated_at: string
+          validated_at: string | null
+          validation_scope: string[]
+          validation_status: string
+          validator_company_id: string | null
+          validator_role: string
+          validator_user_id: string
+          version_id: string
+        }
+        Insert: {
+          agreement_id: string
+          checklist_json?: Json
+          created_at?: string
+          evidence_urls?: string[]
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          previous_validation_id?: string | null
+          resolved_warnings?: Json
+          sha256_hash: string
+          signature_algorithm?: string
+          signature_hash?: string | null
+          source_id: string
+          triggered_by_import_run_id?: string | null
+          unresolved_warnings?: Json
+          updated_at?: string
+          validated_at?: string | null
+          validation_scope?: string[]
+          validation_status?: string
+          validator_company_id?: string | null
+          validator_role: string
+          validator_user_id: string
+          version_id: string
+        }
+        Update: {
+          agreement_id?: string
+          checklist_json?: Json
+          created_at?: string
+          evidence_urls?: string[]
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          previous_validation_id?: string | null
+          resolved_warnings?: Json
+          sha256_hash?: string
+          signature_algorithm?: string
+          signature_hash?: string | null
+          source_id?: string
+          triggered_by_import_run_id?: string | null
+          unresolved_warnings?: Json
+          updated_at?: string
+          validated_at?: string | null
+          validation_scope?: string[]
+          validation_status?: string
+          validator_company_id?: string | null
+          validator_role?: string
+          validator_user_id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_reg_triggered_by_import_run_id_fkey"
+            columns: ["triggered_by_import_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_registr_previous_validation_id_fkey"
+            columns: ["previous_validation_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_registry_validations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_registry_validati_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_registry_validation_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_registry_validations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_collective_agreements: {
         Row: {
           annual_updates: Json | null
