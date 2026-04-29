@@ -1,7 +1,7 @@
 /**
  * B12.2 — Unified search hook for the Centro de Convenios.
  *
- * SELECT-only. No service_role. No edge writes. No bridge/payroll imports.
+ * SELECT-only. No privileged backend role. No edge writes. No bridge/payroll imports.
  * Auth-safe: if there is no active Supabase session, returns
  * { authRequired: true, results: [] } without calling RLS-protected SELECTs.
  */
