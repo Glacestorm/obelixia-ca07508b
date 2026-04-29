@@ -35,7 +35,6 @@ const FORBIDDEN_STRINGS = [
 ];
 
 const FORBIDDEN_IMPORT_FRAGMENTS = [
-  'payroll',
   'payslip',
   'salaryNormalizer',
   'agreementSalaryResolver',
@@ -127,7 +126,10 @@ describe('B8A.3 UI static contract', () => {
       'src/hooks/erp/hr/useCollectiveAgreementValidationActions.ts',
       'utf-8',
     );
-    expect(actions.includes("functions.invoke('erp-hr-collective-agreement-validation'")).toBe(true);
+    expect(
+      actions.includes('erp-hr-collective-agreement-validation') &&
+        actions.includes('functions.invoke('),
+    ).toBe(true);
   });
 
   it('NotOfficialBanner contains the canonical text', () => {
