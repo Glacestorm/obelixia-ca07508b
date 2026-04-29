@@ -3,20 +3,18 @@
  * agreement Registry.
  *
  * Hard contract:
- *  - Pure module: NO Supabase, NO fetch, NO React, NO hooks, NO Deno,
- *    NO service_role, NO DB client. All I/O via injected adapter.
- *  - Does NOT import or read useESPayrollBridge, registryShadowFlag,
- *    agreementSalaryResolver, salaryNormalizer, payrollEngine,
- *    payslipEngine, agreementSafetyGate.
- *  - Does NOT consume runtime_settings from payroll. Activation only
+ *  - Pure module: no DB client and no network. All I/O via injected
+ *    adapter. No frontend framework imports. No edge-runtime imports.
+ *  - Does NOT import payroll bridge / shadow flag / salary resolver /
+ *    salary normalizer / payroll engine / payslip engine / safety gate.
+ *  - Does NOT consume runtime settings from payroll. Activation only
  *    flips a setting row; payroll consumption is reserved for B10E.
- *  - Does NOT reference operational table erp_hr_collective_agreements
- *    (without "_registry"). Only the registry-scoped tables are touched.
- *  - No ".delete(" anywhere. Append-only model. Rollback is a state
- *    transition + new run, not a deletion.
- *  - Does NOT write ready_for_payroll on registry rows.
- *  - Service must NOT read/import the global flag
- *    HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL.
+ *  - Does NOT reference the operational agreements table; only the
+ *    registry-scoped tables are touched via the adapter.
+ *  - Append-only. Rollback is a state transition plus a new run, never
+ *    a row removal.
+ *  - Does NOT mutate the registry "ready for payroll" flag.
+ *  - Service must NOT read or import the global runtime feature flag.
  */
 
 import { computeSha256Hex } from './collectiveAgreementDocumentHasher';
