@@ -435,21 +435,18 @@ describe('B10D.1 — Isolation contract', () => {
     expect(src).toMatch(/HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL\s*=\s*false/);
   });
 
-  it('no edge function for B10D was created in this Build', () => {
-    const candidates = [
-      'supabase/functions/erp-hr-company-agreement-runtime-apply',
-      'supabase/functions/erp-hr-runtime-apply',
-    ];
-    for (const dir of candidates) {
-      const full = join(process.cwd(), dir);
-      let exists = false;
-      try {
-        readdirSync(full);
-        exists = true;
-      } catch {
-        exists = false;
-      }
-      expect(exists, `unexpected edge function dir ${dir}`).toBe(false);
-    }
+  it('B10D.1 schema migration is self-contained (no edge dependency)', () => {
+    // B10D.1 only added schema (tables/RLS/triggers). The edge function
+    // for B10D was created later in B10D.3. This test only verifies the
+    // B10D.1 migration file itself does not embed any edge wiring or
+    // reference the runtime payroll bridge / shadow flag.
+    const migPath = join(
+      process.cwd(),
+      'supabase/migrations/20260429121837_9022dc80-a2ce-4795-8e2e-8834f64aa6e1.sql',
+    );
+    const sql = readFileSync(migPath, 'utf8');
+    expect(sql).not.toMatch(/useESPayrollBridge/);
+    expect(sql).not.toMatch(/registryShadowFlag/);
+    expect(sql).not.toMatch(/HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL/);
   });
 });
