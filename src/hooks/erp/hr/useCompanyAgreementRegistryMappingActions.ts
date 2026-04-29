@@ -111,7 +111,29 @@ async function invoke<T = unknown>(
   payload: Record<string, unknown>,
 ): Promise<MappingActionResult<T>> {
   const body = { action, ...sanitize(payload) };
-  const { data, error } = await supabase.functions.invoke(EDGE_FN, { body });
+
+  // Explicitly fetch a fresh access token from the current session and
+  // forward it as Bearer. `functions.invoke()` can send a stale/missing
+  // token if the SDK in-memory state is out of sync with storage,
+  // producing a 401 UNAUTHORIZED "Invalid token" from the edge.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) {
+    return {
+      success: false,
+      error: {
+        code: 'NO_SESSION',
+        message: 'No active session. Please sign in again.',
+      },
+    };
+  }
+
+  const { data, error } = await supabase.functions.invoke(EDGE_FN, {
+    body,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
   if (error) {
     return {
       success: false,
