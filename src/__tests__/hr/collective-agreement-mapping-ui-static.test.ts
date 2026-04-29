@@ -35,6 +35,17 @@ function read(file: string): string {
   return fs.readFileSync(file, 'utf8');
 }
 
+/**
+ * Strip block comments (/** ... *\/ and /* ... *\/) and line comments
+ * so doc-strings that mention forbidden identifiers as "do NOT use"
+ * notes don't false-positive the static checks.
+ */
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+}
+
 const FORBIDDEN_CTA_STRINGS = [
   'Aplicar en nómina',
   'Activar payroll',
@@ -89,7 +100,7 @@ describe('B10C.2B.2C — Mapping UI static contract', () => {
 
   it.each(FORBIDDEN_CTA_STRINGS)('UI files do not contain forbidden CTA "%s"', (cta) => {
     for (const f of uiFiles) {
-      const src = read(f);
+      const src = stripComments(read(f));
       // Allow the FORBIDDEN_CTA_STRINGS array literal in the panel itself
       // (it lists the forbidden strings as data, not as UI text).
       const filtered = src.replace(/FORBIDDEN_CTA_STRINGS[\s\S]*?\];/, '');
@@ -102,7 +113,7 @@ describe('B10C.2B.2C — Mapping UI static contract', () => {
 
   it('UI/hook files do not import or reference payroll runtime identifiers', () => {
     for (const f of allFiles) {
-      const src = read(f);
+      const src = stripComments(read(f));
       for (const id of FORBIDDEN_IDENTIFIERS) {
         expect(
           src.includes(id),
@@ -114,7 +125,7 @@ describe('B10C.2B.2C — Mapping UI static contract', () => {
 
   it('UI/hook files do not reference HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL or ready_for_payroll as text', () => {
     for (const f of allFiles) {
-      const src = read(f);
+      const src = stripComments(read(f));
       // The hook lists FORBIDDEN_PAYLOAD_KEYS — that's allowed as a guard, not as UI text.
       const filtered = src.replace(/FORBIDDEN_PAYLOAD_KEYS[\s\S]*?\] as const;/, '');
       const filtered2 = filtered.replace(/FORBIDDEN_CTA_STRINGS[\s\S]*?\] as const;/, '');
@@ -131,7 +142,7 @@ describe('B10C.2B.2C — Mapping UI static contract', () => {
       /\.from\([^)]+\)\s*\.delete\(/,
     ];
     for (const f of allFiles) {
-      const src = read(f);
+      const src = stripComments(read(f));
       for (const re of banned) {
         expect(re.test(src), `${path.basename(f)} matches ${re}`).toBe(false);
       }
@@ -141,7 +152,7 @@ describe('B10C.2B.2C — Mapping UI static contract', () => {
   it('UI/hook do not reference operative table erp_hr_collective_agreements without _registry', () => {
     const operative = /erp_hr_collective_agreements(?!_registry|_registry_versions|_registry_sources|_registry_validations|_company_agreement_registry_mappings)/;
     for (const f of allFiles) {
-      const src = read(f);
+      const src = stripComments(read(f));
       // The mapping table itself is erp_hr_company_agreement_registry_mappings — not affected.
       expect(
         operative.test(src),
@@ -152,7 +163,7 @@ describe('B10C.2B.2C — Mapping UI static contract', () => {
 
   it('UI/hook do not use service_role', () => {
     for (const f of allFiles) {
-      const src = read(f);
+      const src = stripComments(read(f));
       expect(src.includes('service_role')).toBe(false);
       expect(src.includes('SERVICE_ROLE_KEY')).toBe(false);
     }
