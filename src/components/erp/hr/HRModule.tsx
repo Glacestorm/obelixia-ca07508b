@@ -157,6 +157,14 @@ import {
   LazyS9RetributiveAuditPanel,
   LazyS9ExecutiveSummaryCard,
 } from './HRModuleLazy';
+import {
+  LazyRegistryMasterPanel,
+  LazyCollectiveAgreementValidationPanel,
+  LazyCompanyAgreementRegistryMappingPanel,
+  LazyRuntimeApplyRequestPanel,
+  LazyRegistryPilotCandidateDiscoveryPanel,
+  LazyRegistryPilotMonitorPanel,
+} from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -618,6 +626,18 @@ function HRModuleInner() {
         {activeModule === 's9-retributive-audit' && <LazyS9RetributiveAuditPanel companyId={companyId} />}
         {activeModule === 's9-executive-summary' && <LazyS9ExecutiveSummaryCard companyId={companyId} />}
         {activeModule === 'collective-agreements' && <LazyHRCollectiveAgreementPanel />}
+
+        {/* B12.1 — Registro Maestro de Convenios (Registry) */}
+        {activeModule === 'registry-master' && <LazyRegistryMasterPanel />}
+        {activeModule === 'registry-validation' && <LazyCollectiveAgreementValidationPanel />}
+        {activeModule === 'registry-mapping' && companyId && (
+          <LazyCompanyAgreementRegistryMappingPanel companyId={companyId} />
+        )}
+        {activeModule === 'registry-runtime-apply' && companyId && (
+          <LazyRuntimeApplyRequestPanel companyId={companyId} />
+        )}
+        {activeModule === 'registry-pilot-discovery' && <LazyRegistryPilotCandidateDiscoveryPanel />}
+        {activeModule === 'registry-pilot-monitor' && <LazyRegistryPilotMonitorPanel />}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}

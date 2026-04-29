@@ -100,6 +100,32 @@ export const LazyHRLegalEnginePanel = lazyPanel(() => import('./domains/complian
 export const LazyComplianceReportingPanel = lazyPanel(() => import('./domains/compliance'), 'ComplianceReportingPanel');
 export const LazyHRUnionsPanel = lazyPanel(() => import('./domains/compliance'), 'HRUnionsPanel');
 
+// ─── B12.1 Registro Maestro de Convenios (Registry) ─────────
+export const LazyRegistryMasterPanel = lazyPanel(
+  () => import('./collective-agreements/registry-master/RegistryMasterPanel'),
+  'RegistryMasterPanel',
+);
+export const LazyCollectiveAgreementValidationPanel = lazyPanel(
+  () => import('./collective-agreements/registry-master/RegistryValidationLauncher'),
+  'RegistryValidationLauncher',
+);
+export const LazyCompanyAgreementRegistryMappingPanel = lazyPanel(
+  () => import('./collective-agreements/mappings/CompanyAgreementRegistryMappingPanel'),
+  'CompanyAgreementRegistryMappingPanel',
+);
+export const LazyRuntimeApplyRequestPanel = lazyPanel(
+  () => import('./collective-agreements/runtime-apply/RuntimeApplyRequestPanel'),
+  'RuntimeApplyRequestPanel',
+);
+export const LazyRegistryPilotCandidateDiscoveryPanel = lazyPanel(
+  () => import('./collective-agreements/pilot-monitor/RegistryPilotCandidateDiscoveryPanel'),
+  'RegistryPilotCandidateDiscoveryPanel',
+);
+export const LazyRegistryPilotMonitorPanel = lazyPanel(
+  () => import('./collective-agreements/pilot-monitor/RegistryPilotMonitorPanel'),
+  'RegistryPilotMonitorPanel',
+);
+
 // ─── D6 Documents ───────────────────────────────────────────
 export const LazyDocumentExpedientModule = lazyPanel(() => import('./domains/documents'), 'DocumentExpedientModule');
 export const LazyHREmployeeDocumentsPanel = lazyPanel(() => import('./domains/documents'), 'HREmployeeDocumentsPanel');
