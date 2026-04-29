@@ -1,12 +1,15 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { UnifiedAgreementRow } from '@/hooks/erp/hr/useAgreementUnifiedSearch';
 import AgreementStatusBadges from './AgreementStatusBadges';
+import { deriveIncorporationFlow } from '@/lib/hr/agreementIncorporationFlow';
 
 interface Props {
   row: UnifiedAgreementRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onStartWizard?: (row: UnifiedAgreementRow) => void;
 }
 
 function buildContextMessage(row: UnifiedAgreementRow): string | null {
@@ -22,9 +25,10 @@ function buildContextMessage(row: UnifiedAgreementRow): string | null {
   return null;
 }
 
-export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange }: Props) {
+export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange, onStartWizard }: Props) {
   if (!row) return null;
   const contextMessage = buildContextMessage(row);
+  const flow = deriveIncorporationFlow(row);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" data-testid="agreement-detail-drawer">
@@ -41,6 +45,19 @@ export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange }: Props)
           {contextMessage && (
             <div className="p-3 rounded-md border bg-muted/30 text-muted-foreground">
               {contextMessage}
+            </div>
+          )}
+
+          {flow.ctaLabel && (
+            <div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onStartWizard?.(row)}
+                data-testid="agreement-wizard-cta"
+              >
+                {flow.ctaLabel}
+              </Button>
             </div>
           )}
 
