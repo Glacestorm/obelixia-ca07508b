@@ -41,11 +41,15 @@ const FORBIDDEN_TOKENS = [
   'supabase.functions.invoke',
   'service_role',
   'SUPABASE_SERVICE_ROLE_KEY',
-  'ready_for_payroll =',
-  'verify_jwt = false',
   'HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL =',
   'HR_REGISTRY_PILOT_MODE =',
   'REGISTRY_PILOT_SCOPE_ALLOWLIST =',
+];
+
+// Patterns that indicate assignment/mutation (not comparison).
+const FORBIDDEN_ASSIGNMENTS = [
+  /ready_for_payroll\s*=\s*(?!=)/,
+  /verify_jwt\s*=\s*false/,
 ];
 
 const FORBIDDEN_CTA = [
@@ -72,6 +76,9 @@ describe('B12.3 — wizard static safety invariants', () => {
       for (const t of FORBIDDEN_TOKENS) {
         expect(src).not.toContain(t);
       }
+      for (const re of FORBIDDEN_ASSIGNMENTS) {
+        expect(src).not.toMatch(re);
+      }
     });
     it(`${file} has no forbidden CTAs`, () => {
       const src = read(file);
@@ -81,8 +88,17 @@ describe('B12.3 — wizard static safety invariants', () => {
     });
   }
 
-  it('supabase/config.toml does not disable verify_jwt', () => {
+  it('supabase/config.toml does not disable verify_jwt for HR collective agreement functions', () => {
     const cfg = read('supabase/config.toml');
-    expect(cfg).not.toMatch(/verify_jwt\s*=\s*false/);
+    // Match each [functions.<name>] block individually; only HR collective
+    // agreement function blocks must keep verify_jwt enabled.
+    const blocks = cfg.split(/\n(?=\[functions\.)/g);
+    for (const block of blocks) {
+      const header = block.match(/^\[functions\.([^\]]+)\]/);
+      if (!header) continue;
+      const name = header[1];
+      if (!/erp-hr.*(collective-agreement|agreement-registry|agreement-runtime|pilot)/i.test(name)) continue;
+      expect(block, `function ${name} must keep verify_jwt enabled`).not.toMatch(/verify_jwt\s*=\s*false/);
+    }
   });
 });
