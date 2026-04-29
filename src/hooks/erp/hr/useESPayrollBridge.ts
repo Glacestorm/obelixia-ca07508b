@@ -1418,6 +1418,21 @@ export function useESPayrollBridge(companyId?: string) {
 
           // ── B10C: shadow registry preview (DEAD CODE while flag is false) ──
           // Pure, metadata-only. Never feeds payroll. No DB I/O. No mapping.
+          //
+          // ── B10E.4: registry runtime integration (flag-guarded) ──
+          // With the flag OFF (production), only a `flag_off` non-enumerable
+          // trace is attached. The data loader, setting resolver, builder
+          // and comparator are NEVER invoked. With the flag ON (currently
+          // dead-code), the full chain runs and may apply a registry-driven
+          // resolution only when 0 critical diffs are detected. The
+          // operative `salaryResolution` always remains the fallback.
+          if (salaryResolution && typeof salaryResolution === 'object') {
+            try {
+              attachRegistryRuntimeTrace(salaryResolution, buildFlagOffTrace());
+            } catch {
+              // Trace attachment must never break payroll.
+            }
+          }
           if ((HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL as unknown as boolean) === true) {
             try {
               const shadow = buildRegistryAgreementShadowPreview({
@@ -1433,6 +1448,116 @@ export function useESPayrollBridge(companyId?: string) {
             } catch (shadowErr) {
               // Shadow path must never break payroll.
               console.warn('[useESPayrollBridge] registry shadow skipped:', shadowErr);
+            }
+
+            // B10E.4 — full registry runtime chain (DEAD CODE while flag false).
+            // Loader uses the user's RLS-bound supabase client; never service-role.
+            try {
+              const snapshotResult = await fetchRegistryRuntimePayrollSnapshot({
+                companyId: companyId as string,
+                employeeId: emp.id,
+                contractId: (contract as any)?.id ?? null,
+                year: currentYear,
+                supabaseClient: supabase,
+              });
+              let settingResolverResult: any = null;
+              let builderResult: any = null;
+              let comparatorReport: any = null;
+              let registryAgreementId: string | undefined;
+              let registryVersionId: string | undefined;
+              if (snapshotResult.ok) {
+                settingResolverResult = resolveRegistryRuntimeSetting({
+                  companyId: companyId as string,
+                  employeeId: emp.id,
+                  contractId: (contract as any)?.id ?? null,
+                  settings: snapshotResult.snapshot.runtimeSettings as any,
+                });
+                if (settingResolverResult.setting) {
+                  const setting = settingResolverResult.setting;
+                  const mapping = snapshotResult.snapshot.mappings.find(
+                    (m: any) => m?.id === setting.mapping_id,
+                  ) ?? null;
+                  const agreement = mapping
+                    ? snapshotResult.snapshot.agreements.find(
+                        (a: any) => a?.id === mapping.registry_agreement_id,
+                      ) ?? null
+                    : null;
+                  const version = mapping
+                    ? snapshotResult.snapshot.versions.find(
+                        (v: any) => v?.id === mapping.registry_version_id,
+                      ) ?? null
+                    : null;
+                  const source = agreement
+                    ? snapshotResult.snapshot.sources.find(
+                        (s: any) => s?.agreement_id === agreement.id,
+                      ) ?? null
+                    : null;
+                  const salaryRows = agreement
+                    ? snapshotResult.snapshot.salaryTables.filter(
+                        (r: any) => r?.agreement_id === agreement.id,
+                      )
+                    : [];
+                  const ruleRows = agreement
+                    ? snapshotResult.snapshot.rules.filter(
+                        (r: any) => r?.agreement_id === agreement.id,
+                      )
+                    : [];
+                  registryAgreementId = agreement?.id;
+                  registryVersionId = version?.id;
+                  builderResult = buildRegistryPayrollResolution({
+                    setting: setting as any,
+                    mapping: mapping as any,
+                    agreement: agreement as any,
+                    version: version as any,
+                    source: source as any,
+                    salaryTables: salaryRows as any,
+                    rules: ruleRows as any,
+                    targetYear: currentYear,
+                    professionalGroup: professionalGroup ?? null,
+                    category: employeeCategory,
+                  });
+                  if (builderResult?.canBuild && shadow?.preview) {
+                    comparatorReport = compareOperativeVsRegistryAgreementResolution({
+                      operative: {
+                        source: 'operative',
+                        salaryBaseMonthly: salaryResolution?.salarioBaseConvenio ?? null,
+                        plusConvenio: salaryResolution?.plusConvenioTabla ?? null,
+                      },
+                      registryPreview: shadow.preview,
+                    });
+                  }
+                }
+              }
+              const decision = buildRegistryRuntimeBridgeDecision({
+                operativeSalaryResolution: salaryResolution,
+                snapshotResult: snapshotResult.ok
+                  ? { ok: true, warnings: snapshotResult.warnings }
+                  : { ok: false, error: snapshotResult.error, reason: snapshotResult.reason, warnings: snapshotResult.warnings },
+                settingResolverResult,
+                builderResult,
+                comparatorReport,
+                registryAgreementId,
+                registryVersionId,
+              });
+              if (salaryResolution && typeof salaryResolution === 'object') {
+                attachRegistryRuntimeTrace(salaryResolution, decision.trace);
+              }
+              if (decision.applyRegistry && decision.registrySalaryResolution) {
+                // Registry application path (currently unreachable: flag is false).
+                // The operative resolution remains in scope as fallback.
+                const registryRes = decision.registrySalaryResolution as any;
+                salaryResolution = {
+                  ...(salaryResolution as any),
+                  salarioBaseConvenio: registryRes.salarioBaseConvenio ?? (salaryResolution as any)?.salarioBaseConvenio,
+                  plusConvenioTabla: registryRes.plusConvenioTabla ?? (salaryResolution as any)?.plusConvenioTabla,
+                };
+                attachRegistryRuntimeTrace(salaryResolution, decision.trace);
+              }
+            } catch (runtimeErr) {
+              if (salaryResolution && typeof salaryResolution === 'object') {
+                attachRegistryRuntimeTrace(salaryResolution, buildExceptionFallbackTrace());
+              }
+              console.warn('[useESPayrollBridge] registry runtime skipped:', runtimeErr);
             }
           }
 
