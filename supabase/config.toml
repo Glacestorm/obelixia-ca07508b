@@ -516,3 +516,6 @@ verify_jwt = false
 
 [functions.external-integrations]
 verify_jwt = true
+
+[functions.erp-hr-collective-agreement-activation-proposal]
+verify_jwt = true
