@@ -221,6 +221,17 @@ export function RuntimeApplyRequestPanel({
 
   return (
     <div className="space-y-3" data-testid="runtime-apply-panel">
+      {authRequired && (
+        <div
+          data-testid="registry-auth-required"
+          className="rounded-md border border-dashed bg-muted/40 p-3 text-sm"
+        >
+          <p className="font-medium">Sesión requerida</p>
+          <p className="text-muted-foreground text-xs">
+            Esta sección usa funciones protegidas del Registry. Inicia sesión con un usuario autorizado para cargar datos o ejecutar acciones.
+          </p>
+        </div>
+      )}
       {/* Mandatory permanent banner */}
       <div
         data-testid="runtime-apply-banner"
