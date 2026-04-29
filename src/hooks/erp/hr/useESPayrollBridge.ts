@@ -28,6 +28,16 @@ import { fetchRegistryRuntimePayrollSnapshot } from '@/engines/erp/hr/registryRu
 import { resolveRegistryRuntimeSetting } from '@/engines/erp/hr/registryRuntimeSettingResolver';
 import { buildRegistryPayrollResolution } from '@/engines/erp/hr/registryPayrollResolutionBuilder';
 import { compareOperativeVsRegistryAgreementResolution } from '@/engines/erp/hr/agreementResolutionComparator';
+// B10F.1/B10F.2/B10F.3 — Pilot gate, parity preflight and pure pilot
+// bridge decision helper. With HR_REGISTRY_PILOT_MODE=false and the
+// allow-list empty, the pilot branch is dead-code at runtime. Only a
+// non-enumerable trace is attached. No DB writes, no service-role.
+import {
+  HR_REGISTRY_PILOT_MODE,
+  isPilotEnabledForScope,
+} from '@/engines/erp/hr/registryPilotGate';
+import { runRegistryPilotParityPreflight } from '@/engines/erp/hr/registryPilotParityPreflight';
+import { buildRegistryPilotBridgeDecision } from '@/engines/erp/hr/registryPilotBridgeDecision';
 
 // ── Types ──
 
