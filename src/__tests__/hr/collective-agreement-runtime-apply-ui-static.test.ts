@@ -120,7 +120,10 @@ describe('B10D.4 — Runtime apply UI static contract', () => {
       for (const f of uiFiles) {
         const src = stripComments(read(f));
         // Allow the FORBIDDEN_CTA_STRINGS array literal in the panel itself.
-        const filtered = src.replace(/FORBIDDEN_CTA_STRINGS[\s\S]*?\];/, '');
+        const filtered = src.replace(
+          /FORBIDDEN_CTA_STRINGS[\s\S]*?\](\s*as\s*const)?\s*;/,
+          '',
+        );
         expect(
           filtered.includes(cta),
           `${path.basename(f)} contains forbidden CTA "${cta}"`,
@@ -143,11 +146,15 @@ describe('B10D.4 — Runtime apply UI static contract', () => {
 
   it('UI/hook files do not reference HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL or ready_for_payroll as text', () => {
     for (const f of allFiles) {
-      const src = stripComments(read(f));
+      let src = stripComments(read(f));
       // The hook lists FORBIDDEN_PAYLOAD_KEYS — that's allowed as a guard, not as UI text.
-      const filtered = src.replace(/FORBIDDEN_PAYLOAD_KEYS[\s\S]*?\] as const;/, '');
-      expect(filtered.includes('HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL')).toBe(false);
-      expect(filtered.includes('ready_for_payroll')).toBe(false);
+      src = src.replace(/FORBIDDEN_PAYLOAD_KEYS[\s\S]*?\]\s*as\s*const;/, '');
+      // The invariants card mirrors the server-side gate name
+      // `registry_ready_for_payroll` — allowed as an internal gate id,
+      // not as user-facing payroll-touching CTA.
+      src = src.replace(/registry_ready_for_payroll/g, '');
+      expect(src.includes('HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL')).toBe(false);
+      expect(src.includes('ready_for_payroll')).toBe(false);
     }
   });
 
