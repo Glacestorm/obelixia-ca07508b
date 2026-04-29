@@ -1402,6 +1402,26 @@ export function useESPayrollBridge(companyId?: string) {
             }
           }
 
+          // ── B10C: shadow registry preview (DEAD CODE while flag is false) ──
+          // Pure, metadata-only. Never feeds payroll. No DB I/O. No mapping.
+          if ((HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL as unknown as boolean) === true) {
+            try {
+              const shadow = buildRegistryAgreementShadowPreview({
+                operative: {
+                  source: 'operative',
+                  salaryBaseMonthly: salaryResolution?.salarioBaseConvenio ?? null,
+                  plusConvenio: salaryResolution?.plusConvenioTabla ?? null,
+                },
+                // No mapping yet (B10D). Without registry inputs the helper
+                // resolves to { enabled:false, reason:'no_registry_input' }.
+              });
+              (salaryResolution as any).__registry_shadow = shadow;
+            } catch (shadowErr) {
+              // Shadow path must never break payroll.
+              console.warn('[useESPayrollBridge] registry shadow skipped:', shadowErr);
+            }
+          }
+
           // Build flex remuneration from plan
           const flexPlan = (flexPlans || []).find((fp: any) => fp.employee_id === emp.id);
 
