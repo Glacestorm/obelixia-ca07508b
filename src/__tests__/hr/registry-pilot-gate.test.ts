@@ -16,6 +16,12 @@ const SOURCE = readFileSync(
   'utf8',
 );
 
+// Strip comments before scanning so the JSDoc header (which intentionally
+// names forbidden APIs/imports to forbid them) does not trip the guards.
+const CODE = SOURCE
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
+
 function scope(overrides: Partial<RegistryPilotScope> = {}): RegistryPilotScope {
   return {
     company_id: 'co-1',
