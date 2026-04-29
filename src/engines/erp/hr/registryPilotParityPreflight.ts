@@ -6,11 +6,11 @@
  * the B10B comparator.
  *
  * HARD SAFETY:
- *  - Pure: no Supabase, no fetch, no React, no hooks, no Deno.
+ *  - Pure: no remote sources, no fetch, no React, no hooks, no Deno.
  *  - No DB writes.
- *  - No imports from useESPayrollBridge, registryShadowFlag,
- *    registryPilotGate, agreementSalaryResolver, salaryNormalizer,
- *    payrollEngine, payslipEngine, agreementSafetyGate.
+ *  - No imports from the bridge, the global flag, the pilot gate, the
+ *    operative agreement resolver, the salary normalizer, the payroll
+ *    engine, the payslip engine, or the agreement safety gate.
  *  - Does NOT mutate the pilot gate, the global registry flag, nor
  *    the operative collective agreements table.
  *  - Does NOT apply the resolution; only reports a verdict.
@@ -74,7 +74,6 @@ export function runRegistryPilotParityPreflight(
     ? [...input.registryPreview.blockers]
     : [];
 
-  // 1) Registry preview itself blocks payroll usage.
   if (input.registryPreview.canUseForPayroll !== true) {
     return {
       allowApply: false,
@@ -86,7 +85,6 @@ export function runRegistryPilotParityPreflight(
     };
   }
 
-  // 2) Critical diffs always block.
   if (summary.critical > 0) {
     return {
       allowApply: false,
@@ -98,7 +96,6 @@ export function runRegistryPilotParityPreflight(
     };
   }
 
-  // 3) Warning threshold check (only if explicitly configured).
   if (
     typeof input.warningThreshold === 'number' &&
     Number.isFinite(input.warningThreshold) &&
@@ -114,7 +111,6 @@ export function runRegistryPilotParityPreflight(
     };
   }
 
-  // 4) Parity OK.
   return {
     allowApply: true,
     reason: 'parity_ok',
