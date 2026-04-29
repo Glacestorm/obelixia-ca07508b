@@ -18,14 +18,23 @@ import { RegistryPilotScopeCard } from './RegistryPilotScopeCard';
 import { RegistryPilotSummaryCard } from './RegistryPilotSummaryCard';
 import { RegistryPilotDecisionLogTable } from './RegistryPilotDecisionLogTable';
 import { RegistryPilotRollbackInfoCard } from './RegistryPilotRollbackInfoCard';
+import { AuthRequiredCard } from '../_shared/AuthRequiredCard';
 
 interface Props {
   filters?: RegistryPilotMonitorFilters;
 }
 
 export function RegistryPilotMonitorPanel({ filters }: Props) {
-  const { globalFlag, pilotMode, allowlist, logs, summary, loading, error } =
+  const { globalFlag, pilotMode, allowlist, logs, summary, loading, error, authRequired } =
     useRegistryPilotMonitor(filters);
+
+  if (authRequired) {
+    return (
+      <div className="space-y-4" data-testid="registry-pilot-monitor-panel">
+        <AuthRequiredCard />
+      </div>
+    );
+  }
 
   const mostRecent = useMemo(() => (logs.length > 0 ? logs[0] : null), [logs]);
 

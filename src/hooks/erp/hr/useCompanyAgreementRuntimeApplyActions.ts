@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { authSafeInvoke } from './_authSafeInvoke';
 
 const EDGE_FN = 'erp-hr-company-agreement-runtime-apply';
 
@@ -125,81 +125,9 @@ async function invoke<T = unknown>(
   payload: Record<string, unknown>,
 ): Promise<RuntimeApplyActionResult<T>> {
   const body = { action, ...sanitize(payload) };
-
-  // Explicitly forward the current access token. Protected registry edges
-  // validate the Bearer JWT in-code, and `functions.invoke()` can otherwise
-  // reuse a stale/missing in-memory auth header after session refreshes.
-  // If the first call fails with UNAUTHORIZED/Invalid token, refresh the
-  // session once and retry — this recovers from stale in-memory tokens
-  // after a previous refresh-token failure.
-  const getToken = async (forceRefresh: boolean): Promise<string | null> => {
-    if (forceRefresh) {
-      try {
-        await supabase.auth.refreshSession();
-      } catch {
-        // ignore — fall through to getSession
-      }
-    }
-    const { data: sessionData } = await supabase.auth.getSession();
-    return sessionData?.session?.access_token ?? null;
-  };
-
-  const callOnce = async (forceRefresh: boolean) => {
-    const accessToken = await getToken(forceRefresh);
-    if (!accessToken) {
-      return {
-        ok: false as const,
-        unauthorized: true,
-        error: { code: 'NO_SESSION', message: 'No active session. Please sign in again.' },
-        data: undefined as unknown,
-      };
-    }
-    const { data, error } = await supabase.functions.invoke(EDGE_FN, {
-      body,
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const respObj = (data ?? {}) as {
-      success?: boolean;
-      error?: { code?: string; message?: string };
-    };
-    const isUnauthorized =
-      respObj?.error?.code === 'UNAUTHORIZED' ||
-      /invalid token|unauthorized/i.test(error?.message ?? '') ||
-      /invalid token|unauthorized/i.test(respObj?.error?.message ?? '');
-    return {
-      ok: !error && respObj?.success === true,
-      unauthorized: isUnauthorized,
-      error: error
-        ? { code: 'EDGE_INVOKE_ERROR', message: error.message ?? 'Edge invocation failed' }
-        : respObj?.error ?? { code: 'UNKNOWN', message: 'Unknown response' },
-      data,
-    };
-  };
-
-  let result = await callOnce(false);
-  if (!result.ok && result.unauthorized) {
-    result = await callOnce(true);
-  }
-  const { data, error } = { data: result.data, error: result.ok ? null : result.error };
-  if (error) {
-    return {
-      success: false,
-      error: {
-        code: (error as { code?: string }).code ?? 'EDGE_INVOKE_ERROR',
-        message: (error as { message?: string }).message ?? 'Edge invocation failed',
-      },
-    };
-  }
-  const resp = (data ?? {}) as {
-    success?: boolean;
-    data?: T;
-    error?: { code: string; message: string };
-  };
-  if (resp.success) return { success: true, data: resp.data as T };
-  return {
-    success: false,
-    error: resp.error ?? { code: 'UNKNOWN', message: 'Unknown response' },
-  };
+  const r = await authSafeInvoke<T>(EDGE_FN, body);
+  if (r.success === true) return { success: true, data: r.data };
+  return { success: false, error: r.error };
 }
 
 export function useCompanyAgreementRuntimeApplyActions() {

@@ -90,6 +90,7 @@ export function RuntimeApplyRequestPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [secondApprovalOpen, setSecondApprovalOpen] = useState(false);
   const [rollbackKind, setRollbackKind] = useState<RuntimeRollbackDialogKind | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
 
   const selected = useMemo(
     () => requests.find((r) => r.id === selectedId) ?? null,
@@ -102,12 +103,18 @@ export function RuntimeApplyRequestPanel({
     const res = await actions.list<RuntimeApplyRequestRecord[]>(payload);
     setIsLoading(false);
     if (res.success && Array.isArray(res.data)) {
+      setAuthRequired(false);
       setRequests(res.data);
       if (!res.data.find((r) => r.id === selectedId)) {
         setSelectedId(res.data[0]?.id ?? null);
       }
     } else if (res.success === false) {
-      toast.error(res.error.message);
+      if (res.error.code === 'AUTH_REQUIRED' || res.error.code === 'UNAUTHORIZED') {
+        setAuthRequired(true);
+      } else {
+        setAuthRequired(false);
+        toast.error(res.error.message);
+      }
     }
   }, [actions, companyId, selectedId]);
 
@@ -214,6 +221,17 @@ export function RuntimeApplyRequestPanel({
 
   return (
     <div className="space-y-3" data-testid="runtime-apply-panel">
+      {authRequired && (
+        <div
+          data-testid="registry-auth-required"
+          className="rounded-md border border-dashed bg-muted/40 p-3 text-sm"
+        >
+          <p className="font-medium">Sesión requerida</p>
+          <p className="text-muted-foreground text-xs">
+            Esta sección usa funciones protegidas del Registry. Inicia sesión con un usuario autorizado para cargar datos o ejecutar acciones.
+          </p>
+        </div>
+      )}
       {/* Mandatory permanent banner */}
       <div
         data-testid="runtime-apply-banner"

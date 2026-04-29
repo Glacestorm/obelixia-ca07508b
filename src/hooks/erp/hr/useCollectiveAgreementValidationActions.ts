@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { authSafeInvoke } from './_authSafeInvoke';
 
 const EDGE_FN = 'erp-hr-collective-agreement-validation';
 
@@ -56,21 +56,9 @@ export interface SupersedePayload {
 }
 
 async function invoke(action: string, payload: object) {
-  const { data, error } = await supabase.functions.invoke(EDGE_FN, {
-    body: { action, ...(payload as Record<string, unknown>) },
-  });
-  if (error) {
-    return {
-      success: false as const,
-      error: { code: 'EDGE_INVOKE_ERROR', message: error.message ?? 'Edge invocation failed' },
-    };
-  }
-  const body = (data ?? {}) as { success?: boolean; data?: unknown; error?: { code: string; message: string } };
-  if (body.success) return { success: true as const, data: body.data };
-  return {
-    success: false as const,
-    error: body.error ?? { code: 'UNKNOWN', message: 'Unknown response' },
-  };
+  const r = await authSafeInvoke<unknown>(EDGE_FN, { action, ...(payload as Record<string, unknown>) });
+  if (r.success === true) return { success: true as const, data: r.data };
+  return r;
 }
 
 export function useCollectiveAgreementValidationActions() {

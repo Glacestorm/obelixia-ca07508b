@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useRegistryPilotCandidateDiscovery } from '@/hooks/erp/hr/useRegistryPilotCandidateDiscovery';
+import { AuthRequiredCard } from '../_shared/AuthRequiredCard';
 import type { RegistryPilotCandidate } from '@/engines/erp/hr/registryPilotCandidatePreflight';
 
 function CandidateRow({ c }: { c: RegistryPilotCandidate }) {
@@ -56,7 +57,11 @@ function CandidateRow({ c }: { c: RegistryPilotCandidate }) {
 export function RegistryPilotCandidateDiscoveryPanel() {
   const [companyId, setCompanyId] = useState('');
   const [targetYear, setTargetYear] = useState<number>(2026);
-  const { loading, error, warnings, report, run } = useRegistryPilotCandidateDiscovery();
+  const { loading, error, warnings, report, run, authRequired } = useRegistryPilotCandidateDiscovery();
+
+  if (authRequired) {
+    return <AuthRequiredCard />;
+  }
 
   return (
     <Card>

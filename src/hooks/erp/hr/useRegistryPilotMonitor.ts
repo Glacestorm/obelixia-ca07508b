@@ -14,6 +14,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { authSafeInvoke } from './_authSafeInvoke';
 import {
   HR_REGISTRY_PILOT_MODE,
   REGISTRY_PILOT_SCOPE_ALLOWLIST,
@@ -65,6 +66,7 @@ export interface UseRegistryPilotMonitorResult {
   summary: RegistryPilotMonitorSummary;
   loading: boolean;
   error: string | null;
+  authRequired: boolean;
   refresh: (filters?: RegistryPilotMonitorFilters) => Promise<void>;
 }
 
@@ -86,6 +88,7 @@ export function useRegistryPilotMonitor(
   const [logs, setLogs] = useState<PilotDecisionLogRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
 
   const refresh = useCallback(async (filters?: RegistryPilotMonitorFilters) => {
     const f = filters ?? initialFilters;
@@ -96,26 +99,33 @@ export function useRegistryPilotMonitor(
     setLoading(true);
     setError(null);
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke(
+      const r = await authSafeInvoke<{ decisions?: PilotDecisionLogRow[] } | PilotDecisionLogRow[]>(
         'erp-hr-pilot-runtime-decision-log',
         {
-          body: {
-            action: 'list_decisions',
-            companyId: f.companyId,
-            employeeId: f.employeeId,
-            contractId: f.contractId,
-            targetYear: f.targetYear,
-            limit: f.limit ?? 50,
-          },
+          action: 'list_decisions',
+          companyId: f.companyId,
+          employeeId: f.employeeId,
+          contractId: f.contractId,
+          targetYear: f.targetYear,
+          limit: f.limit ?? 50,
         },
       );
-      if (invokeError) {
-        setError('list_decisions_failed');
+      if (r.success === false) {
+        if (r.reason === 'auth_required') {
+          setAuthRequired(true);
+          setLogs([]);
+          setError(null);
+          return;
+        }
+        setAuthRequired(false);
+        setError(r.error.code === 'UNAUTHORIZED' ? 'unauthorized' : 'list_decisions_failed');
         setLogs([]);
         return;
       }
-      const rows = (data && typeof data === 'object' && 'decisions' in data
-        ? (data as { decisions: PilotDecisionLogRow[] }).decisions
+      setAuthRequired(false);
+      const payload = r.data as unknown;
+      const rows = (payload && typeof payload === 'object' && 'decisions' in (payload as Record<string, unknown>)
+        ? (payload as { decisions: PilotDecisionLogRow[] }).decisions
         : []) ?? [];
       setLogs(Array.isArray(rows) ? rows : []);
     } catch {
@@ -138,6 +148,7 @@ export function useRegistryPilotMonitor(
     summary: summarize(logs),
     loading,
     error,
+    authRequired,
     refresh,
   };
 }
