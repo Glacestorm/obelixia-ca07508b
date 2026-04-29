@@ -331,20 +331,36 @@ describe('registryAgreementMappingPreview — static contract', () => {
   });
 
   it('does not reference the operative collective agreements table', () => {
-    // Allow `_registry` references; reject the bare operative table name.
+    // Allow `_registry` references and benign mentions inside comments
+    // that explicitly state the helper does NOT touch the operative
+    // table. Strip line/block comments before scanning runtime code.
+    const stripped = source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
     const operativeTable = /erp_hr_collective_agreements(?!_registry)/;
-    expect(operativeTable.test(source)).toBe(false);
+    expect(operativeTable.test(stripped)).toBe(false);
   });
 
   it('does not perform DB writes/reads', () => {
-    const dbTokens = ['.from(', '.insert(', '.update(', '.delete('];
-    for (const token of dbTokens) {
-      expect(source.includes(token), `DB token present: ${token}`).toBe(false);
+    // Forbid Supabase-style chained DB calls (e.g. `supabase.from(...)`),
+    // not `Array.from(...)` which is a JS built-in iteration helper.
+    const dbPatterns: Array<[string, RegExp]> = [
+      ['supabase.from(', /\bsupabase\s*\.\s*from\s*\(/],
+      ['<client>.from(', /\b(?!Array\b|Object\b|String\b|Number\b)[a-zA-Z_$][\w$]*\s*\.\s*from\s*\(\s*['"]/],
+      ['.insert(', /\.\s*insert\s*\(/],
+      ['.update(', /\.\s*update\s*\(/],
+      ['.delete(', /\.\s*delete\s*\(/],
+    ];
+    for (const [label, re] of dbPatterns) {
+      expect(re.test(source), `DB pattern present: ${label}`).toBe(false);
     }
   });
 
   it('does not write ready_for_payroll nor touch persisted_priority_apply / C3B3C2', () => {
-    expect(source.includes('ready_for_payroll =')).toBe(false);
+    // Reject assignments to ready_for_payroll, but allow strict equality
+    // checks like `ready_for_payroll === true` used to evaluate input.
+    const writePattern = /ready_for_payroll\s*=(?!=)/;
+    expect(writePattern.test(source)).toBe(false);
     expect(source.includes('persisted_priority_apply')).toBe(false);
     expect(source.includes('C3B3C2')).toBe(false);
   });
