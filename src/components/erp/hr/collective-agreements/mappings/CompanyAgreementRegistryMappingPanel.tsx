@@ -99,6 +99,7 @@ export function CompanyAgreementRegistryMappingPanel({
   );
   const [dialogAction, setDialogAction] = useState<MappingActionKind | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
 
   const selected = useMemo(
     () => mappings.find((m) => m.id === selectedId) ?? null,
@@ -111,12 +112,18 @@ export function CompanyAgreementRegistryMappingPanel({
     const res = await actions.list<MappingRecord[]>(payload);
     setIsLoading(false);
     if (res.success && Array.isArray(res.data)) {
+      setAuthRequired(false);
       setMappings(res.data);
       if (!res.data.find((m) => m.id === selectedId)) {
         setSelectedId(res.data[0]?.id ?? null);
       }
     } else if (res.success === false) {
-      toast.error(res.error.message);
+      if (res.error.code === 'AUTH_REQUIRED' || res.error.code === 'UNAUTHORIZED') {
+        setAuthRequired(true);
+      } else {
+        setAuthRequired(false);
+        toast.error(res.error.message);
+      }
     }
   }, [actions, companyId, employeeId, contractId, selectedId]);
 
