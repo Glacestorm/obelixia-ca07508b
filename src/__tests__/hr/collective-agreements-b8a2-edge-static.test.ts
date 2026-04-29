@@ -49,18 +49,32 @@ describe('B8A.2 — edge file does not touch the operational table', () => {
 });
 
 describe('B8A.2 — edge file does not import payroll surfaces', () => {
-  const FORBIDDEN = [
-    'payroll',
-    'payslip',
-    'salary_normalizer',
-    'agreement_salary_resolver',
-    'useESPayrollBridge',
-  ];
-  for (const term of FORBIDDEN) {
-    it(`does not contain "${term}"`, () => {
-      expect(SRC_NO_COMMENTS.toLowerCase()).not.toContain(term.toLowerCase());
+  // We forbid IMPORTS / module references, not the substring "payroll"
+  // which legitimately appears inside error codes like
+  // NO_PAYROLL_USE_ACK_REQUIRED (semantic guard surfaced to clients).
+  it('does not import any payroll/payslip/salary-resolver module', () => {
+    const importStatements = SRC.match(/^\s*import\s.+from\s+['"][^'"]+['"]/gm) ?? [];
+    const offenders = importStatements.filter((line) => {
+      const lc = line.toLowerCase();
+      return (
+        lc.includes('payroll') ||
+        lc.includes('payslip') ||
+        lc.includes('salary_normalizer') ||
+        lc.includes('salarynormalizer') ||
+        lc.includes('agreement_salary_resolver') ||
+        lc.includes('agreementsalaryresolver') ||
+        lc.includes('useespayrollbridge')
+      );
     });
-  }
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not contain payroll engine identifiers', () => {
+    expect(SRC_NO_COMMENTS).not.toMatch(/\bpayslip\b/i);
+    expect(SRC_NO_COMMENTS).not.toMatch(/\bsalaryNormalizer\b/);
+    expect(SRC_NO_COMMENTS).not.toMatch(/\bagreementSalaryResolver\b/);
+    expect(SRC_NO_COMMENTS).not.toMatch(/\buseESPayrollBridge\b/);
+  });
 });
 
 describe('B8A.2 — service-role only via Deno.env.get', () => {
