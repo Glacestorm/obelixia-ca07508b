@@ -10,6 +10,11 @@ import React from 'react';
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { access_token: 'fresh-runtime-token' } },
+      }),
+    },
     functions: {
       invoke: vi
         .fn()
@@ -282,6 +287,21 @@ describe('B10D.4 — Hook routes through edge function', () => {
       'erp-hr-company-agreement-runtime-apply',
       expect.objectContaining({
         body: expect.objectContaining({ action: 'activate' }),
+      }),
+    );
+  });
+
+  it('forwards the current access token to the protected runtime edge', async () => {
+    const invoke = await runAction('activate', {
+      requestId: 'r1',
+      companyId: 'c1',
+    });
+    expect(invoke).toHaveBeenCalledWith(
+      'erp-hr-company-agreement-runtime-apply',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer fresh-runtime-token',
+        }),
       }),
     );
   });
