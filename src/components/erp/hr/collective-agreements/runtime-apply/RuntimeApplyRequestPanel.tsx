@@ -90,6 +90,7 @@ export function RuntimeApplyRequestPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [secondApprovalOpen, setSecondApprovalOpen] = useState(false);
   const [rollbackKind, setRollbackKind] = useState<RuntimeRollbackDialogKind | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
 
   const selected = useMemo(
     () => requests.find((r) => r.id === selectedId) ?? null,
@@ -102,12 +103,18 @@ export function RuntimeApplyRequestPanel({
     const res = await actions.list<RuntimeApplyRequestRecord[]>(payload);
     setIsLoading(false);
     if (res.success && Array.isArray(res.data)) {
+      setAuthRequired(false);
       setRequests(res.data);
       if (!res.data.find((r) => r.id === selectedId)) {
         setSelectedId(res.data[0]?.id ?? null);
       }
     } else if (res.success === false) {
-      toast.error(res.error.message);
+      if (res.error.code === 'AUTH_REQUIRED' || res.error.code === 'UNAUTHORIZED') {
+        setAuthRequired(true);
+      } else {
+        setAuthRequired(false);
+        toast.error(res.error.message);
+      }
     }
   }, [actions, companyId, selectedId]);
 
