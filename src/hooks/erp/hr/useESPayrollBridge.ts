@@ -9,6 +9,11 @@ import { toast } from 'sonner';
 import { useESLocalization, type ESEmployeeLaborData, type ESSSBase, type IRPFCalculationParams, type SSContributionResult, type IRPFResult } from './useESLocalization';
 import { isTemporaryForSS } from '@/engines/erp/hr/contractTypeEngine';
 import { SMI_MENSUAL_2026 } from '@/shared/legal/rules/smiRules';
+// B10C — Shadow registry preview (hardcoded flag OFF). The block guarded
+// by HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL is dead-code at runtime and
+// MUST NOT alter operative payroll output. Metadata-only.
+import { HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL } from '@/engines/erp/hr/registryShadowFlag';
+import { buildRegistryAgreementShadowPreview } from '@/engines/erp/hr/registryShadowPreview';
 
 // ── Types ──
 
@@ -1394,6 +1399,26 @@ export function useESPayrollBridge(companyId?: string) {
               }
             } catch (resolveErr) {
               console.warn('[useESPayrollBridge] salary resolution skipped:', resolveErr);
+            }
+          }
+
+          // ── B10C: shadow registry preview (DEAD CODE while flag is false) ──
+          // Pure, metadata-only. Never feeds payroll. No DB I/O. No mapping.
+          if ((HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL as unknown as boolean) === true) {
+            try {
+              const shadow = buildRegistryAgreementShadowPreview({
+                operative: {
+                  source: 'operative',
+                  salaryBaseMonthly: salaryResolution?.salarioBaseConvenio ?? null,
+                  plusConvenio: salaryResolution?.plusConvenioTabla ?? null,
+                },
+                // No mapping yet (B10D). Without registry inputs the helper
+                // resolves to { enabled:false, reason:'no_registry_input' }.
+              });
+              (salaryResolution as any).__registry_shadow = shadow;
+            } catch (shadowErr) {
+              // Shadow path must never break payroll.
+              console.warn('[useESPayrollBridge] registry shadow skipped:', shadowErr);
             }
           }
 
