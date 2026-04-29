@@ -112,38 +112,41 @@ async function invoke<T = unknown>(
 ): Promise<MappingActionResult<T>> {
   const body = { action, ...sanitize(payload) };
 
-  // Explicitly fetch a fresh access token from the current session and
-  // forward it as Bearer. `functions.invoke()` can send a stale/missing
-  // token if the SDK in-memory state is out of sync with storage,
-  // producing a 401 UNAUTHORIZED "Invalid token" from the edge.
-  const { data: sessionData } = await supabase.auth.getSession();
-  const accessToken = sessionData?.session?.access_token;
-  if (!accessToken) {
-    return {
-      success: false,
-      error: {
-        code: 'NO_SESSION',
-        message: 'No active session. Please sign in again.',
-      },
-    };
-  }
+  // Forward a fresh Bearer token. If the first call returns UNAUTHORIZED,
+  // refresh the session once and retry — recovers from stale in-memory
+  // tokens after a previous refresh-token failure / re-login.
+  const callOnce = async (forceRefresh: boolean) => {
+    if (forceRefresh) {
+      try { await supabase.auth.refreshSession(); } catch { /* ignore */ }
+    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) {
+      return { ok: false, unauthorized: true, data: undefined as unknown, errMsg: 'No active session.' };
+    }
+    const { data, error } = await supabase.functions.invoke(EDGE_FN, {
+      body,
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const respObj = (data ?? {}) as { success?: boolean; error?: { code?: string; message?: string } };
+    const isUnauthorized =
+      respObj?.error?.code === 'UNAUTHORIZED' ||
+      /invalid token|unauthorized/i.test(error?.message ?? '') ||
+      /invalid token|unauthorized/i.test(respObj?.error?.message ?? '');
+    return { ok: !error && respObj?.success === true, unauthorized: isUnauthorized, data, errMsg: error?.message };
+  };
 
-  const { data, error } = await supabase.functions.invoke(EDGE_FN, {
-    body,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  if (error) {
+  let result = await callOnce(false);
+  if (!result.ok && result.unauthorized) {
+    result = await callOnce(true);
+  }
+  if (result.errMsg && !result.data) {
     return {
       success: false,
-      error: {
-        code: 'EDGE_INVOKE_ERROR',
-        message: error.message ?? 'Edge invocation failed',
-      },
+      error: { code: 'EDGE_INVOKE_ERROR', message: result.errMsg },
     };
   }
-  const resp = (data ?? {}) as {
+  const resp = (result.data ?? {}) as {
     success?: boolean;
     data?: T;
     error?: { code: string; message: string };
