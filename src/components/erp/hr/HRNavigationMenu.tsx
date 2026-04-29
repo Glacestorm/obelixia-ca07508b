@@ -20,7 +20,7 @@ import {
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
   Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane, CreditCard,
-  Wifi, Home, Route
+  Wifi, Home, Route, BookOpen
 } from 'lucide-react';
 
 // ─── Types ───
