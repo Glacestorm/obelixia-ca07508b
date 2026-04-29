@@ -525,3 +525,6 @@ verify_jwt = true
 
 [functions.erp-hr-company-agreement-registry-mapping]
 verify_jwt = true
+
+[functions.erp-hr-company-agreement-runtime-apply]
+verify_jwt = true
