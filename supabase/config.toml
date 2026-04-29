@@ -522,3 +522,6 @@ verify_jwt = true
 
 [functions.erp-hr-collective-agreement-activation-execute]
 verify_jwt = true
+
+[functions.erp-hr-company-agreement-registry-mapping]
+verify_jwt = true
