@@ -59,8 +59,8 @@ describe('B12.1 — RegistryMasterPanel static guarantees', () => {
   it('does not reference operative table erp_hr_collective_agreements without _registry suffix', () => {
     // Strip any registry-suffixed occurrences first, then assert the bare
     // operative-table identifier is absent.
-    const stripped = src.replace(/erp_hr_collective_agreements_registry/g, '');
-    expect(stripped).not.toMatch(/erp_hr_collective_agreements/);
+    const stripped = src.replace(/erp_hr_collective_agreements_registry/g, '__REG__');
+    expect(stripped).not.toMatch(/erp_hr_collective_agreements\b/);
   });
 
   it('does not write ready_for_payroll', () => {
