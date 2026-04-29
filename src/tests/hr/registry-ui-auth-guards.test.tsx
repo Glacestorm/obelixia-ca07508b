@@ -207,8 +207,13 @@ describe('Repo-level safety invariants', () => {
     ];
     for (const rel of files) {
       const src = readFileSync(join(root, rel), 'utf-8');
-      expect(src).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
-      expect(src).not.toMatch(/service_role/i);
+      // Strip JS comments so doc-comments mentioning the forbidden symbols
+      // (as documented hard-line constraints) do not flag the test.
+      const stripped = src
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/(^|[^:])\/\/.*$/gm, '$1');
+      expect(stripped).not.toMatch(/SUPABASE_SERVICE_ROLE_KEY/);
+      expect(stripped).not.toMatch(/service_role/i);
     }
   });
 
