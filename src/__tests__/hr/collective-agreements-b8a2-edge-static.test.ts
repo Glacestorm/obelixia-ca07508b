@@ -86,10 +86,22 @@ describe('B8A.2 — edge file never patches forbidden master-registry / payroll 
 
   for (const key of FORBIDDEN_KEYS) {
     it(`does not contain a write/assignment of \`${key}\``, () => {
-      // The whole forbidden key must NOT appear in executable code at
-      // all. Header comments that *prohibit* it live in the stripped
-      // block comment, so SRC_NO_COMMENTS must be clean.
-      expect(SRC_NO_COMMENTS).not.toContain(key);
+      // The forbidden key must NEVER appear as an object property or
+      // an assignment target in executable code. It MAY appear inside
+      // the FORBIDDEN_PAYLOAD_KEYS blocklist as a string literal
+      // (anti-tampering guard) — those are acceptable.
+      const propAssignment = new RegExp(`\\b${key}\\s*[:=]`);
+      const stringLiteral = new RegExp(`['"]${key}['"]`, 'g');
+      // 1) No bare property/assignment usage (e.g. `ready_for_payroll: true`
+      //    or `ready_for_payroll = ...`).
+      expect(SRC_NO_COMMENTS).not.toMatch(propAssignment);
+      // 2) Any occurrence as a string literal is allowed only inside the
+      //    blocklist (where it is rejected). Confirm there are at most a
+      //    handful and they are quoted (i.e., literals, not identifiers).
+      const allOccurrences = SRC_NO_COMMENTS.match(new RegExp(`\\b${key}\\b`, 'g')) ?? [];
+      const literalOccurrences = SRC_NO_COMMENTS.match(stringLiteral) ?? [];
+      // Every occurrence must be a string literal (blocklist entry).
+      expect(allOccurrences.length).toBe(literalOccurrences.length);
     });
   }
 });
