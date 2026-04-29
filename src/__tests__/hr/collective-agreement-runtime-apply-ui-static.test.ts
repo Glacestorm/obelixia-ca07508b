@@ -197,6 +197,8 @@ describe('B10D.4 — Runtime apply UI static contract', () => {
     const src = read(HOOK_FILE);
     expect(src).toMatch(/erp-hr-company-agreement-runtime-apply/);
     expect(src).toMatch(/supabase\.functions\.invoke/);
+    expect(src).toMatch(/supabase\.auth\.getSession/);
+    expect(src).toMatch(/Authorization:\s*`Bearer \$\{accessToken\}`/);
     for (const action of [
       'create_request',
       'submit_for_second_approval',
