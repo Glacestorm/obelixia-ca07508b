@@ -65,7 +65,12 @@ describe('B9 — registry activation columns migration', () => {
   });
 
   it('does not reference payroll/payslip/salaryNormalizer/agreementSalaryResolver/useESPayrollBridge', () => {
-    const code = stripSqlComments(SQL).toLowerCase();
+    // Strip the legitimate column/index names that contain the substring
+    // "payroll" before scanning for forbidden engine references.
+    const code = stripSqlComments(SQL)
+      .toLowerCase()
+      .replace(/activated_for_payroll_at/g, '')
+      .replace(/ready_for_payroll/g, '');
     expect(code).not.toMatch(/payroll/);
     expect(code).not.toMatch(/payslip/);
     expect(code).not.toMatch(/salarynormalizer/);
