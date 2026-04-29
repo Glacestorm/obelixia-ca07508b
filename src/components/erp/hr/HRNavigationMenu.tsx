@@ -307,6 +307,13 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 's9-retributive-audit', label: 'Auditoría Retributiva', icon: Scale, description: 'Contextualización VPT + RD 902' },
             { id: 's9-executive-summary', label: 'Resumen Ejecutivo S9', icon: FileText, description: 'Vista consolidada VPT' },
             { id: 'collective-agreements', label: 'Convenios Colectivos', icon: Gavel, description: 'Tablas salariales y condiciones' },
+            // ── B12.1 — Registro Maestro de Convenios (Registry) ──
+            { id: 'registry-master', label: 'Registro Maestro', icon: BookOpen, description: 'Registry read-only — no activa nómina' },
+            { id: 'registry-validation', label: 'Validación humana', icon: ClipboardList, description: 'B8A.3 — entry read-only' },
+            { id: 'registry-mapping', label: 'Mapping empresa/contrato', icon: Network, description: 'B10C — mapping interno' },
+            { id: 'registry-runtime-apply', label: 'Runtime Apply', icon: Activity, description: 'B10D — activación por scope' },
+            { id: 'registry-pilot-discovery', label: 'Discovery candidatos piloto', icon: Search, description: 'B10F.5C — read-only' },
+            { id: 'registry-pilot-monitor', label: 'Monitor piloto', icon: Gauge, description: 'B10F.5 — read-only' },
           ]
         },
       ]
