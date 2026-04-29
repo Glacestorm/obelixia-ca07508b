@@ -6,7 +6,8 @@
  *  - No Supabase, no fetch, no React, no hooks, no DB.
  *  - Does NOT import payroll engine, payslip engine, salary normalizer,
  *    operative agreement resolver, or the ES payroll bridge.
- *  - Does NOT touch the operational table erp_hr_collective_agreements.
+ *  - Does NOT touch the operational collective agreements table
+ *    (the legacy non-registry one).
  *  - Does NOT change real payroll output. Diff/preview only.
  *  - Consumed by future B10C (shadow bridge with hardcoded flag OFF).
  *    Real apply is reserved for B10D.
