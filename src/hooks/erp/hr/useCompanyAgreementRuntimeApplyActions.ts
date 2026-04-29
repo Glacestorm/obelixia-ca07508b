@@ -125,7 +125,28 @@ async function invoke<T = unknown>(
   payload: Record<string, unknown>,
 ): Promise<RuntimeApplyActionResult<T>> {
   const body = { action, ...sanitize(payload) };
-  const { data, error } = await supabase.functions.invoke(EDGE_FN, { body });
+
+  // Explicitly forward the current access token. Protected registry edges
+  // validate the Bearer JWT in-code, and `functions.invoke()` can otherwise
+  // reuse a stale/missing in-memory auth header after session refreshes.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) {
+    return {
+      success: false,
+      error: {
+        code: 'NO_SESSION',
+        message: 'No active session. Please sign in again.',
+      },
+    };
+  }
+
+  const { data, error } = await supabase.functions.invoke(EDGE_FN, {
+    body,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
   if (error) {
     return {
       success: false,
