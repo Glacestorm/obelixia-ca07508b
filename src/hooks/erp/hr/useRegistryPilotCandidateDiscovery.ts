@@ -77,8 +77,9 @@ export function useRegistryPilotCandidateDiscovery(): UseRegistryPilotCandidateD
         supabaseClient: supabase,
       });
       if (!result.ok) {
-        setError(result.error);
-        setWarnings(result.warnings ?? []);
+        const failed = result as Extract<typeof result, { ok: false }>;
+        setError(failed.error);
+        setWarnings(failed.warnings ?? []);
         setReport(null);
         return;
       }
