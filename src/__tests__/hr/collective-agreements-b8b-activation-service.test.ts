@@ -238,14 +238,20 @@ describe('B8B — activation service', () => {
       'src/engines/erp/hr/collectiveAgreementActivationService.ts',
       'utf-8',
     );
-    expect(src).not.toMatch(/ready_for_payroll/);
-    expect(src).not.toMatch(/data_completeness/);
-    expect(src).not.toMatch(/salary_tables_loaded/);
+    // Strip block + line comments so doc-only mentions of forbidden
+    // tokens (e.g. "this file does NOT touch ready_for_payroll") do not
+    // produce false positives. The invariant is about real code usage.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    expect(code).not.toMatch(/ready_for_payroll/);
+    expect(code).not.toMatch(/data_completeness/);
+    expect(code).not.toMatch(/salary_tables_loaded/);
     // No imports of payroll engines
-    expect(src).not.toMatch(/payslipEngine/);
-    expect(src).not.toMatch(/agreementSalaryResolver/);
-    expect(src).not.toMatch(/salaryNormalizer/);
+    expect(code).not.toMatch(/payslipEngine/);
+    expect(code).not.toMatch(/agreementSalaryResolver/);
+    expect(code).not.toMatch(/salaryNormalizer/);
     // No reference to operational table (without _registry suffix)
-    expect(src.match(/erp_hr_collective_agreements(?!_)/g) ?? []).toHaveLength(0);
+    expect(code.match(/erp_hr_collective_agreements(?!_)/g) ?? []).toHaveLength(0);
   });
 });
