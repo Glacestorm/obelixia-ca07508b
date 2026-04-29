@@ -376,7 +376,7 @@ describe('B10E.2 — static isolation', () => {
 });
 
 describe('B10E.2 — bridge & flag invariants', () => {
-  it('useESPayrollBridge.ts exists and was not turned on for registry by this phase', () => {
+  it('useESPayrollBridge.ts: builder is wired only inside the flag-guarded B10E.4 block', () => {
     const bridgePath = resolve(__dirname, '../../hooks/erp/hr/useESPayrollBridge.ts');
     let src = '';
     try {
@@ -386,7 +386,15 @@ describe('B10E.2 — bridge & flag invariants', () => {
       src = '';
     }
     if (src) {
-      expect(src).not.toMatch(/buildRegistryPayrollResolution/);
+      // B10E.4 authorized the bridge to import the builder. The flag must
+      // remain literal `false` and the call site must live AFTER the guard.
+      const guardIdx = src.indexOf('HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL as unknown as boolean) === true');
+      const callIdx = src.indexOf('buildRegistryPayrollResolution(');
+      // Either the call exists (B10E.4 path, guarded) or it does not exist.
+      if (callIdx >= 0) {
+        expect(guardIdx).toBeGreaterThan(0);
+        expect(callIdx).toBeGreaterThan(guardIdx);
+      }
     } else {
       expect(true).toBe(true);
     }
