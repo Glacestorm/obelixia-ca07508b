@@ -331,7 +331,11 @@ describe('B10E.2 — rules behavior', () => {
 // ===================== Static guards =====================
 
 const builderPath = resolve(__dirname, '../../engines/erp/hr/registryPayrollResolutionBuilder.ts');
-const builderSrc = readFileSync(builderPath, 'utf8');
+const builderRaw = readFileSync(builderPath, 'utf8');
+// Strip block and line comments so doc references don't trip static guards.
+const builderSrc = builderRaw
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
 
 describe('B10E.2 — static isolation', () => {
   it('does not import supabase/fetch/react/hooks/Deno/service_role', () => {
