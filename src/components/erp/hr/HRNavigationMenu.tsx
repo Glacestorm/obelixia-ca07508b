@@ -99,6 +99,13 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     // S9 Compliance
     's9-lismi', 's9-salary-register', 's9-disconnection', 's9-remote-work', 's9-vpt', 's9-retributive-audit', 's9-executive-summary',
     'collective-agreements',
+    // B12.1 — Registro Maestro de Convenios (Registry)
+    'registry-master',
+    'registry-validation',
+    'registry-mapping',
+    'registry-runtime-apply',
+    'registry-pilot-discovery',
+    'registry-pilot-monitor',
   ]);
 
   // Tier 2: visible_advanced — shown only to admin/advanced profiles in MVP mode
