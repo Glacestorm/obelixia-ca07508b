@@ -15,7 +15,7 @@
  *  - NEVER allow `ready_for_payroll = true`.
  *  - NEVER allow `requires_human_review = false`.
  *  - NEVER allow `data_completeness = 'human_validated'`.
- *  - NEVER write to operational table `erp_hr_collective_agreements`.
+ *  - NEVER write to the operational agreements table (only registry sub-tables).
  *  - NEVER touch payroll engines.
  *  - NEVER create new agreements (B7B only operates on existing ones).
  *  - NEVER perform real fetch / DB calls itself: all DB I/O is delegated
