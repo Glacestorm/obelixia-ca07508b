@@ -117,7 +117,7 @@ describe('B10D.4 — Runtime apply panel banner & states', () => {
   });
 
   it('activate button is only enabled in approved_for_runtime', () => {
-    const { rerender } = render(
+    const { unmount } = render(
       <RuntimeApplyRequestPanel
         companyId="c1"
         canManage
@@ -125,19 +125,20 @@ describe('B10D.4 — Runtime apply panel banner & states', () => {
       />,
     );
     expect(screen.getByTestId('runtime-apply-activate')).toBeDisabled();
+    unmount();
 
-    rerender(
+    render(
       <RuntimeApplyRequestPanel
-        companyId="c1"
+        companyId="c2"
         canManage
-        initialRequests={[{ ...baseRequest, request_status: 'approved_for_runtime' }]}
+        initialRequests={[{ ...baseRequest, id: 'req-2', request_status: 'approved_for_runtime' }]}
       />,
     );
     expect(screen.getByTestId('runtime-apply-activate')).not.toBeDisabled();
   });
 
   it('rollback button is only enabled in activated', () => {
-    const { rerender } = render(
+    const { unmount } = render(
       <RuntimeApplyRequestPanel
         companyId="c1"
         canManage
@@ -145,12 +146,13 @@ describe('B10D.4 — Runtime apply panel banner & states', () => {
       />,
     );
     expect(screen.getByTestId('runtime-apply-open-rollback')).toBeDisabled();
+    unmount();
 
-    rerender(
+    render(
       <RuntimeApplyRequestPanel
-        companyId="c1"
+        companyId="c2"
         canManage
-        initialRequests={[{ ...baseRequest, request_status: 'activated' }]}
+        initialRequests={[{ ...baseRequest, id: 'req-3', request_status: 'activated' }]}
       />,
     );
     expect(screen.getByTestId('runtime-apply-open-rollback')).not.toBeDisabled();
@@ -230,7 +232,7 @@ describe('B10D.4 — Rollback / reject dialogs require reason ≥10', () => {
     const confirm = screen.getByTestId('runtime-reject-confirm');
     expect(confirm).toBeDisabled();
     fireEvent.change(screen.getByTestId('runtime-reject-reason'), {
-      target: { value: 'no procede' },
+      target: { value: 'corto' },
     });
     expect(confirm).toBeDisabled();
     fireEvent.change(screen.getByTestId('runtime-reject-reason'), {
