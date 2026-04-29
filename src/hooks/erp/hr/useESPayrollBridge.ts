@@ -9,6 +9,11 @@ import { toast } from 'sonner';
 import { useESLocalization, type ESEmployeeLaborData, type ESSSBase, type IRPFCalculationParams, type SSContributionResult, type IRPFResult } from './useESLocalization';
 import { isTemporaryForSS } from '@/engines/erp/hr/contractTypeEngine';
 import { SMI_MENSUAL_2026 } from '@/shared/legal/rules/smiRules';
+// B10C — Shadow registry preview (hardcoded flag OFF). The block guarded
+// by HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL is dead-code at runtime and
+// MUST NOT alter operative payroll output. Metadata-only.
+import { HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL } from '@/engines/erp/hr/registryShadowFlag';
+import { buildRegistryAgreementShadowPreview } from '@/engines/erp/hr/registryShadowPreview';
 
 // ── Types ──
 
