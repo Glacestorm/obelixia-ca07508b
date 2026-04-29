@@ -187,8 +187,11 @@ describe('Repo-level safety invariants', () => {
     ];
     for (const fn of registryFns) {
       const idx = toml.indexOf(`[functions.${fn}]`);
-      if (idx === -1) continue; // function may not have a config block
-      const slice = toml.slice(idx, idx + 400);
+      if (idx === -1) continue;
+      // Slice only this function's block (until the next [functions...] block).
+      const rest = toml.slice(idx + 1);
+      const nextIdx = rest.indexOf('\n[');
+      const slice = nextIdx === -1 ? toml.slice(idx) : toml.slice(idx, idx + 1 + nextIdx);
       expect(slice).not.toMatch(/verify_jwt\s*=\s*false/);
     }
   });
