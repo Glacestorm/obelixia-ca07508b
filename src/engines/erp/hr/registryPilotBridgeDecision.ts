@@ -21,7 +21,6 @@
  *    implementations and easy to unit-test in isolation.
  */
 
-import type { RegistryRuntimeBridgeTrace } from './registryRuntimeBridgeDecision';
 import type {
   RegistryPilotGateInput,
   RegistryPilotGateResult,
@@ -54,10 +53,19 @@ export type RegistryPilotBridgeReason =
   | 'pilot_exception'
   | 'pilot_applied';
 
-export interface RegistryPilotBridgeTrace extends RegistryRuntimeBridgeTrace {
+export interface RegistryPilotBridgeTrace {
   pilot_mode: true;
+  attempted: boolean;
+  applied: boolean;
   outcome: RegistryPilotBridgeOutcome;
-  reason: RegistryPilotBridgeReason | RegistryRuntimeBridgeTrace['reason'];
+  reason: RegistryPilotBridgeReason;
+  setting_id?: string;
+  mapping_id?: string;
+  registry_agreement_id?: string;
+  registry_version_id?: string;
+  comparison_summary?: { critical: number; warnings: number; info?: number };
+  blockers?: string[];
+  warnings?: string[];
 }
 
 export interface RegistryPilotBridgeScope {
