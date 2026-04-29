@@ -14,6 +14,20 @@ import { SMI_MENSUAL_2026 } from '@/shared/legal/rules/smiRules';
 // MUST NOT alter operative payroll output. Metadata-only.
 import { HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL } from '@/engines/erp/hr/registryShadowFlag';
 import { buildRegistryAgreementShadowPreview } from '@/engines/erp/hr/registryShadowPreview';
+// B10E.4 — Registry runtime bridge decision (PURE). Trace-only when flag
+// is OFF. The data loader / setting resolver / builder / comparator are
+// invoked ONLY inside the flag-guarded block below. Metadata is attached
+// as a non-enumerable property to preserve functional output parity.
+import {
+  attachRegistryRuntimeTrace,
+  buildFlagOffTrace,
+  buildRegistryRuntimeBridgeDecision,
+  buildExceptionFallbackTrace,
+} from '@/engines/erp/hr/registryRuntimeBridgeDecision';
+import { fetchRegistryRuntimePayrollSnapshot } from '@/engines/erp/hr/registryRuntimePayrollDataLoader';
+import { resolveRegistryRuntimeSetting } from '@/engines/erp/hr/registryRuntimeSettingResolver';
+import { buildRegistryPayrollResolution } from '@/engines/erp/hr/registryPayrollResolutionBuilder';
+import { compareOperativeVsRegistryAgreementResolution } from '@/engines/erp/hr/agreementResolutionComparator';
 
 // ── Types ──
 
