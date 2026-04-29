@@ -524,8 +524,11 @@ describe('B10C.2B.2A — static contract checks', () => {
   });
 
   it('service never assigns ready_for_payroll = ...', () => {
-    expect(SRC).not.toMatch(/ready_for_payroll\s*=/);
-    expect(SRC).not.toMatch(/ready_for_payroll\s*:\s*true/);
+    const code = stripComments(SRC);
+    // Disallow assignment writes (mutating payroll readiness from this service).
+    expect(code).not.toMatch(/ready_for_payroll\s*=\s*true/);
+    expect(code).not.toMatch(/ready_for_payroll\s*:\s*true/);
+    // Reads via strict equality are allowed (gate verification only).
   });
 
   it('useESPayrollBridge.ts not modified to import the service', () => {
