@@ -29966,6 +29966,9 @@ export type Database = {
       }
       erp_hr_collective_agreements_registry: {
         Row: {
+          activated_by: string | null
+          activated_for_payroll_at: string | null
+          activation_request_id: string | null
           agreement_code: string | null
           autonomous_region: string | null
           checksum: string | null
@@ -30000,6 +30003,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activated_by?: string | null
+          activated_for_payroll_at?: string | null
+          activation_request_id?: string | null
           agreement_code?: string | null
           autonomous_region?: string | null
           checksum?: string | null
@@ -30034,6 +30040,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activated_by?: string | null
+          activated_for_payroll_at?: string | null
+          activation_request_id?: string | null
           agreement_code?: string | null
           autonomous_region?: string | null
           checksum?: string | null
@@ -30067,7 +30076,15 @@ export type Database = {
           ultraactivity_status?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreements_registr_activation_request_id_fkey"
+            columns: ["activation_request_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_registry_activation_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_collective_agreements_registry_import_runs: {
         Row: {
