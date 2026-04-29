@@ -30748,6 +30748,101 @@ export type Database = {
           },
         ]
       }
+      erp_hr_company_agreement_registry_pilot_decision_logs: {
+        Row: {
+          blockers_json: Json
+          company_id: string
+          comparison_summary_json: Json
+          contract_id: string
+          created_at: string
+          decided_at: string
+          decided_by: string | null
+          decision_outcome: string
+          decision_reason: string
+          employee_id: string
+          id: string
+          mapping_id: string | null
+          registry_agreement_id: string | null
+          registry_version_id: string | null
+          runtime_setting_id: string | null
+          signature_hash: string
+          target_year: number
+          trace_json: Json
+          warnings_json: Json
+        }
+        Insert: {
+          blockers_json?: Json
+          company_id: string
+          comparison_summary_json?: Json
+          contract_id: string
+          created_at?: string
+          decided_at?: string
+          decided_by?: string | null
+          decision_outcome: string
+          decision_reason: string
+          employee_id: string
+          id?: string
+          mapping_id?: string | null
+          registry_agreement_id?: string | null
+          registry_version_id?: string | null
+          runtime_setting_id?: string | null
+          signature_hash: string
+          target_year: number
+          trace_json?: Json
+          warnings_json?: Json
+        }
+        Update: {
+          blockers_json?: Json
+          company_id?: string
+          comparison_summary_json?: Json
+          contract_id?: string
+          created_at?: string
+          decided_at?: string
+          decided_by?: string | null
+          decision_outcome?: string
+          decision_reason?: string
+          employee_id?: string
+          id?: string
+          mapping_id?: string | null
+          registry_agreement_id?: string | null
+          registry_version_id?: string | null
+          runtime_setting_id?: string | null
+          signature_hash?: string
+          target_year?: number
+          trace_json?: Json
+          warnings_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_pi_registry_agreement_id_fkey"
+            columns: ["registry_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_pilo_registry_version_id_fkey"
+            columns: ["registry_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_pilot_decisio_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_mappings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_pilot_runtime_setting_id_fkey"
+            columns: ["runtime_setting_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_runtime_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_company_agreement_registry_runtime_settings: {
         Row: {
           activated_at: string
