@@ -96,7 +96,10 @@ export function buildRegistryAgreementShadowPreview(
   // Effective enable: real flag is the only source of truth in production.
   // The override is strictly for unit tests and never overrides the real
   // flag's value at module level.
-  const enabledByFlag = HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL === true;
+  // Read through `unknown` to avoid TS narrowing the const literal type
+  // away from a runtime boolean comparison. The real value remains the
+  // single source of truth from registryShadowFlag.ts.
+  const enabledByFlag = (HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL as unknown as boolean) === true;
   const enabledByOverride = options?.enabledOverrideForTests === true;
   const effectiveEnabled = enabledByFlag || enabledByOverride;
 
