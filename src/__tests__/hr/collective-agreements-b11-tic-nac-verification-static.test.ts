@@ -37,19 +37,36 @@ describe('B11.1 — TIC-NAC verification static guards', () => {
     expect(existsSync(docPath)).toBe(true);
   });
 
-  it('B11.1 doc records the STOP decision pending human input', () => {
+  it('B11.1/B11.1B doc records the current decision and registry IDs', () => {
     const doc = read(docPath);
+    // After B11.1B the active decision is OFFICIAL_SOURCE_FOUND / PENDING_HUMAN_DECISION.
+    expect(doc).toMatch(/B11\.1B\s+—\s+OFFICIAL_SOURCE_FOUND\s+\/\s+PENDING_HUMAN_DECISION/);
+    expect(doc).toMatch(/PENDING_HUMAN_DECISION/);
+    // Historical STOP marker must remain documented for traceability.
     expect(doc).toMatch(/STOP_B11\.1/);
-    expect(doc).toMatch(/PENDING_HUMAN_INPUT/);
     expect(doc).toMatch(/1e665f80-3f04-4939-a448-4b1a2a4525e0/);
     expect(doc).toMatch(/9739379b-68e5-4ffd-8209-d5a1222fefc2/);
   });
 
-  it('B11.1 doc does not invent BOE/REGCON values', () => {
+  it('B11.1B doc records the official BOE block exactly as provided by human', () => {
     const doc = read(docPath);
-    // No real BOE links must appear in the doc; only PENDING markers.
-    expect(doc).not.toMatch(/https?:\/\/(www\.)?boe\.es/i);
-    expect(doc).not.toMatch(/REGCON-\d{6,}/);
+    // Exact identifiers — must NOT be invented; provided by human in B11.1B.
+    expect(doc).toMatch(/BOE-A-2025-7766/);
+    expect(doc).toMatch(/99001355011983/);
+    expect(doc).toMatch(/2025-04-16/);
+    expect(doc).toMatch(/2025-04-04/);
+    expect(doc).toMatch(/2025-01-01/);
+    expect(doc).toMatch(/2027-12-31/);
+    expect(doc).toMatch(/status_propuesto[\s\S]{0,40}vigente/);
+    expect(doc).toMatch(/source_quality_propuesta[\s\S]{0,40}official/);
+    expect(doc).toMatch(/https:\/\/www\.boe\.es\/buscar\/doc\.php\?id=BOE-A-2025-7766/);
+    expect(doc).toMatch(/https:\/\/boe\.es\/boe\/dias\/2025\/04\/16\/pdfs\/BOE-A-2025-7766\.pdf/);
+  });
+
+  it('B11.1B keeps B11.2 explicitly blocked until human decision=continue', () => {
+    const doc = read(docPath);
+    expect(doc).toMatch(/B11\.2\s+sigue\s+BLOQUEADO/i);
+    expect(doc).toMatch(/decision\s*=\s*'continue'/);
   });
 
   it('B11.1 doc does not contain DB write SQL', () => {
