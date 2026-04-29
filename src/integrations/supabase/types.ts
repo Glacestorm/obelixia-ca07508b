@@ -30522,6 +30522,157 @@ export type Database = {
           },
         ]
       }
+      erp_hr_company_agreement_registry_apply_requests: {
+        Row: {
+          activation_run_id: string | null
+          company_id: string
+          comparison_critical_diffs_count: number
+          comparison_report_json: Json
+          contract_id: string | null
+          created_at: string
+          employee_id: string | null
+          id: string
+          mapping_id: string
+          payroll_impact_preview_json: Json
+          rejection_reason: string | null
+          request_status: string
+          requested_at: string
+          requested_by: string
+          rollback_run_id: string | null
+          second_approval_acknowledgements: Json
+          second_approved_at: string | null
+          second_approved_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          activation_run_id?: string | null
+          company_id: string
+          comparison_critical_diffs_count?: number
+          comparison_report_json?: Json
+          contract_id?: string | null
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          mapping_id: string
+          payroll_impact_preview_json?: Json
+          rejection_reason?: string | null
+          request_status?: string
+          requested_at?: string
+          requested_by: string
+          rollback_run_id?: string | null
+          second_approval_acknowledgements?: Json
+          second_approved_at?: string | null
+          second_approved_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activation_run_id?: string | null
+          company_id?: string
+          comparison_critical_diffs_count?: number
+          comparison_report_json?: Json
+          contract_id?: string | null
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          mapping_id?: string
+          payroll_impact_preview_json?: Json
+          rejection_reason?: string | null
+          request_status?: string
+          requested_at?: string
+          requested_by?: string
+          rollback_run_id?: string | null
+          second_approval_acknowledgements?: Json
+          second_approved_at?: string | null
+          second_approved_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_apply_request_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_mappings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_car_apply_requests_activation_run"
+            columns: ["activation_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_apply_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_car_apply_requests_rollback_run"
+            columns: ["rollback_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_apply_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_company_agreement_registry_apply_runs: {
+        Row: {
+          apply_request_id: string
+          company_id: string
+          created_at: string
+          error_detail: string | null
+          executed_at: string
+          executed_by: string
+          id: string
+          invariant_check_json: Json
+          mapping_id: string
+          outcome: string
+          post_state_snapshot_json: Json
+          pre_state_snapshot_json: Json
+          run_signature_hash: string
+        }
+        Insert: {
+          apply_request_id: string
+          company_id: string
+          created_at?: string
+          error_detail?: string | null
+          executed_at?: string
+          executed_by: string
+          id?: string
+          invariant_check_json?: Json
+          mapping_id: string
+          outcome: string
+          post_state_snapshot_json?: Json
+          pre_state_snapshot_json?: Json
+          run_signature_hash: string
+        }
+        Update: {
+          apply_request_id?: string
+          company_id?: string
+          created_at?: string
+          error_detail?: string | null
+          executed_at?: string
+          executed_by?: string
+          id?: string
+          invariant_check_json?: Json
+          mapping_id?: string
+          outcome?: string
+          post_state_snapshot_json?: Json
+          pre_state_snapshot_json?: Json
+          run_signature_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_apply_r_apply_request_id_fkey"
+            columns: ["apply_request_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_apply_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_apply_runs_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_mappings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_company_agreement_registry_mappings: {
         Row: {
           approved_at: string | null
@@ -30593,6 +30744,79 @@ export type Database = {
             columns: ["registry_version_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_company_agreement_registry_runtime_settings: {
+        Row: {
+          activated_at: string
+          activated_by: string
+          activation_run_id: string
+          company_id: string
+          contract_id: string | null
+          created_at: string
+          employee_id: string | null
+          id: string
+          is_current: boolean
+          mapping_id: string
+          rollback_at: string | null
+          rollback_run_id: string | null
+          updated_at: string
+          use_registry_for_payroll: boolean
+        }
+        Insert: {
+          activated_at?: string
+          activated_by: string
+          activation_run_id: string
+          company_id: string
+          contract_id?: string | null
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          is_current?: boolean
+          mapping_id: string
+          rollback_at?: string | null
+          rollback_run_id?: string | null
+          updated_at?: string
+          use_registry_for_payroll?: boolean
+        }
+        Update: {
+          activated_at?: string
+          activated_by?: string
+          activation_run_id?: string
+          company_id?: string
+          contract_id?: string | null
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          is_current?: boolean
+          mapping_id?: string
+          rollback_at?: string | null
+          rollback_run_id?: string | null
+          updated_at?: string
+          use_registry_for_payroll?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_runtim_activation_run_id_fkey"
+            columns: ["activation_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_apply_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_runtime__rollback_run_id_fkey"
+            columns: ["rollback_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_apply_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_company_agreement_registry_runtime_setti_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_mappings"
             referencedColumns: ["id"]
           },
         ]
