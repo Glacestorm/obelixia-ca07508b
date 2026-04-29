@@ -519,3 +519,6 @@ verify_jwt = true
 
 [functions.erp-hr-collective-agreement-activation-proposal]
 verify_jwt = true
+
+[functions.erp-hr-collective-agreement-activation-execute]
+verify_jwt = true
