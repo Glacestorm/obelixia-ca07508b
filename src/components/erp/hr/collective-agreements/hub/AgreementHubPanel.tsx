@@ -19,6 +19,8 @@ import AgreementUnifiedSearch from './AgreementUnifiedSearch';
 import AgreementUnifiedResultsTable from './AgreementUnifiedResultsTable';
 import AgreementUnifiedDetailDrawer from './AgreementUnifiedDetailDrawer';
 import AgreementMissingCandidateGuide from './AgreementMissingCandidateGuide';
+import AgreementIncorporationWizard from './wizard/AgreementIncorporationWizard';
+import type { WizardTargetTab } from '@/hooks/erp/hr/useAgreementIncorporationActions';
 
 // Lazy embeds of existing technical panels — kept as their own modules to
 // avoid duplicating logic. The Hub is purely a navigation surface.
@@ -54,6 +56,14 @@ export function AgreementHubPanel({ companyId }: Props) {
   const [selected, setSelected] = useState<UnifiedAgreementRow | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('search');
+  const [, setPrefilters] = useState<Record<string, unknown>>({});
+
+  function handleWizardNavigate(target: WizardTargetTab, filters: Record<string, unknown>) {
+    setPrefilters(filters);
+    setActiveTab(target);
+  }
 
   return (
     <div className="space-y-4" data-testid="agreement-hub-panel">
@@ -70,7 +80,7 @@ export function AgreementHubPanel({ companyId }: Props) {
           </p>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="search" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="flex flex-wrap h-auto">
               <TabsTrigger value="search">Buscador</TabsTrigger>
               <TabsTrigger value="operative">Operativos</TabsTrigger>
@@ -182,6 +192,18 @@ export function AgreementHubPanel({ companyId }: Props) {
         row={selected}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
+        onStartWizard={(row) => {
+          setSelected(row);
+          setDrawerOpen(false);
+          setWizardOpen(true);
+        }}
+      />
+
+      <AgreementIncorporationWizard
+        row={selected}
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onNavigate={handleWizardNavigate}
       />
     </div>
   );
