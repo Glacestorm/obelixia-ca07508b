@@ -210,9 +210,7 @@ describe('B7A — safety invariants', () => {
       mimeType: 'text/html',
       extractionMethod: 'html_table',
       reader: testReader,
-      // @ts-expect-error — caller attempting to inject unsafe override
       ready_for_payroll: true,
-      // @ts-expect-error — caller attempting to disable review
       requires_human_review: false,
     } as never);
     expect(result.proposedRegistryPatch.ready_for_payroll).toBe(false);
