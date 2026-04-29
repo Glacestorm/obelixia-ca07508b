@@ -110,8 +110,12 @@ describe('B10F.4 — pilot decision log table SQL contract', () => {
 
 describe('B10F.4 — RLS and policies', () => {
   it('enables and FORCEs RLS', () => {
-    expect(SQL).toMatch(new RegExp(`ALTER TABLE public\\.${TABLE} ENABLE ROW LEVEL SECURITY`));
-    expect(SQL).toMatch(new RegExp(`ALTER TABLE public\\.${TABLE} FORCE\\s+ROW LEVEL SECURITY`));
+    expect(SQL).toMatch(
+      new RegExp(`ALTER TABLE public\\.${TABLE}\\s+ENABLE ROW LEVEL SECURITY`),
+    );
+    expect(SQL).toMatch(
+      new RegExp(`ALTER TABLE public\\.${TABLE}\\s+FORCE\\s+ROW LEVEL SECURITY`),
+    );
   });
 
   it('SELECT policy exists with role + company gate', () => {
