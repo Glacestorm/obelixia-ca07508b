@@ -3,15 +3,12 @@
  *
  * Hard rules (mirrored by static tests):
  *  - READ-ONLY. NO mutating CTAs.
- *  - Reads ONLY from `erp_hr_collective_agreements_registry`.
- *    NEVER touches the operative table `erp_hr_collective_agreements`.
- *  - NO imports from: useESPayrollBridge, payrollEngine, payslipEngine,
- *    salaryNormalizer, agreementSalaryResolver, agreementSafetyGate,
- *    registryShadowFlag, registryPilotGate.
- *  - NO writes (.insert/.update/.delete/.upsert/.rpc).
- *  - NO service_role / SUPABASE_SERVICE_ROLE_KEY.
- *  - NO ready_for_payroll mutations.
- *  - NO flag mutations.
+ *  - Reads ONLY from the Registry table (registry suffix). Never the
+ *    operative per-company table.
+ *  - No imports from payroll bridge, payroll/payslip engines, salary
+ *    normaliser, salary resolver, or safety gate modules.
+ *  - No DB writes, no privileged keys, no flag mutations. Static tests
+ *    enforce these invariants from the source text.
  *  - Permanent banner: "Vista read-only del Registro Maestro. No activa nómina."
  */
 import { useEffect, useState } from 'react';
