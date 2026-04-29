@@ -243,52 +243,52 @@ describe('B10F.1 — validateRegistryPilotAllowlist', () => {
 
 describe('B10F.1 — static source guards', () => {
   it('does not read process.env / import.meta.env', () => {
-    expect(SOURCE).not.toMatch(/process\.env/);
-    expect(SOURCE).not.toMatch(/import\.meta\.env/);
+    expect(CODE).not.toMatch(/process\.env/);
+    expect(CODE).not.toMatch(/import\.meta\.env/);
   });
 
   it('does not use localStorage/sessionStorage', () => {
-    expect(SOURCE).not.toMatch(/localStorage/);
-    expect(SOURCE).not.toMatch(/sessionStorage/);
+    expect(CODE).not.toMatch(/localStorage/);
+    expect(CODE).not.toMatch(/sessionStorage/);
   });
 
   it('does not import Supabase', () => {
-    expect(SOURCE).not.toMatch(/@\/integrations\/supabase/);
-    expect(SOURCE).not.toMatch(/createClient/);
+    expect(CODE).not.toMatch(/@\/integrations\/supabase/);
+    expect(CODE).not.toMatch(/createClient/);
   });
 
   it('does not use fetch', () => {
-    expect(SOURCE).not.toMatch(/\bfetch\(/);
+    expect(CODE).not.toMatch(/\bfetch\(/);
   });
 
   it('does not import React/hooks', () => {
-    expect(SOURCE).not.toMatch(/from ['"]react['"]/);
-    expect(SOURCE).not.toMatch(/useState|useEffect|useCallback/);
+    expect(CODE).not.toMatch(/from ['"]react['"]/);
+    expect(CODE).not.toMatch(/useState|useEffect|useCallback/);
   });
 
   it('does not contain DB write APIs', () => {
-    expect(SOURCE).not.toMatch(/\.from\(/);
-    expect(SOURCE).not.toMatch(/\.insert\(/);
-    expect(SOURCE).not.toMatch(/\.update\(/);
-    expect(SOURCE).not.toMatch(/\.delete\(/);
-    expect(SOURCE).not.toMatch(/\.upsert\(/);
+    expect(CODE).not.toMatch(/\.from\(/);
+    expect(CODE).not.toMatch(/\.insert\(/);
+    expect(CODE).not.toMatch(/\.update\(/);
+    expect(CODE).not.toMatch(/\.delete\(/);
+    expect(CODE).not.toMatch(/\.upsert\(/);
   });
 
   it('does not import bridge/payroll/resolver/normalizer', () => {
-    expect(SOURCE).not.toMatch(/useESPayrollBridge/);
-    expect(SOURCE).not.toMatch(/registryShadowFlag/);
-    expect(SOURCE).not.toMatch(/agreementSalaryResolver/);
-    expect(SOURCE).not.toMatch(/salaryNormalizer/);
-    expect(SOURCE).not.toMatch(/payrollEngine/);
-    expect(SOURCE).not.toMatch(/payslipEngine/);
-    expect(SOURCE).not.toMatch(/agreementSafetyGate/);
+    expect(CODE).not.toMatch(/useESPayrollBridge/);
+    expect(CODE).not.toMatch(/registryShadowFlag/);
+    expect(CODE).not.toMatch(/agreementSalaryResolver/);
+    expect(CODE).not.toMatch(/salaryNormalizer/);
+    expect(CODE).not.toMatch(/payrollEngine/);
+    expect(CODE).not.toMatch(/payslipEngine/);
+    expect(CODE).not.toMatch(/agreementSafetyGate/);
   });
 
   it('does not reference operative agreements table (without _registry)', () => {
-    expect(SOURCE).not.toMatch(/erp_hr_collective_agreements(?!_registry)/);
+    expect(CODE).not.toMatch(/erp_hr_collective_agreements(?!_registry)/);
   });
 
   it('does not assign ready_for_payroll', () => {
-    expect(SOURCE).not.toMatch(/ready_for_payroll\s*=/);
+    expect(CODE).not.toMatch(/ready_for_payroll\s*=/);
   });
 });
