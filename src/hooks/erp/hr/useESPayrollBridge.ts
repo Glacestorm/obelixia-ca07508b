@@ -1434,8 +1434,9 @@ export function useESPayrollBridge(companyId?: string) {
             }
           }
           if ((HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL as unknown as boolean) === true) {
+            let shadow: ReturnType<typeof buildRegistryAgreementShadowPreview> | undefined;
             try {
-              const shadow = buildRegistryAgreementShadowPreview({
+              shadow = buildRegistryAgreementShadowPreview({
                 operative: {
                   source: 'operative',
                   salaryBaseMonthly: salaryResolution?.salarioBaseConvenio ?? null,
@@ -1528,11 +1529,17 @@ export function useESPayrollBridge(companyId?: string) {
                   }
                 }
               }
+              const snapshotInput = snapshotResult.ok
+                ? { ok: true as const, warnings: snapshotResult.warnings }
+                : {
+                    ok: false as const,
+                    error: (snapshotResult as any).error,
+                    reason: (snapshotResult as any).reason,
+                    warnings: snapshotResult.warnings,
+                  };
               const decision = buildRegistryRuntimeBridgeDecision({
                 operativeSalaryResolution: salaryResolution,
-                snapshotResult: snapshotResult.ok
-                  ? { ok: true, warnings: snapshotResult.warnings }
-                  : { ok: false, error: snapshotResult.error, reason: snapshotResult.reason, warnings: snapshotResult.warnings },
+                snapshotResult: snapshotInput,
                 settingResolverResult,
                 builderResult,
                 comparatorReport,
