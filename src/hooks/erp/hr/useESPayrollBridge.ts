@@ -1576,6 +1576,89 @@ export function useESPayrollBridge(companyId?: string) {
               }
               console.warn('[useESPayrollBridge] registry runtime skipped:', runtimeErr);
             }
+          } else if ((HR_REGISTRY_PILOT_MODE as unknown as boolean) === true) {
+            // ── B10F.3: pilot branch (DEAD CODE while HR_REGISTRY_PILOT_MODE is false). ──
+            // Mutually exclusive with the global flag branch above. Only
+            // runs when the global flag is OFF and the pilot mode is ON.
+            // The pilot gate (B10F.1) requires an exact scope match in the
+            // closed allow-list (currently empty). The parity preflight
+            // (B10F.2) requires zero critical diffs. On any blocker the
+            // operative `salaryResolution` remains unchanged.
+            try {
+              let pilotSnapshotResult: any = null;
+              try {
+                const loaded = await fetchRegistryRuntimePayrollSnapshot({
+                  companyId: companyId as string,
+                  employeeId: emp.id,
+                  contractId: (contract as any)?.id ?? null,
+                  year: currentYear,
+                  supabaseClient: supabase,
+                });
+                pilotSnapshotResult = loaded.ok
+                  ? { ok: true as const, warnings: loaded.warnings, snapshot: loaded.snapshot }
+                  : {
+                      ok: false as const,
+                      error: (loaded as any).error,
+                      reason: (loaded as any).reason,
+                      warnings: loaded.warnings,
+                    };
+              } catch (loadErr) {
+                pilotSnapshotResult = {
+                  ok: false as const,
+                  error: 'unknown_error',
+                  reason: 'loader_exception',
+                  warnings: [String(loadErr)],
+                };
+              }
+
+              const pilotDecision = buildRegistryPilotBridgeDecision({
+                globalFlag: HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL as unknown as boolean,
+                pilotMode: HR_REGISTRY_PILOT_MODE as unknown as boolean,
+                scope: {
+                  companyId: companyId as string,
+                  employeeId: emp.id,
+                  contractId: (contract as any)?.id ?? null,
+                  targetYear: currentYear,
+                },
+                operativeSalaryResolution: salaryResolution,
+                snapshotResult: pilotSnapshotResult,
+                operativePreview: {
+                  source: 'operative',
+                  salaryBaseMonthly: salaryResolution?.salarioBaseConvenio ?? null,
+                  plusConvenio: salaryResolution?.plusConvenioTabla ?? null,
+                },
+                isPilotEnabledForScope,
+                resolveRegistryRuntimeSetting,
+                buildRegistryPayrollResolution,
+                runRegistryPilotParityPreflight,
+              });
+
+              if (salaryResolution && typeof salaryResolution === 'object') {
+                attachRegistryRuntimeTrace(salaryResolution, pilotDecision.trace as any);
+              }
+
+              if (pilotDecision.applyRegistry && pilotDecision.registrySalaryResolution) {
+                const registryRes = pilotDecision.registrySalaryResolution as any;
+                salaryResolution = {
+                  ...(salaryResolution as any),
+                  salarioBaseConvenio:
+                    registryRes.salarioBaseConvenio ?? (salaryResolution as any)?.salarioBaseConvenio,
+                  plusConvenioTabla:
+                    registryRes.plusConvenioTabla ?? (salaryResolution as any)?.plusConvenioTabla,
+                };
+                attachRegistryRuntimeTrace(salaryResolution, pilotDecision.trace as any);
+              }
+            } catch (pilotErr) {
+              if (salaryResolution && typeof salaryResolution === 'object') {
+                attachRegistryRuntimeTrace(salaryResolution, {
+                  attempted: true,
+                  applied: false,
+                  reason: 'snapshot_load_failed',
+                  blockers: ['pilot_exception'],
+                });
+              }
+              console.warn('[useESPayrollBridge] registry pilot skipped:', pilotErr);
+            }
           }
 
           // Build flex remuneration from plan
