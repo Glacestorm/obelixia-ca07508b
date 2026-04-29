@@ -137,7 +137,7 @@ function setIfKnown(
   // numeric kinds
   const numeric = parseSpanishAmount(value);
   const assignNumeric = (key: keyof ParsedSalaryRow) => {
-    (row as Record<string, unknown>)[key as string] = numeric;
+    (row as unknown as Record<string, unknown>)[key as string] = numeric;
   };
   switch (kind) {
     case 'salary_monthly':
