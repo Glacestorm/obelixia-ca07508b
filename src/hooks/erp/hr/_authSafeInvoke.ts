@@ -3,7 +3,7 @@
  *
  * Hard rules:
  *  - NEVER disables JWT verification.
- *  - NEVER uses service_role.
+ *  - NEVER uses any privileged backend key.
  *  - If there is no active Supabase session, it does NOT call the edge
  *    function — it returns a structured `auth_required` result so the UI
  *    can render an "auth required" state instead of throwing.
