@@ -32,11 +32,17 @@ const MIGRATION_FILE =
 
 let SQL = '';
 let SQL_LC = '';
+let SQL_NO_COMMENTS = '';
 
 beforeAll(() => {
   const abs = path.resolve(process.cwd(), MIGRATION_FILE);
   SQL = fs.readFileSync(abs, 'utf-8');
   SQL_LC = SQL.toLowerCase();
+  // Strip SQL line comments (-- ...) so the assertions inspect only executed SQL.
+  SQL_NO_COMMENTS = SQL
+    .split('\n')
+    .map((line) => line.replace(/--.*$/, ''))
+    .join('\n');
 });
 
 const VALIDATIONS_TABLE =
@@ -192,10 +198,10 @@ describe('B8A — Migration: only one is_current per (agreement_id, version_id)'
 
 describe('B8A — Migration: does NOT touch operational / payroll surfaces', () => {
   it('does NOT reference the operational table erp_hr_collective_agreements (without _registry)', () => {
-    // Search for occurrences of the operational table name not followed by `_registry`
-    // or by characters that continue the registry-prefixed identifier.
-    const matches = SQL.match(/erp_hr_collective_agreements(?!_)/g) ?? [];
-    // The migration body should never reference the operational table directly.
+    // Search SQL (with comments stripped) for occurrences of the operational
+    // table name not followed by `_` (which would continue into a
+    // `_registry...` identifier).
+    const matches = SQL_NO_COMMENTS.match(/erp_hr_collective_agreements(?!_)/g) ?? [];
     expect(matches.length).toBe(0);
   });
 
