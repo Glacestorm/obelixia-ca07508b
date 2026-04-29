@@ -157,6 +157,14 @@ import {
   LazyS9RetributiveAuditPanel,
   LazyS9ExecutiveSummaryCard,
 } from './HRModuleLazy';
+import {
+  LazyRegistryMasterPanel,
+  LazyCollectiveAgreementValidationPanel,
+  LazyCompanyAgreementRegistryMappingPanel,
+  LazyRuntimeApplyRequestPanel,
+  LazyRegistryPilotCandidateDiscoveryPanel,
+  LazyRegistryPilotMonitorPanel,
+} from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
