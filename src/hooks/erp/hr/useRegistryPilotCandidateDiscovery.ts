@@ -37,6 +37,7 @@ export interface UseRegistryPilotCandidateDiscoveryFilters {
 export interface UseRegistryPilotCandidateDiscoveryResult {
   loading: boolean;
   error: string | null;
+  authRequired: boolean;
   warnings: string[];
   report: PilotCandidateDiscoveryResult | null;
   run: (filters: UseRegistryPilotCandidateDiscoveryFilters) => Promise<void>;
@@ -48,6 +49,7 @@ export interface UseRegistryPilotCandidateDiscoveryResult {
 export function useRegistryPilotCandidateDiscovery(): UseRegistryPilotCandidateDiscoveryResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [report, setReport] = useState<PilotCandidateDiscoveryResult | null>(null);
 
@@ -71,6 +73,18 @@ export function useRegistryPilotCandidateDiscovery(): UseRegistryPilotCandidateD
         setReport(null);
         return;
       }
+      // Auth-safe guard: if no active session, skip DB calls and surface
+      // a controlled "auth required" state instead of running RLS-protected
+      // SELECTs that can fail or return empty silently.
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.access_token) {
+        setAuthRequired(true);
+        setReport(null);
+        setWarnings([]);
+        setError(null);
+        return;
+      }
+      setAuthRequired(false);
       const result = await fetchRegistryPilotCandidateSnapshot({
         companyId: filters.companyId,
         year: filters.targetYear,
@@ -143,7 +157,7 @@ export function useRegistryPilotCandidateDiscovery(): UseRegistryPilotCandidateD
     }
   }, []);
 
-  return { loading, error, warnings, report, run, evaluateCandidates };
+  return { loading, error, authRequired, warnings, report, run, evaluateCandidates };
 }
 
 export default useRegistryPilotCandidateDiscovery;
