@@ -81,8 +81,7 @@ function baseInput(overrides: Partial<any> = {}) {
 describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
   it('input sin companyId → invalid_input', async () => {
     const r = await fetchRegistryRuntimePayrollSnapshot({ ...baseInput(), companyId: '' as any });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('invalid_input');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('invalid_input');
   });
 
   it('runtime settings query falla → runtime_settings_query_failed', async () => {
@@ -93,8 +92,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
         erp_hr_company_agreement_registry_runtime_settings: { error: { message: 'db down' } },
       }),
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('runtime_settings_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('runtime_settings_query_failed');
   });
 
   it('sin runtime settings → ok true + warning no_runtime_settings', async () => {
@@ -117,8 +115,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
         erp_hr_company_agreement_registry_mappings: { error: { message: 'oops' } },
       }),
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('mapping_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('mapping_query_failed');
   });
 
   it('agreement query falla → registry_agreement_query_failed', async () => {
@@ -129,8 +126,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
         erp_hr_collective_agreements_registry: { error: { message: 'oops' } },
       }),
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('registry_agreement_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('registry_agreement_query_failed');
   });
 
   it('versions query falla → registry_version_query_failed', async () => {
@@ -141,8 +137,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
         erp_hr_collective_agreements_registry_versions: { error: { message: 'oops' } },
       }),
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('registry_version_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('registry_version_query_failed');
   });
 
   it('sources query falla → registry_source_query_failed', async () => {
@@ -153,8 +148,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
         erp_hr_collective_agreements_registry_sources: { error: { message: 'oops' } },
       }),
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('registry_source_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('registry_source_query_failed');
   });
 
   it('salary tables query falla → salary_tables_query_failed', async () => {
@@ -165,8 +159,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
         erp_hr_collective_agreements_registry_salary_tables: { error: { message: 'oops' } },
       }),
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('salary_tables_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('salary_tables_query_failed');
   });
 
   it('rules query falla → rules_query_failed', async () => {
@@ -177,8 +170,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
         erp_hr_collective_agreements_registry_rules: { error: { message: 'oops' } },
       }),
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('rules_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('rules_query_failed');
   });
 
   it('happy path → ok true with populated arrays', async () => {
@@ -237,8 +229,7 @@ describe('B10E.3 — fetchRegistryRuntimePayrollSnapshot', () => {
       ...baseInput(),
       supabaseClient: throwingClient as any,
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toBe('runtime_settings_query_failed');
+    if (r.ok) throw new Error('expected failure'); expect(r.error).toBe('runtime_settings_query_failed');
     // Reference unused var to keep linter happy.
     expect(typeof client.from).toBe('function');
   });
