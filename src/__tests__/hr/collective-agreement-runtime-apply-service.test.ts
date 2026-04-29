@@ -658,7 +658,8 @@ describe('B10D.2 — static contract', () => {
   });
 
   it('does not write ready_for_payroll', () => {
-    expect(SRC).not.toMatch(/ready_for_payroll\s*=/);
+    // Forbid assignment but allow equality comparisons (===, ==, !=).
+    expect(SRC).not.toMatch(/ready_for_payroll\s*=(?![=])/);
   });
 
   it('useESPayrollBridge.ts is unchanged by B10D.2 (file does not import this service)', () => {
