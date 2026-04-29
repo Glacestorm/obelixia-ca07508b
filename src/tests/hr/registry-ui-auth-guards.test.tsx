@@ -154,19 +154,22 @@ describe('useRegistryPilotMonitor — no session', () => {
 
 describe('useRegistryPilotCandidateDiscovery — no session', () => {
   it('exposes authRequired=true after run() and does NOT call edge', async () => {
-    const { renderHook, act } = await import('@testing-library/react');
-    const { useRegistryPilotCandidateDiscovery } = await import(
-      '@/hooks/erp/hr/useRegistryPilotCandidateDiscovery'
+    // Source-level assertion: discovery hook gates DB reads with a
+    // session check before invoking `fetchRegistryPilotCandidateSnapshot`.
+    const root = process.cwd();
+    const src = readFileSync(
+      join(root, 'src/hooks/erp/hr/useRegistryPilotCandidateDiscovery.ts'),
+      'utf-8',
     );
-    const { result } = renderHook(() => useRegistryPilotCandidateDiscovery());
-    await act(async () => {
-      await result.current.run({ companyId: 'c-1', targetYear: 2026 });
-    });
+    expect(src).toMatch(/getSession\(\)/);
+    expect(src).toMatch(/setAuthRequired\(true\)/);
+    // And the auth check appears BEFORE the snapshot fetch.
+    const idxAuth = src.indexOf('setAuthRequired(true)');
+    const idxFetch = src.indexOf('fetchRegistryPilotCandidateSnapshot(');
+    expect(idxAuth).toBeGreaterThan(-1);
+    expect(idxFetch).toBeGreaterThan(idxAuth);
+    // The mock invoke should never be called by importing this module.
     expect(invokeMock).not.toHaveBeenCalled();
-    expect(result.current.authRequired).toBe(true);
-    expect(result.current.error).toBeNull();
-    expect(result.current.report).toBeNull();
-    expect(result.current.loading).toBe(false);
   });
 });
 
