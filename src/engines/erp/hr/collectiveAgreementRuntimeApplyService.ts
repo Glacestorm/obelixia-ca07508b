@@ -316,10 +316,8 @@ export function evaluateRuntimeApplyInvariants(
     !!m && m.mapping_status === 'approved_internal',
   );
   push('mapping_is_current', !!m && m.is_current === true);
-  push(
-    'mapping_approval_metadata_present',
-    !!m && !!m.approved_by && !!m.approved_at,
-  );
+  push('mapping_approved_by_present', !!m && !!m.approved_by);
+  push('mapping_approved_at_present', !!m && !!m.approved_at);
 
   const a = input.agreement;
   push(
