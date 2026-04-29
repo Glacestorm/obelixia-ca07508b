@@ -528,3 +528,6 @@ verify_jwt = true
 
 [functions.erp-hr-company-agreement-runtime-apply]
 verify_jwt = true
+
+[functions.erp-hr-pilot-runtime-decision-log]
+verify_jwt = true
