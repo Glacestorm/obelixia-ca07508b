@@ -126,6 +126,12 @@ export const LazyRegistryPilotMonitorPanel = lazyPanel(
   'RegistryPilotMonitorPanel',
 );
 
+// ─── B12.2 — Centro de Convenios (Hub UI) ───────────────────
+export const LazyAgreementHubPanel = lazyPanel(
+  () => import('./collective-agreements/hub/AgreementHubPanel'),
+  'AgreementHubPanel',
+);
+
 // ─── D6 Documents ───────────────────────────────────────────
 export const LazyDocumentExpedientModule = lazyPanel(() => import('./domains/documents'), 'DocumentExpedientModule');
 export const LazyHREmployeeDocumentsPanel = lazyPanel(() => import('./domains/documents'), 'HREmployeeDocumentsPanel');

@@ -164,6 +164,7 @@ import {
   LazyRuntimeApplyRequestPanel,
   LazyRegistryPilotCandidateDiscoveryPanel,
   LazyRegistryPilotMonitorPanel,
+  LazyAgreementHubPanel,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -638,6 +639,9 @@ function HRModuleInner() {
         )}
         {activeModule === 'registry-pilot-discovery' && <LazyRegistryPilotCandidateDiscoveryPanel />}
         {activeModule === 'registry-pilot-monitor' && <LazyRegistryPilotMonitorPanel />}
+
+        {/* B12.2 — Centro de Convenios (Hub) */}
+        {activeModule === 'agreement-hub' && <LazyAgreementHubPanel companyId={companyId} />}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}

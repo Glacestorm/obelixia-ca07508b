@@ -106,6 +106,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'registry-runtime-apply',
     'registry-pilot-discovery',
     'registry-pilot-monitor',
+    // B12.2 — Centro de Convenios (Hub UI)
+    'agreement-hub',
   ]);
 
   // Tier 2: visible_advanced — shown only to admin/advanced profiles in MVP mode
@@ -306,6 +308,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 's9-vpt', label: 'Valoración de Puestos', icon: BarChart3, description: 'Directiva UE 2023/970' },
             { id: 's9-retributive-audit', label: 'Auditoría Retributiva', icon: Scale, description: 'Contextualización VPT + RD 902' },
             { id: 's9-executive-summary', label: 'Resumen Ejecutivo S9', icon: FileText, description: 'Vista consolidada VPT' },
+            // ── B12.2 — Centro de Convenios (Hub unificado) ──
+            { id: 'agreement-hub', label: 'Centro de Convenios', icon: Gavel, description: 'Vista unificada de convenios (Hub)' },
             { id: 'collective-agreements', label: 'Convenios Colectivos', icon: Gavel, description: 'Tablas salariales y condiciones' },
             // ── B12.1 — Registro Maestro de Convenios (Registry) ──
             { id: 'registry-master', label: 'Registro Maestro', icon: BookOpen, description: 'Registry read-only — no activa nómina' },
