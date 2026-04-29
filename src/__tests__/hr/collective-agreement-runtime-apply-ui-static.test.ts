@@ -221,7 +221,7 @@ describe('B10D.4 — Runtime apply UI static contract', () => {
     ]) {
       expect(src.includes(ack)).toBe(true);
     }
-    expect(src).toMatch(/no puede realizarla el mismo usuario solicitante/i);
+    expect(src).toMatch(/no puede realizarla el mismo usuario\s+solicitante/i);
   });
 
   it('Rollback / reject dialog enforces reason >= 10', () => {
