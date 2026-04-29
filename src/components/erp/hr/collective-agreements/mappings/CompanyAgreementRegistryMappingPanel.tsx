@@ -115,7 +115,7 @@ export function CompanyAgreementRegistryMappingPanel({
       if (!res.data.find((m) => m.id === selectedId)) {
         setSelectedId(res.data[0]?.id ?? null);
       }
-    } else if (!res.success) {
+    } else if (res.success === false) {
       toast.error(res.error.message);
     }
   }, [actions, companyId, employeeId, contractId, selectedId]);
@@ -154,7 +154,7 @@ export function CompanyAgreementRegistryMappingPanel({
         toast.success('Operación interna completada');
         setDialogAction(null);
         await refresh();
-      } else {
+      } else if (res.success === false) {
         toast.error(res.error.message);
       }
     },
@@ -170,7 +170,7 @@ export function CompanyAgreementRegistryMappingPanel({
     if (res.success) {
       toast.success('Enviado a revisión');
       await refresh();
-    } else {
+    } else if (res.success === false) {
       toast.error(res.error.message);
     }
   }, [actions, selected, companyId, refresh]);
