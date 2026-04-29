@@ -87043,6 +87043,7 @@ export type Database = {
         | "hr_manager"
         | "legal_manager"
         | "gestor"
+        | "payroll_supervisor"
       auth_factor_type:
         | "password"
         | "otp_email"
@@ -87480,6 +87481,7 @@ export const Constants = {
         "hr_manager",
         "legal_manager",
         "gestor",
+        "payroll_supervisor",
       ],
       auth_factor_type: [
         "password",
