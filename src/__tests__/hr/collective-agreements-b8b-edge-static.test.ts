@@ -15,6 +15,15 @@ beforeAll(() => {
   CFG = fs.readFileSync(path.resolve(process.cwd(), CONFIG), 'utf-8');
 });
 
+// Strip block + line comments to avoid false positives from doc headers
+// that legitimately mention forbidden tokens to declare what the file
+// does NOT do.
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+}
+
 describe('B8B — edge proposal static checks', () => {
   it('config declares verify_jwt = true', () => {
     expect(CFG).toMatch(
@@ -25,14 +34,16 @@ describe('B8B — edge proposal static checks', () => {
     expect(SRC).toMatch(/Deno\.env\.get\('SUPABASE_SERVICE_ROLE_KEY'\)/);
   });
   it('does not reference operational table erp_hr_collective_agreements (without _registry)', () => {
-    expect(SRC.match(/erp_hr_collective_agreements(?!_)/g) ?? []).toHaveLength(0);
+    const code = stripComments(SRC);
+    expect(code.match(/erp_hr_collective_agreements(?!_)/g) ?? []).toHaveLength(0);
   });
   it('does not import payroll/payslip/salaryNormalizer/agreementSalaryResolver', () => {
-    expect(SRC).not.toMatch(/payslipEngine/);
-    expect(SRC).not.toMatch(/payrollEngine/);
-    expect(SRC).not.toMatch(/salaryNormalizer/);
-    expect(SRC).not.toMatch(/agreementSalaryResolver/);
-    expect(SRC).not.toMatch(/useESPayrollBridge/);
+    const code = stripComments(SRC);
+    expect(code).not.toMatch(/payslipEngine/);
+    expect(code).not.toMatch(/payrollEngine/);
+    expect(code).not.toMatch(/salaryNormalizer/);
+    expect(code).not.toMatch(/agreementSalaryResolver/);
+    expect(code).not.toMatch(/useESPayrollBridge/);
   });
   it('never sets ready_for_payroll = true', () => {
     expect(SRC).not.toMatch(/ready_for_payroll\s*:\s*true/);
