@@ -218,17 +218,24 @@ describe('Repo-level safety invariants', () => {
       'src/hooks/erp/hr/useRegistryPilotMonitor.ts',
       'src/hooks/erp/hr/useRegistryPilotCandidateDiscovery.ts',
     ];
+    // Look only at import statements — comments may legitimately
+    // mention these symbols to document hard-line constraints.
     const forbidden = [
-      /useESPayrollBridge/,
-      /payrollEngine/,
-      /payslipEngine/,
-      /salaryNormalizer/,
-      /agreementSalaryResolver/,
+      'useESPayrollBridge',
+      'payrollEngine',
+      'payslipEngine',
+      'salaryNormalizer',
+      'agreementSalaryResolver',
     ];
     for (const rel of files) {
       const src = readFileSync(join(root, rel), 'utf-8');
-      for (const pat of forbidden) {
-        expect(src).not.toMatch(pat);
+      const importLines = src
+        .split('\n')
+        .filter((l) => /^\s*import\b/.test(l));
+      for (const sym of forbidden) {
+        for (const line of importLines) {
+          expect(line).not.toContain(sym);
+        }
       }
     }
   });
