@@ -455,7 +455,9 @@ export async function secondApproveApplyRequest(
   actor: RuntimeApplyActorContext,
   adapter: RuntimeApplyAdapter,
 ): Promise<RuntimeApplyRequest> {
-  assertAuthorizedRole(actor);
+  if (!hasAuthorizedRole(actor.roles ?? [])) {
+    throw new RuntimeApplyServiceError('SECOND_APPROVER_ROLE_NOT_ALLOWED');
+  }
   const request = await loadRequestOrThrow(input.request_id, adapter);
   assertCompanyAccess(actor, request.company_id);
 
@@ -465,10 +467,6 @@ export async function secondApproveApplyRequest(
 
   if (actor.userId === request.requested_by) {
     throw new RuntimeApplyServiceError('SELF_APPROVAL_FORBIDDEN');
-  }
-
-  if (!hasAuthorizedRole(actor.roles ?? [])) {
-    throw new RuntimeApplyServiceError('SECOND_APPROVER_ROLE_NOT_ALLOWED');
   }
 
   const acks = input.acknowledgements ?? {};
