@@ -49,13 +49,20 @@ describe('B10E.4 — flag invariants', () => {
 });
 
 describe('B10E.4 — bridge static guards', () => {
-  it('bridge does NOT introduce DB writes', () => {
-    // Allow only writes to non-DB targets (e.g., array.push). Block direct
-    // table mutations.
-    expect(bridgeSrc).not.toMatch(/\.insert\s*\(/);
-    expect(bridgeSrc).not.toMatch(/\.update\s*\(/);
-    expect(bridgeSrc).not.toMatch(/\.delete\s*\(/);
-    expect(bridgeSrc).not.toMatch(/\.upsert\s*\(/);
+  it('B10E.4 block does NOT introduce DB writes', () => {
+    // Scope the assertion to the B10E.4 block in the bridge: from the
+    // flag guard to the closing `}` of the dead-code branch. Pre-existing
+    // bridge writes (payroll record persistence) are out of scope for B10E.4.
+    const startMarker = 'B10E.4: registry runtime integration';
+    const start = bridgeSrc.indexOf(startMarker);
+    expect(start).toBeGreaterThan(0);
+    // Use the next 6000 chars as a generous scope window covering the block.
+    const scope = bridgeSrc.slice(start, start + 6000);
+    expect(scope).not.toMatch(/\.insert\s*\(/);
+    expect(scope).not.toMatch(/\.update\s*\(/);
+    expect(scope).not.toMatch(/\.delete\s*\(/);
+    expect(scope).not.toMatch(/\.upsert\s*\(/);
+    expect(scope).not.toMatch(/\.rpc\s*\(/);
   });
 
   it('bridge does NOT use service_role or SUPABASE_SERVICE_ROLE_KEY', () => {
