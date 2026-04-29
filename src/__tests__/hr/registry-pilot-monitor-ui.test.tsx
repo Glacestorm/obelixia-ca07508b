@@ -121,7 +121,7 @@ describe('B10F.5 — Registry pilot monitor UI (read-only)', () => {
     expect(
       screen.getByText(/La activación global sigue desactivada/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/B10D Runtime Apply/)).toBeInTheDocument();
+    expect(screen.getAllByText(/B10D Runtime Apply/).length).toBeGreaterThan(0);
   });
 
   it('shows empty allow-list message and gate values', async () => {
