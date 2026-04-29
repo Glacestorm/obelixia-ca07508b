@@ -265,7 +265,7 @@ describe('B10F.3 — pilot helper controlled scenarios', () => {
     expect(d.trace.reason).toBe('pilot_exception');
   });
 
-  it('integration with real B10F.2 preflight: parity_ok path', () => {
+  it('integration with real B10F.2 preflight: blocked path when registry preview has blockers', () => {
     const d = buildRegistryPilotBridgeDecision({
       globalFlag: false,
       pilotMode: true,
@@ -282,18 +282,16 @@ describe('B10F.3 — pilot helper controlled scenarios', () => {
       buildRegistryPayrollResolution: () =>
         OK_BUILDER({
           registryPreview: {
-            canUseForPayroll: true,
-            blockers: [],
+            canUseForPayroll: false,
+            blockers: ['registry_not_ready'],
             warnings: [],
-            concepts: [
-              { code: 'REGISTRY_SALARY_BASE_MONTHLY', amount: 1500, cadence: 'monthly' },
-              { code: 'REGISTRY_PLUS_CONVENIO', amount: 100, cadence: 'monthly' },
-            ],
+            concepts: [],
           },
         }),
       runRegistryPilotParityPreflight,
     });
-    expect(d.applyRegistry).toBe(true);
-    expect(d.trace.reason).toBe('pilot_applied');
+    expect(d.applyRegistry).toBe(false);
+    expect(d.trace.outcome).toBe('pilot_blocked');
+    expect(d.trace.reason).toBe('pilot_blocked_registry_preview');
   });
 });
