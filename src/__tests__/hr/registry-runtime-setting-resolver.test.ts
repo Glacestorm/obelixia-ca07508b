@@ -163,10 +163,14 @@ describe('B10E.1 — registryRuntimeSettingResolver — determinism', () => {
 // ===================== Static isolation tests =====================
 
 describe('B10E.1 — registryRuntimeSettingResolver — static isolation', () => {
-  const file = fs.readFileSync(
+  const rawFile = fs.readFileSync(
     path.resolve(process.cwd(), 'src/engines/erp/hr/registryRuntimeSettingResolver.ts'),
     'utf8',
   );
+  // Strip block and line comments so the static checks examine real code only.
+  const file = rawFile
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
   it('does not import or reference supabase', () => {
     expect(file.toLowerCase()).not.toContain('supabase');
