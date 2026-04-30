@@ -69,10 +69,11 @@ describe('B13.3B.1 — accept_finding_to_staging static guards', () => {
       /\[functions\.erp-hr-agreement-extraction-runner\][\s\S]*?verify_jwt\s*=\s*true/,
     );
   });
-  it('16. validation gate code paths produce APPROVAL_BLOCKED / FINDING_NOT_STAGING_READY', () => {
-    const b = acceptBranch();
-    expect(b).toMatch(/FINDING_NOT_STAGING_READY/);
-    expect(b).toMatch(/APPROVAL_BLOCKED/);
+  it('16. validation gate references both error codes (file-wide)', () => {
+    expect(EDGE).toMatch(/FINDING_NOT_STAGING_READY/);
+    expect(EDGE).toMatch(/APPROVAL_BLOCKED/);
+    // Branch returns mapped error using validation.code/.reason
+    expect(acceptBranch()).toMatch(/validation\.code/);
   });
   it('17. requires_human_review=true is enforced in mapper', () => {
     expect(EDGE).toMatch(/requires_human_review:\s*true/);
