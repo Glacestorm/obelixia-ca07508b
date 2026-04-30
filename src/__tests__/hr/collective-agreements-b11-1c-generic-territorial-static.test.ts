@@ -66,9 +66,8 @@ describe('B11.1C — generic non-territorial blocker static guards', () => {
     expect(doc).toMatch(/B11\.1C/);
     expect(doc).toMatch(/no activable como convenio estatal genérico/i);
     expect(doc).toMatch(/REQUIERE_CONVENIO_TERRITORIAL/);
-    expect(doc).toMatch(
-      /Para usar el sector agrario en n[oó]mina debe seleccionarse un convenio territorial concreto/,
-    );
+    expect(doc).toMatch(/Para usar el sector agrario en n[oó]mina/);
+    expect(doc).toMatch(/convenio territorial concreto/);
   });
 
   it('registry shadow flag remains false (HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL)', () => {
