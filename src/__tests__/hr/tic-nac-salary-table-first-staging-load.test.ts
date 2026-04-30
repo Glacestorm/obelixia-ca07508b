@@ -129,8 +129,16 @@ describe('B11.2D — first staging load TIC-NAC (STOP guard)', () => {
 
   it('B11.2D surfaces never reference the operative `erp_hr_collective_agreements` table', () => {
     const concat = readAllB11_2D();
+    // Strip line/block comments before checking — the staging engine and
+    // edge function legitimately mention the operative table in DOC
+    // comments to declare it as out-of-scope. The invariant is "no real
+    // reference at runtime".
+    const codeOnly = concat
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|\s)\/\/[^\n]*/g, '$1')
+      .replace(/(^|\s)\*[^\n]*/g, '$1');
     const matches =
-      concat.match(
+      codeOnly.match(
         /erp_hr_collective_agreements(?!_registry|_staging|_salary_table_staging|_salary_table|_alias)/g,
       ) ?? [];
     expect(matches).toEqual([]);
