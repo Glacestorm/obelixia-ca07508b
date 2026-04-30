@@ -66,7 +66,7 @@ describe('B13.3B.1 — agreementFindingToStagingMapper', () => {
   it('3. metadata_candidate bloquea', () => {
     const v = validateFindingStagingReadiness(baseFinding({ finding_type: 'metadata_candidate' }));
     expect(v.ok).toBe(false);
-    if (!v.ok) expect(v.code).toBe('FINDING_NOT_STAGING_READY');
+    if (v.ok === false) expect(v.code).toBe('FINDING_NOT_STAGING_READY');
   });
 
   it('4. rule_candidate bloquea/deferred', () => {
@@ -118,7 +118,7 @@ describe('B13.3B.1 — agreementFindingToStagingMapper', () => {
       }),
     );
     expect(v.ok).toBe(false);
-    if (!v.ok) expect(v.reason).toBe('ocr_missing_row_confidence');
+    if (v.ok === false) expect(v.reason).toBe('ocr_missing_row_confidence');
   });
 
   it('12. OCR entra como ocr_pending_review', () => {
@@ -173,7 +173,7 @@ describe('B13.3B.1 — agreementFindingToStagingMapper', () => {
       }),
     );
     expect(v.ok).toBe(false);
-    if (!v.ok) expect(v.code).toBe('APPROVAL_BLOCKED');
+    if (v.ok === false) expect(v.code).toBe('APPROVAL_BLOCKED');
   });
 
   it('18. computeFindingToStagingHash es estable', () => {
@@ -207,6 +207,6 @@ describe('B13.3B.1 — agreementFindingToStagingMapper', () => {
       }),
     );
     expect(v.ok).toBe(false);
-    if (!v.ok) expect(v.code).toBe('APPROVAL_BLOCKED');
+    if (v.ok === false) expect(v.code).toBe('APPROVAL_BLOCKED');
   });
 });
