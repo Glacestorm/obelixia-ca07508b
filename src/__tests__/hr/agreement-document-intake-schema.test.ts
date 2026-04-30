@@ -24,7 +24,9 @@ function loadMigrationContaining(needle: string): string {
   throw new Error(`No migration found containing: ${needle}`);
 }
 
-const SQL = loadMigrationContaining('erp_hr_collective_agreement_document_intake');
+const SQL = loadMigrationContaining(
+  'CREATE TABLE IF NOT EXISTS public.erp_hr_collective_agreement_document_intake',
+);
 
 describe('B13.2 — Document Intake schema', () => {
   it('1. creates the intake table', () => {
