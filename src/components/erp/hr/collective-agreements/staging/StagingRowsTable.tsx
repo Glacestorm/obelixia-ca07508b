@@ -130,13 +130,19 @@ export function StagingRowsTable({ rows, onAction, emptyLabel }: StagingRowsTabl
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" data-testid={`staging-row-menu-${row.id}`}>
                       <DropdownMenuLabel>Acciones de revisión</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => onAction('view', row)}>
+                      <DropdownMenuItem
+                        data-testid={`staging-action-view-${row.id}`}
+                        onClick={() => onAction('view', row)}
+                      >
                         <Eye className="mr-2 h-4 w-4" /> Ver detalle
                       </DropdownMenuItem>
                       {!isRejected && !isApproved && (
-                        <DropdownMenuItem onClick={() => onAction('edit', row)}>
+                        <DropdownMenuItem
+                          data-testid={`staging-action-edit-${row.id}`}
+                          onClick={() => onAction('edit', row)}
+                        >
                           <Pencil className="mr-2 h-4 w-4" /> Editar propuesta
                         </DropdownMenuItem>
                       )}
@@ -144,27 +150,38 @@ export function StagingRowsTable({ rows, onAction, emptyLabel }: StagingRowsTabl
                         <>
                           <DropdownMenuSeparator />
                           {row.approval_mode.includes('single') && (
-                            <DropdownMenuItem onClick={() => onAction('approve_single', row)}>
+                            <DropdownMenuItem
+                              data-testid={`staging-action-approve-single-${row.id}`}
+                              onClick={() => onAction('approve_single', row)}
+                            >
                               <Check className="mr-2 h-4 w-4" /> Aprobar (única)
                             </DropdownMenuItem>
                           )}
                           {row.approval_mode.includes('dual') && (
                             <>
-                              <DropdownMenuItem onClick={() => onAction('approve_first', row)}>
+                              <DropdownMenuItem
+                                data-testid={`staging-action-approve-first-${row.id}`}
+                                onClick={() => onAction('approve_first', row)}
+                              >
                                 <Check className="mr-2 h-4 w-4" /> Aprobar 1ª
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => onAction('approve_second', row)}>
+                              <DropdownMenuItem
+                                data-testid={`staging-action-approve-second-${row.id}`}
+                                onClick={() => onAction('approve_second', row)}
+                              >
                                 <CheckCheck className="mr-2 h-4 w-4" /> Aprobar 2ª
                               </DropdownMenuItem>
                             </>
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
+                            data-testid={`staging-action-needs-correction-${row.id}`}
                             onClick={() => onAction('mark_needs_correction', row)}
                           >
                             <AlertOctagon className="mr-2 h-4 w-4" /> Necesita corrección
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            data-testid={`staging-action-reject-${row.id}`}
                             className="text-destructive"
                             onClick={() => onAction('reject', row)}
                           >
