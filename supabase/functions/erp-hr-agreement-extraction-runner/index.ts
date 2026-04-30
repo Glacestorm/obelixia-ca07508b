@@ -63,6 +63,8 @@ const FORBIDDEN_PAYLOAD_KEYS = [
 const T_RUNS = 'erp_hr_collective_agreement_extraction_runs';
 const T_FINDINGS = 'erp_hr_collective_agreement_extraction_findings';
 const T_INTAKE = 'erp_hr_collective_agreement_document_intake';
+const T_STAGING = 'erp_hr_collective_agreement_salary_table_staging';
+const T_STAGING_AUDIT = 'erp_hr_collective_agreement_staging_audit';
 
 const EXTRACTION_MODES = [
   'html_text',
@@ -142,6 +144,12 @@ const AcceptFindingSchema = z
   .object({
     action: z.literal('accept_finding_to_staging'),
     finding_id: uuid,
+    options: z
+      .object({
+        approval_dual: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 
