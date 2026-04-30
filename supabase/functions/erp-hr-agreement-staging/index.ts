@@ -13,8 +13,8 @@
  *      * erp_hr_collective_agreements (operative table)
  *      * salary_tables_loaded / ready_for_payroll / data_completeness
  *      * pilot allow-list flags
- *  - No imports from useESPayrollBridge / payrollEngine / payslipEngine
- *    / salaryNormalizer / agreementSalaryResolver.
+ *  - No imports from the payroll bridge / payroll / payslip engines /
+ *    salary normalizer / agreement salary resolver modules.
  *  - approve_second blocks same reviewer as first.
  *  - OCR rows are NEVER auto-approved by confidence.
  */
