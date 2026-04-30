@@ -43,7 +43,8 @@ describe('B13.3C — run_ocr_or_text_extraction static guards', () => {
     expect(EDGE).not.toMatch(/ready_for_payroll\s*:/);
     expect(EDGE).not.toMatch(/salary_tables_loaded\s*:\s*true/);
     expect(EDGE).not.toMatch(/data_completeness\s*:\s*['"]human_validated['"]/);
-    expect(EDGE).not.toMatch(/human_approved/);
+    // Should not be written as a column value (only listed as forbidden key).
+    expect(EDGE).not.toMatch(/human_approved\w*\s*:/);
   });
   it('does not write to salary_tables real or operative legacy table', () => {
     expect(EDGE).not.toMatch(/\.from\(\s*['"]salary_tables['"]/);
