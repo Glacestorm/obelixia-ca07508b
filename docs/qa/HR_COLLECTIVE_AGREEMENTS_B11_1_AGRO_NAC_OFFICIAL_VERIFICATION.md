@@ -203,3 +203,60 @@ Mientras alguno siga `PENDING_*`, B11.2 permanece bloqueado para AGRO-NAC.
   registry/version/source reales, registra `STOP_B11.1_AGRO_NAC —
   PENDING_HUMAN_INPUT`, no introduce escrituras, no toca bridge /
   payroll / operativa / flag / allow-list.
+
+## B11.1C — Decisión recomendada
+
+**Decisión recomendada: no activable como convenio estatal genérico.**
+
+AGRO-NAC, tal como está modelado en Registry (`internal_code='AGRO-NAC'`,
+`jurisdiction_code='ES'`, `official_name='Convenio del Sector Agrario'`),
+queda marcado como **convenio genérico no apto para activación** mientras
+no exista una de las dos condiciones siguientes:
+
+1. Aparición efectiva en BOE de un convenio estatal único del sector
+   agrario con REGCON estatal y vigencia confirmada, **o**
+2. Sustitución expresa por un convenio **territorial concreto**
+   (provincia / CCAA / actividad) con su BOP/DO autonómico, REGCON,
+   vigencia y tablas salariales propias.
+
+> Para usar el sector agrario en nómina debe seleccionarse un convenio
+> territorial concreto: provincia/CCAA/actividad.
+
+### Señalización en UI (B11.1C)
+
+En el Centro de Convenios y en el detalle Registry, AGRO-NAC se muestra
+con:
+
+- Badge visible: **`REQUIERE_CONVENIO_TERRITORIAL`** (variante
+  `destructive`).
+- Mensaje explicativo: "No activable como convenio estatal genérico".
+- Recomendación textual de selección territorial concreta.
+- **Supresión** de cualquier CTA de avance:
+  - sin botón de wizard de incorporación / parser B11.2,
+  - sin sugerencias de match Registry para arrastrarlo a flujo de
+    incorporación,
+  - sin CTA de validación humana B8A,
+  - sin CTA de mapping / runtime apply,
+  - sin CTA de `ready_for_payroll`.
+
+La marca es **read-only y derivada en cliente**: no se modifica DB, ni
+`requires_human_review`, ni `ready_for_payroll`, ni allow-list, ni
+flags. Se aplica únicamente a convenios cuyo `internal_code` figura en
+la lista explícita `GENERIC_NON_TERRITORIAL_INTERNAL_CODES` definida
+en `src/lib/hr/agreementGenericTerritorialBlocker.ts`. Ampliar esa
+lista exige cambio de código y un documento QA estilo B11.1 que
+justifique la inclusión.
+
+### Tests B11.1C asociados
+
+- `src/__tests__/hr/collective-agreements-b11-1c-generic-territorial-static.test.ts`
+  — guardas estáticas: helper existe, lista contiene `AGRO-NAC`, no
+  contiene escrituras DB, no importa bridge / payroll / resolvers, no
+  muta flags ni allow-list, y la flag `HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL`
+  permanece `false`.
+- `src/__tests__/hr/collective-agreements-b11-1c-generic-territorial-ui.test.tsx`
+  — guardas UI: el drawer de detalle muestra el badge
+  `REQUIERE_CONVENIO_TERRITORIAL` y el bloque de recomendación
+  territorial para AGRO-NAC, **no** muestra CTA de wizard (parser /
+  validación / mapping / activación) y **no** muestra texto de
+  `ready_for_payroll`/activación.
