@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import type { UnifiedAgreementRow } from '@/hooks/erp/hr/useAgreementUnifiedSearch';
 import AgreementStatusBadges from './AgreementStatusBadges';
 import { deriveIncorporationFlow } from '@/lib/hr/agreementIncorporationFlow';
+import AgreementRegistryMatchSuggestions from './AgreementRegistryMatchSuggestions';
+import { useAgreementRegistryMatchAdvisor } from '@/hooks/erp/hr/useAgreementRegistryMatchAdvisor';
 
 interface Props {
   row: UnifiedAgreementRow | null;
@@ -29,6 +31,7 @@ export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange, onStartW
   if (!row) return null;
   const contextMessage = buildContextMessage(row);
   const flow = deriveIncorporationFlow(row);
+  const advisor = useAgreementRegistryMatchAdvisor(row);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" data-testid="agreement-detail-drawer">
@@ -93,6 +96,14 @@ export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange, onStartW
                 <li>Requires human review: {String(row.registry.requires_human_review ?? false)}</li>
               </ul>
             </section>
+          )}
+
+          {advisor.enabled && !advisor.authRequired && (
+            <AgreementRegistryMatchSuggestions
+              loading={advisor.loading}
+              candidates={advisor.candidates}
+              onUseAsReference={() => onStartWizard?.(row)}
+            />
           )}
 
           <section className="text-xs text-muted-foreground">
