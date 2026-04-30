@@ -1244,6 +1244,185 @@ Deno.serve(async (req) => {
 
     // ---------- mark_run_blocked ----------
     if (action === 'mark_run_blocked') {
+      // (Handled below)
+    }
+
+    // ---------- run_ocr_or_text_extraction (B13.3C) ----------
+    // Controlled OCR / text extraction. Three explicit input modes:
+    //   - text_content (caller provides the text directly)
+    //   - document_url (must equal run.document_url or intake.document_url)
+    //   - manual_pasted_table (rows aportadas, NO OCR)
+    // Findings created are ALWAYS pending_review + requires_human_review=true.
+    // Never writes salary_tables real, never sets ready_for_payroll, never
+    // calls B11.3B / B8A / B8B / B9.
+    if (action === 'run_ocr_or_text_extraction') {
+      const p = RunOcrOrTextSchema.safeParse(body);
+      if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
+      const { data: run, error: rErr } = await adminClient
+        .from(T_RUNS)
+        .select('*')
+        .eq('id', p.data.run_id)
+        .maybeSingle();
+      if (rErr) return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+      if (!run) return mapError(404, 'ROW_NOT_FOUND', 'Run not found', action);
+
+      const allowedRunStatuses = ['queued', 'running', 'failed', 'blocked', 'completed_with_warnings'];
+      if (!allowedRunStatuses.includes(run.run_status)) {
+        return mapError(409, 'INVALID_TRANSITION', 'Run not runnable', action);
+      }
+
+      const { data: intake, error: iErr } = await adminClient
+        .from(T_INTAKE)
+        .select('id, status, document_url, document_hash, source_url')
+        .eq('id', run.intake_id)
+        .maybeSingle();
+      if (iErr) return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+      if (!intake) return mapError(404, 'ROW_NOT_FOUND', 'Intake not found', action);
+      if (intake.status !== 'ready_for_extraction') {
+        return mapError(409, 'INVALID_TRANSITION', 'Intake must be ready_for_extraction', action);
+      }
+
+      const ALLOWED_MODES = ['html_text', 'pdf_text', 'ocr_assisted', 'manual_csv', 'metadata_only'];
+      if (!ALLOWED_MODES.includes(run.extraction_mode)) {
+        return mapError(409, 'INVALID_TRANSITION', 'Run extraction_mode not compatible', action);
+      }
+
+      // Mark running
+      await adminClient
+        .from(T_RUNS)
+        .update({ run_status: 'running', started_at: run.started_at ?? nowIso })
+        .eq('id', run.id);
+
+      const ctx = {
+        sourcePage: (p.data as { source_page?: string }).source_page ?? null,
+        sourceArticle: (p.data as { source_article?: string }).source_article ?? null,
+        sourceAnnex: (p.data as { source_annex?: string }).source_annex ?? null,
+        sourceDocument: intake.document_hash ?? intake.document_url ?? null,
+      };
+
+      let findingsToInsert: Array<Record<string, unknown>> = [];
+      const warnings: string[] = [];
+      const blockers: Array<Record<string, unknown>> = [];
+      let runOutcome: 'completed' | 'completed_with_warnings' | 'blocked' = 'completed';
+
+      if (p.data.extraction_input_type === 'text_content') {
+        const norm = normalizeOcrTextInline(p.data.text_content);
+        findingsToInsert = buildOcrFindingsInline(norm, ctx);
+      } else if (p.data.extraction_input_type === 'manual_pasted_table') {
+        findingsToInsert = buildManualRowsFindingsInline(
+          p.data.rows as Array<Record<string, unknown>>,
+          ctx,
+        );
+      } else {
+        // document_url branch
+        const requested = p.data.document_url;
+        const expected = run.document_url ?? intake.document_url ?? null;
+        if (!expected || requested !== expected) {
+          await adminClient
+            .from(T_RUNS)
+            .update({
+              run_status: 'blocked',
+              completed_at: nowIso,
+              blockers_json: appendJsonArray(run.blockers_json, {
+                code: 'document_url_mismatch',
+                requested,
+                expected,
+                at: nowIso,
+              }),
+            })
+            .eq('id', run.id);
+          return mapError(409, 'INVALID_TRANSITION', 'document_url must match run/intake', action);
+        }
+        // Attempt to fetch document bytes; if anything fails or hash cannot
+        // be verified when intake.document_hash is set → blocker.
+        try {
+          const resp = await fetch(requested, { method: 'GET' });
+          if (!resp.ok) throw new Error(`fetch_status_${resp.status}`);
+          const buf = new Uint8Array(await resp.arrayBuffer());
+          if (intake.document_hash) {
+            const h = await sha256HexBytesInline(buf);
+            if (h !== intake.document_hash) {
+              blockers.push({ code: 'document_hash_unverified', at: nowIso });
+              runOutcome = 'blocked';
+            }
+          } else {
+            warnings.push('document_hash_missing_on_intake');
+          }
+          if (runOutcome !== 'blocked') {
+            // Best-effort UTF-8 decode (binary PDFs will yield low printable
+            // ratio → ocr_required marker by detector).
+            const text = new TextDecoder('utf-8', { fatal: false }).decode(buf);
+            const norm = normalizeOcrTextInline(text);
+            findingsToInsert = buildOcrFindingsInline(norm, ctx);
+          }
+        } catch {
+          blockers.push({ code: 'document_fetch_failed', at: nowIso });
+          runOutcome = 'blocked';
+        }
+      }
+
+      if (findingsToInsert.length === 0 && runOutcome !== 'blocked') {
+        warnings.push('no_findings_detected');
+      }
+
+      // Stamp run + intake into every finding.
+      const stamped = findingsToInsert.map((f) => ({
+        ...f,
+        extraction_run_id: run.id,
+        intake_id: run.intake_id,
+        agreement_id: run.agreement_id,
+        version_id: run.version_id,
+      }));
+
+      if (stamped.length > 0) {
+        const { error: fInsErr } = await adminClient.from(T_FINDINGS).insert(stamped);
+        if (fInsErr) {
+          await adminClient
+            .from(T_RUNS)
+            .update({
+              run_status: 'failed',
+              completed_at: nowIso,
+              blockers_json: appendJsonArray(run.blockers_json, {
+                code: 'findings_insert_failed',
+                at: nowIso,
+              }),
+            })
+            .eq('id', run.id);
+          return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+        }
+      }
+
+      let finalStatus: 'completed' | 'completed_with_warnings' | 'blocked';
+      if (runOutcome === 'blocked') finalStatus = 'blocked';
+      else if (warnings.length > 0) finalStatus = 'completed_with_warnings';
+      else finalStatus = 'completed';
+
+      await adminClient
+        .from(T_RUNS)
+        .update({
+          run_status: finalStatus,
+          completed_at: nowIso,
+          summary_json: {
+            findings_count: stamped.length,
+            extraction_input_type: p.data.extraction_input_type,
+          },
+          warnings_json: warnings.map((w) => ({ code: w, at: nowIso })),
+          blockers_json:
+            blockers.length > 0
+              ? appendJsonArray(run.blockers_json, ...blockers as unknown[])
+              : run.blockers_json,
+        })
+        .eq('id', run.id);
+
+      return ok(action, {
+        run_id: run.id,
+        run_status: finalStatus,
+        findings_count: stamped.length,
+      });
+    }
+
+    // ---------- mark_run_blocked (real handler) ----------
+    if (action === 'mark_run_blocked') {
       const p = MarkRunBlockedSchema.safeParse(body);
       if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
       const { data: run, error: rErr } = await adminClient
