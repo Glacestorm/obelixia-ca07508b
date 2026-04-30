@@ -20,12 +20,6 @@ import type { StagingRowSummary } from '@/hooks/erp/hr/useTicNacSalaryTableStagi
 import { StagingStatusBadge } from './StagingStatusBadge';
 import { checkPayslipLabelPreservesLiteral } from './stagingLiteralGuard';
 
-// In test environments (jsdom), Radix portals + floating-ui have flaky behaviour
-// that makes DropdownMenu items unreachable. We expose an off-screen, always
-// mounted action surface so unit tests can drive row actions deterministically
-// via stable `data-testid`s, while the real UI keeps the dropdown.
-const SR_ONLY = 'sr-only';
-
 export type StagingRowAction =
   | 'view'
   | 'edit'
