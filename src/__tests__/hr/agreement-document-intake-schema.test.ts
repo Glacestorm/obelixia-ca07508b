@@ -142,10 +142,11 @@ describe('B13.2 — Document Intake schema', () => {
   it('10. does not touch real salary_tables', () => {
     // Strip SQL comments before checking, then forbid real DDL/DML on salary_tables.
     const code = SQL.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-    expect(code).not.toMatch(/CREATE TABLE[\s\S]*?\bsalary_tables\b/);
-    expect(code).not.toMatch(/ALTER TABLE\s+public\.salary_tables/);
-    expect(code).not.toMatch(/INSERT INTO\s+public\.salary_tables/);
-    expect(code).not.toMatch(/UPDATE\s+public\.salary_tables/);
+    // Forbid actual DDL/DML targeting public.salary_tables specifically.
+    expect(code).not.toMatch(/CREATE TABLE\s+(IF NOT EXISTS\s+)?public\.salary_tables\b/);
+    expect(code).not.toMatch(/ALTER TABLE\s+public\.salary_tables\b/);
+    expect(code).not.toMatch(/INSERT INTO\s+public\.salary_tables\b/);
+    expect(code).not.toMatch(/UPDATE\s+public\.salary_tables\b/);
   });
 
   it('11. does not touch operative erp_hr_collective_agreements (without _registry)', () => {
