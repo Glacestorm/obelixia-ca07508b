@@ -16,7 +16,10 @@ import {
   useTicNacSalaryTableStaging,
   type StagingRowSummary,
 } from '@/hooks/erp/hr/useTicNacSalaryTableStaging';
-import { useTicNacSalaryTableStagingActions } from '@/hooks/erp/hr/useTicNacSalaryTableStagingActions';
+import {
+  useTicNacSalaryTableStagingActions,
+  type StagingActionResult,
+} from '@/hooks/erp/hr/useTicNacSalaryTableStagingActions';
 import { useAuth } from '@/hooks/useAuth';
 
 import { StagingRowsTable, type StagingRowAction } from './StagingRowsTable';
@@ -127,38 +130,38 @@ export function TicNacSalaryTableReviewPanel({
 
   const runReject = async (reason: string) => {
     if (!rejectRow) return;
-    const res = await actions.rejectRow(rejectRow.id, reason);
-    if (res.success) {
+    const res = (await actions.rejectRow(rejectRow.id, reason)) as StagingActionResult<{ row: unknown }>;
+    if (res.success === true) {
       toast.success('Fila rechazada');
       setRejectRow(null);
       void refresh();
-    } else {
-      toast.error(res.error.message);
+      return;
     }
+    toast.error(res.error.message);
   };
 
   const runNeedsCorrection = async (reason: string) => {
     if (!needsRow) return;
-    const res = await actions.markNeedsCorrection(needsRow.id, reason);
-    if (res.success) {
+    const res = (await actions.markNeedsCorrection(needsRow.id, reason)) as StagingActionResult<{ row: unknown }>;
+    if (res.success === true) {
       toast.success('Marcada como necesita corrección');
       setNeedsRow(null);
       void refresh();
-    } else {
-      toast.error(res.error.message);
+      return;
     }
+    toast.error(res.error.message);
   };
 
   const runEditSave = async (patch: Record<string, unknown>) => {
     if (!editRow) return;
-    const res = await actions.editRow({ rowId: editRow.id, patch: patch as any });
-    if (res.success) {
+    const res = (await actions.editRow({ rowId: editRow.id, patch: patch as any })) as StagingActionResult<{ row: unknown }>;
+    if (res.success === true) {
       toast.success('Propuesta guardada');
       setEditRow(null);
       void refresh();
-    } else {
-      toast.error(res.error.message);
+      return;
     }
+    toast.error(res.error.message);
   };
 
   return (
