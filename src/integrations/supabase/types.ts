@@ -29461,6 +29461,134 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_collective_agreement_document_intake: {
+        Row: {
+          block_reason: string | null
+          blocked_at: string | null
+          blocked_by: string | null
+          candidate_registry_agreement_id: string | null
+          candidate_registry_version_id: string | null
+          claimed_at: string | null
+          classification: string | null
+          classified_at: string | null
+          classified_by: string | null
+          confidence: number | null
+          created_at: string
+          detected_agreement_name: string | null
+          detected_cnae: string[] | null
+          detected_regcon: string | null
+          detected_sector: string | null
+          document_hash: string | null
+          document_url: string | null
+          duplicate_of: string | null
+          human_reviewer: string | null
+          id: string
+          jurisdiction: string | null
+          notes: string | null
+          payload_json: Json
+          publication_date: string | null
+          source_type: string
+          source_url: string
+          status: string
+          territorial_scope: string | null
+          updated_at: string
+          watch_queue_id: string | null
+        }
+        Insert: {
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          candidate_registry_agreement_id?: string | null
+          candidate_registry_version_id?: string | null
+          claimed_at?: string | null
+          classification?: string | null
+          classified_at?: string | null
+          classified_by?: string | null
+          confidence?: number | null
+          created_at?: string
+          detected_agreement_name?: string | null
+          detected_cnae?: string[] | null
+          detected_regcon?: string | null
+          detected_sector?: string | null
+          document_hash?: string | null
+          document_url?: string | null
+          duplicate_of?: string | null
+          human_reviewer?: string | null
+          id?: string
+          jurisdiction?: string | null
+          notes?: string | null
+          payload_json?: Json
+          publication_date?: string | null
+          source_type: string
+          source_url: string
+          status?: string
+          territorial_scope?: string | null
+          updated_at?: string
+          watch_queue_id?: string | null
+        }
+        Update: {
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
+          candidate_registry_agreement_id?: string | null
+          candidate_registry_version_id?: string | null
+          claimed_at?: string | null
+          classification?: string | null
+          classified_at?: string | null
+          classified_by?: string | null
+          confidence?: number | null
+          created_at?: string
+          detected_agreement_name?: string | null
+          detected_cnae?: string[] | null
+          detected_regcon?: string | null
+          detected_sector?: string | null
+          document_hash?: string | null
+          document_url?: string | null
+          duplicate_of?: string | null
+          human_reviewer?: string | null
+          id?: string
+          jurisdiction?: string | null
+          notes?: string | null
+          payload_json?: Json
+          publication_date?: string | null
+          source_type?: string
+          source_url?: string
+          status?: string
+          territorial_scope?: string | null
+          updated_at?: string
+          watch_queue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_d_candidate_registry_agreement_fkey"
+            columns: ["candidate_registry_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_d_candidate_registry_version_i_fkey"
+            columns: ["candidate_registry_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_document_intake_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_document_intake"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_document_intake_watch_queue_id_fkey"
+            columns: ["watch_queue_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_source_watch_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_collective_agreement_registry_activation_approvals: {
         Row: {
           activation_checklist_json: Json
