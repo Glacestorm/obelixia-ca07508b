@@ -540,3 +540,6 @@ verify_jwt = true
 
 [functions.erp-hr-agreement-document-intake]
 verify_jwt = true
+
+[functions.erp-hr-agreement-extraction-runner]
+verify_jwt = true
