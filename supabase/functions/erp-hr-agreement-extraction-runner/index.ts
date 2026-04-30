@@ -58,6 +58,11 @@ const FORBIDDEN_PAYLOAD_KEYS = [
   'service_role',
   'apply_to_payroll',
   'human_validated',
+  'human_approved_single',
+  'human_approved_first',
+  'human_approved_second',
+  'approved_by',
+  'approved_at',
 ] as const;
 
 const T_RUNS = 'erp_hr_collective_agreement_extraction_runs';
@@ -161,6 +166,58 @@ const RejectFindingSchema = z
   })
   .strict();
 
+// B13.3C — controlled OCR / text extraction action.
+const ManualPastedRowSchema = z
+  .object({
+    raw: z.string().min(1).max(2000),
+    page: z.string().max(50).optional(),
+    amount: z.union([z.string().max(60), z.number()]).optional(),
+    professional_group: z.string().max(120).optional(),
+    level: z.string().max(120).optional(),
+    category: z.string().max(120).optional(),
+    area_code: z.string().max(40).optional(),
+    area_name: z.string().max(120).optional(),
+    concept_hint: z.string().max(200).optional(),
+    year: z.union([z.number().int().min(2000).max(2099), z.string().regex(/^\d{4}$/)]).optional(),
+  })
+  .strict();
+
+const RunOcrOrTextSchema = z.discriminatedUnion('extraction_input_type', [
+  z
+    .object({
+      action: z.literal('run_ocr_or_text_extraction'),
+      run_id: uuid,
+      extraction_input_type: z.literal('text_content'),
+      text_content: z.string().min(1).max(400000),
+      source_page: z.string().max(50).optional(),
+      source_article: z.string().max(120).optional(),
+      source_annex: z.string().max(120).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal('run_ocr_or_text_extraction'),
+      run_id: uuid,
+      extraction_input_type: z.literal('document_url'),
+      document_url: z.string().url().max(2000),
+      source_page: z.string().max(50).optional(),
+      source_article: z.string().max(120).optional(),
+      source_annex: z.string().max(120).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal('run_ocr_or_text_extraction'),
+      run_id: uuid,
+      extraction_input_type: z.literal('manual_pasted_table'),
+      rows: z.array(ManualPastedRowSchema).min(1).max(500),
+      source_page: z.string().max(50).optional(),
+      source_article: z.string().max(120).optional(),
+      source_annex: z.string().max(120).optional(),
+    })
+    .strict(),
+]);
+
 const KNOWN_ACTIONS = [
   'list_runs',
   'create_run',
@@ -169,6 +226,7 @@ const KNOWN_ACTIONS = [
   'mark_run_blocked',
   'accept_finding_to_staging',
   'reject_finding',
+  'run_ocr_or_text_extraction',
 ] as const;
 
 function jsonResponse(status: number, body: Record<string, unknown>): Response {
@@ -272,6 +330,297 @@ function looksOcrRequired(text: string): boolean {
       ? 0
       : (t.replace(/[\s\S]/g, (c) => (/[\p{L}\p{N}\s.,;:€%·\-/()]/u.test(c) ? c : '')).length) / t.length;
   return t.length > 200 && printableRatio < 0.6;
+}
+
+// ---------------------------------------------------------------
+// B13.3C — Inline mirror of agreementOcrExtractor +
+// agreementSalaryTableCandidateExtractor (edges cannot import src/).
+// ---------------------------------------------------------------
+function normalizeOcrTextInline(text: string): string {
+  let t = String(text ?? '');
+  if (!t) return '';
+  t = t.replace(/\uFB00/g, 'ff').replace(/\uFB01/g, 'fi').replace(/\uFB02/g, 'fl');
+  t = t.replace(/\u00AD/g, '');
+  t = t.replace(/(\p{L})-\n(\p{L})/gu, '$1$2');
+  t = t.replace(/\r\n?/g, '\n');
+  t = t
+    .split('\n')
+    .map((l) => l.replace(/[\t\v\f ]+/g, ' ').trim())
+    .join('\n');
+  t = t.replace(/\n{3,}/g, '\n\n');
+  return t;
+}
+function buildExcerptInline(text: string, max = 280): string {
+  const norm = normalizeOcrTextInline(text).replace(/\n+/g, ' ').trim();
+  if (norm.length <= max) return norm;
+  return norm.slice(0, max - 1).trimEnd() + '…';
+}
+function parseSpanishMoneyInline(value: unknown): { amount: number | null; ambiguous: boolean; warnings: string[]; raw: string } {
+  const raw = String(value ?? '').trim();
+  const out = { amount: null as number | null, ambiguous: false, warnings: [] as string[], raw };
+  if (!raw) { out.warnings.push('empty_value'); return out; }
+  let s = raw.replace(/€/g, '').replace(/EUR/gi, '').replace(/\s+/g, '').trim();
+  if (!s) { out.warnings.push('empty_value_after_currency_strip'); return out; }
+  if (!/^[+-]?[\d.,]+$/.test(s)) { out.warnings.push('non_numeric_chars'); return out; }
+  const sign = s.startsWith('-') ? -1 : 1;
+  s = s.replace(/^[+-]/, '');
+  const hasDot = s.includes('.');
+  const hasComma = s.includes(',');
+  if (hasDot && hasComma) {
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    const dec = lastComma > lastDot ? ',' : '.';
+    const tho = dec === ',' ? '.' : ',';
+    const parts = s.split(dec);
+    if (parts.length !== 2) { out.warnings.push('multiple_decimal_separators'); return out; }
+    const intP = parts[0].split(tho).join('');
+    const decP = parts[1];
+    if (!/^\d+$/.test(intP) || !/^\d{1,2}$/.test(decP)) { out.warnings.push('invalid_decimal_format'); return out; }
+    out.amount = sign * Number(`${intP}.${decP}`);
+    return out;
+  }
+  if (hasComma && !hasDot) {
+    const parts = s.split(',');
+    if (parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d{1,2}$/.test(parts[1])) {
+      out.amount = sign * Number(`${parts[0]}.${parts[1]}`); return out;
+    }
+    if (parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d{3}$/.test(parts[1])) {
+      out.ambiguous = true; out.warnings.push('ambiguous_comma_three_digits'); return out;
+    }
+    out.warnings.push('invalid_comma_format'); return out;
+  }
+  if (hasDot && !hasComma) {
+    const parts = s.split('.');
+    if (parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d{1,2}$/.test(parts[1])) {
+      out.amount = sign * Number(`${parts[0]}.${parts[1]}`); return out;
+    }
+    if (parts.length === 2 && /^\d+$/.test(parts[0]) && /^\d{3}$/.test(parts[1])) {
+      out.ambiguous = true; out.warnings.push('ambiguous_dot_three_digits'); return out;
+    }
+    if (parts.length > 2 && parts.every((p) => /^\d{1,3}$/.test(p))) {
+      out.amount = sign * Number(parts.join('')); return out;
+    }
+    out.warnings.push('invalid_dot_format'); return out;
+  }
+  if (/^\d+$/.test(s)) { out.amount = sign * Number(s); return out; }
+  out.warnings.push('unrecognized_format'); return out;
+}
+function detectYearInline(t: string): number | null {
+  const m = String(t ?? '').match(/\b(20\d{2})\b/g);
+  if (!m || m.length === 0) return null;
+  const y = Number(m[m.length - 1]);
+  return Number.isFinite(y) && y >= 2000 && y <= 2099 ? y : null;
+}
+function detectGroupInline(t: string): string | null {
+  const m = /\bgrupo\s+(?:profesional\s+)?([A-ZÁÉÍÓÚÑ0-9][\wáéíóúñ.\- ]{0,40})/i.exec(String(t ?? ''))
+    || /\b(grupo\s+\d+)\b/i.exec(String(t ?? ''))
+    || /\bnivel\s+([A-Z0-9][\w.\- ]{0,30})/i.exec(String(t ?? ''));
+  return m ? normLit(m[1]).slice(0, 60) || null : null;
+}
+function buildOcrFindingsInline(
+  norm: string,
+  ctx: { sourcePage: string | null; sourceArticle: string | null; sourceAnnex: string | null; sourceDocument: string | null },
+): Array<Record<string, unknown>> {
+  const findings: Array<Record<string, unknown>> = [];
+  // Concept candidates
+  const literals = extractLiterals(norm);
+  for (const lit of literals) {
+    findings.push({
+      finding_type: 'concept_candidate',
+      concept_literal_from_agreement: lit.literal,
+      normalized_concept_key: lit.key,
+      payroll_label: lit.literal,
+      payslip_label: lit.literal,
+      source_page: ctx.sourcePage,
+      source_article: ctx.sourceArticle,
+      source_annex: ctx.sourceAnnex,
+      source_excerpt: buildExcerptInline(lit.literal),
+      raw_text: lit.literal,
+      confidence: 'low',
+      finding_status: 'pending_review',
+      requires_human_review: true,
+      payload_json: {
+        extraction_method: 'text',
+        source_document: ctx.sourceDocument,
+      },
+    });
+  }
+  // Salary table candidates from text
+  const lines = norm.split('\n');
+  let curPage: string | null = ctx.sourcePage;
+  for (const raw of lines) {
+    const pm = /^\s*(?:p[áa]gina|page)\s+(\d{1,4})\b/i.exec(raw);
+    if (pm) { curPage = pm[1]; continue; }
+    const line = raw.trim();
+    if (line.length < 6 || line.length > 400) continue;
+    if (!/(salario|sueldo|base|paga\s+extra|plus|antig|transport|nocturn|festiv|complemento|tabla|nivel|grupo|categor[ií]a)/i.test(line)) continue;
+    const moneyMatches = line.match(/(-?\d{1,3}(?:[.,]\d{3})*[.,]\d{1,2}|-?\d+[.,]\d{1,2}|-?\d{4,})/g);
+    if (!moneyMatches || moneyMatches.length === 0) continue;
+    const token = moneyMatches[moneyMatches.length - 1];
+    const parsed = parseSpanishMoneyInline(token);
+    const literal = normLit(line).slice(0, 200) || 'tabla salarial';
+    const key = mapKey(literal);
+    const year = detectYearInline(line) ?? detectYearInline(norm);
+    const group = detectGroupInline(line) ?? detectGroupInline(norm);
+    const warnings = [...parsed.warnings];
+    if (year === null) warnings.push('year_undetected');
+    if (!group) warnings.push('professional_group_undetected');
+    if (parsed.ambiguous) warnings.push('amount_ambiguous');
+    if (parsed.amount === null) warnings.push('amount_unparsed');
+    findings.push({
+      finding_type: 'salary_table_candidate',
+      concept_literal_from_agreement: literal,
+      normalized_concept_key: key,
+      payroll_label: literal,
+      payslip_label: literal,
+      source_page: curPage ?? ctx.sourcePage ?? 'unknown',
+      source_article: ctx.sourceArticle,
+      source_annex: ctx.sourceAnnex,
+      source_excerpt: buildExcerptInline(line),
+      raw_text: line,
+      confidence: parsed.amount !== null && group && year !== null ? 'medium' : 'low',
+      finding_status: 'pending_review',
+      requires_human_review: true,
+      payload_json: {
+        extraction_method: 'text',
+        source_document: ctx.sourceDocument,
+        year,
+        professional_group: group,
+        amount: parsed.amount,
+        amount_raw: parsed.raw,
+        amount_ambiguous: parsed.ambiguous,
+        currency: 'EUR',
+        warnings,
+        row_confidence: parsed.amount !== null && group && year !== null ? 'medium' : 'low',
+        requires_manual_amount_review: true,
+      },
+    });
+  }
+  // Rule candidates
+  const ruleHints: Array<[RegExp, string]> = [
+    [/\bjornada\b/i, 'jornada'],
+    [/\bvacacion/i, 'vacaciones'],
+    [/\bpermiso|\blicencia/i, 'permisos'],
+    [/\bpreaviso/i, 'preaviso'],
+    [/\bprueba\b|periodo\s+de\s+prueba/i, 'periodo_prueba'],
+    [/\bincapacidad|\bit\b|\bbaja\b/i, 'incapacidad_temporal'],
+    [/\bhoras?\s+extra/i, 'horas_extra'],
+  ];
+  curPage = ctx.sourcePage;
+  for (const raw of lines) {
+    const pm = /^\s*(?:p[áa]gina|page)\s+(\d{1,4})\b/i.exec(raw);
+    if (pm) { curPage = pm[1]; continue; }
+    const line = raw.trim();
+    if (line.length < 6 || line.length > 400) continue;
+    for (const [rx, hint] of ruleHints) {
+      if (rx.test(line)) {
+        findings.push({
+          finding_type: 'rule_candidate',
+          concept_literal_from_agreement: normLit(line).slice(0, 200),
+          normalized_concept_key: mapKey(line),
+          payroll_label: normLit(line).slice(0, 200),
+          payslip_label: normLit(line).slice(0, 200),
+          source_page: curPage ?? ctx.sourcePage,
+          source_article: ctx.sourceArticle,
+          source_annex: ctx.sourceAnnex,
+          source_excerpt: buildExcerptInline(line),
+          raw_text: line,
+          confidence: 'low',
+          finding_status: 'pending_review',
+          requires_human_review: true,
+          payload_json: {
+            extraction_method: 'text',
+            source_document: ctx.sourceDocument,
+            rule_hint: hint,
+          },
+        });
+        break;
+      }
+    }
+  }
+  // OCR-required marker
+  if (looksOcrRequired(norm)) {
+    findings.push({
+      finding_type: 'ocr_required',
+      source_page: ctx.sourcePage,
+      source_article: ctx.sourceArticle,
+      source_annex: ctx.sourceAnnex,
+      source_excerpt: buildExcerptInline(norm.slice(0, 280)),
+      confidence: 'low',
+      finding_status: 'pending_review',
+      requires_human_review: true,
+      payload_json: {
+        extraction_method: 'text',
+        source_document: ctx.sourceDocument,
+        detector: 'low_printable_ratio',
+      },
+    });
+  }
+  return findings;
+}
+function buildManualRowsFindingsInline(
+  rows: Array<Record<string, unknown>>,
+  ctx: { sourcePage: string | null; sourceArticle: string | null; sourceAnnex: string | null; sourceDocument: string | null },
+): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  for (const r of rows) {
+    const raw = String(r.raw ?? '').trim();
+    if (!raw) continue;
+    const literal = (typeof r.concept_hint === 'string' && r.concept_hint.trim())
+      ? normLit(r.concept_hint as string)
+      : normLit(raw).slice(0, 200) || 'tabla salarial';
+    const key = mapKey(literal);
+    const parsed = parseSpanishMoneyInline(r.amount ?? '');
+    const year =
+      typeof r.year === 'number' ? Math.trunc(r.year)
+      : typeof r.year === 'string' && /^\d{4}$/.test(r.year) ? Number(r.year)
+      : detectYearInline(raw);
+    const group = (typeof r.professional_group === 'string' && r.professional_group.trim())
+      ? normLit(r.professional_group).slice(0, 60)
+      : detectGroupInline(raw);
+    const warnings = [...parsed.warnings];
+    if (year === null) warnings.push('year_undetected');
+    if (!group) warnings.push('professional_group_undetected');
+    if (parsed.ambiguous) warnings.push('amount_ambiguous');
+    if (parsed.amount === null) warnings.push('amount_unparsed');
+    out.push({
+      finding_type: 'salary_table_candidate',
+      concept_literal_from_agreement: literal,
+      normalized_concept_key: key,
+      payroll_label: literal,
+      payslip_label: literal,
+      source_page: String(r.page ?? ctx.sourcePage ?? '').trim() || 'unknown',
+      source_article: ctx.sourceArticle,
+      source_annex: ctx.sourceAnnex,
+      source_excerpt: buildExcerptInline(raw),
+      raw_text: raw,
+      confidence: parsed.amount !== null && group && year !== null ? 'medium' : 'low',
+      finding_status: 'pending_review',
+      requires_human_review: true,
+      payload_json: {
+        extraction_method: 'manual_pasted_table',
+        source_document: ctx.sourceDocument,
+        year,
+        professional_group: group ?? null,
+        level: typeof r.level === 'string' ? normLit(r.level).slice(0, 40) : null,
+        category: typeof r.category === 'string' ? normLit(r.category).slice(0, 60) : null,
+        area_code: typeof r.area_code === 'string' ? r.area_code : null,
+        area_name: typeof r.area_name === 'string' ? normLit(r.area_name).slice(0, 60) : null,
+        amount: parsed.amount,
+        amount_raw: parsed.raw,
+        amount_ambiguous: parsed.ambiguous,
+        currency: 'EUR',
+        warnings,
+        row_confidence: parsed.amount !== null && group && year !== null ? 'medium' : 'low',
+        requires_manual_amount_review: true,
+      },
+    });
+  }
+  return out;
+}
+async function sha256HexBytesInline(bytes: Uint8Array): Promise<string> {
+  const d = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 function appendJsonArray(prev: unknown, item: unknown): unknown[] {
@@ -894,6 +1243,185 @@ Deno.serve(async (req) => {
     }
 
     // ---------- mark_run_blocked ----------
+    if (action === 'mark_run_blocked') {
+      // (Handled below)
+    }
+
+    // ---------- run_ocr_or_text_extraction (B13.3C) ----------
+    // Controlled OCR / text extraction. Three explicit input modes:
+    //   - text_content (caller provides the text directly)
+    //   - document_url (must equal run.document_url or intake.document_url)
+    //   - manual_pasted_table (rows aportadas, NO OCR)
+    // Findings created are ALWAYS pending_review + requires_human_review=true.
+    // Never writes salary_tables real, never sets ready_for_payroll, never
+    // calls B11.3B / B8A / B8B / B9.
+    if (action === 'run_ocr_or_text_extraction') {
+      const p = RunOcrOrTextSchema.safeParse(body);
+      if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
+      const { data: run, error: rErr } = await adminClient
+        .from(T_RUNS)
+        .select('*')
+        .eq('id', p.data.run_id)
+        .maybeSingle();
+      if (rErr) return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+      if (!run) return mapError(404, 'ROW_NOT_FOUND', 'Run not found', action);
+
+      const allowedRunStatuses = ['queued', 'running', 'failed', 'blocked', 'completed_with_warnings'];
+      if (!allowedRunStatuses.includes(run.run_status)) {
+        return mapError(409, 'INVALID_TRANSITION', 'Run not runnable', action);
+      }
+
+      const { data: intake, error: iErr } = await adminClient
+        .from(T_INTAKE)
+        .select('id, status, document_url, document_hash, source_url')
+        .eq('id', run.intake_id)
+        .maybeSingle();
+      if (iErr) return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+      if (!intake) return mapError(404, 'ROW_NOT_FOUND', 'Intake not found', action);
+      if (intake.status !== 'ready_for_extraction') {
+        return mapError(409, 'INVALID_TRANSITION', 'Intake must be ready_for_extraction', action);
+      }
+
+      const ALLOWED_MODES = ['html_text', 'pdf_text', 'ocr_assisted', 'manual_csv', 'metadata_only'];
+      if (!ALLOWED_MODES.includes(run.extraction_mode)) {
+        return mapError(409, 'INVALID_TRANSITION', 'Run extraction_mode not compatible', action);
+      }
+
+      // Mark running
+      await adminClient
+        .from(T_RUNS)
+        .update({ run_status: 'running', started_at: run.started_at ?? nowIso })
+        .eq('id', run.id);
+
+      const ctx = {
+        sourcePage: (p.data as { source_page?: string }).source_page ?? null,
+        sourceArticle: (p.data as { source_article?: string }).source_article ?? null,
+        sourceAnnex: (p.data as { source_annex?: string }).source_annex ?? null,
+        sourceDocument: intake.document_hash ?? intake.document_url ?? null,
+      };
+
+      let findingsToInsert: Array<Record<string, unknown>> = [];
+      const warnings: string[] = [];
+      const blockers: Array<Record<string, unknown>> = [];
+      let runOutcome: 'completed' | 'completed_with_warnings' | 'blocked' = 'completed';
+
+      if (p.data.extraction_input_type === 'text_content') {
+        const norm = normalizeOcrTextInline(p.data.text_content);
+        findingsToInsert = buildOcrFindingsInline(norm, ctx);
+      } else if (p.data.extraction_input_type === 'manual_pasted_table') {
+        findingsToInsert = buildManualRowsFindingsInline(
+          p.data.rows as Array<Record<string, unknown>>,
+          ctx,
+        );
+      } else {
+        // document_url branch
+        const requested = p.data.document_url;
+        const expected = run.document_url ?? intake.document_url ?? null;
+        if (!expected || requested !== expected) {
+          await adminClient
+            .from(T_RUNS)
+            .update({
+              run_status: 'blocked',
+              completed_at: nowIso,
+              blockers_json: appendJsonArray(run.blockers_json, {
+                code: 'document_url_mismatch',
+                requested,
+                expected,
+                at: nowIso,
+              }),
+            })
+            .eq('id', run.id);
+          return mapError(409, 'INVALID_TRANSITION', 'document_url must match run/intake', action);
+        }
+        // Attempt to fetch document bytes; if anything fails or hash cannot
+        // be verified when intake.document_hash is set → blocker.
+        try {
+          const resp = await fetch(requested, { method: 'GET' });
+          if (!resp.ok) throw new Error(`fetch_status_${resp.status}`);
+          const buf = new Uint8Array(await resp.arrayBuffer());
+          if (intake.document_hash) {
+            const h = await sha256HexBytesInline(buf);
+            if (h !== intake.document_hash) {
+              blockers.push({ code: 'document_hash_unverified', at: nowIso });
+              runOutcome = 'blocked';
+            }
+          } else {
+            warnings.push('document_hash_missing_on_intake');
+          }
+          if (runOutcome !== 'blocked') {
+            // Best-effort UTF-8 decode (binary PDFs will yield low printable
+            // ratio → ocr_required marker by detector).
+            const text = new TextDecoder('utf-8', { fatal: false }).decode(buf);
+            const norm = normalizeOcrTextInline(text);
+            findingsToInsert = buildOcrFindingsInline(norm, ctx);
+          }
+        } catch {
+          blockers.push({ code: 'document_fetch_failed', at: nowIso });
+          runOutcome = 'blocked';
+        }
+      }
+
+      if (findingsToInsert.length === 0 && runOutcome !== 'blocked') {
+        warnings.push('no_findings_detected');
+      }
+
+      // Stamp run + intake into every finding.
+      const stamped = findingsToInsert.map((f) => ({
+        ...f,
+        extraction_run_id: run.id,
+        intake_id: run.intake_id,
+        agreement_id: run.agreement_id,
+        version_id: run.version_id,
+      }));
+
+      if (stamped.length > 0) {
+        const { error: fInsErr } = await adminClient.from(T_FINDINGS).insert(stamped);
+        if (fInsErr) {
+          await adminClient
+            .from(T_RUNS)
+            .update({
+              run_status: 'failed',
+              completed_at: nowIso,
+              blockers_json: appendJsonArray(run.blockers_json, {
+                code: 'findings_insert_failed',
+                at: nowIso,
+              }),
+            })
+            .eq('id', run.id);
+          return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+        }
+      }
+
+      let finalStatus: 'completed' | 'completed_with_warnings' | 'blocked';
+      if (runOutcome === 'blocked') finalStatus = 'blocked';
+      else if (warnings.length > 0) finalStatus = 'completed_with_warnings';
+      else finalStatus = 'completed';
+
+      await adminClient
+        .from(T_RUNS)
+        .update({
+          run_status: finalStatus,
+          completed_at: nowIso,
+          summary_json: {
+            findings_count: stamped.length,
+            extraction_input_type: p.data.extraction_input_type,
+          },
+          warnings_json: warnings.map((w) => ({ code: w, at: nowIso })),
+          blockers_json:
+            blockers.length > 0
+              ? appendJsonArray(run.blockers_json, ...blockers as unknown[])
+              : run.blockers_json,
+        })
+        .eq('id', run.id);
+
+      return ok(action, {
+        run_id: run.id,
+        run_status: finalStatus,
+        findings_count: stamped.length,
+      });
+    }
+
+    // ---------- mark_run_blocked (real handler) ----------
     if (action === 'mark_run_blocked') {
       const p = MarkRunBlockedSchema.safeParse(body);
       if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);

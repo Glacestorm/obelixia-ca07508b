@@ -141,6 +141,39 @@ export interface UseAgreementExtractionRunnerResult {
     }>
   >;
   rejectFinding: (input: { finding_id: string; reason: string }) => Promise<ActionResult>;
+  runOcrOrTextExtraction: (
+    input:
+      | {
+          run_id: string;
+          extraction_input_type: 'text_content';
+          text_content: string;
+          source_page?: string;
+          source_article?: string;
+          source_annex?: string;
+        }
+      | {
+          run_id: string;
+          extraction_input_type: 'document_url';
+          document_url: string;
+          source_page?: string;
+          source_article?: string;
+          source_annex?: string;
+        }
+      | {
+          run_id: string;
+          extraction_input_type: 'manual_pasted_table';
+          rows: Array<Record<string, unknown>>;
+          source_page?: string;
+          source_article?: string;
+          source_annex?: string;
+        },
+  ) => Promise<
+    ActionResult<{
+      run_id: string;
+      run_status: ExtractionRunStatus;
+      findings_count: number;
+    }>
+  >;
 }
 
 function unauthorized(): { ok: false; error: { code: string; message: string } } {
@@ -301,6 +334,61 @@ export function useAgreementExtractionRunner(
     [callAndRefresh],
   );
 
+  const runOcrOrTextExtraction = useCallback(
+    async (
+      input:
+        | {
+            run_id: string;
+            extraction_input_type: 'text_content';
+            text_content: string;
+            source_page?: string;
+            source_article?: string;
+            source_annex?: string;
+          }
+        | {
+            run_id: string;
+            extraction_input_type: 'document_url';
+            document_url: string;
+            source_page?: string;
+            source_article?: string;
+            source_annex?: string;
+          }
+        | {
+            run_id: string;
+            extraction_input_type: 'manual_pasted_table';
+            rows: Array<Record<string, unknown>>;
+            source_page?: string;
+            source_article?: string;
+            source_annex?: string;
+          },
+    ) => {
+      if (input.extraction_input_type === 'text_content' && (!input.text_content || input.text_content.trim().length === 0)) {
+        return {
+          ok: false as const,
+          error: { code: 'client_validation', message: 'text_content is required' },
+        };
+      }
+      if (input.extraction_input_type === 'document_url' && !input.document_url) {
+        return {
+          ok: false as const,
+          error: { code: 'client_validation', message: 'document_url is required' },
+        };
+      }
+      if (input.extraction_input_type === 'manual_pasted_table' && (!Array.isArray(input.rows) || input.rows.length === 0)) {
+        return {
+          ok: false as const,
+          error: { code: 'client_validation', message: 'rows are required' },
+        };
+      }
+      return callAndRefresh<{
+        run_id: string;
+        run_status: ExtractionRunStatus;
+        findings_count: number;
+      }>({ action: 'run_ocr_or_text_extraction', ...input });
+    },
+    [callAndRefresh],
+  );
+
   return {
     runs,
     findings,
@@ -314,6 +402,7 @@ export function useAgreementExtractionRunner(
     markRunBlocked,
     acceptFindingToStaging,
     rejectFinding,
+    runOcrOrTextExtraction,
   };
 }
 
