@@ -339,7 +339,8 @@ export function mapExtractionFindingToSalaryStagingRow(
 ): Record<string, unknown> {
   const validation = validateFindingStagingReadiness(f);
   if (!validation.ok) {
-    throw new Error(`${validation.code}:${validation.reason}`);
+    const v = validation as ValidationFailure;
+    throw new Error(`${v.code}:${v.reason}`);
   }
   const method = options.extractionMethod ?? inferExtractionMethodFromFinding(f);
   const approval_mode = inferApprovalModeFromFinding(f, options);
