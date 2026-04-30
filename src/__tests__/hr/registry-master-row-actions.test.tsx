@@ -16,12 +16,15 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import React from 'react';
 
-const insertSpy = vi.fn();
-const updateSpy = vi.fn();
-const deleteSpy = vi.fn();
-const upsertSpy = vi.fn();
-const rpcSpy = vi.fn();
-const invokeSpy = vi.fn();
+const spies = vi.hoisted(() => ({
+  insertSpy: vi.fn(),
+  updateSpy: vi.fn(),
+  deleteSpy: vi.fn(),
+  upsertSpy: vi.fn(),
+  rpcSpy: vi.fn(),
+  invokeSpy: vi.fn(),
+}));
+const { insertSpy, updateSpy, deleteSpy, upsertSpy, rpcSpy, invokeSpy } = spies;
 
 vi.mock('@/integrations/supabase/client', () => {
   const order = vi.fn().mockResolvedValue({
@@ -65,17 +68,17 @@ vi.mock('@/integrations/supabase/client', () => {
   const select = vi.fn().mockReturnValue({ order });
   const from = vi.fn().mockReturnValue({
     select,
-    insert: insertSpy,
-    update: updateSpy,
-    delete: deleteSpy,
-    upsert: upsertSpy,
+    insert: spies.insertSpy,
+    update: spies.updateSpy,
+    delete: spies.deleteSpy,
+    upsert: spies.upsertSpy,
   });
   return {
     supabase: {
       auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
-      functions: { invoke: invokeSpy },
+      functions: { invoke: spies.invokeSpy },
       from,
-      rpc: rpcSpy,
+      rpc: spies.rpcSpy,
     },
   };
 });
