@@ -95,15 +95,16 @@ export function useTicNacSalaryTableStaging(
       setRows([]);
       setAudit([]);
       setError(null);
-    } else if (r.success === true) {
+    } else if (r.success) {
       setAuthRequired(false);
       setRows(r.data?.rows ?? []);
       setAudit(r.data?.audit ?? []);
     } else {
+      const fail = r as { success: false; error: { code: string; message: string } };
       setAuthRequired(false);
       setRows([]);
       setAudit([]);
-      setError(r.error);
+      setError(fail.error);
     }
     setIsLoading(false);
   }, [args.agreementId, args.versionId, args.status]);
