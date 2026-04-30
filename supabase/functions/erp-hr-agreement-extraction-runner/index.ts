@@ -921,16 +921,92 @@ Deno.serve(async (req) => {
     }
 
     // ---------- accept_finding_to_staging ----------
-    // SAFETY: deferred to B13.3B. Never writes staging in B13.3A.
+    // B13.3B.1: maps a reviewable finding into a salary-table staging row
+    // PENDING human review. Never writes salary_tables real, never sets
+    // ready_for_payroll, never auto-approves OCR by confidence.
     if (action === 'accept_finding_to_staging') {
       const p = AcceptFindingSchema.safeParse(body);
       if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
+
+      const { data: finding, error: fErr } = await adminClient
+        .from(T_FINDINGS)
+        .select('*')
+        .eq('id', p.data.finding_id)
+        .maybeSingle();
+      if (fErr) return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+      if (!finding) return mapError(404, 'ROW_NOT_FOUND', 'Finding not found', action);
+
+      // Try to enrich source_document from intake document_hash if available.
+      let sourceDocFromIntake: string | null = null;
+      if (finding.intake_id) {
+        const { data: intake } = await adminClient
+          .from(T_INTAKE)
+          .select('document_hash')
+          .eq('id', finding.intake_id)
+          .maybeSingle();
+        if (intake?.document_hash && typeof intake.document_hash === 'string') {
+          sourceDocFromIntake = intake.document_hash;
+        }
+      }
+
+      const validation = validateFindingForStagingInline(finding as Record<string, unknown>);
+      if (!validation.ok) {
+        const status = validation.code === 'APPROVAL_BLOCKED' ? 409 : 422;
+        return mapError(status, validation.code, validation.reason, action);
+      }
+
+      let stagingShape: Record<string, unknown>;
+      try {
+        stagingShape = mapFindingToStagingInline(finding as Record<string, unknown>, {
+          approval_dual: p.data.options?.approval_dual === true,
+          sourceDocumentFromIntake: sourceDocFromIntake,
+        });
+      } catch {
+        return mapError(409, 'APPROVAL_BLOCKED', 'mapper_error', action);
+      }
+
+      const content_hash = await computeStagingContentHash(stagingShape);
+      const { data: insertedRow, error: insErr } = await adminClient
+        .from(T_STAGING)
+        .insert({ ...stagingShape, content_hash })
+        .select('*')
+        .single();
+      if (insErr) return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
+
+      // Audit insert (append-only).
+      await adminClient.from(T_STAGING_AUDIT).insert({
+        staging_row_id: (insertedRow as { id: string }).id,
+        agreement_id: finding.agreement_id,
+        version_id: finding.version_id,
+        action: 'create',
+        actor_id: userId,
+        snapshot_json: insertedRow as Record<string, unknown>,
+        content_hash,
+      });
+
+      // Update finding status (status flip only, no delete).
+      const newPayload =
+        finding.payload_json && typeof finding.payload_json === 'object' && !Array.isArray(finding.payload_json)
+          ? { ...(finding.payload_json as Record<string, unknown>) }
+          : {};
+      (newPayload as Record<string, unknown>).accepted_to_staging = {
+        staging_row_id: (insertedRow as { id: string }).id,
+        by: userId,
+        at: nowIso,
+      };
+      await adminClient
+        .from(T_FINDINGS)
+        .update({
+          finding_status: 'accepted_to_staging',
+          payload_json: newPayload,
+        })
+        .eq('id', finding.id);
+
       return ok(action, {
-        deferred: true,
-        code: 'ACCEPT_TO_STAGING_DEFERRED_TO_B13_3B',
-        finding_id: p.data.finding_id,
-        message:
-          'accept_finding_to_staging is intentionally deferred to B13.3B; no staging row was created.',
+        finding_id: finding.id,
+        staging_row_id: (insertedRow as { id: string }).id,
+        validation_status: stagingShape.validation_status,
+        approval_mode: stagingShape.approval_mode,
       });
     }
 
