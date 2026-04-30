@@ -4,11 +4,10 @@
  *
  * PURE module:
  *  - No Supabase, no fetch, no React, no Deno.
- *  - No `.from(`, `.insert(`, `.update(`, `.delete(`, `.upsert(`,
- *    no `supabase.functions.invoke`, no `service_role`.
- *  - No imports from `useESPayrollBridge`, `payrollEngine`,
- *    `payslipEngine`, `salaryNormalizer`, `agreementSalaryResolver`.
- *  - Never sets `ready_for_payroll`. Never mutates flags.
+ *  - No DB writes, no edge-function calls, no privileged credentials.
+ *  - No imports from payroll, payslip, normalizer, resolver or bridge
+ *    modules. See B11.2B static guard test for the enforced denylist.
+ *  - Never mutates the payroll-readiness flag. Never mutates pilot flags.
  *  - Output rows always carry `requires_human_review = true` and
  *    `validation_status` ∈ {`pending_human_check`, `human_reviewed`}.
  *
