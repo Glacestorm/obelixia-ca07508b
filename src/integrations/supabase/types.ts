@@ -30020,6 +30020,72 @@ export type Database = {
           },
         ]
       }
+      erp_hr_collective_agreement_source_watch_queue: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          detected_agreement_name: string | null
+          detected_cnae: string[] | null
+          detected_regcon: string | null
+          discovered_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          dismissed_reason: string | null
+          document_hash: string | null
+          document_url: string | null
+          id: string
+          jurisdiction: string | null
+          notes: string | null
+          publication_date: string | null
+          source: string
+          source_url: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          detected_agreement_name?: string | null
+          detected_cnae?: string[] | null
+          detected_regcon?: string | null
+          discovered_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          dismissed_reason?: string | null
+          document_hash?: string | null
+          document_url?: string | null
+          id?: string
+          jurisdiction?: string | null
+          notes?: string | null
+          publication_date?: string | null
+          source: string
+          source_url: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          detected_agreement_name?: string | null
+          detected_cnae?: string[] | null
+          detected_regcon?: string | null
+          discovered_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          dismissed_reason?: string | null
+          document_hash?: string | null
+          document_url?: string | null
+          id?: string
+          jurisdiction?: string | null
+          notes?: string | null
+          publication_date?: string | null
+          source?: string
+          source_url?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_collective_agreement_staging_audit: {
         Row: {
           action: string
