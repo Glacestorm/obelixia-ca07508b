@@ -4,15 +4,22 @@
  */
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
+import { writeFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 function q(sql: string): string {
+  const file = join(tmpdir(), `q_${Date.now()}_${Math.random().toString(36).slice(2)}.sql`);
   try {
-    return execSync(
-      `psql -At -c ${JSON.stringify(sql)}`,
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-    ).trim();
+    writeFileSync(file, sql);
+    return execSync(`psql -At -f ${file}`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
   } catch {
     return '';
+  } finally {
+    try { unlinkSync(file); } catch { /* noop */ }
   }
 }
 
