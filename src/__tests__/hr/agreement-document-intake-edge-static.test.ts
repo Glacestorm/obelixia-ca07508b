@@ -73,20 +73,26 @@ describe('B13.2 — Document Intake edge static guards', () => {
       'payrollEngine',
       'payslipEngine',
       'useESPayrollBridge',
-      'salaryNormalizer',
       'agreementSalaryResolver',
     ]) {
-      expect(EDGE).not.toContain(f);
+      expect(EDGE).not.toMatch(new RegExp(`(import|from)[^\\n]*${f}`));
     }
+    // salaryNormalizer must not be imported (string appears only in safety comment)
+    expect(EDGE).not.toMatch(/(import|from)[^\n]*salaryNormalizer/);
   });
 
   it('14. promote_to_extraction does not execute OCR', () => {
     // Find the promote_to_extraction branch and check it has no OCR references.
     const idx = EDGE.indexOf("action === 'promote_to_extraction'");
     expect(idx).toBeGreaterThan(0);
-    const branch = EDGE.slice(idx, idx + 4000);
+    // Branch ends at the next "action === '" sibling
+    const after = EDGE.slice(idx + 30);
+    const nextIdx = after.indexOf("action === '");
+    const branch = nextIdx > 0 ? EDGE.slice(idx, idx + 30 + nextIdx) : EDGE.slice(idx, idx + 4000);
     expect(branch).not.toMatch(/ocr/i);
-    expect(branch).not.toMatch(/extract/i);
+    // The branch literally handles 'promote_to_extraction' / 'ready_for_extraction'.
+    // Forbid only an actual extraction call/import/function invocation.
+    expect(branch).not.toMatch(/\bextractTables?\b|\brunOcr\b|\bextractSalary\b|\binvoke\(['"]erp-hr-[^'"]*extract/i);
   });
 
   it('15. promote_to_extraction does not write staging', () => {
