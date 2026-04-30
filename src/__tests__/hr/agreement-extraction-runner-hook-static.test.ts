@@ -59,4 +59,8 @@ describe('B13.3A — Extraction Runner hook static guards', () => {
     expect(HOOK).not.toMatch(/ACCEPT_TO_STAGING_DEFERRED_TO_B13_3B/);
     expect(HOOK).toMatch(/approval_dual\??:\s*boolean/);
   });
+  it('12. runOcrOrTextExtraction is exposed (B13.3C)', () => {
+    expect(HOOK).toMatch(/runOcrOrTextExtraction/);
+    expect(HOOK).toMatch(/action:\s*['"]run_ocr_or_text_extraction['"]/);
+  });
 });
