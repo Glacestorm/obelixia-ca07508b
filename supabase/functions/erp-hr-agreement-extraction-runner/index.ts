@@ -280,6 +280,245 @@ function appendJsonArray(prev: unknown, item: unknown): unknown[] {
   return arr;
 }
 
+// ---------------------------------------------------------------
+// B13.3B.1 — Inline mirror of agreementFindingToStagingMapper.ts
+// (edges cannot import from src/). Pure & deterministic.
+// Hard rules: no inventar importes, no human_approved, no
+// ready_for_payroll, no salary_tables_loaded.
+// ---------------------------------------------------------------
+const ALLOWED_STAGING_FINDING_TYPES = ['salary_table_candidate', 'concept_candidate'] as const;
+
+function nonEmptyStr(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+function toNum(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v))) return Number(v);
+  return null;
+}
+function nonNeg(v: unknown): number | null {
+  const n = toNum(v);
+  if (n === null) return null;
+  if (n < 0) throw new Error('NEGATIVE_AMOUNT');
+  return n;
+}
+const KEYWORDS_INLINE: Array<[RegExp, RegExp]> = [
+  [/transport/, /transport/],
+  [/nocturn/, /nocturn/],
+  [/festiv/, /festiv/],
+  [/antigu?edad|antig/, /antigu?edad|antig/],
+  [/dieta/, /dieta/],
+  [/kilomet/, /kilomet/],
+  [/responsabilidad/, /responsabilidad/],
+  [/convenio/, /convenio/],
+];
+function preservesKeywordInline(literal: string, payslip: string): boolean {
+  const l = strip(literal.toLowerCase());
+  const p = strip(payslip.toLowerCase());
+  for (const [needle, must] of KEYWORDS_INLINE) {
+    if (needle.test(l) && !must.test(p)) return false;
+  }
+  return true;
+}
+function inferMethodInline(f: Record<string, unknown>): 'ocr' | 'manual_csv' | 'manual_form' {
+  const payload = (f.payload_json ?? {}) as Record<string, unknown>;
+  const hint = String(payload.extraction_method ?? '').toLowerCase();
+  if (hint === 'ocr') return 'ocr';
+  if (hint === 'manual_csv') return 'manual_csv';
+  if (hint === 'manual_form') return 'manual_form';
+  if (f.confidence === 'low' && payload.row_confidence) return 'ocr';
+  return 'manual_form';
+}
+function mapAmountsInline(payload: Record<string, unknown> | null | undefined) {
+  const p = (payload ?? {}) as Record<string, unknown>;
+  const yearN = toNum(p.year);
+  return {
+    year: yearN !== null ? Math.trunc(yearN) : null,
+    professional_group: nonEmptyStr(p.professional_group) ? (p.professional_group as string) : null,
+    level: nonEmptyStr(p.level) ? (p.level as string) : null,
+    category: nonEmptyStr(p.category) ? (p.category as string) : null,
+    area_code: nonEmptyStr(p.area_code) ? (p.area_code as string) : null,
+    area_name: nonEmptyStr(p.area_name) ? (p.area_name as string) : null,
+    salary_base_annual: nonNeg(p.salary_base_annual),
+    salary_base_monthly: nonNeg(p.salary_base_monthly),
+    extra_pay_amount: nonNeg(p.extra_pay_amount),
+    plus_convenio_annual: nonNeg(p.plus_convenio_annual),
+    plus_convenio_monthly: nonNeg(p.plus_convenio_monthly),
+    plus_transport: nonNeg((p as { plus_transport?: unknown; amount_transport?: unknown }).plus_transport ?? (p as { amount_transport?: unknown }).amount_transport),
+    plus_antiguedad: nonNeg(p.plus_antiguedad),
+    other_amount: nonNeg((p as { other_amount?: unknown; amount?: unknown }).other_amount ?? (p as { amount?: unknown }).amount),
+    currency: nonEmptyStr(p.currency) ? (p.currency as string).toUpperCase() : 'EUR',
+    row_confidence: nonEmptyStr(p.row_confidence) ? (p.row_confidence as string) : null,
+    taxable_irpf_hint: typeof p.taxable_irpf_hint === 'boolean' ? p.taxable_irpf_hint : null,
+    cotization_included_hint:
+      typeof p.cotization_included_hint === 'boolean' ? p.cotization_included_hint : null,
+    cra_code_suggested: nonEmptyStr(p.cra_code_suggested) ? (p.cra_code_suggested as string) : null,
+  };
+}
+function validateFindingForStagingInline(
+  f: Record<string, unknown>,
+): { ok: true } | { ok: false; code: string; reason: string } {
+  const t = String(f.finding_type ?? '');
+  if (!(ALLOWED_STAGING_FINDING_TYPES as readonly string[]).includes(t)) {
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'finding_type_not_allowed' };
+  }
+  const status = String(f.finding_status ?? '');
+  if (status !== 'pending_review' && status !== 'needs_correction') {
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'finding_status_not_review_ready' };
+  }
+  if (!nonEmptyStr(f.agreement_id))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_agreement_id' };
+  if (!nonEmptyStr(f.version_id))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_version_id' };
+  if (!nonEmptyStr(f.source_page))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_source_page' };
+  if (!nonEmptyStr(f.source_excerpt))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_source_excerpt' };
+  if (!nonEmptyStr(f.concept_literal_from_agreement))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_concept_literal' };
+  if (!nonEmptyStr(f.normalized_concept_key))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_normalized_key' };
+  if (!nonEmptyStr(f.payslip_label))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_payslip_label' };
+  if (f.requires_human_review !== true)
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'requires_human_review_must_be_true' };
+  if (!preservesKeywordInline(String(f.concept_literal_from_agreement), String(f.payslip_label)))
+    return { ok: false, code: 'APPROVAL_BLOCKED', reason: 'literal_not_preserved' };
+  let amounts;
+  try {
+    amounts = mapAmountsInline((f.payload_json ?? {}) as Record<string, unknown>);
+  } catch {
+    return { ok: false, code: 'APPROVAL_BLOCKED', reason: 'negative_amount' };
+  }
+  if (amounts.year === null)
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_year' };
+  if (!amounts.professional_group)
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_professional_group' };
+  const hasAny =
+    amounts.salary_base_annual !== null ||
+    amounts.salary_base_monthly !== null ||
+    amounts.extra_pay_amount !== null ||
+    amounts.plus_convenio_annual !== null ||
+    amounts.plus_convenio_monthly !== null ||
+    amounts.plus_transport !== null ||
+    amounts.plus_antiguedad !== null ||
+    amounts.other_amount !== null;
+  if (!hasAny)
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'missing_amount_field' };
+  const method = inferMethodInline(f);
+  if (method === 'ocr' && !nonEmptyStr(amounts.row_confidence))
+    return { ok: false, code: 'FINDING_NOT_STAGING_READY', reason: 'ocr_missing_row_confidence' };
+  return { ok: true };
+}
+function mapFindingToStagingInline(
+  f: Record<string, unknown>,
+  options: { approval_dual?: boolean; sourceDocumentFromIntake?: string | null } = {},
+): Record<string, unknown> {
+  const method = inferMethodInline(f);
+  const dual = options.approval_dual === true;
+  const approval_mode =
+    method === 'ocr'
+      ? dual
+        ? 'ocr_dual_human_approval'
+        : 'ocr_single_human_approval'
+      : dual
+        ? 'manual_upload_dual_approval'
+        : 'manual_upload_single_approval';
+  const validation_status = method === 'ocr' ? 'ocr_pending_review' : 'manual_pending_review';
+  const amounts = mapAmountsInline((f.payload_json ?? {}) as Record<string, unknown>);
+  const payload = (f.payload_json ?? {}) as Record<string, unknown>;
+  const sourceDoc =
+    options.sourceDocumentFromIntake ??
+    (nonEmptyStr(payload.source_document) ? (payload.source_document as string) : null) ??
+    (nonEmptyStr(payload.document_hash) ? (payload.document_hash as string) : null) ??
+    'extraction_finding';
+  let row_confidence = amounts.row_confidence;
+  if (method === 'ocr' && (!row_confidence || row_confidence.length === 0)) {
+    row_confidence = 'ocr_low';
+  }
+  return {
+    agreement_id: f.agreement_id,
+    version_id: f.version_id,
+    source_document: sourceDoc,
+    source_page: String(f.source_page ?? '').trim(),
+    source_excerpt: String(f.source_excerpt ?? '').trim(),
+    source_article: nonEmptyStr(f.source_article) ? f.source_article : null,
+    source_annex: nonEmptyStr(f.source_annex) ? f.source_annex : null,
+    ocr_raw_text: nonEmptyStr((f as { raw_text?: unknown }).raw_text)
+      ? (f as { raw_text: string }).raw_text
+      : null,
+    extraction_method: method,
+    approval_mode,
+    year: amounts.year,
+    area_code: amounts.area_code,
+    area_name: amounts.area_name,
+    professional_group: amounts.professional_group,
+    level: amounts.level,
+    category: amounts.category,
+    concept_literal_from_agreement: f.concept_literal_from_agreement,
+    normalized_concept_key: f.normalized_concept_key,
+    payroll_label: nonEmptyStr(f.payroll_label)
+      ? f.payroll_label
+      : f.concept_literal_from_agreement,
+    payslip_label: f.payslip_label,
+    cra_mapping_status: 'pending',
+    cra_code_suggested: amounts.cra_code_suggested,
+    taxable_irpf_hint: amounts.taxable_irpf_hint,
+    cotization_included_hint: amounts.cotization_included_hint,
+    salary_base_annual: amounts.salary_base_annual,
+    salary_base_monthly: amounts.salary_base_monthly,
+    extra_pay_amount: amounts.extra_pay_amount,
+    plus_convenio_annual: amounts.plus_convenio_annual,
+    plus_convenio_monthly: amounts.plus_convenio_monthly,
+    plus_transport: amounts.plus_transport,
+    plus_antiguedad: amounts.plus_antiguedad,
+    other_amount: amounts.other_amount,
+    currency: amounts.currency || 'EUR',
+    row_confidence,
+    requires_human_review: true,
+    validation_status,
+  };
+}
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return '[' + value.map(stableStringify).join(',') + ']';
+  const obj = value as Record<string, unknown>;
+  const keys = Object.keys(obj).sort();
+  return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
+}
+async function sha256HexInline(text: string): Promise<string> {
+  const bytes = new TextEncoder().encode(text);
+  const d = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(d))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+async function computeStagingContentHash(row: Record<string, unknown>): Promise<string> {
+  const subset = {
+    agreement_id: row.agreement_id,
+    version_id: row.version_id,
+    year: row.year,
+    area_code: row.area_code ?? null,
+    professional_group: row.professional_group,
+    level: row.level ?? null,
+    category: row.category ?? null,
+    normalized_concept_key: row.normalized_concept_key,
+    concept_literal_from_agreement: row.concept_literal_from_agreement,
+    payroll_label: row.payroll_label,
+    payslip_label: row.payslip_label,
+    salary_base_annual: row.salary_base_annual ?? null,
+    salary_base_monthly: row.salary_base_monthly ?? null,
+    extra_pay_amount: row.extra_pay_amount ?? null,
+    plus_convenio_annual: row.plus_convenio_annual ?? null,
+    plus_convenio_monthly: row.plus_convenio_monthly ?? null,
+    plus_transport: row.plus_transport ?? null,
+    plus_antiguedad: row.plus_antiguedad ?? null,
+    other_amount: row.other_amount ?? null,
+    currency: row.currency ?? 'EUR',
+  };
+  return await sha256HexInline(stableStringify(subset));
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS')
     return new Response(null, { headers: corsHeaders });
