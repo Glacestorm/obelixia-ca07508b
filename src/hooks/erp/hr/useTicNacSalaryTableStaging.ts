@@ -4,11 +4,11 @@
  * Hard rules:
  *  - Calls only `supabase.functions.invoke('erp-hr-agreement-staging', ...)`.
  *  - NEVER uses `.from(...).insert/.update/.delete/.upsert`.
- *  - NEVER uses service_role.
+ *  - NEVER uses any privileged service key.
  *  - Auth-safe: when no session token, returns `authRequired=true`
  *    with empty data, never throws.
- *  - No imports from useESPayrollBridge / payrollEngine / payslipEngine
- *    / salaryNormalizer / agreementSalaryResolver.
+ *  - No imports from the payroll bridge, payroll/payslip engines,
+ *    salary normalizer, or agreement salary resolver modules.
  */
 
 import { useCallback, useEffect, useState } from 'react';
