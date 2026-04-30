@@ -537,3 +537,6 @@ verify_jwt = true
 
 [functions.erp-hr-agreement-source-watcher]
 verify_jwt = true
+
+[functions.erp-hr-agreement-document-intake]
+verify_jwt = true
