@@ -10,8 +10,9 @@
  *    empty data; never throws.
  *  - No imports from the payroll bridge / payroll engine / payslip engine /
  *    salary normalizer / agreement salary resolver.
- *  - acceptFindingToStaging always returns the deferred sentinel from
- *    the edge in B13.3A.
+ *  - acceptFindingToStaging (B13.3B.1) creates a staging row PENDING
+ *    human review via the edge. NEVER writes salary_tables real, NEVER
+ *    sets ready_for_payroll, NEVER auto-approves.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -130,7 +131,15 @@ export interface UseAgreementExtractionRunnerResult {
   markRunBlocked: (input: { run_id: string; reason: string }) => Promise<ActionResult>;
   acceptFindingToStaging: (
     finding_id: string,
-  ) => Promise<ActionResult<{ deferred: true; code: string; finding_id: string; message: string }>>;
+    options?: { approval_dual?: boolean },
+  ) => Promise<
+    ActionResult<{
+      finding_id: string;
+      staging_row_id: string;
+      validation_status: string;
+      approval_mode: string;
+    }>
+  >;
   rejectFinding: (input: { finding_id: string; reason: string }) => Promise<ActionResult>;
 }
 
@@ -264,13 +273,17 @@ export function useAgreementExtractionRunner(
   );
 
   const acceptFindingToStaging = useCallback(
-    (finding_id: string) =>
+    (finding_id: string, options?: { approval_dual?: boolean }) =>
       callAndRefresh<{
-        deferred: true;
-        code: string;
         finding_id: string;
-        message: string;
-      }>({ action: 'accept_finding_to_staging', finding_id }),
+        staging_row_id: string;
+        validation_status: string;
+        approval_mode: string;
+      }>({
+        action: 'accept_finding_to_staging',
+        finding_id,
+        ...(options ? { options } : {}),
+      }),
     [callAndRefresh],
   );
 
