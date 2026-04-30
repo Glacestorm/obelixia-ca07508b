@@ -6,6 +6,7 @@ import AgreementStatusBadges from './AgreementStatusBadges';
 import { deriveIncorporationFlow } from '@/lib/hr/agreementIncorporationFlow';
 import AgreementRegistryMatchSuggestions from './AgreementRegistryMatchSuggestions';
 import { useAgreementRegistryMatchAdvisor } from '@/hooks/erp/hr/useAgreementRegistryMatchAdvisor';
+import { evaluateGenericTerritorialBlocker } from '@/lib/hr/agreementGenericTerritorialBlocker';
 
 interface Props {
   row: UnifiedAgreementRow | null;
@@ -32,6 +33,7 @@ export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange, onStartW
   const contextMessage = buildContextMessage(row);
   const flow = deriveIncorporationFlow(row);
   const advisor = useAgreementRegistryMatchAdvisor(row);
+  const territorialBlocker = evaluateGenericTerritorialBlocker(row);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" data-testid="agreement-detail-drawer">
@@ -45,13 +47,36 @@ export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange, onStartW
         <div className="mt-4 space-y-4 text-sm">
           <AgreementStatusBadges badges={row.badges} />
 
+          {territorialBlocker.isGenericNonTerritorial && (
+            <div
+              className="p-3 rounded-md border border-destructive/40 bg-destructive/10 space-y-2"
+              data-testid="agreement-territorial-blocker"
+            >
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="destructive"
+                  data-testid="agreement-territorial-badge"
+                >
+                  {territorialBlocker.badge}
+                </Badge>
+                <span className="font-semibold">No activable como convenio estatal genérico</span>
+              </div>
+              {territorialBlocker.reason && (
+                <p className="text-muted-foreground">{territorialBlocker.reason}</p>
+              )}
+              {territorialBlocker.recommendation && (
+                <p className="text-muted-foreground">{territorialBlocker.recommendation}</p>
+              )}
+            </div>
+          )}
+
           {contextMessage && (
             <div className="p-3 rounded-md border bg-muted/30 text-muted-foreground">
               {contextMessage}
             </div>
           )}
 
-          {flow.ctaLabel && (
+          {flow.ctaLabel && !territorialBlocker.suppressAdvanceCtas && (
             <div>
               <Button
                 type="button"
@@ -98,7 +123,7 @@ export function AgreementUnifiedDetailDrawer({ row, open, onOpenChange, onStartW
             </section>
           )}
 
-          {advisor.enabled && !advisor.authRequired && (
+          {advisor.enabled && !advisor.authRequired && !territorialBlocker.suppressAdvanceCtas && (
             <AgreementRegistryMatchSuggestions
               loading={advisor.loading}
               candidates={advisor.candidates}
