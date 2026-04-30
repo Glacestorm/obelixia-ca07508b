@@ -97,8 +97,8 @@ describe.runIf(pgAvailable())('B11.2C.1 — staging schema contract', () => {
          FROM pg_class WHERE relname IN ('${STAGING}','${AUDIT}')
          ORDER BY relname`,
     );
-    expect(r).toContain(`${AUDIT}|t|t`);
-    expect(r).toContain(`${STAGING}|t|t`);
+    expect(r).toMatch(new RegExp(`${AUDIT}\\|(t|true)\\|(t|true)`));
+    expect(r).toMatch(new RegExp(`${STAGING}\\|(t|true)\\|(t|true)`));
   });
 
   it('staging has no DELETE policy', () => {
