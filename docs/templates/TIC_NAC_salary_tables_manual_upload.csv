@@ -1,0 +1,2 @@
+agreement_id,version_id,year,area_code,area_name,professional_group,level,category,salary_base_annual,salary_base_monthly,extra_pay_amount,plus_convenio_annual,plus_convenio_monthly,plus_transport,plus_antiguedad,currency,source_document,source_page,source_excerpt,source_table,row_confidence,requires_human_review,validation_status,notes
+1e665f80-3f04-4939-a448-4b1a2a4525e0,9739379b-68e5-4ffd-8209-d5a1222fefc2,2025,,,,,,,,,,,,,EUR,BOE-A-2025-7766,,,,,true,pending_human_check,
