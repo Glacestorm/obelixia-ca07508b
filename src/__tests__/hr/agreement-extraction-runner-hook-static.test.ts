@@ -53,4 +53,10 @@ describe('B13.3A — Extraction Runner hook static guards', () => {
   it('10. pilot allow-list is still empty', () => {
     expect(REGISTRY_PILOT_SCOPE_ALLOWLIST).toEqual([]);
   });
+  it('11. acceptFindingToStaging is exposed and forwards options', () => {
+    expect(HOOK).toMatch(/acceptFindingToStaging/);
+    expect(HOOK).toMatch(/action:\s*['"]accept_finding_to_staging['"]/);
+    expect(HOOK).not.toMatch(/ACCEPT_TO_STAGING_DEFERRED_TO_B13_3B/);
+    expect(HOOK).toMatch(/approval_dual\??:\s*boolean/);
+  });
 });

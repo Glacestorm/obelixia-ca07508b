@@ -79,13 +79,21 @@ describe('B13.3A — Extraction Runner edge static guards', () => {
     // No OCR runner call/import
     expect(branch).not.toMatch(/\brunOcr\b|\bextractTablesOcr\b|\binvoke\(['"][^'"]*ocr[^'"]*['"]/i);
   });
-  it('15. accept_finding_to_staging is deferred (returns deferred sentinel) and writes no staging', () => {
+  it('15. accept_finding_to_staging is implemented (B13.3B.1) and writes only to staging+audit', () => {
     const idx = EDGE.indexOf("action === 'accept_finding_to_staging'");
     expect(idx).toBeGreaterThan(0);
-    const branch = EDGE.slice(idx, idx + 2000);
-    expect(branch).toMatch(/ACCEPT_TO_STAGING_DEFERRED_TO_B13_3B/);
-    expect(branch).not.toMatch(/staging/i.toString().includes ? /agreement-staging/ : /xxx/);
-    expect(branch).not.toMatch(/\.from\(\s*['"][^'"]*staging[^'"]*['"]/);
+    const branch = EDGE.slice(idx, idx + 6000);
+    // No longer deferred
+    expect(branch).not.toMatch(/ACCEPT_TO_STAGING_DEFERRED_TO_B13_3B/);
+    // Inserts into staging + audit, not salary_tables
+    expect(branch).toMatch(/T_STAGING\b/);
+    expect(branch).toMatch(/T_STAGING_AUDIT\b/);
+    expect(branch).not.toMatch(/\.from\(\s*['"]salary_tables['"]/);
+    expect(branch).not.toMatch(/erp_hr_collective_agreements\b(?!_)/);
+    // Audit action is 'create'
+    expect(branch).toMatch(/action:\s*['"]create['"]/);
+    // Finding flips to accepted_to_staging
+    expect(branch).toMatch(/finding_status:\s*['"]accepted_to_staging['"]/);
   });
   it('16. reject_finding does not delete', () => {
     const idx = EDGE.indexOf("action === 'reject_finding'");
@@ -107,6 +115,9 @@ describe('B13.3A — Extraction Runner edge static guards', () => {
       'erp_hr_collective_agreement_extraction_findings',
       'erp_hr_collective_agreement_document_intake',
       'user_roles',
+      // B13.3B.1 — staging insert + audit insert
+      'erp_hr_collective_agreement_salary_table_staging',
+      'erp_hr_collective_agreement_staging_audit',
     ]);
     for (const n of names) expect(allowed.has(n)).toBe(true);
   });
