@@ -629,7 +629,11 @@ function HRModuleInner() {
         {activeModule === 'collective-agreements' && <LazyHRCollectiveAgreementPanel />}
 
         {/* B12.1 — Registro Maestro de Convenios (Registry) */}
-        {activeModule === 'registry-master' && <LazyRegistryMasterPanel />}
+        {activeModule === 'registry-master' && (
+          <LazyRegistryMasterPanel
+            onNavigateToHub={() => setActiveModule('agreement-hub')}
+          />
+        )}
         {activeModule === 'registry-validation' && <LazyCollectiveAgreementValidationPanel />}
         {activeModule === 'registry-mapping' && companyId && (
           <LazyCompanyAgreementRegistryMappingPanel companyId={companyId} />
