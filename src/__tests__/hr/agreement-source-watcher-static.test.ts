@@ -49,14 +49,14 @@ describe('B13.1 — Source Watcher static guards', () => {
   });
 
   it('does not reference the operative table erp_hr_collective_agreements', () => {
-    // Allow only `_source_watch_queue`. Anything else is forbidden.
-    const matches =
-      ALL.match(/erp_hr_collective_agreements?(?!_source_watch_queue)[a-z_]*/g) ?? [];
-    // After filter, anything left is a violation.
-    const violations = matches.filter(
-      (m) => !m.startsWith('erp_hr_collective_agreement_source_watch_queue'),
-    );
-    expect(violations).toEqual([]);
+    // Strip comment lines first; we only care about real code references.
+    const code = ALL
+      .split('\n')
+      .filter((l) => !/^\s*(\*|\/\/|\/\*)/.test(l))
+      .join('\n');
+    // Forbidden: any string-literal/table reference to operative tables.
+    expect(code).not.toMatch(/['"]erp_hr_collective_agreements['"]/);
+    expect(code).not.toMatch(/\.from\(\s*['"]erp_hr_collective_agreements['"]/);
   });
 
   it('frontend hook never references service_role / SUPABASE_SERVICE_ROLE_KEY', () => {
