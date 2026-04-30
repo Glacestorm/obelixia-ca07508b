@@ -133,7 +133,7 @@ export function TicNacSalaryTableReviewPanel({
       setRejectRow(null);
       void refresh();
     } else {
-      toast.error(res.error.message);
+      toast.error(res.error?.message ?? 'No se pudo rechazar');
     }
   };
 
@@ -145,7 +145,7 @@ export function TicNacSalaryTableReviewPanel({
       setNeedsRow(null);
       void refresh();
     } else {
-      toast.error(res.error.message);
+      toast.error(res.error?.message ?? 'No se pudo marcar');
     }
   };
 
@@ -157,7 +157,7 @@ export function TicNacSalaryTableReviewPanel({
       setEditRow(null);
       void refresh();
     } else {
-      toast.error(res.error.message);
+      toast.error(res.error?.message ?? 'No se pudo guardar');
     }
   };
 
