@@ -29858,6 +29858,215 @@ export type Database = {
           },
         ]
       }
+      erp_hr_collective_agreement_salary_table_staging: {
+        Row: {
+          agreement_id: string
+          approval_hash: string | null
+          approval_mode: string
+          area_code: string | null
+          area_name: string | null
+          category: string | null
+          concept_literal_from_agreement: string
+          content_hash: string
+          cotization_included_hint: boolean | null
+          cra_code_suggested: string | null
+          cra_mapping_status: string
+          created_at: string
+          currency: string
+          extra_pay_amount: number | null
+          extraction_method: string
+          first_reviewed_at: string | null
+          first_reviewed_by: string | null
+          id: string
+          level: string | null
+          normalized_concept_key: string
+          ocr_raw_text: string | null
+          other_amount: number | null
+          payroll_label: string
+          payslip_label: string
+          plus_antiguedad: number | null
+          plus_convenio_annual: number | null
+          plus_convenio_monthly: number | null
+          plus_transport: number | null
+          professional_group: string
+          requires_human_review: boolean
+          review_notes: string | null
+          row_confidence: string | null
+          salary_base_annual: number | null
+          salary_base_monthly: number | null
+          second_reviewed_at: string | null
+          second_reviewed_by: string | null
+          source_annex: string | null
+          source_article: string | null
+          source_document: string
+          source_excerpt: string
+          source_page: string
+          taxable_irpf_hint: boolean | null
+          updated_at: string
+          validation_status: string
+          version_id: string
+          year: number
+        }
+        Insert: {
+          agreement_id: string
+          approval_hash?: string | null
+          approval_mode: string
+          area_code?: string | null
+          area_name?: string | null
+          category?: string | null
+          concept_literal_from_agreement: string
+          content_hash: string
+          cotization_included_hint?: boolean | null
+          cra_code_suggested?: string | null
+          cra_mapping_status?: string
+          created_at?: string
+          currency?: string
+          extra_pay_amount?: number | null
+          extraction_method: string
+          first_reviewed_at?: string | null
+          first_reviewed_by?: string | null
+          id?: string
+          level?: string | null
+          normalized_concept_key: string
+          ocr_raw_text?: string | null
+          other_amount?: number | null
+          payroll_label: string
+          payslip_label: string
+          plus_antiguedad?: number | null
+          plus_convenio_annual?: number | null
+          plus_convenio_monthly?: number | null
+          plus_transport?: number | null
+          professional_group: string
+          requires_human_review?: boolean
+          review_notes?: string | null
+          row_confidence?: string | null
+          salary_base_annual?: number | null
+          salary_base_monthly?: number | null
+          second_reviewed_at?: string | null
+          second_reviewed_by?: string | null
+          source_annex?: string | null
+          source_article?: string | null
+          source_document: string
+          source_excerpt: string
+          source_page: string
+          taxable_irpf_hint?: boolean | null
+          updated_at?: string
+          validation_status: string
+          version_id: string
+          year: number
+        }
+        Update: {
+          agreement_id?: string
+          approval_hash?: string | null
+          approval_mode?: string
+          area_code?: string | null
+          area_name?: string | null
+          category?: string | null
+          concept_literal_from_agreement?: string
+          content_hash?: string
+          cotization_included_hint?: boolean | null
+          cra_code_suggested?: string | null
+          cra_mapping_status?: string
+          created_at?: string
+          currency?: string
+          extra_pay_amount?: number | null
+          extraction_method?: string
+          first_reviewed_at?: string | null
+          first_reviewed_by?: string | null
+          id?: string
+          level?: string | null
+          normalized_concept_key?: string
+          ocr_raw_text?: string | null
+          other_amount?: number | null
+          payroll_label?: string
+          payslip_label?: string
+          plus_antiguedad?: number | null
+          plus_convenio_annual?: number | null
+          plus_convenio_monthly?: number | null
+          plus_transport?: number | null
+          professional_group?: string
+          requires_human_review?: boolean
+          review_notes?: string | null
+          row_confidence?: string | null
+          salary_base_annual?: number | null
+          salary_base_monthly?: number | null
+          second_reviewed_at?: string | null
+          second_reviewed_by?: string | null
+          source_annex?: string | null
+          source_article?: string | null
+          source_document?: string
+          source_excerpt?: string
+          source_page?: string
+          taxable_irpf_hint?: boolean | null
+          updated_at?: string
+          validation_status?: string
+          version_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_salary_table_stag_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_salary_table_stagin_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreement_staging_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          agreement_id: string
+          approval_hash: string | null
+          content_hash: string | null
+          created_at: string
+          id: string
+          snapshot_json: Json
+          staging_row_id: string | null
+          version_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          agreement_id: string
+          approval_hash?: string | null
+          content_hash?: string | null
+          created_at?: string
+          id?: string
+          snapshot_json?: Json
+          staging_row_id?: string | null
+          version_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          agreement_id?: string
+          approval_hash?: string | null
+          content_hash?: string | null
+          created_at?: string
+          id?: string
+          snapshot_json?: Json
+          staging_row_id?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_staging_audit_staging_row_id_fkey"
+            columns: ["staging_row_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_salary_table_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_collective_agreements: {
         Row: {
           annual_updates: Json | null
