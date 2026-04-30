@@ -77,9 +77,7 @@ type RowState =
 
 function deriveRowState(r: RegistryRow): RowState {
   if (r.ready_for_payroll === true) return 'ready_for_payroll';
-  if (r.salary_tables_loaded === true && r.ready_for_payroll !== true) {
-    return 'parsed_partial';
-  }
+  if (r.salary_tables_loaded === true) return 'parsed_partial';
   if (r.data_completeness === 'metadata_only') return 'metadata_only';
   return 'unknown';
 }
