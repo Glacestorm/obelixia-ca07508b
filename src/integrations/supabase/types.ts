@@ -29589,6 +29589,189 @@ export type Database = {
           },
         ]
       }
+      erp_hr_collective_agreement_extraction_findings: {
+        Row: {
+          agreement_id: string | null
+          concept_literal_from_agreement: string | null
+          confidence: string | null
+          created_at: string
+          extraction_run_id: string
+          finding_status: string
+          finding_type: string
+          id: string
+          intake_id: string
+          normalized_concept_key: string | null
+          payload_json: Json
+          payroll_label: string | null
+          payslip_label: string | null
+          raw_text: string | null
+          requires_human_review: boolean
+          source_annex: string | null
+          source_article: string | null
+          source_excerpt: string | null
+          source_page: string | null
+          updated_at: string
+          version_id: string | null
+        }
+        Insert: {
+          agreement_id?: string | null
+          concept_literal_from_agreement?: string | null
+          confidence?: string | null
+          created_at?: string
+          extraction_run_id: string
+          finding_status?: string
+          finding_type: string
+          id?: string
+          intake_id: string
+          normalized_concept_key?: string | null
+          payload_json?: Json
+          payroll_label?: string | null
+          payslip_label?: string | null
+          raw_text?: string | null
+          requires_human_review?: boolean
+          source_annex?: string | null
+          source_article?: string | null
+          source_excerpt?: string | null
+          source_page?: string | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Update: {
+          agreement_id?: string | null
+          concept_literal_from_agreement?: string | null
+          confidence?: string | null
+          created_at?: string
+          extraction_run_id?: string
+          finding_status?: string
+          finding_type?: string
+          id?: string
+          intake_id?: string
+          normalized_concept_key?: string | null
+          payload_json?: Json
+          payroll_label?: string | null
+          payslip_label?: string | null
+          raw_text?: string | null
+          requires_human_review?: boolean
+          source_annex?: string | null
+          source_article?: string | null
+          source_excerpt?: string | null
+          source_page?: string | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_extraction_f_extraction_run_id_fkey"
+            columns: ["extraction_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_extraction_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_extraction_findin_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_extraction_findings_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_document_intake"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_extraction_findings_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreement_extraction_runs: {
+        Row: {
+          agreement_id: string | null
+          blockers_json: Json
+          completed_at: string | null
+          created_at: string
+          document_hash: string | null
+          document_url: string | null
+          extraction_mode: string
+          id: string
+          intake_id: string
+          run_status: string
+          source_url: string
+          started_at: string | null
+          started_by: string | null
+          summary_json: Json
+          updated_at: string
+          version_id: string | null
+          warnings_json: Json
+        }
+        Insert: {
+          agreement_id?: string | null
+          blockers_json?: Json
+          completed_at?: string | null
+          created_at?: string
+          document_hash?: string | null
+          document_url?: string | null
+          extraction_mode: string
+          id?: string
+          intake_id: string
+          run_status?: string
+          source_url: string
+          started_at?: string | null
+          started_by?: string | null
+          summary_json?: Json
+          updated_at?: string
+          version_id?: string | null
+          warnings_json?: Json
+        }
+        Update: {
+          agreement_id?: string | null
+          blockers_json?: Json
+          completed_at?: string | null
+          created_at?: string
+          document_hash?: string | null
+          document_url?: string | null
+          extraction_mode?: string
+          id?: string
+          intake_id?: string
+          run_status?: string
+          source_url?: string
+          started_at?: string | null
+          started_by?: string | null
+          summary_json?: Json
+          updated_at?: string
+          version_id?: string | null
+          warnings_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_extraction_runs_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_extraction_runs_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_document_intake"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_extraction_runs_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_collective_agreement_registry_activation_approvals: {
         Row: {
           activation_checklist_json: Json
