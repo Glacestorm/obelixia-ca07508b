@@ -6,28 +6,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, Pencil, Check, CheckCheck, X, AlertOctagon } from 'lucide-react';
 import type { StagingRowSummary } from '@/hooks/erp/hr/useTicNacSalaryTableStaging';
 import { StagingStatusBadge } from './StagingStatusBadge';
 import { checkPayslipLabelPreservesLiteral } from './stagingLiteralGuard';
+import { StagingRowActions, type StagingRowAction } from './StagingRowActions';
 
-export type StagingRowAction =
-  | 'view'
-  | 'edit'
-  | 'approve_single'
-  | 'approve_first'
-  | 'approve_second'
-  | 'reject'
-  | 'mark_needs_correction';
+export type { StagingRowAction };
 
 export interface StagingRowsTableProps {
   rows: StagingRowSummary[];
@@ -84,10 +68,6 @@ export function StagingRowsTable({ rows, onAction, emptyLabel }: StagingRowsTabl
               row.concept_literal_from_agreement,
               row.payslip_label,
             );
-            const isRejected = row.validation_status === 'rejected';
-            const isApproved =
-              row.validation_status === 'human_approved_single' ||
-              row.validation_status === 'human_approved_second';
             return (
               <TableRow key={row.id} data-testid={`staging-row-${row.id}`}>
                 <TableCell>{row.year}</TableCell>
@@ -119,78 +99,7 @@ export function StagingRowsTable({ rows, onAction, emptyLabel }: StagingRowsTabl
                 </TableCell>
                 <TableCell className="text-xs">{row.source_page}</TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        data-testid={`staging-row-actions-${row.id}`}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" data-testid={`staging-row-menu-${row.id}`}>
-                      <DropdownMenuLabel>Acciones de revisión</DropdownMenuLabel>
-                      <DropdownMenuItem
-                        data-testid={`staging-action-view-${row.id}`}
-                        onClick={() => onAction('view', row)}
-                      >
-                        <Eye className="mr-2 h-4 w-4" /> Ver detalle
-                      </DropdownMenuItem>
-                      {!isRejected && !isApproved && (
-                        <DropdownMenuItem
-                          data-testid={`staging-action-edit-${row.id}`}
-                          onClick={() => onAction('edit', row)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" /> Editar propuesta
-                        </DropdownMenuItem>
-                      )}
-                      {!isRejected && !isApproved && (
-                        <>
-                          <DropdownMenuSeparator />
-                          {row.approval_mode.includes('single') && (
-                            <DropdownMenuItem
-                              data-testid={`staging-action-approve-single-${row.id}`}
-                              onClick={() => onAction('approve_single', row)}
-                            >
-                              <Check className="mr-2 h-4 w-4" /> Aprobar (única)
-                            </DropdownMenuItem>
-                          )}
-                          {row.approval_mode.includes('dual') && (
-                            <>
-                              <DropdownMenuItem
-                                data-testid={`staging-action-approve-first-${row.id}`}
-                                onClick={() => onAction('approve_first', row)}
-                              >
-                                <Check className="mr-2 h-4 w-4" /> Aprobar 1ª
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                data-testid={`staging-action-approve-second-${row.id}`}
-                                onClick={() => onAction('approve_second', row)}
-                              >
-                                <CheckCheck className="mr-2 h-4 w-4" /> Aprobar 2ª
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            data-testid={`staging-action-needs-correction-${row.id}`}
-                            onClick={() => onAction('mark_needs_correction', row)}
-                          >
-                            <AlertOctagon className="mr-2 h-4 w-4" /> Necesita corrección
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            data-testid={`staging-action-reject-${row.id}`}
-                            className="text-destructive"
-                            onClick={() => onAction('reject', row)}
-                          >
-                            <X className="mr-2 h-4 w-4" /> Rechazar
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <StagingRowActions row={row} onAction={onAction} />
                 </TableCell>
               </TableRow>
             );
