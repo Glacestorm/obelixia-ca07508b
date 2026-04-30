@@ -95,7 +95,7 @@ export function useTicNacSalaryTableStaging(
       setRows([]);
       setAudit([]);
       setError(null);
-    } else if (r.success) {
+    } else if (r.success === true) {
       setAuthRequired(false);
       setRows(r.data?.rows ?? []);
       setAudit(r.data?.audit ?? []);
