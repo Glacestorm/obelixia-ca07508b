@@ -72,9 +72,11 @@ describe('B11.2B — static guards on validator + template', () => {
   it('Registry pilot flags remain disabled and allow-list empty', async () => {
     // Soft-checked: only assert if the flags module exists in this codebase.
     try {
-      const mod: Record<string, unknown> = await import(
-        '@/lib/hr/registryPilotFlags'
-      );
+      const flagsPath = '@/lib/hr/registryPilotFlags';
+      // Dynamic, indirected import so TS does not statically resolve it.
+      const mod: Record<string, unknown> = await (
+        new Function('p', 'return import(p)') as (p: string) => Promise<Record<string, unknown>>
+      )(flagsPath);
       if ('HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL' in mod) {
         expect(mod.HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL).toBe(false);
       }
