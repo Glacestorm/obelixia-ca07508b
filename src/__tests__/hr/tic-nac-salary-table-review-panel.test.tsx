@@ -193,7 +193,7 @@ describe('TicNacSalaryTableReviewPanel', () => {
   it('detail drawer exposes source_page / source_excerpt / ocr raw text', () => {
     stagingState.rows = [makeOcrRow()];
     render(<TicNacSalaryTableReviewPanel agreementId="a" versionId="v" />);
-    fireEvent.click(screen.getByTestId('staging-row-actions-row-ocr-1'));
+    openMenu('staging-row-actions-row-ocr-1');
     fireEvent.click(screen.getByRole('menuitem', { name: /Ver detalle/i }));
     expect(screen.getByTestId('detail-source-page').textContent).toBe('12');
     expect(screen.getByTestId('detail-source-excerpt').textContent).toMatch(/Anexo I/);
@@ -203,7 +203,7 @@ describe('TicNacSalaryTableReviewPanel', () => {
   it('approval dialog shows the responsibility text and requires the checkbox', async () => {
     stagingState.rows = [makeOcrRow()];
     render(<TicNacSalaryTableReviewPanel agreementId="a" versionId="v" />);
-    fireEvent.click(screen.getByTestId('staging-row-actions-row-ocr-1'));
+    openMenu('staging-row-actions-row-ocr-1');
     fireEvent.click(screen.getByRole('menuitem', { name: /Aprobar 1ª/i }));
     const text = screen.getByTestId('staging-responsibility-text').textContent ?? '';
     expect(text).toMatch(/asumo la responsabilidad/i);
@@ -221,7 +221,7 @@ describe('TicNacSalaryTableReviewPanel', () => {
       }),
     ];
     render(<TicNacSalaryTableReviewPanel agreementId="a" versionId="v" />);
-    fireEvent.click(screen.getByTestId('staging-row-actions-row-ocr-1'));
+    openMenu('staging-row-actions-row-ocr-1');
     fireEvent.click(screen.getByRole('menuitem', { name: /Aprobar 2ª/i }));
     expect(screen.getByTestId('staging-same-reviewer-blocked')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('staging-responsibility-checkbox'));
@@ -237,7 +237,7 @@ describe('TicNacSalaryTableReviewPanel', () => {
       }),
     ];
     render(<TicNacSalaryTableReviewPanel agreementId="a" versionId="v" />);
-    fireEvent.click(screen.getByTestId('staging-row-actions-row-ocr-1'));
+    openMenu('staging-row-actions-row-ocr-1');
     fireEvent.click(screen.getByRole('menuitem', { name: /Aprobar 1ª/i }));
     expect(screen.getByTestId('staging-row-blocker-payslip-literal')).toBeInTheDocument();
   });
@@ -245,7 +245,7 @@ describe('TicNacSalaryTableReviewPanel', () => {
   it('rejected rows do not expose any writer/approve action', () => {
     stagingState.rows = [makeOcrRow({ validation_status: 'rejected' })];
     render(<TicNacSalaryTableReviewPanel agreementId="a" versionId="v" />);
-    fireEvent.click(screen.getByTestId('staging-row-actions-row-ocr-1'));
+    openMenu('staging-row-actions-row-ocr-1');
     expect(screen.queryByRole('menuitem', { name: /Aprobar/i })).toBeNull();
     expect(screen.queryByRole('menuitem', { name: /Editar/i })).toBeNull();
     expect(screen.queryByRole('menuitem', { name: /Rechazar/i })).toBeNull();
@@ -270,7 +270,7 @@ describe('TicNacSalaryTableReviewPanel', () => {
   it('approval action calls the hook (not the DB) when confirmed', async () => {
     stagingState.rows = [makeOcrRow({ approval_mode: 'ocr_single_human_approval' })];
     render(<TicNacSalaryTableReviewPanel agreementId="a" versionId="v" />);
-    fireEvent.click(screen.getByTestId('staging-row-actions-row-ocr-1'));
+    openMenu('staging-row-actions-row-ocr-1');
     fireEvent.click(screen.getByRole('menuitem', { name: /Aprobar \(única\)/i }));
     fireEvent.click(screen.getByTestId('staging-responsibility-checkbox'));
     fireEvent.click(screen.getByTestId('staging-confirm-approval'));
