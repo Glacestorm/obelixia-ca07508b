@@ -58,6 +58,11 @@ const FORBIDDEN_PAYLOAD_KEYS = [
   'service_role',
   'apply_to_payroll',
   'human_validated',
+  'human_approved_single',
+  'human_approved_first',
+  'human_approved_second',
+  'approved_by',
+  'approved_at',
 ] as const;
 
 const T_RUNS = 'erp_hr_collective_agreement_extraction_runs';
@@ -161,6 +166,58 @@ const RejectFindingSchema = z
   })
   .strict();
 
+// B13.3C — controlled OCR / text extraction action.
+const ManualPastedRowSchema = z
+  .object({
+    raw: z.string().min(1).max(2000),
+    page: z.string().max(50).optional(),
+    amount: z.union([z.string().max(60), z.number()]).optional(),
+    professional_group: z.string().max(120).optional(),
+    level: z.string().max(120).optional(),
+    category: z.string().max(120).optional(),
+    area_code: z.string().max(40).optional(),
+    area_name: z.string().max(120).optional(),
+    concept_hint: z.string().max(200).optional(),
+    year: z.union([z.number().int().min(2000).max(2099), z.string().regex(/^\d{4}$/)]).optional(),
+  })
+  .strict();
+
+const RunOcrOrTextSchema = z.discriminatedUnion('extraction_input_type', [
+  z
+    .object({
+      action: z.literal('run_ocr_or_text_extraction'),
+      run_id: uuid,
+      extraction_input_type: z.literal('text_content'),
+      text_content: z.string().min(1).max(400000),
+      source_page: z.string().max(50).optional(),
+      source_article: z.string().max(120).optional(),
+      source_annex: z.string().max(120).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal('run_ocr_or_text_extraction'),
+      run_id: uuid,
+      extraction_input_type: z.literal('document_url'),
+      document_url: z.string().url().max(2000),
+      source_page: z.string().max(50).optional(),
+      source_article: z.string().max(120).optional(),
+      source_annex: z.string().max(120).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal('run_ocr_or_text_extraction'),
+      run_id: uuid,
+      extraction_input_type: z.literal('manual_pasted_table'),
+      rows: z.array(ManualPastedRowSchema).min(1).max(500),
+      source_page: z.string().max(50).optional(),
+      source_article: z.string().max(120).optional(),
+      source_annex: z.string().max(120).optional(),
+    })
+    .strict(),
+]);
+
 const KNOWN_ACTIONS = [
   'list_runs',
   'create_run',
@@ -169,6 +226,7 @@ const KNOWN_ACTIONS = [
   'mark_run_blocked',
   'accept_finding_to_staging',
   'reject_finding',
+  'run_ocr_or_text_extraction',
 ] as const;
 
 function jsonResponse(status: number, body: Record<string, unknown>): Response {
