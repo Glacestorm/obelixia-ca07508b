@@ -77,6 +77,24 @@ vi.mock('sonner', () => ({
 
 import { TicNacSalaryTableReviewPanel } from '@/components/erp/hr/collective-agreements/staging/TicNacSalaryTableReviewPanel';
 
+// Radix DropdownMenu needs pointer + hasPointerCapture in jsdom
+(window as any).PointerEvent = (window as any).PointerEvent ?? class PE extends Event {};
+if (!(Element.prototype as any).hasPointerCapture) {
+  (Element.prototype as any).hasPointerCapture = () => false;
+  (Element.prototype as any).setPointerCapture = () => {};
+  (Element.prototype as any).releasePointerCapture = () => {};
+}
+if (!(Element.prototype as any).scrollIntoView) {
+  (Element.prototype as any).scrollIntoView = () => {};
+}
+
+function openMenu(triggerTestId: string) {
+  const trigger = screen.getByTestId(triggerTestId);
+  fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false } as any);
+  fireEvent.pointerUp(trigger);
+  fireEvent.click(trigger);
+}
+
 function makeOcrRow(overrides: Partial<any> = {}): any {
   return {
     id: overrides.id ?? 'row-ocr-1',
