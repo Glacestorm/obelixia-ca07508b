@@ -401,6 +401,60 @@ export function useAgreementExtractionRunner(
     [callAndRefresh],
   );
 
+  // B13.4 — Candidate Review hook actions. They delegate to the edge,
+  // which gates them behind AGREEMENT_OCR_CANDIDATE_REVIEW_ENABLED.
+  const reviewOcrCandidate = useCallback(
+    (input: { finding_id: string; reason?: string }) =>
+      callAndRefresh<{
+        finding_id: string;
+        candidate_review_state: OcrCandidateReviewState;
+        previous_state: OcrCandidateReviewState;
+      }>({ action: 'review_ocr_candidate', ...input }),
+    [callAndRefresh],
+  );
+
+  const approveOcrCandidate = useCallback(
+    (input: { finding_id: string; reason?: string }) =>
+      callAndRefresh<{
+        finding_id: string;
+        candidate_review_state: OcrCandidateReviewState;
+        previous_state: OcrCandidateReviewState;
+      }>({ action: 'approve_ocr_candidate', ...input }),
+    [callAndRefresh],
+  );
+
+  const rejectOcrCandidate = useCallback(
+    async (input: { finding_id: string; reason: string }) => {
+      if (!input.reason || input.reason.trim().length < 5) {
+        return {
+          ok: false as const,
+          error: { code: 'client_validation', message: 'Reason must be at least 5 characters' },
+        };
+      }
+      return callAndRefresh<{
+        finding_id: string;
+        candidate_review_state: OcrCandidateReviewState;
+        previous_state: OcrCandidateReviewState;
+      }>({ action: 'reject_ocr_candidate', ...input });
+    },
+    [callAndRefresh],
+  );
+
+  const promoteOcrCandidate = useCallback(
+    (input: {
+      finding_id: string;
+      promoted_target: OcrCandidatePromotedTarget;
+      reason?: string;
+    }) =>
+      callAndRefresh<{
+        finding_id: string;
+        candidate_review_state: OcrCandidateReviewState;
+        previous_state: OcrCandidateReviewState;
+        promoted_target: OcrCandidatePromotedTarget;
+      }>({ action: 'promote_ocr_candidate', ...input }),
+    [callAndRefresh],
+  );
+
   const runOcrOrTextExtraction = useCallback(
     async (
       input:
@@ -470,6 +524,10 @@ export function useAgreementExtractionRunner(
     acceptFindingToStaging,
     rejectFinding,
     runOcrOrTextExtraction,
+    reviewOcrCandidate,
+    approveOcrCandidate,
+    rejectOcrCandidate,
+    promoteOcrCandidate,
   };
 }
 
