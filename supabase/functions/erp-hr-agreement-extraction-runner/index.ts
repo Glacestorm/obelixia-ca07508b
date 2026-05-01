@@ -1160,6 +1160,23 @@ Deno.serve(async (req) => {
       return mapError(400, 'INVALID_PAYLOAD', 'Forbidden field present', action);
   }
 
+  // B13.4 gate: new candidate review/promote actions are only available
+  // when AGREEMENT_OCR_CANDIDATE_REVIEW_ENABLED=true. With the flag OFF
+  // (default) the edge refuses these actions, exactly as B13.3C did
+  // before B13.4 existed.
+  if (b13_4_isReviewAction(action) && !b13_4_isFlagEnabled()) {
+    return mapError(403, 'FEATURE_DISABLED', 'Candidate review disabled', action);
+  }
+
+  // Deep-scan body for forbidden keys (B13.4 — payroll/registry/tenant smuggling).
+  // Only enforced for the new B13.4 actions to keep older actions unchanged.
+  if (b13_4_isReviewAction(action)) {
+    const guard = b13_4_assertPayloadAllowed(body);
+    if (!guard.ok) {
+      return mapError(400, 'INVALID_PAYLOAD', 'Forbidden nested key', action);
+    }
+  }
+
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
