@@ -63,6 +63,20 @@ const FORBIDDEN_PAYLOAD_KEYS = [
   'human_approved_second',
   'approved_by',
   'approved_at',
+  // B13.4 — extra payload keys forbidden at the request envelope level.
+  'payroll_records',
+  'payroll_calculation',
+  'persisted_incidents',
+  'employee_payroll',
+  'employee_payroll_data',
+  'vpt_scores',
+  'legal_status',
+  'registry_status',
+  'version_status',
+  'source_watcher_state',
+  'service_role_key',
+  'company_id_override',
+  'tenant_id_override',
 ] as const;
 
 const T_RUNS = 'erp_hr_collective_agreement_extraction_runs';
@@ -227,7 +241,43 @@ const KNOWN_ACTIONS = [
   'accept_finding_to_staging',
   'reject_finding',
   'run_ocr_or_text_extraction',
+  // B13.4 — Candidate Review & Promotion Gate
+  'review_ocr_candidate',
+  'approve_ocr_candidate',
+  'reject_ocr_candidate',
+  'promote_ocr_candidate',
 ] as const;
+
+// B13.4 schemas. All strict, all UUID-checked, all reason-bounded.
+const ReviewOcrCandidateSchema = z
+  .object({
+    action: z.literal('review_ocr_candidate'),
+    finding_id: uuid,
+    reason: z.string().min(5).max(2000).optional(),
+  })
+  .strict();
+const ApproveOcrCandidateSchema = z
+  .object({
+    action: z.literal('approve_ocr_candidate'),
+    finding_id: uuid,
+    reason: z.string().min(5).max(2000).optional(),
+  })
+  .strict();
+const RejectOcrCandidateSchema = z
+  .object({
+    action: z.literal('reject_ocr_candidate'),
+    finding_id: uuid,
+    reason: z.string().min(5).max(2000),
+  })
+  .strict();
+const PromoteOcrCandidateSchema = z
+  .object({
+    action: z.literal('promote_ocr_candidate'),
+    finding_id: uuid,
+    promoted_target: z.enum(['staging_review_only']),
+    reason: z.string().min(5).max(2000).optional(),
+  })
+  .strict();
 
 function jsonResponse(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
@@ -868,6 +918,197 @@ async function computeStagingContentHash(row: Record<string, unknown>): Promise<
   return await sha256HexInline(stableStringify(subset));
 }
 
+// ---------------------------------------------------------------
+// B13.4 — Inline Candidate Review state machine (mirrors
+// src/engines/erp/hr/agreementOcrCandidateReviewStateMachine.ts).
+// Edges cannot import from src/, so the logic is duplicated here.
+// ---------------------------------------------------------------
+const B13_4_REVIEW_STATES = [
+  'extracted',
+  'needs_review',
+  'rejected',
+  'approved_candidate',
+  'promoted',
+] as const;
+type B13_4_ReviewState = (typeof B13_4_REVIEW_STATES)[number];
+
+const B13_4_TRANSITIONS: Record<B13_4_ReviewState, readonly B13_4_ReviewState[]> = {
+  extracted: ['needs_review', 'rejected'],
+  needs_review: ['approved_candidate', 'rejected'],
+  approved_candidate: ['promoted', 'rejected', 'needs_review'],
+  rejected: [],
+  promoted: [],
+};
+
+const B13_4_FORBIDDEN_DEEP_KEYS = new Set<string>([
+  'ready_for_payroll',
+  'salary_tables_loaded',
+  'data_completeness',
+  'human_validated',
+  'human_approved_single',
+  'human_approved_first',
+  'human_approved_second',
+  'approved_by',
+  'approved_at',
+  'apply_to_payroll',
+  'activation_run_id',
+  'runtime_setting',
+  'HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL',
+  'HR_REGISTRY_PILOT_MODE',
+  'REGISTRY_PILOT_SCOPE_ALLOWLIST',
+  'use_registry_for_payroll',
+  'payroll',
+  'payroll_records',
+  'payroll_calculation',
+  'persisted_incidents',
+  'employee_payroll',
+  'employee_payroll_data',
+  'payslip',
+  'vpt_scores',
+  'legal_status',
+  'registry_status',
+  'version_status',
+  'source_watcher_state',
+  'service_role',
+  'service_role_key',
+  'company_id_override',
+  'tenant_id_override',
+]);
+
+function b13_4_getCurrentReviewState(payloadJson: unknown): B13_4_ReviewState {
+  if (!payloadJson || typeof payloadJson !== 'object' || Array.isArray(payloadJson)) {
+    return 'extracted';
+  }
+  const cr = (payloadJson as Record<string, unknown>).candidate_review;
+  if (!cr || typeof cr !== 'object' || Array.isArray(cr)) return 'extracted';
+  const s = (cr as Record<string, unknown>).state;
+  if (typeof s === 'string' && (B13_4_REVIEW_STATES as readonly string[]).includes(s)) {
+    return s as B13_4_ReviewState;
+  }
+  return 'extracted';
+}
+
+function b13_4_canTransition(
+  current: B13_4_ReviewState,
+  next: B13_4_ReviewState,
+): { ok: boolean; reason?: string } {
+  const allowed = B13_4_TRANSITIONS[current];
+  if (!allowed || allowed.length === 0) return { ok: false, reason: 'terminal_state' };
+  if (!allowed.includes(next)) return { ok: false, reason: 'transition_not_allowed' };
+  return { ok: true };
+}
+
+function b13_4_assertPayloadAllowed(payload: unknown): { ok: boolean; key?: string } {
+  if (payload === null || payload === undefined || typeof payload !== 'object') return { ok: true };
+  const stack: unknown[] = [payload];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node || typeof node !== 'object') continue;
+    if (Array.isArray(node)) {
+      for (const v of node) stack.push(v);
+      continue;
+    }
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      if (B13_4_FORBIDDEN_DEEP_KEYS.has(k)) return { ok: false, key: k };
+      if (v && typeof v === 'object') stack.push(v);
+    }
+  }
+  return { ok: true };
+}
+
+const B13_4_PROMOTABLE_FINDING_TYPES = new Set([
+  'salary_table_candidate',
+  'concept_candidate',
+  'rule_candidate',
+]);
+
+function b13_4_isPromotableComplete(
+  finding: Record<string, unknown>,
+): { ok: boolean; reason?: string } {
+  const ft = finding.finding_type as string | null | undefined;
+  if (!ft || !B13_4_PROMOTABLE_FINDING_TYPES.has(ft)) {
+    return { ok: false, reason: 'unsupported_finding_type' };
+  }
+  if (!finding.agreement_id) return { ok: false, reason: 'missing_agreement_id' };
+  const sp = finding.source_page;
+  if (typeof sp !== 'string' || sp.trim().length === 0) {
+    return { ok: false, reason: 'missing_source_page' };
+  }
+  const nck = finding.normalized_concept_key;
+  if (typeof nck !== 'string' || nck.trim().length === 0) {
+    return { ok: false, reason: 'missing_concept_key' };
+  }
+  const psl = finding.payslip_label;
+  if (typeof psl !== 'string' || psl.trim().length === 0) {
+    return { ok: false, reason: 'missing_payslip_label' };
+  }
+  if (ft === 'salary_table_candidate') {
+    const pj = finding.payload_json;
+    const amts =
+      pj && typeof pj === 'object' && !Array.isArray(pj)
+        ? ((pj as Record<string, unknown>).candidate_amounts as Record<string, unknown> | undefined)
+        : undefined;
+    if (!amts || typeof amts !== 'object') {
+      return { ok: false, reason: 'no_amounts_or_invalid' };
+    }
+    const keys = [
+      'salary_base_annual',
+      'salary_base_monthly',
+      'extra_pay_amount',
+      'plus_convenio_annual',
+      'plus_convenio_monthly',
+      'plus_transport',
+      'plus_antiguedad',
+      'other_amount',
+    ];
+    let any = false;
+    for (const k of keys) {
+      const v = (amts as Record<string, unknown>)[k];
+      if (v === null || v === undefined) continue;
+      if (typeof v !== 'number' || !Number.isFinite(v)) {
+        return { ok: false, reason: 'no_amounts_or_invalid' };
+      }
+      if (v < 0) return { ok: false, reason: 'negative_amount' };
+      any = true;
+    }
+    if (!any) return { ok: false, reason: 'no_amounts_or_invalid' };
+  }
+  return { ok: true };
+}
+
+function b13_4_appendReview(
+  payloadJson: unknown,
+  snapshot: Record<string, unknown>,
+  historyEntry: Record<string, unknown>,
+): Record<string, unknown> {
+  const base =
+    payloadJson && typeof payloadJson === 'object' && !Array.isArray(payloadJson)
+      ? { ...(payloadJson as Record<string, unknown>) }
+      : {};
+  const prev = Array.isArray(
+    (base as { candidate_review_history?: unknown }).candidate_review_history,
+  )
+    ? ([...(base as { candidate_review_history: unknown[] }).candidate_review_history] as unknown[])
+    : [];
+  prev.push(historyEntry);
+  base.candidate_review = snapshot;
+  base.candidate_review_history = prev;
+  return base;
+}
+
+function b13_4_isFlagEnabled(): boolean {
+  return Deno.env.get('AGREEMENT_OCR_CANDIDATE_REVIEW_ENABLED') === 'true';
+}
+
+function b13_4_isReviewAction(a: string): boolean {
+  return (
+    a === 'review_ocr_candidate' ||
+    a === 'approve_ocr_candidate' ||
+    a === 'reject_ocr_candidate' ||
+    a === 'promote_ocr_candidate'
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS')
     return new Response(null, { headers: corsHeaders });
@@ -917,6 +1158,23 @@ Deno.serve(async (req) => {
   for (const k of FORBIDDEN_PAYLOAD_KEYS) {
     if (Object.prototype.hasOwnProperty.call(body, k))
       return mapError(400, 'INVALID_PAYLOAD', 'Forbidden field present', action);
+  }
+
+  // B13.4 gate: new candidate review/promote actions are only available
+  // when AGREEMENT_OCR_CANDIDATE_REVIEW_ENABLED=true. With the flag OFF
+  // (default) the edge refuses these actions, exactly as B13.3C did
+  // before B13.4 existed.
+  if (b13_4_isReviewAction(action) && !b13_4_isFlagEnabled()) {
+    return mapError(403, 'FEATURE_DISABLED', 'Candidate review disabled', action);
+  }
+
+  // Deep-scan body for forbidden keys (B13.4 — payroll/registry/tenant smuggling).
+  // Only enforced for the new B13.4 actions to keep older actions unchanged.
+  if (b13_4_isReviewAction(action)) {
+    const guard = b13_4_assertPayloadAllowed(body);
+    if (!guard.ok) {
+      return mapError(400, 'INVALID_PAYLOAD', 'Forbidden nested key', action);
+    }
   }
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -1574,6 +1832,196 @@ Deno.serve(async (req) => {
         .eq('id', f.id);
       if (uErr) return mapError(500, 'INTERNAL_ERROR', 'Internal error', action);
       return ok(action, { finding_id: f.id, finding_status: 'rejected' });
+    }
+
+    // ========================================================================
+    // B13.4 — Candidate Review & Promotion Gate
+    // ------------------------------------------------------------------------
+    // States stored in payload_json.candidate_review (snapshot) +
+    // payload_json.candidate_review_history (immutable append-only audit).
+    //
+    // Hard guarantees:
+    //  - finding_status row column is NEVER mutated by these actions.
+    //  - No write to salary_tables / payroll / VPT / registry final tables.
+    //  - promote_ocr_candidate ONLY allowed from approved_candidate.
+    //  - promoted_target is restricted to 'staging_review_only' (B13.4 does
+    //    NOT activate payroll; downstream stages must do that explicitly).
+    // ========================================================================
+    async function loadFindingForReview(
+      finding_id: string,
+    ): Promise<
+      | { ok: true; finding: Record<string, unknown> }
+      | { ok: false; status: number; code: string; msg: string }
+    > {
+      const { data: f, error } = await adminClient
+        .from(T_FINDINGS)
+        .select('*')
+        .eq('id', finding_id)
+        .maybeSingle();
+      if (error) return { ok: false, status: 500, code: 'INTERNAL_ERROR', msg: 'Internal error' };
+      if (!f) return { ok: false, status: 404, code: 'ROW_NOT_FOUND', msg: 'Candidate not found' };
+      return { ok: true, finding: f as Record<string, unknown> };
+    }
+
+    async function persistReviewTransition(
+      finding: Record<string, unknown>,
+      next: B13_4_ReviewState,
+      actionName:
+        | 'review_ocr_candidate'
+        | 'approve_ocr_candidate'
+        | 'reject_ocr_candidate'
+        | 'promote_ocr_candidate',
+      reason: string | undefined,
+      promoted_target?: string,
+    ): Promise<
+      | { ok: true; previous: B13_4_ReviewState; next: B13_4_ReviewState }
+      | { ok: false; status: number; code: string; msg: string }
+    > {
+      const previous = b13_4_getCurrentReviewState(finding.payload_json);
+      const t = b13_4_canTransition(previous, next);
+      if (!t.ok) {
+        return {
+          ok: false,
+          status: 409,
+          code: 'STATE_TRANSITION_BLOCKED',
+          msg: t.reason ?? 'transition_not_allowed',
+        };
+      }
+      const snapshot: Record<string, unknown> = {
+        state: next,
+        source: 'ocr_text_extraction',
+        updated_at: nowIso,
+        updated_by: userId,
+        ...(reason ? { reason } : {}),
+        ...(promoted_target ? { promoted_target } : {}),
+      };
+      const historyEntry: Record<string, unknown> = {
+        candidate_id: finding.id,
+        agreement_id: finding.agreement_id ?? null,
+        company_id: null,
+        previous_state: previous,
+        next_state: next,
+        action: actionName,
+        actor_user_id: userId,
+        timestamp: nowIso,
+        source: 'ocr_text_extraction',
+        ...(reason ? { reason } : {}),
+        ...(promoted_target ? { promoted_target } : {}),
+      };
+      const newPayload = b13_4_appendReview(finding.payload_json, snapshot, historyEntry);
+      // Final guard: the resulting payload itself must not contain any
+      // forbidden key (defense in depth — should be impossible by design).
+      const guard = b13_4_assertPayloadAllowed(newPayload);
+      if (!guard.ok) {
+        return { ok: false, status: 400, code: 'INVALID_PAYLOAD', msg: 'Forbidden key in payload' };
+      }
+      const { error: uErr } = await adminClient
+        .from(T_FINDINGS)
+        .update({ payload_json: newPayload })
+        .eq('id', finding.id);
+      if (uErr) return { ok: false, status: 500, code: 'INTERNAL_ERROR', msg: 'Internal error' };
+      return { ok: true, previous, next };
+    }
+
+    if (action === 'review_ocr_candidate') {
+      const p = ReviewOcrCandidateSchema.safeParse(body);
+      if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
+      const loaded = await loadFindingForReview(p.data.finding_id);
+      if (!loaded.ok) return mapError(loaded.status, loaded.code, loaded.msg, action);
+      const r = await persistReviewTransition(
+        loaded.finding,
+        'needs_review',
+        'review_ocr_candidate',
+        p.data.reason,
+      );
+      if (!r.ok) return mapError(r.status, r.code, r.msg, action);
+      return ok(action, {
+        finding_id: p.data.finding_id,
+        candidate_review_state: r.next,
+        previous_state: r.previous,
+      });
+    }
+
+    if (action === 'approve_ocr_candidate') {
+      const p = ApproveOcrCandidateSchema.safeParse(body);
+      if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
+      const loaded = await loadFindingForReview(p.data.finding_id);
+      if (!loaded.ok) return mapError(loaded.status, loaded.code, loaded.msg, action);
+      const r = await persistReviewTransition(
+        loaded.finding,
+        'approved_candidate',
+        'approve_ocr_candidate',
+        p.data.reason,
+      );
+      if (!r.ok) return mapError(r.status, r.code, r.msg, action);
+      return ok(action, {
+        finding_id: p.data.finding_id,
+        candidate_review_state: r.next,
+        previous_state: r.previous,
+      });
+    }
+
+    if (action === 'reject_ocr_candidate') {
+      const p = RejectOcrCandidateSchema.safeParse(body);
+      if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
+      const loaded = await loadFindingForReview(p.data.finding_id);
+      if (!loaded.ok) return mapError(loaded.status, loaded.code, loaded.msg, action);
+      const r = await persistReviewTransition(
+        loaded.finding,
+        'rejected',
+        'reject_ocr_candidate',
+        p.data.reason,
+      );
+      if (!r.ok) return mapError(r.status, r.code, r.msg, action);
+      return ok(action, {
+        finding_id: p.data.finding_id,
+        candidate_review_state: r.next,
+        previous_state: r.previous,
+      });
+    }
+
+    if (action === 'promote_ocr_candidate') {
+      const p = PromoteOcrCandidateSchema.safeParse(body);
+      if (!p.success) return mapError(400, 'INVALID_PAYLOAD', 'Invalid payload', action);
+      const loaded = await loadFindingForReview(p.data.finding_id);
+      if (!loaded.ok) return mapError(loaded.status, loaded.code, loaded.msg, action);
+      const finding = loaded.finding;
+
+      // CRITICAL: Promote can only proceed from approved_candidate.
+      const current = b13_4_getCurrentReviewState(finding.payload_json);
+      if (current !== 'approved_candidate') {
+        return mapError(
+          409,
+          'STATE_TRANSITION_BLOCKED',
+          'promotion_requires_approved_candidate',
+          action,
+        );
+      }
+
+      const completeness = b13_4_isPromotableComplete(finding);
+      if (!completeness.ok) {
+        return mapError(
+          422,
+          'CANDIDATE_INCOMPLETE',
+          completeness.reason ?? 'incomplete_candidate',
+          action,
+        );
+      }
+
+      const r = await persistReviewTransition(
+        finding,
+        'promoted',
+        'promote_ocr_candidate',
+        p.data.reason,
+        p.data.promoted_target,
+      );
+      if (!r.ok) return mapError(r.status, r.code, r.msg, action);
+      return ok(action, {
+        finding_id: p.data.finding_id,
+        candidate_review_state: r.next,
+        previous_state: r.previous,
+        promoted_target: p.data.promoted_target,
+      });
     }
 
     return mapError(400, 'INVALID_PAYLOAD', 'Unhandled action', action);
