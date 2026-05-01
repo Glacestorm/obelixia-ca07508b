@@ -115,3 +115,125 @@ momento de aceptar a staging.
 - ✅ findings quedan `pending_review`
 - ✅ staging sigue pendiente de `accept_finding_to_staging`
 - ✅ B11.3B writer bloqueado hasta aprobación humana
+
+## 13. Cierre B13.3C-VERIFY
+
+### 13.1 Estado final
+
+**B13.3C — READY**. Cierre documental y de regresión completado el 2026-05-01.
+
+### 13.2 Tests ejecutados (regresión total)
+
+Ejecutado en una sola corrida (`bunx vitest run`) — **268/268 verde** sobre las
+22 suites siguientes:
+
+| Capa | Suite | Tests |
+| --- | --- | --- |
+| B13.3C | `agreement-ocr-extractor.test.ts` | 13 |
+| B13.3C | `agreement-salary-table-candidate-extractor.test.ts` | 13 |
+| B13.3C | `agreement-extraction-runner-ocr-static.test.ts` | 10 |
+| B13.3C-VERIFY | `agreement-ocr-no-payroll-impact.test.ts` | 7 |
+| B13.3B.1 | `agreement-extraction-runner-accept-staging-static.test.ts` | 13 |
+| B13.3B.1 | `agreement-finding-to-staging-mapper.test.ts` | 21 |
+| B13.3A | `agreement-extraction-runner-edge-static.test.ts` | 14 |
+| B13.3A | `agreement-extraction-runner-hook-static.test.ts` | 9 |
+| B13.3A | `agreement-extraction-runner-schema.test.ts` | 12 |
+| B13.3A | `agreement-concept-literal-extractor.test.ts` | 13 |
+| B13.2 | `agreement-document-intake-edge-static.test.ts` | 14 |
+| B13.2 | `agreement-document-intake-hook-static.test.ts` | 7 |
+| B13.2 | `agreement-document-intake-schema.test.ts` | 11 |
+| B13.2 | `agreement-document-intake-panel.test.tsx` | 6 |
+| B13.1 | `agreement-source-watcher-static.test.ts` | 14 |
+| B11.2C | `collective-agreements-b11-3a-tic-nac-writer.test.ts` | 18 |
+| B11.2 | `collective-agreements-b11-2-tic-nac-parse-static.test.ts` | 10 |
+| Flags UI | `registry-ui-flags-untouched.test.ts` | 5 |
+| Payroll | `payroll-bridge-agreement-safety.test.ts` | 9 |
+| Payroll | `payroll-positive-path.test.ts` | 6 |
+| Payroll | `payroll-bridge-registry-shadow.test.ts` | 16 |
+| Payroll | `payroll-bridge-registry-runtime-flag-off.test.ts` | 13 |
+| Payroll | `payroll-bridge-registry-pilot-flag-off.test.ts` | 21 |
+
+### 13.3 Tests añadidos en VERIFY
+
+`src/__tests__/hr/agreement-ocr-no-payroll-impact.test.ts` (7 tests)
+demuestra de forma estática:
+
+1. helpers OCR son puros (sin `supabase`, sin `createClient`);
+2. helpers no importan `payrollEngine`, `payslipEngine`, `useESPayrollBridge`,
+   `salaryNormalizer`, `agreementSalaryResolver`, `registryShadowFlag`,
+   `registryPilotGate`;
+3. helpers no hacen `insert/update/upsert/delete/rpc/fetch`;
+4. la edge no toca `erp_hr_payroll*`, `erp_hr_payslips`,
+   `erp_hr_employee_payroll`, `erp_hr_vpt_scores`,
+   `erp_hr_collective_agreement_versions`, `erp_hr_collective_agreements`,
+   `salary_tables`, ni fija `legal_status` final;
+5. la edge no muta tablas del Source Watcher;
+6. el hook no expone mutaciones payroll/registry (`apply_to_payroll`,
+   `ready_for_payroll`, `salary_tables_loaded`, `human_validated`,
+   `human_approved`, `activate_version`, `publish_version`,
+   `set_legal_status`);
+7. `FORBIDDEN_PAYLOAD_KEYS` cubre todos los vectores de
+   salario/score/registry/version/legal/aprobación.
+
+### 13.4 Archivos tocados en VERIFY
+
+- ➕ `src/__tests__/hr/agreement-ocr-no-payroll-impact.test.ts`
+- ✏️ `docs/qa/HR_COLLECTIVE_AGREEMENTS_B13_3C_OCR_EXTRACTOR.md` (esta sección)
+
+No se ha modificado ningún helper, edge, hook, migración, UI, ni código de
+payroll. No se ha añadido ningún secret. No se ha relajado ningún RLS.
+
+### 13.5 Garantías
+
+- **Payroll**: 0 cambios funcionales. `payroll-positive-path` y los 3
+  `payroll-bridge-registry-*-flag-off` siguen verdes idénticos.
+- **UI flags**: `registry-ui-flags-untouched` verde — `HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL=false`,
+  `HR_REGISTRY_PILOT_MODE=false`, `REGISTRY_PILOT_SCOPE_ALLOWLIST=[]`.
+- **Escritura salarial automática**: imposible — toda fila salarial
+  requiere `accept_finding_to_staging` (B13.3B.1) → staging
+  `*_pending_review` → aprobación humana B11.2C → writer B11.3B
+  (que sigue **bloqueado**).
+- **Source Watcher (B13.1)**: comportamiento intacto; la edge OCR sólo
+  lee `erp_hr_collective_agreement_document_intake` (link existente
+  desde B13.2) y nunca escribe en `*_source_watcher/_hits/_sources`.
+- **Registry / versionado / estado legal**: no se tocan; la edge no
+  hace `.from()` sobre `erp_hr_collective_agreements` ni
+  `erp_hr_collective_agreement_versions`.
+- **VPT scores / readiness gate**: no se tocan.
+
+### 13.6 Riesgos residuales
+
+- `parseSpanishMoneyStrict` deja como `amount=null` los importes
+  ambiguos (`1,234`, `1.234`); requiere revisión humana en staging,
+  por diseño.
+- PDFs binarios entregados vía `document_url` generan `ocr_required`
+  finding (no se ejecuta OCR binario real hasta B13.5).
+- Detección de `year` y `professional_group` puede fallar en textos
+  ruidosos; la aceptación a staging exige ambos campos, así que el
+  riesgo está contenido.
+
+### 13.7 Confirmación final
+
+| Item | Estado |
+| --- | --- |
+| Helpers puros, sin efectos secundarios | ✅ |
+| Helpers no escriben en tablas críticas | ✅ |
+| OCR/text no actualiza payroll | ✅ |
+| OCR/text no modifica convenios automáticamente | ✅ |
+| `FORBIDDEN_PAYLOAD_KEYS` bloquea payloads peligrosos | ✅ |
+| Salary table candidates quedan como candidatos | ✅ |
+| Source Watcher (B13.1) sin cambios | ✅ |
+| Document Intake (B13.2) sin cambios | ✅ |
+| Extraction Runner skeleton (B13.3A) sin cambios | ✅ |
+| Accept-to-staging (B13.3B.1) sin cambios | ✅ |
+| TIC-NAC writer (B11.2C) sin cambios | ✅ |
+| Flags registry/UI sin cambios | ✅ |
+| Payroll crítico sin cambios | ✅ |
+| B11.3B writer sigue bloqueado | ✅ |
+
+### 13.8 Siguiente fase recomendada
+
+**B13.3D — Workbench UI dedicada al run + findings** (review humano por
+run con preview de `source_excerpt` y acción explícita
+`accept_finding_to_staging`). No activar B13.4 ni B13.5 hasta cerrar
+B13.3D documentalmente.
