@@ -24,6 +24,15 @@ const HOOK = readFileSync(
   'utf8',
 );
 
+const stripComments = (src: string) =>
+  src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .filter((l) => !/^\s*(\/\/|\*)/.test(l))
+    .join('\n');
+
+const HOOK_CODE = stripComments(HOOK);
+
 const ALL_OCR = HELPERS.join('\n');
 
 describe('B13.3C-VERIFY — OCR/text extraction has zero payroll/registry impact', () => {
@@ -87,7 +96,7 @@ describe('B13.3C-VERIFY — OCR/text extraction has zero payroll/registry impact
       'publish_version',
       'set_legal_status',
     ]) {
-      expect(HOOK).not.toContain(k);
+      expect(HOOK_CODE).not.toContain(k);
     }
   });
 
