@@ -918,6 +918,197 @@ async function computeStagingContentHash(row: Record<string, unknown>): Promise<
   return await sha256HexInline(stableStringify(subset));
 }
 
+// ---------------------------------------------------------------
+// B13.4 — Inline Candidate Review state machine (mirrors
+// src/engines/erp/hr/agreementOcrCandidateReviewStateMachine.ts).
+// Edges cannot import from src/, so the logic is duplicated here.
+// ---------------------------------------------------------------
+const B13_4_REVIEW_STATES = [
+  'extracted',
+  'needs_review',
+  'rejected',
+  'approved_candidate',
+  'promoted',
+] as const;
+type B13_4_ReviewState = (typeof B13_4_REVIEW_STATES)[number];
+
+const B13_4_TRANSITIONS: Record<B13_4_ReviewState, readonly B13_4_ReviewState[]> = {
+  extracted: ['needs_review', 'rejected'],
+  needs_review: ['approved_candidate', 'rejected'],
+  approved_candidate: ['promoted', 'rejected', 'needs_review'],
+  rejected: [],
+  promoted: [],
+};
+
+const B13_4_FORBIDDEN_DEEP_KEYS = new Set<string>([
+  'ready_for_payroll',
+  'salary_tables_loaded',
+  'data_completeness',
+  'human_validated',
+  'human_approved_single',
+  'human_approved_first',
+  'human_approved_second',
+  'approved_by',
+  'approved_at',
+  'apply_to_payroll',
+  'activation_run_id',
+  'runtime_setting',
+  'HR_USE_REGISTRY_AGREEMENTS_FOR_PAYROLL',
+  'HR_REGISTRY_PILOT_MODE',
+  'REGISTRY_PILOT_SCOPE_ALLOWLIST',
+  'use_registry_for_payroll',
+  'payroll',
+  'payroll_records',
+  'payroll_calculation',
+  'persisted_incidents',
+  'employee_payroll',
+  'employee_payroll_data',
+  'payslip',
+  'vpt_scores',
+  'legal_status',
+  'registry_status',
+  'version_status',
+  'source_watcher_state',
+  'service_role',
+  'service_role_key',
+  'company_id_override',
+  'tenant_id_override',
+]);
+
+function b13_4_getCurrentReviewState(payloadJson: unknown): B13_4_ReviewState {
+  if (!payloadJson || typeof payloadJson !== 'object' || Array.isArray(payloadJson)) {
+    return 'extracted';
+  }
+  const cr = (payloadJson as Record<string, unknown>).candidate_review;
+  if (!cr || typeof cr !== 'object' || Array.isArray(cr)) return 'extracted';
+  const s = (cr as Record<string, unknown>).state;
+  if (typeof s === 'string' && (B13_4_REVIEW_STATES as readonly string[]).includes(s)) {
+    return s as B13_4_ReviewState;
+  }
+  return 'extracted';
+}
+
+function b13_4_canTransition(
+  current: B13_4_ReviewState,
+  next: B13_4_ReviewState,
+): { ok: boolean; reason?: string } {
+  const allowed = B13_4_TRANSITIONS[current];
+  if (!allowed || allowed.length === 0) return { ok: false, reason: 'terminal_state' };
+  if (!allowed.includes(next)) return { ok: false, reason: 'transition_not_allowed' };
+  return { ok: true };
+}
+
+function b13_4_assertPayloadAllowed(payload: unknown): { ok: boolean; key?: string } {
+  if (payload === null || payload === undefined || typeof payload !== 'object') return { ok: true };
+  const stack: unknown[] = [payload];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node || typeof node !== 'object') continue;
+    if (Array.isArray(node)) {
+      for (const v of node) stack.push(v);
+      continue;
+    }
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      if (B13_4_FORBIDDEN_DEEP_KEYS.has(k)) return { ok: false, key: k };
+      if (v && typeof v === 'object') stack.push(v);
+    }
+  }
+  return { ok: true };
+}
+
+const B13_4_PROMOTABLE_FINDING_TYPES = new Set([
+  'salary_table_candidate',
+  'concept_candidate',
+  'rule_candidate',
+]);
+
+function b13_4_isPromotableComplete(
+  finding: Record<string, unknown>,
+): { ok: boolean; reason?: string } {
+  const ft = finding.finding_type as string | null | undefined;
+  if (!ft || !B13_4_PROMOTABLE_FINDING_TYPES.has(ft)) {
+    return { ok: false, reason: 'unsupported_finding_type' };
+  }
+  if (!finding.agreement_id) return { ok: false, reason: 'missing_agreement_id' };
+  const sp = finding.source_page;
+  if (typeof sp !== 'string' || sp.trim().length === 0) {
+    return { ok: false, reason: 'missing_source_page' };
+  }
+  const nck = finding.normalized_concept_key;
+  if (typeof nck !== 'string' || nck.trim().length === 0) {
+    return { ok: false, reason: 'missing_concept_key' };
+  }
+  const psl = finding.payslip_label;
+  if (typeof psl !== 'string' || psl.trim().length === 0) {
+    return { ok: false, reason: 'missing_payslip_label' };
+  }
+  if (ft === 'salary_table_candidate') {
+    const pj = finding.payload_json;
+    const amts =
+      pj && typeof pj === 'object' && !Array.isArray(pj)
+        ? ((pj as Record<string, unknown>).candidate_amounts as Record<string, unknown> | undefined)
+        : undefined;
+    if (!amts || typeof amts !== 'object') {
+      return { ok: false, reason: 'no_amounts_or_invalid' };
+    }
+    const keys = [
+      'salary_base_annual',
+      'salary_base_monthly',
+      'extra_pay_amount',
+      'plus_convenio_annual',
+      'plus_convenio_monthly',
+      'plus_transport',
+      'plus_antiguedad',
+      'other_amount',
+    ];
+    let any = false;
+    for (const k of keys) {
+      const v = (amts as Record<string, unknown>)[k];
+      if (v === null || v === undefined) continue;
+      if (typeof v !== 'number' || !Number.isFinite(v)) {
+        return { ok: false, reason: 'no_amounts_or_invalid' };
+      }
+      if (v < 0) return { ok: false, reason: 'negative_amount' };
+      any = true;
+    }
+    if (!any) return { ok: false, reason: 'no_amounts_or_invalid' };
+  }
+  return { ok: true };
+}
+
+function b13_4_appendReview(
+  payloadJson: unknown,
+  snapshot: Record<string, unknown>,
+  historyEntry: Record<string, unknown>,
+): Record<string, unknown> {
+  const base =
+    payloadJson && typeof payloadJson === 'object' && !Array.isArray(payloadJson)
+      ? { ...(payloadJson as Record<string, unknown>) }
+      : {};
+  const prev = Array.isArray(
+    (base as { candidate_review_history?: unknown }).candidate_review_history,
+  )
+    ? ([...(base as { candidate_review_history: unknown[] }).candidate_review_history] as unknown[])
+    : [];
+  prev.push(historyEntry);
+  base.candidate_review = snapshot;
+  base.candidate_review_history = prev;
+  return base;
+}
+
+function b13_4_isFlagEnabled(): boolean {
+  return Deno.env.get('AGREEMENT_OCR_CANDIDATE_REVIEW_ENABLED') === 'true';
+}
+
+function b13_4_isReviewAction(a: string): boolean {
+  return (
+    a === 'review_ocr_candidate' ||
+    a === 'approve_ocr_candidate' ||
+    a === 'reject_ocr_candidate' ||
+    a === 'promote_ocr_candidate'
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS')
     return new Response(null, { headers: corsHeaders });
