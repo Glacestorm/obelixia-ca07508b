@@ -63,6 +63,20 @@ const FORBIDDEN_PAYLOAD_KEYS = [
   'human_approved_second',
   'approved_by',
   'approved_at',
+  // B13.4 — extra payload keys forbidden at the request envelope level.
+  'payroll_records',
+  'payroll_calculation',
+  'persisted_incidents',
+  'employee_payroll',
+  'employee_payroll_data',
+  'vpt_scores',
+  'legal_status',
+  'registry_status',
+  'version_status',
+  'source_watcher_state',
+  'service_role_key',
+  'company_id_override',
+  'tenant_id_override',
 ] as const;
 
 const T_RUNS = 'erp_hr_collective_agreement_extraction_runs';
