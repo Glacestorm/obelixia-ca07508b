@@ -241,7 +241,43 @@ const KNOWN_ACTIONS = [
   'accept_finding_to_staging',
   'reject_finding',
   'run_ocr_or_text_extraction',
+  // B13.4 — Candidate Review & Promotion Gate
+  'review_ocr_candidate',
+  'approve_ocr_candidate',
+  'reject_ocr_candidate',
+  'promote_ocr_candidate',
 ] as const;
+
+// B13.4 schemas. All strict, all UUID-checked, all reason-bounded.
+const ReviewOcrCandidateSchema = z
+  .object({
+    action: z.literal('review_ocr_candidate'),
+    finding_id: uuid,
+    reason: z.string().min(5).max(2000).optional(),
+  })
+  .strict();
+const ApproveOcrCandidateSchema = z
+  .object({
+    action: z.literal('approve_ocr_candidate'),
+    finding_id: uuid,
+    reason: z.string().min(5).max(2000).optional(),
+  })
+  .strict();
+const RejectOcrCandidateSchema = z
+  .object({
+    action: z.literal('reject_ocr_candidate'),
+    finding_id: uuid,
+    reason: z.string().min(5).max(2000),
+  })
+  .strict();
+const PromoteOcrCandidateSchema = z
+  .object({
+    action: z.literal('promote_ocr_candidate'),
+    finding_id: uuid,
+    promoted_target: z.enum(['staging_review_only']),
+    reason: z.string().min(5).max(2000).optional(),
+  })
+  .strict();
 
 function jsonResponse(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
