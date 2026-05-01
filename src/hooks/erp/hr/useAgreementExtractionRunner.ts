@@ -51,6 +51,20 @@ export type ExtractionFindingStatus =
   | 'needs_correction'
   | 'blocked';
 
+/**
+ * B13.4 — Candidate Review state stored inside `payload_json.candidate_review`.
+ * This is INDEPENDENT from `finding_status` (which the existing pipeline owns)
+ * and reflects the OCR-candidate-only review workflow.
+ */
+export type OcrCandidateReviewState =
+  | 'extracted'
+  | 'needs_review'
+  | 'rejected'
+  | 'approved_candidate'
+  | 'promoted';
+
+export type OcrCandidatePromotedTarget = 'staging_review_only';
+
 export interface ExtractionRun {
   id: string;
   intake_id: string;
@@ -141,6 +155,59 @@ export interface UseAgreementExtractionRunnerResult {
     }>
   >;
   rejectFinding: (input: { finding_id: string; reason: string }) => Promise<ActionResult>;
+  /**
+   * B13.4 — Marks an OCR candidate as `needs_review`. Behind the
+   * `agreement_ocr_candidate_review_enabled` server flag. With the flag off,
+   * the edge returns `FEATURE_DISABLED` and this hook surfaces the error
+   * untouched. NEVER touches payroll, salary_tables real, or registry.
+   */
+  reviewOcrCandidate: (input: {
+    finding_id: string;
+    reason?: string;
+  }) => Promise<
+    ActionResult<{
+      finding_id: string;
+      candidate_review_state: OcrCandidateReviewState;
+      previous_state: OcrCandidateReviewState;
+    }>
+  >;
+  approveOcrCandidate: (input: {
+    finding_id: string;
+    reason?: string;
+  }) => Promise<
+    ActionResult<{
+      finding_id: string;
+      candidate_review_state: OcrCandidateReviewState;
+      previous_state: OcrCandidateReviewState;
+    }>
+  >;
+  rejectOcrCandidate: (input: {
+    finding_id: string;
+    reason: string;
+  }) => Promise<
+    ActionResult<{
+      finding_id: string;
+      candidate_review_state: OcrCandidateReviewState;
+      previous_state: OcrCandidateReviewState;
+    }>
+  >;
+  /**
+   * B13.4 — Promote an `approved_candidate` to `promoted` (read-only marker).
+   * `promoted_target` is restricted to `'staging_review_only'`. Promotion
+   * NEVER writes to salary_tables real, payroll, or registry.
+   */
+  promoteOcrCandidate: (input: {
+    finding_id: string;
+    promoted_target: OcrCandidatePromotedTarget;
+    reason?: string;
+  }) => Promise<
+    ActionResult<{
+      finding_id: string;
+      candidate_review_state: OcrCandidateReviewState;
+      previous_state: OcrCandidateReviewState;
+      promoted_target: OcrCandidatePromotedTarget;
+    }>
+  >;
   runOcrOrTextExtraction: (
     input:
       | {
