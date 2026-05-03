@@ -196,9 +196,9 @@ describe('B10D.4 — Runtime apply UI static contract', () => {
   it('Hook routes all writes through the runtime-apply edge function', () => {
     const src = read(HOOK_FILE);
     expect(src).toMatch(/erp-hr-company-agreement-runtime-apply/);
-    expect(src).toMatch(/supabase\.functions\.invoke/);
-    expect(src).toMatch(/supabase\.auth\.getSession/);
-    expect(src).toMatch(/Authorization:\s*`Bearer \$\{accessToken\}`/);
+    // Auth-safe invocation: token, getSession and Authorization header are
+    // now centralized in the shared `authSafeInvoke` helper.
+    expect(src).toMatch(/authSafeInvoke/);
     for (const action of [
       'create_request',
       'submit_for_second_approval',

@@ -172,7 +172,9 @@ describe('B10C.2B.2C — Mapping UI static contract', () => {
   it('Hook routes all writes through the edge function', () => {
     const src = read(HOOK_FILE);
     expect(src).toMatch(/erp-hr-company-agreement-registry-mapping/);
-    expect(src).toMatch(/supabase\.functions\.invoke/);
+    // Routing now goes through the auth-safe invoker which internally
+    // calls supabase.functions.invoke with an explicit Bearer token.
+    expect(src).toMatch(/authSafeInvoke/);
     // 6 actions
     for (const action of [
       'create_draft',

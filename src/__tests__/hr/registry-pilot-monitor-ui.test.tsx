@@ -9,6 +9,14 @@ const invokeMock = vi.fn();
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    auth: {
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test-token' } } }),
+      refreshSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test-token' } } }),
+    },
     functions: { invoke: (...args: unknown[]) => invokeMock(...args) },
   },
 }));
@@ -104,7 +112,10 @@ const sampleLogs = [
 describe('B10F.5 — Registry pilot monitor UI (read-only)', () => {
   beforeEach(() => {
     invokeMock.mockReset();
-    invokeMock.mockResolvedValue({ data: { decisions: sampleLogs }, error: null });
+    invokeMock.mockResolvedValue({
+      data: { success: true, data: { decisions: sampleLogs } },
+      error: null,
+    });
   });
 
   it('flag and pilot mode invariants remain false', () => {

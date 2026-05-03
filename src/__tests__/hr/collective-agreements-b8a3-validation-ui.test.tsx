@@ -11,6 +11,14 @@ import { ChecklistItemRow } from '@/components/erp/hr/collective-agreements/inte
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    auth: {
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test-token' } } }),
+      refreshSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test-token' } } }),
+    },
     functions: { invoke: vi.fn().mockResolvedValue({ data: { success: true, data: {} } }) },
   },
 }));
