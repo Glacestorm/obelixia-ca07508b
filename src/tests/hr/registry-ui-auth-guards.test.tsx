@@ -141,7 +141,13 @@ describe('useRegistryPilotMonitor — no session', () => {
   it('exposes authRequired=true and does NOT call edge', async () => {
     const { renderHook, waitFor } = await import('@testing-library/react');
     const { useRegistryPilotMonitor } = await import('@/hooks/erp/hr/useRegistryPilotMonitor');
-    const { result } = renderHook(() => useRegistryPilotMonitor({ companyId: 'c-1' }));
+    // QA-LEGACY-02 — stable filter reference. Passing a fresh object
+    // literal on every render makes the hook's `refresh` callback change
+    // identity each render, which re-fires its effect and creates an
+    // update loop. That loop schedules React work that runs after the
+    // jsdom window is torn down, surfacing as "window is not defined".
+    const filters = { companyId: 'c-1' };
+    const { result, unmount } = renderHook(() => useRegistryPilotMonitor(filters));
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
@@ -149,6 +155,7 @@ describe('useRegistryPilotMonitor — no session', () => {
     expect(result.current.authRequired).toBe(true);
     expect(result.current.error).toBeNull();
     expect(result.current.logs).toEqual([]);
+    unmount();
   });
 });
 
