@@ -112,7 +112,10 @@ const sampleLogs = [
 describe('B10F.5 — Registry pilot monitor UI (read-only)', () => {
   beforeEach(() => {
     invokeMock.mockReset();
-    invokeMock.mockResolvedValue({ data: { decisions: sampleLogs }, error: null });
+    invokeMock.mockResolvedValue({
+      data: { success: true, data: { decisions: sampleLogs } },
+      error: null,
+    });
   });
 
   it('flag and pilot mode invariants remain false', () => {
