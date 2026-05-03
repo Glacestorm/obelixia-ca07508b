@@ -128,7 +128,7 @@ describe('B8A.3 UI static contract', () => {
     );
     expect(
       actions.includes('erp-hr-collective-agreement-validation') &&
-        actions.includes('functions.invoke('),
+        actions.includes('authSafeInvoke'),
     ).toBe(true);
   });
 
