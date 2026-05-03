@@ -9,6 +9,14 @@ const invokeMock = vi.fn();
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
+    auth: {
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test-token' } } }),
+      refreshSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test-token' } } }),
+    },
     functions: { invoke: (...args: unknown[]) => invokeMock(...args) },
   },
 }));
