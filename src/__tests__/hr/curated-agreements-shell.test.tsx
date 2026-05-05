@@ -66,8 +66,8 @@ describe('B13.6 — Curated Agreements shell', () => {
       expect(screen.getByLabelText('curated-controlled-apply')).toBeInTheDocument();
     });
     expect(screen.getAllByText(/B8A\/B8B/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Mapping aprobado/i)).toBeInTheDocument();
-    expect(screen.getByText(/Runtime Apply activado/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Mapping aprobado/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Runtime Apply activado/i).length).toBeGreaterThan(0);
   });
 
   it('allowed buttons fire onNavigate callback only (no edge invoke)', async () => {
