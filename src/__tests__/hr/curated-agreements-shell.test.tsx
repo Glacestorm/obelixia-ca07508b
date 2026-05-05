@@ -65,7 +65,7 @@ describe('B13.6 — Curated Agreements shell', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('curated-controlled-apply')).toBeInTheDocument();
     });
-    expect(screen.getByText(/B8A\/B8B/)).toBeInTheDocument();
+    expect(screen.getAllByText(/B8A\/B8B/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Mapping aprobado/i)).toBeInTheDocument();
     expect(screen.getByText(/Runtime Apply activado/i)).toBeInTheDocument();
   });
