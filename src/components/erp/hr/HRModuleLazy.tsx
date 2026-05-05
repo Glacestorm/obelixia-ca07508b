@@ -132,6 +132,12 @@ export const LazyAgreementHubPanel = lazyPanel(
   'AgreementHubPanel',
 );
 
+// ─── B13.6 — Convenios Curados (shell) ──────────────────────
+export const LazyCuratedAgreementsPanel = lazyPanel(
+  () => import('./collective-agreements/curated/shell/CuratedAgreementsPanel'),
+  'CuratedAgreementsPanel',
+);
+
 // ─── D6 Documents ───────────────────────────────────────────
 export const LazyDocumentExpedientModule = lazyPanel(() => import('./domains/documents'), 'DocumentExpedientModule');
 export const LazyHREmployeeDocumentsPanel = lazyPanel(() => import('./domains/documents'), 'HREmployeeDocumentsPanel');
