@@ -100,13 +100,13 @@ export function useAgreementImpactPreviews() {
       if (isAuthRequiredResult(r)) {
         setAuthRequired(true);
         setScopes([]);
-      } else if (r.success) {
+      } else if (r.success === true) {
         setAuthRequired(false);
         setScopes(r.data ?? []);
       } else {
         setAuthRequired(false);
         setScopes([]);
-        setError(r.error);
+        setError((r as { error: { code: string; message: string } }).error);
       }
       setIsLoading(false);
     },
@@ -132,13 +132,13 @@ export function useAgreementImpactPreviews() {
       if (isAuthRequiredResult(r)) {
         setAuthRequired(true);
         setPreviews([]);
-      } else if (r.success) {
+      } else if (r.success === true) {
         setAuthRequired(false);
         setPreviews(r.data ?? []);
       } else {
         setAuthRequired(false);
         setPreviews([]);
-        setError(r.error);
+        setError((r as { error: { code: string; message: string } }).error);
       }
       setIsLoading(false);
     },
@@ -157,8 +157,8 @@ export function useAgreementImpactPreviews() {
         { action: 'compute_scope', ...input },
       );
       if (isAuthRequiredResult(r)) return unauthorized();
-      if (r.success) return { ok: true, data: r.data };
-      return { ok: false, error: r.error };
+      if (r.success === true) return { ok: true, data: r.data };
+      return { ok: false, error: (r as { error: { code: string; message: string } }).error };
     },
     [],
   );
@@ -177,8 +177,8 @@ export function useAgreementImpactPreviews() {
         { action: 'compute_impact_preview', ...input },
       );
       if (isAuthRequiredResult(r)) return unauthorized();
-      if (r.success) return { ok: true, data: r.data };
-      return { ok: false, error: r.error };
+      if (r.success === true) return { ok: true, data: r.data };
+      return { ok: false, error: (r as { error: { code: string; message: string } }).error };
     },
     [],
   );
@@ -194,8 +194,8 @@ export function useAgreementImpactPreviews() {
         ...input,
       });
       if (isAuthRequiredResult(r)) return unauthorized();
-      if (r.success) return { ok: true, data: r.data };
-      return { ok: false, error: r.error };
+      if (r.success === true) return { ok: true, data: r.data };
+      return { ok: false, error: (r as { error: { code: string; message: string } }).error };
     },
     [],
   );
