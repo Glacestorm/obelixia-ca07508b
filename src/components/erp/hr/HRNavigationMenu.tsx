@@ -108,6 +108,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'registry-pilot-monitor',
     // B12.2 — Centro de Convenios (Hub UI)
     'agreement-hub',
+    // B13.6 — Convenios Curados (shell)
+    'curated-agreements',
   ]);
 
   // Tier 2: visible_advanced — shown only to admin/advanced profiles in MVP mode
@@ -318,6 +320,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             { id: 'registry-runtime-apply', label: 'Runtime Apply', icon: Activity, description: 'B10D — activación por scope' },
             { id: 'registry-pilot-discovery', label: 'Discovery candidatos piloto', icon: Search, description: 'B10F.5C — read-only' },
             { id: 'registry-pilot-monitor', label: 'Monitor piloto', icon: Gauge, description: 'B10F.5 — read-only' },
+            // ── B13.6 — Convenios Curados (shell unificado) ──
+            { id: 'curated-agreements', label: 'Convenios Curados', icon: BookOpen, description: 'Shell B13: detección, intake, extracción, revisión, impacto y aplicación controlada' },
           ]
         },
       ]

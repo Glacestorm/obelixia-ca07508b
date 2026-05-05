@@ -165,6 +165,7 @@ import {
   LazyRegistryPilotCandidateDiscoveryPanel,
   LazyRegistryPilotMonitorPanel,
   LazyAgreementHubPanel,
+  LazyCuratedAgreementsPanel,
 } from './HRModuleLazy';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -646,6 +647,17 @@ function HRModuleInner() {
 
         {/* B12.2 — Centro de Convenios (Hub) */}
         {activeModule === 'agreement-hub' && <LazyAgreementHubPanel companyId={companyId} />}
+
+        {/* B13.6 — Convenios Curados (shell) */}
+        {activeModule === 'curated-agreements' && (
+          <LazyCuratedAgreementsPanel
+            filters={companyId ? { company_id: companyId } : undefined}
+            onNavigate={(target) => {
+              if (target === 'rollback-guide') return;
+              setActiveModule(target);
+            }}
+          />
+        )}
 
         {/* S8.5 Absorbed panels */}
         {activeModule === 'symbolic-values' && <LazySymbolicValuesPanel companyId={companyId} />}
