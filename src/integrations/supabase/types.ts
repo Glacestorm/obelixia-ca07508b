@@ -29461,6 +29461,78 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_collective_agreement_affected_scopes: {
+        Row: {
+          agreement_id: string
+          blockers_json: Json
+          cnae_match: boolean
+          company_id: string
+          computed_at: string
+          computed_by: string | null
+          created_at: string
+          employee_count_estimated: number
+          id: string
+          risk_flags: Json
+          runtime_setting_required: boolean
+          summary_json: Json
+          territory_match: boolean
+          updated_at: string
+          version_id: string
+          warnings_json: Json
+        }
+        Insert: {
+          agreement_id: string
+          blockers_json?: Json
+          cnae_match?: boolean
+          company_id: string
+          computed_at?: string
+          computed_by?: string | null
+          created_at?: string
+          employee_count_estimated?: number
+          id?: string
+          risk_flags?: Json
+          runtime_setting_required?: boolean
+          summary_json?: Json
+          territory_match?: boolean
+          updated_at?: string
+          version_id: string
+          warnings_json?: Json
+        }
+        Update: {
+          agreement_id?: string
+          blockers_json?: Json
+          cnae_match?: boolean
+          company_id?: string
+          computed_at?: string
+          computed_by?: string | null
+          created_at?: string
+          employee_count_estimated?: number
+          id?: string
+          risk_flags?: Json
+          runtime_setting_required?: boolean
+          summary_json?: Json
+          territory_match?: boolean
+          updated_at?: string
+          version_id?: string
+          warnings_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_affected_scopes_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_affected_scopes_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_collective_agreement_document_intake: {
         Row: {
           block_reason: string | null
@@ -29765,6 +29837,151 @@ export type Database = {
           },
           {
             foreignKeyName: "erp_hr_collective_agreement_extraction_runs_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_collective_agreement_impact_previews: {
+        Row: {
+          affected: boolean
+          affected_scope_id: string | null
+          agreement_id: string
+          arrears_estimate: number | null
+          blocked: boolean
+          blockers_json: Json
+          company_id: string
+          computed_at: string
+          computed_by: string | null
+          concepts_detected: Json
+          contract_id: string | null
+          created_at: string
+          current_salary_annual: number | null
+          current_salary_monthly: number | null
+          delta_annual: number | null
+          delta_monthly: number | null
+          employee_id: string
+          employer_cost_delta: number | null
+          id: string
+          mapping_id: string | null
+          matched_salary_table_id: string | null
+          missing_concepts: Json
+          requires_human_review: boolean
+          risk_flags: Json
+          runtime_setting_id: string | null
+          source_trace: Json
+          target_salary_annual: number | null
+          target_salary_monthly: number | null
+          updated_at: string
+          version_id: string
+          warnings_json: Json
+        }
+        Insert: {
+          affected?: boolean
+          affected_scope_id?: string | null
+          agreement_id: string
+          arrears_estimate?: number | null
+          blocked?: boolean
+          blockers_json?: Json
+          company_id: string
+          computed_at?: string
+          computed_by?: string | null
+          concepts_detected?: Json
+          contract_id?: string | null
+          created_at?: string
+          current_salary_annual?: number | null
+          current_salary_monthly?: number | null
+          delta_annual?: number | null
+          delta_monthly?: number | null
+          employee_id: string
+          employer_cost_delta?: number | null
+          id?: string
+          mapping_id?: string | null
+          matched_salary_table_id?: string | null
+          missing_concepts?: Json
+          requires_human_review?: boolean
+          risk_flags?: Json
+          runtime_setting_id?: string | null
+          source_trace?: Json
+          target_salary_annual?: number | null
+          target_salary_monthly?: number | null
+          updated_at?: string
+          version_id: string
+          warnings_json?: Json
+        }
+        Update: {
+          affected?: boolean
+          affected_scope_id?: string | null
+          agreement_id?: string
+          arrears_estimate?: number | null
+          blocked?: boolean
+          blockers_json?: Json
+          company_id?: string
+          computed_at?: string
+          computed_by?: string | null
+          concepts_detected?: Json
+          contract_id?: string | null
+          created_at?: string
+          current_salary_annual?: number | null
+          current_salary_monthly?: number | null
+          delta_annual?: number | null
+          delta_monthly?: number | null
+          employee_id?: string
+          employer_cost_delta?: number | null
+          id?: string
+          mapping_id?: string | null
+          matched_salary_table_id?: string | null
+          missing_concepts?: Json
+          requires_human_review?: boolean
+          risk_flags?: Json
+          runtime_setting_id?: string | null
+          source_trace?: Json
+          target_salary_annual?: number | null
+          target_salary_monthly?: number | null
+          updated_at?: string
+          version_id?: string
+          warnings_json?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreement_impact_matched_salary_table_id_fkey"
+            columns: ["matched_salary_table_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry_salary_tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_impact_prev_runtime_setting_id_fkey"
+            columns: ["runtime_setting_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_runtime_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_impact_previ_affected_scope_id_fkey"
+            columns: ["affected_scope_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreement_affected_scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_impact_previews_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_impact_previews_mapping_id_fkey"
+            columns: ["mapping_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_company_agreement_registry_mappings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreement_impact_previews_version_id_fkey"
             columns: ["version_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_collective_agreements_registry_versions"
