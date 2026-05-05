@@ -180,12 +180,11 @@ describe('B13.5C — AgreementImpactDashboardPanel', () => {
     });
     await waitFor(() => screen.getByTestId('impact-previews-table'));
     fireEvent.click(screen.getByRole('button', { name: /Ver detalle/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/Δ mensual/)).toBeInTheDocument();
-      expect(screen.getByText(/Δ anual/)).toBeInTheDocument();
-      expect(screen.getByText(/MISSING_CONCEPT/)).toBeInTheDocument();
-      expect(screen.getByText(/LARGE_DELTA/)).toBeInTheDocument();
-    });
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByText(/Δ mensual/).length).toBeGreaterThan(0);
+    expect(within(dialog).getAllByText(/Δ anual/).length).toBeGreaterThan(0);
+    expect(within(dialog).getByText(/MISSING_CONCEPT/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/LARGE_DELTA/)).toBeInTheDocument();
   });
 
   it('mark obsolete invokes mark_preview_stale', async () => {
