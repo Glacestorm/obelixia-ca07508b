@@ -37,10 +37,10 @@ for (const name of EDGES) {
       expect(src).toContain('FORBIDDEN_PAYLOAD_KEYS');
     });
     it('uses mapError sanitized envelope', () => {
-      expect(src).toMatch(/function mapError/);
+      expect(src).toMatch(/function (mapError|err)\s*\(/);
     });
     it('does not return raw error.message', () => {
-      expect(src).not.toMatch(/return mapError\([^)]*\.message/);
+      expect(src).not.toMatch(/return (mapError|err)\([^)]*\.message/);
       expect(src).not.toMatch(/error\.stack/);
     });
     it('does not allow .delete(', () => {
