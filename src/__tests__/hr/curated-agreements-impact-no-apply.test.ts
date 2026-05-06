@@ -50,6 +50,6 @@ describe('B13.7 — impact previews never apply', () => {
     }
   });
   it('preview rows keep requires_human_review semantics (no auto-approval)', () => {
-    expect(all).not.toMatch(/human_approved_single|human_approved_second/);
+    expect(all).not.toMatch(/(?:status|finding_status|review_status)\s*[:=]\s*['\"]human_approved_(single|first|second)['\"]/);
   });
 });

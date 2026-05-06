@@ -4,13 +4,10 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { computeImpactPreview } from '@/engines/erp/hr/agreementImpactEngine';
+import { detectAgreementImpactRisks } from '@/engines/erp/hr/agreementImpactEngine';
 
 const ROOT = process.cwd();
-
-function read(rel: string) {
-  return fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
-}
+function read(rel: string) { return fs.readFileSync(path.resolve(ROOT, rel), 'utf8'); }
 function strip(src: string) {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 }
@@ -29,7 +26,7 @@ const FILES = [
 ];
 
 describe('B13.7 — ready_for_payroll gate', () => {
-  it('no B13 file writes ready_for_payroll = true', () => {
+  it('no B13 file writes ready_for_payroll = true/false as assignment', () => {
     for (const f of FILES) {
       const src = strip(read(f));
       expect(src, f).not.toMatch(/ready_for_payroll\s*:\s*true/);
@@ -37,37 +34,35 @@ describe('B13.7 — ready_for_payroll gate', () => {
     }
   });
 
-  it('engine blocks impact preview when registry not ready_for_payroll', () => {
-    const agreement: any = {
-      id: 'a1', ready_for_payroll: false, requires_human_review: false,
-      data_completeness: 'human_validated', salary_tables_loaded: true,
-      internal_code: 'X', official_name: 'X', cnae_codes: [], jurisdiction_code: 'ES',
+  it('detectAgreementImpactRisks blocks when registry not ready_for_payroll', () => {
+    const input: any = {
+      agreement: {
+        id: 'a1', ready_for_payroll: false, requires_human_review: false,
+        data_completeness: 'human_validated', source_quality: 'official',
+        salary_tables_loaded: true, internal_code: 'X', official_name: 'X',
+        cnae_codes: [], jurisdiction_code: 'ES',
+      },
+      version: { agreement_id: 'a1', id: 'v1' },
+      salaryTables: [], rules: [], options: { target_year: 2026 },
     };
-    const res = computeImpactPreview({
-      agreement,
-      employee: { id: 'e', contract_id: 'c', current_monthly_gross: 1000, antiquity_years: 1, group_code: 'G1', work_center_id: 'w', company_id: 'co' } as any,
-      salaryTable: [],
-      mandatoryConcepts: [],
-      now: new Date('2026-05-01'),
-    });
-    expect(res.blocked).toBe(true);
-    expect(res.blockers).toContain('registry_not_ready_for_payroll');
+    const r = detectAgreementImpactRisks(input);
+    expect(r.eligible).toBe(false);
+    expect(r.blockers).toContain('registry_not_ready_for_payroll');
   });
 
-  it('engine does not mutate ready_for_payroll value of input', () => {
+  it('detectAgreementImpactRisks does not mutate the input agreement', () => {
     const agreement: any = {
       id: 'a1', ready_for_payroll: true, requires_human_review: false,
-      data_completeness: 'human_validated', salary_tables_loaded: true,
-      internal_code: 'X', official_name: 'X', cnae_codes: [], jurisdiction_code: 'ES',
+      data_completeness: 'human_validated', source_quality: 'official',
+      salary_tables_loaded: true, internal_code: 'X', official_name: 'X',
+      cnae_codes: [], jurisdiction_code: 'ES',
     };
-    const before = agreement.ready_for_payroll;
-    computeImpactPreview({
+    const before = { ...agreement };
+    detectAgreementImpactRisks({
       agreement,
-      employee: { id: 'e', contract_id: 'c', current_monthly_gross: 1000, antiquity_years: 1, group_code: 'G1', work_center_id: 'w', company_id: 'co' } as any,
-      salaryTable: [],
-      mandatoryConcepts: [],
-      now: new Date('2026-05-01'),
-    });
-    expect(agreement.ready_for_payroll).toBe(before);
+      version: { agreement_id: 'a1', id: 'v1' } as any,
+      salaryTables: [], rules: [], options: { target_year: 2026 } as any,
+    } as any);
+    expect(agreement).toEqual(before);
   });
 });

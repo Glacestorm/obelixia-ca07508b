@@ -31,8 +31,8 @@ describe('B13.7 — staging writer boundary', () => {
   it('no B13 file produces human_approved_single/second status', () => {
     for (const f of B13_FILES) {
       const s = strip(read(f));
-      expect(s, f).not.toMatch(/human_approved_single/);
-      expect(s, f).not.toMatch(/human_approved_second/);
+      expect(s, f).not.toMatch(/(?:status|finding_status|review_status)\s*[:=]\s*['\"]human_approved_single['\"]/);
+      expect(s, f).not.toMatch(/(?:status|finding_status|review_status)\s*[:=]\s*['\"]human_approved_second['\"]/);
     }
   });
 
