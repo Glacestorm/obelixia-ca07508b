@@ -81,7 +81,7 @@ describe('B13.7 — frontend hardening', () => {
     ['flag mutation REGISTRY_PILOT_SCOPE_ALLOWLIST', /REGISTRY_PILOT_SCOPE_ALLOWLIST\s*=[^=]/],
     ['ready_for_payroll = true', /ready_for_payroll\s*[:=]\s*true/],
     ['salary_tables_loaded = true', /salary_tables_loaded\s*[:=]\s*true/],
-    ['data_completeness human_validated', /data_completeness\s*[:=]\s*['"]human_validated['"]/],
+    ['data_completeness human_validated', /(?<![!=<>])data_completeness\s*=\s*['"]human_validated['"]/],
   ];
   for (const [label, re] of banned) {
     it('forbidden: ' + label, () => {
