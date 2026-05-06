@@ -47,10 +47,15 @@ beforeAll(() => {
     ...FILE_TARGETS.map((p) => path.resolve(ROOT, p)),
     ...DIR_TARGETS.flatMap((d) => walk(d)),
   ].filter((p) => fs.existsSync(p));
-  FRONTEND_SRC = frontFiles.map((f) => fs.readFileSync(f, 'utf8')).join('\n/* file */\n');
+  function stripComments(src: string): string {
+    return src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  }
+  FRONTEND_SRC = frontFiles.map((f) => stripComments(fs.readFileSync(f, 'utf8'))).join('\n');
   EDGE_SRC = EDGE_TARGETS
-    .map((p) => fs.readFileSync(path.resolve(ROOT, p), 'utf8'))
-    .join('\n/* file */\n');
+    .map((p) => stripComments(fs.readFileSync(path.resolve(ROOT, p), 'utf8')))
+    .join('\n');
   UI_SRC = DIR_TARGETS.flatMap((d) => walk(d))
     .map((f) => fs.readFileSync(f, 'utf8'))
     .join('\n/* file */\n');
